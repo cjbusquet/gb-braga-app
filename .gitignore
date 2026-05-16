@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+dist-ssr/
+bundle.html
+bundle_vite.html
+
+# Environment — NUNCA commitar ficheiros com chaves reais
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Parcel cache (não necessário)
+.parcel-cache/
+.parcelrc
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
