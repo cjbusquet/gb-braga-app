@@ -14,8 +14,7 @@
     "@supabase/supabase-js": "^2.105.4",
     "jspdf": "^4.2.1",
     "react": "^19.2.5",
-    "react-dom": "^19.2.5",
-    "stripe": "^16.12.0"
+    "react-dom": "^19.2.5"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -32,6 +31,5 @@
     "vite": "^8.0.10"
   },
   "description": "Gracie Barra Braga — Sistema de Gestão da Academia",
-  "author": "Tribo Laurada Lda.",
-  "packageManager": "pnpm@9.0.0"
+  "author": "Tribo Laurada Lda."
 }

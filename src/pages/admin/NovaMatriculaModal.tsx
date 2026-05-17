@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState } from 'react';
-import { usePlanos } from '../../lib/useData';
+import { usePlanos, db } from '../../lib/useData';
 import { GB, beltConfig } from '../../lib/gbBrand';
 import type { Belt } from '../../types';
 
@@ -70,7 +70,9 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: NovaMatricula
     setProcessing(true);
     await new Promise(r => setTimeout(r, 1600));
     setProcessing(false);
-    setStep('sucesso');
+    // Save to Supabase
+      db.criarAluno({ nome, email, telefone, faixa, grau: parseInt(grau||'0'), planoId: plano, planoNome: planos.find((p:any)=>p.id===plano)?.nome }).catch(console.error);
+      setStep('sucesso');
     onSuccess?.(nome);
   };
 

@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect, useCallback } from 'react';
-import { usePresencas, useTurmas, useAlunos } from '../../lib/useData';
+import { usePresencas, useTurmas, useAlunos, db } from '../../lib/useData';
 import { ACADEMIA } from '../../data/mockData';
 import { beltConfig } from '../../lib/gbBrand';
 import KioskMode from './KioskMode';
@@ -291,6 +291,8 @@ export default function CheckinPage() {
     if (!aluno) return;
     const newEntry = { id: `pr${Date.now()}`, alunoId, alunoNome: aluno.nome, turmaId: 't1', turmaNome: 'Jiu-Jitsu Adultos — Noite 1', data: today, hora: new Date().toTimeString().slice(0, 5), tipo: 'checkin' as const, metodo: 'gps' as const };
     setCheckIns(prev => [newEntry, ...prev]);
+    // Save to Supabase
+    db.registarPresenca({ alunoId: newEntry.alunoId, alunoNome: newEntry.alunoNome, turmaId: newEntry.turmaId, turmaNome: newEntry.turmaNome, metodo: newEntry.metodo || 'manual', gpsLat: newEntry.gpsLat, gpsLng: newEntry.gpsLng, gpsDist: newEntry.gpsDistM }).catch(console.error);
   };
 
   // ── GPS Auto check-in for aluno ──────────────────────────────────────────────

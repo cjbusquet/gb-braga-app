@@ -363,4 +363,86 @@ export const db = {
       .update({ status: 'rejeitado', nota_admin: nota })
       .eq('id', id);
   },
+
+  criarTurma: async (dados: {
+    nome: string; professorNome?: string; horario: string;
+    diasSemana?: string[]; sala?: string; capacidade?: number;
+    nivel?: string; tipo?: string;
+  }) => {
+    if (!isConfigured) return null;
+    const { data, error } = await supabase.from('turmas').insert({
+      nome: dados.nome,
+      professor_nome: dados.professorNome,
+      horario: dados.horario,
+      dias_semana: dados.diasSemana || [],
+      sala: dados.sala,
+      capacidade: dados.capacidade || 20,
+      nivel: dados.nivel || 'all',
+      tipo: dados.tipo || 'gi',
+      ativa: true,
+    }).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  criarPagamento: async (dados: {
+    alunoId: string; alunoNome: string; planoId?: string;
+    planoNome?: string; valor: number; vencimento: string;
+  }) => {
+    if (!isConfigured) return null;
+    const { data, error } = await supabase.from('pagamentos').insert({
+      aluno_id: dados.alunoId,
+      aluno_nome: dados.alunoNome,
+      plano_id: dados.planoId,
+      plano_nome: dados.planoNome,
+      valor: dados.valor,
+      vencimento: dados.vencimento,
+      status: 'pendente',
+    }).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  criarAluno: async (dados: {
+    nome: string; email: string; telefone?: string;
+    nif?: string; faixa?: string; grau?: number;
+    planoId?: string; planoNome?: string; morada?: string; codPostal?: string;
+  }) => {
+    if (!isConfigured) return null;
+    const { data, error } = await supabase.from('alunos').insert({
+      nome: dados.nome,
+      email: dados.email,
+      telefone: dados.telefone,
+      nif: dados.nif,
+      faixa: dados.faixa || 'branca',
+      grau: dados.grau || 0,
+      plano_id: dados.planoId,
+      plano_nome: dados.planoNome,
+      morada: dados.morada,
+      cod_postal: dados.codPostal,
+      status: 'ativo',
+      data_matricula: new Date().toISOString().split('T')[0],
+    }).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  enviarMensagem: async (dados: {
+    paraId: string; paraNome: string; canal: string;
+    assunto?: string; corpo: string; remetente: string;
+  }) => {
+    if (!isConfigured) return null;
+    const { data, error } = await supabase.from('mensagens').insert({
+      para_id: dados.paraId,
+      para_nome: dados.paraNome,
+      canal: dados.canal,
+      assunto: dados.assunto,
+      corpo: dados.corpo,
+      remetente: dados.remetente,
+      status: 'enviado',
+      enviado_em: new Date().toISOString(),
+    }).select().single();
+    if (error) throw error;
+    return data;
+  },
 };

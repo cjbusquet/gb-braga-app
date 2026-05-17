@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState } from 'react';
-import { useTurmas, useAlunos } from '../../lib/useData';
+import { useTurmas, useAlunos, db } from '../../lib/useData';
 import { mockProfessores } from '../../data/mockData';
 import { GB, beltConfig } from '../../lib/gbBrand';
 import type { Turma } from '../../types';
@@ -37,7 +37,13 @@ function NovaTurmaModal({ onClose }: { onClose: () => void }) {
   const diasSemana = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
   const toggle = (d: string) => setDias(p => p.includes(d) ? p.filter(x => x !== d) : [...p, d]);
 
-  const handleSave = () => { setSaved(true); setTimeout(onClose, 1200); };
+  const handleSave = async () => {
+    try {
+      await db.criarTurma({ nome, professorNome, horario, diasSemana, sala, capacidade });
+    } catch(e) { console.error('criarTurma:', e); }
+    setSaved(true);
+    setTimeout(onClose, 1200);
+  };
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
@@ -229,7 +235,7 @@ function TurmaDetail({ turma, onBack }: { turma: Turma; onBack: () => void }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function TurmasPage() {
-  const { data: turmas } = useTurmas();
+  const { data: turmas, refetch: refetchTurmas } = useTurmas();
   const { data: alunos } = useAlunos();
   const [showModal, setShowModal] = useState(false);
   const [detail, setDetail] = useState<Turma | null>(null);

@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect } from 'react';
-import { useGraduacoes, useAlunos } from '../../lib/useData';
+import { useGraduacoes, useAlunos, db } from '../../lib/useData';
 import { GB, beltConfig } from '../../lib/gbBrand';
 import type { Belt } from '../../types';
 
@@ -66,6 +66,13 @@ export default function GraduacaoPage() {
       professorId: 'p1', professorNome: 'João Santos', observacao: obs,
     };
     setGraduacoes(p => [nova, ...p]);
+    // Save to Supabase
+    db.registarGraduacao({
+      alunoId: alunoSel, alunoNome: aluno.nome,
+      faixaAnterior: aluno.faixa, grauAnterior: aluno.grau,
+      faixaNova: novaFaixa, grauNovo: novoGrau,
+      professorNome: 'Professor', observacao: obs,
+    }).catch(console.error);
     setSuccess(true);
     // Notify student via WhatsApp
     const belt = novaFaixa.charAt(0).toUpperCase() + novaFaixa.slice(1);
