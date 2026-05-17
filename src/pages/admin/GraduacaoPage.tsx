@@ -1,6 +1,5 @@
-// @ts-nocheck
-import { useState, useEffect } from 'react';
-import { useGraduacoes, useAlunos } from '../../lib/useData';
+import { useState } from 'react';
+import { mockGraduacoes, mockAlunos } from '../../data/mockData';
 import { GB, beltConfig } from '../../lib/gbBrand';
 import type { Belt } from '../../types';
 
@@ -39,10 +38,6 @@ function TabBar({ tabs, active, onSelect }: { tabs: { id: string; label: string;
 }
 
 export default function GraduacaoPage() {
-  const { data: alunos } = useAlunos();
-  const { data: graduacoesDB } = useGraduacoes();
-  useEffect(() => { if (graduacoesDB?.length) setGraduacoes(graduacoesDB); }, [graduacoesDB]);
-
   const [tab, setTab] = useState<'candidatos' | 'registar' | 'historico' | 'cerimonia'>('candidatos');
   const [novaFaixa, setNovaFaixa] = useState<Belt>('azul');
   const [novoGrau, setNovoGrau] = useState(1);
@@ -50,13 +45,13 @@ export default function GraduacaoPage() {
   const [obs, setObs] = useState('');
   const [notificarAluno, setNotificarAluno] = useState(true);
   const [success, setSuccess] = useState(false);
-  const [graduacoes, setGraduacoes] = useState<any[]>([]);
+  const [graduacoes, setGraduacoes] = useState(mockGraduacoes);
 
-  const candidatos = alunos.filter(a => a.status === 'ativo' && a.frequencia >= 70);
+  const candidatos = mockAlunos.filter(a => a.status === 'ativo' && a.frequencia >= 70);
 
   const handleRegistar = () => {
     if (!alunoSel) return;
-    const aluno = alunos.find(a => a.id === alunoSel);
+    const aluno = mockAlunos.find(a => a.id === alunoSel);
     if (!aluno) return;
     const nova = {
       id: `g${Date.now()}`, alunoId: alunoSel, alunoNome: aluno.nome,
@@ -76,7 +71,7 @@ export default function GraduacaoPage() {
     setTimeout(() => { setSuccess(false); setAlunoSel(''); setObs(''); setTab('historico'); }, 2000);
   };
 
-  const alunoSelecionado = alunos.find(a => a.id === alunoSel);
+  const alunoSelecionado = mockAlunos.find(a => a.id === alunoSel);
   const nextBelt = BELTS[BELTS.indexOf(alunoSelecionado?.faixa || 'branca') + (novoGrau === 0 ? 1 : 0)] || 'preta';
 
   return (

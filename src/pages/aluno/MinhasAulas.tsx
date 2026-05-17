@@ -1,5 +1,4 @@
-// @ts-nocheck
-import { useTurmas, usePresencas, useAlunos } from '../../lib/useData';
+import { mockTurmas, mockPresencas, mockAlunos } from '../../data/mockData';
 import { useAuth } from '../../lib/auth';
 import { GB } from '../../lib/gbBrand';
 
@@ -7,13 +6,10 @@ const DIAS = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
 const DIAS_FULL = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
 
 export default function MinhasAulas() {
-  const { data: turmas } = useTurmas();
-  const { data: presencas } = usePresencas();
-  const { data: alunos } = useAlunos();
   const { user } = useAuth();
-  const aluno = alunos.find(a => a.email === user?.email) || alunos[0];
-  const minhasTurmas = turmas.slice(0, 2);
-  const minhasPresencas = presencas.filter(p => p.alunoId === aluno.id);
+  const aluno = mockAlunos.find(a => a.email === user?.email) || mockAlunos[0];
+  const turmas = mockTurmas.slice(0, 2);
+  const presencas = mockPresencas.filter(p => p.alunoId === aluno.id);
 
   return (
     <div>
@@ -28,7 +24,7 @@ export default function MinhasAulas() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
           {DIAS.map((d, i) => {
             const full = DIAS_FULL[i];
-            const aulas = minhasTurmas.filter(t => t.diaSemana.includes(full));
+            const aulas = turmas.filter(t => t.diaSemana.includes(full));
             return (
               <div key={d} style={{ textAlign: 'center' as const }}>
                 <div style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, marginBottom: 6 }}>{d}</div>
@@ -51,7 +47,7 @@ export default function MinhasAulas() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         {/* My classes */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {minhasTurmas.map(t => (
+          {turmas.map(t => (
             <div key={t.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 18 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                 <div>
@@ -80,7 +76,7 @@ export default function MinhasAulas() {
           <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 14 }}>Histórico de Presenças</div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
             <div style={{ textAlign: 'center' as const }}>
-              <div style={{ color: GB.red, fontSize: 26, fontWeight: 700 }}>{minhasPresencas.length}</div>
+              <div style={{ color: GB.red, fontSize: 26, fontWeight: 700 }}>{presencas.length}</div>
               <div style={{ color: 'var(--text-muted)', fontSize: 10.5 }}>aulas este mês</div>
             </div>
             <div style={{ textAlign: 'center' as const }}>
@@ -95,7 +91,7 @@ export default function MinhasAulas() {
           <div style={{ background: 'var(--bg-elevated)', borderRadius: 99, height: 8, overflow: 'hidden', marginBottom: 16 }}>
             <div style={{ background: aluno.frequencia >= 80 ? '#22C55E' : GB.red, height: '100%', width: `${Math.min(aluno.frequencia, 100)}%` }}/>
           </div>
-          {minhasPresencas.length > 0 ? minhasPresencas.map(p => (
+          {presencas.length > 0 ? presencas.map(p => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid var(--border-subtle)' }}>
               <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#22C55E', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>✓</div>
               <div style={{ flex: 1 }}>

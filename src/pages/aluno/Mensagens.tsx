@@ -1,7 +1,5 @@
-// @ts-nocheck
 import { useState } from 'react';
-import { useAlunos } from '../../lib/useData';
-import { mockMensagens } from '../../data/mockData';
+import { mockMensagens, mockAlunos } from '../../data/mockData';
 import { GB } from '../../lib/gbBrand';
 import { useAuth } from '../../lib/auth';
 
@@ -28,7 +26,6 @@ const TIPO_COLORS: Record<string, { bg: string; color: string }> = {
 };
 
 export default function Mensagens() {
-  const { data: alunos } = useAlunos();
   const [selected, setSelected] = useState(MOCK_INBOX[1]);
   const [filterCanal, setFilterCanal] = useState('todos');
   const [replyText, setReplyText] = useState('');

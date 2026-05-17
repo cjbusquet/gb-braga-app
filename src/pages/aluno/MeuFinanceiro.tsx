@@ -1,15 +1,11 @@
-// @ts-nocheck
-import { usePagamentos, useAlunos } from '../../lib/useData';
-import { mockTocDocumentos } from '../../data/mockData';
+import { mockPagamentos, mockAlunos, mockTocDocumentos } from '../../data/mockData';
 import { useAuth } from '../../lib/auth';
 import { GB } from '../../lib/gbBrand';
 
 export default function MeuFinanceiro() {
-  const { data: pagamentos } = usePagamentos();
-  const { data: alunos } = useAlunos();
   const { user } = useAuth();
-  const aluno = alunos.find(a => a.email === user?.email) || alunos[0];
-  const pags = pagamentos.filter(p => p.alunoId === aluno.id);
+  const aluno = mockAlunos.find(a => a.email === user?.email) || mockAlunos[0];
+  const pags = mockPagamentos.filter(p => p.alunoId === aluno.id);
   const faturas = mockTocDocumentos.filter(d => d.alunoNome === aluno.nome);
   const proximo = pags.find(p => p.status === 'pendente' || p.status === 'vencido');
 

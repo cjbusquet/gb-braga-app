@@ -1,5 +1,4 @@
-// @ts-nocheck
-import { useGraduacoes, useAlunos, usePresencas } from '../../lib/useData';
+import { mockGraduacoes, mockAlunos, mockPresencas } from '../../data/mockData';
 import { useAuth } from '../../lib/auth';
 import { GB, beltConfig } from '../../lib/gbBrand';
 import type { Belt } from '../../types';
@@ -7,13 +6,10 @@ import type { Belt } from '../../types';
 const BELT_PATH: Belt[] = ['branca','cinza','amarela','laranja','verde','azul','roxa','marrom','preta'];
 
 export default function MinhaEvolucao() {
-  const { data: alunos } = useAlunos();
-  const { data: graduacoes } = useGraduacoes();
-  const { data: presencas } = usePresencas();
   const { user } = useAuth();
-  const aluno = alunos.find(a => a.email === user?.email) || alunos[0];
-  const historico = graduacoes.filter(g => g.alunoId === aluno.id);
-  const minhasPresencas = presencas.filter(p => p.alunoId === aluno.id);
+  const aluno = mockAlunos.find(a => a.email === user?.email) || mockAlunos[0];
+  const historico = mockGraduacoes.filter(g => g.alunoId === aluno.id);
+  const presencas = mockPresencas.filter(p => p.alunoId === aluno.id);
   const beltIdx = BELT_PATH.indexOf(aluno.faixa);
   const bc = beltConfig[aluno.faixa];
 
@@ -71,7 +67,7 @@ export default function MinhaEvolucao() {
           <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 16 }}>Estatísticas</div>
           {[
             { label: 'Membro desde', value: aluno.dataMatricula },
-            { label: 'Total de aulas', value: `${minhasPresencas.length + 124}` },
+            { label: 'Total de aulas', value: `${presencas.length + 124}` },
             { label: 'Frequência atual', value: `${aluno.frequencia}%` },
             { label: 'Graduações', value: historico.length + 1 },
             { label: 'Faixa', value: bc?.label },

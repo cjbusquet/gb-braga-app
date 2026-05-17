@@ -1,6 +1,5 @@
-// @ts-nocheck
 import { useState, useRef, useEffect } from 'react';
-import { useAlunos } from '../../lib/useData';
+import { mockAlunos } from '../../data/mockData';
 import { beltConfig } from '../../lib/gbBrand';
 import type { Aluno } from '../../types';
 
@@ -73,7 +72,6 @@ function AlunoAvatar({ aluno, size = 38 }: { aluno: Aluno; size?: number }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ChatPage() {
-  const { data: alunos } = useAlunos();
   const [conversas, setConversas] = useState(CONVERSAS_INIT);
   const [alunoAtivo, setAlunoAtivo] = useState<string>('a2');
   const [texto, setTexto] = useState('');
@@ -82,7 +80,7 @@ export default function ChatPage() {
   const [busca, setBusca] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const aluno = alunos.find(a => a.id === alunoAtivo);
+  const aluno = mockAlunos.find(a => a.id === alunoAtivo);
   const conversa = conversas[alunoAtivo] || { alunoId: alunoAtivo, msgs: [], ultimaMsg: '—', naoLidas: 0 };
 
   // Auto-scroll to bottom
@@ -124,7 +122,7 @@ export default function ChatPage() {
 
   const totalNaoLidas = Object.values(conversas).reduce((s, c) => s + c.naoLidas, 0);
 
-  const alunosFiltrados = alunos.filter(a =>
+  const alunosFiltrados = mockAlunos.filter(a =>
     a.status === 'ativo' && a.nome.toLowerCase().includes(busca.toLowerCase())
   );
 

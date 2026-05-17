@@ -1,7 +1,5 @@
-// @ts-nocheck
 import { useState } from 'react';
-import { useKPIs, useAlunos, usePagamentos } from '../../lib/useData';
-import { revenueHistory } from '../../data/mockData';
+import { mockKPIs, mockAlunos, mockPagamentos, revenueHistory } from '../../data/mockData';
 import { exportRelatorioFinanceiro, exportRelatorioAlunos, exportCSV } from '../../lib/reportExport';
 
 // ─── Shared atoms ─────────────────────────────────────────────────────────────
@@ -51,9 +49,6 @@ const REDE_12M = [
 ];
 
 export function SuperAdminDashboard() {
-  const { data: kpis } = useKPIs();
-  const { data: alunos } = useAlunos();
-  const { data: pagamentos } = usePagamentos();
   const totalAlunos  = ACADEMIAS.reduce((s,a) => s+a.alunos,0);
   const totalReceita = ACADEMIAS.reduce((s,a) => s+a.receita,0);
   const totalInadimp = ACADEMIAS.reduce((s,a) => s+a.inadimp,0);
@@ -172,9 +167,6 @@ export function SuperAdminDashboard() {
 type RTab = 'financeiro' | 'alunos' | 'frequencia' | 'retencao';
 
 export function RelatoriosPage() {
-  const { data: kpis } = useKPIs();
-  const { data: alunos } = useAlunos();
-  const { data: pagamentos } = usePagamentos();
   const [tab, setTab] = useState<RTab>('financeiro');
   const [periodo, setPeriodo] = useState('mes');
   const [exporting, setExporting] = useState<string | null>(null);
@@ -188,12 +180,12 @@ export function RelatoriosPage() {
   };
 
   const kpiRows = [
-    { label:'Taxa de Retenção',   value:`${kpis.taxaRetencao}%`,  target:'≥ 90%', ok: kpis.taxaRetencao >= 85 },
-    { label:'Frequência Média',   value:`${kpis.taxaFrequencia}%`, target:'≥ 80%', ok: kpis.taxaFrequencia >= 70 },
-    { label:'Inadimplência',      value:`${Math.round((kpis.inadimplentes/kpis.alunosAtivos)*100)}%`, target:'< 5%', ok: kpis.inadimplentes <= 1 },
-    { label:'Novos Alunos/Mês',   value:kpis.novosAlunos,         target:'≥ 5',   ok: kpis.novosAlunos >= 3 },
-    { label:'Cancelamentos/Mês',  value:kpis.cancelamentos,       target:'< 3',   ok: kpis.cancelamentos <= 2 },
-    { label:'Receita vs Prevista',value:`${Math.round((kpis.receitaMensal/kpis.receitaPrevista)*100)}%`, target:'≥ 95%', ok: kpis.receitaMensal >= kpis.receitaPrevista*0.9 },
+    { label:'Taxa de Retenção',   value:`${mockKPIs.taxaRetencao}%`,  target:'≥ 90%', ok: mockKPIs.taxaRetencao >= 85 },
+    { label:'Frequência Média',   value:`${mockKPIs.taxaFrequencia}%`, target:'≥ 80%', ok: mockKPIs.taxaFrequencia >= 70 },
+    { label:'Inadimplência',      value:`${Math.round((mockKPIs.inadimplentes/mockKPIs.alunosAtivos)*100)}%`, target:'< 5%', ok: mockKPIs.inadimplentes <= 1 },
+    { label:'Novos Alunos/Mês',   value:mockKPIs.novosAlunos,         target:'≥ 5',   ok: mockKPIs.novosAlunos >= 3 },
+    { label:'Cancelamentos/Mês',  value:mockKPIs.cancelamentos,       target:'< 3',   ok: mockKPIs.cancelamentos <= 2 },
+    { label:'Receita vs Prevista',value:`${Math.round((mockKPIs.receitaMensal/mockKPIs.receitaPrevista)*100)}%`, target:'≥ 95%', ok: mockKPIs.receitaMensal >= mockKPIs.receitaPrevista*0.9 },
   ];
 
   const TABS: {id: RTab; label: string; icon: string}[] = [
@@ -246,10 +238,10 @@ export function RelatoriosPage() {
         <div>
           {/* Export actions */}
           <div style={{ display:'flex', gap:8, marginBottom:16 }}>
-            <ExportBtn icon="📄" label={exporting==='pdf-fin' ? '⟳ A gerar PDF...' : 'Exportar PDF'} onClick={() => doExport('pdf-fin', () => exportRelatorioFinanceiro(pagamentos as any))} color="var(--gb-red)"/>
+            <ExportBtn icon="📄" label={exporting==='pdf-fin' ? '⟳ A gerar PDF...' : 'Exportar PDF'} onClick={() => doExport('pdf-fin', () => exportRelatorioFinanceiro(mockPagamentos as any))} color="var(--gb-red)"/>
             <ExportBtn icon="📊" label={exporting==='csv-fin' ? '⟳ A gerar CSV...' : 'Exportar CSV'} onClick={() => doExport('csv-fin', () => exportCSV(
               ['Aluno','Plano','Valor','Vencimento','Estado'],
-              pagamentos.map(p => [p.alunoNome, p.plano, `€${p.valor}`, p.vencimento, p.status]),
+              mockPagamentos.map(p => [p.alunoNome, p.plano, `€${p.valor}`, p.vencimento, p.status]),
               'GB_Pagamentos'
             ))} color="#16A34A"/>
             <ExportBtn icon="🧾" label="SAF-T TOConline" onClick={() => alert('SAF-T gerado via TOConline API')} color="#635BFF"/>
@@ -259,7 +251,7 @@ export function RelatoriosPage() {
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18 }}>
                 <SectionLabel>Receita Mensal</SectionLabel>
                 <div style={{ textAlign:'right' as const }}>
-                  <div style={{ color:'var(--text-primary)', fontSize:20, fontWeight:800, fontFamily:'var(--font-mono)' }}>€{kpis.receitaMensal.toLocaleString()}</div>
+                  <div style={{ color:'var(--text-primary)', fontSize:20, fontWeight:800, fontFamily:'var(--font-mono)' }}>€{mockKPIs.receitaMensal.toLocaleString()}</div>
                   <div style={{ color:'#16A34A', fontSize:10.5, fontWeight:600 }}>↑ +4.2% vs mês ant.</div>
                 </div>
               </div>
@@ -278,9 +270,9 @@ export function RelatoriosPage() {
             </Card>
             <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
               {[
-                { label:'Recebido',  value:`€${pagamentos.filter(p=>p.status==='pago').reduce((s,p)=>s+p.valor,0)}`,     accent:'#16A34A', pct:'92%' },
-                { label:'A Receber', value:`€${pagamentos.filter(p=>p.status==='pendente').reduce((s,p)=>s+p.valor,0)}`, accent:'#D97706', pct:'5%' },
-                { label:'Vencido',   value:`€${pagamentos.filter(p=>p.status==='vencido').reduce((s,p)=>s+p.valor,0)}`,  accent:'var(--gb-red)', pct:'3%' },
+                { label:'Recebido',  value:`€${mockPagamentos.filter(p=>p.status==='pago').reduce((s,p)=>s+p.valor,0)}`,     accent:'#16A34A', pct:'92%' },
+                { label:'A Receber', value:`€${mockPagamentos.filter(p=>p.status==='pendente').reduce((s,p)=>s+p.valor,0)}`, accent:'#D97706', pct:'5%' },
+                { label:'Vencido',   value:`€${mockPagamentos.filter(p=>p.status==='vencido').reduce((s,p)=>s+p.valor,0)}`,  accent:'var(--gb-red)', pct:'3%' },
               ].map(r => (
                 <Card key={r.label} style={{ padding:'14px 16px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                   <div>
@@ -298,10 +290,10 @@ export function RelatoriosPage() {
       {tab === 'alunos' && (
         <div>
           <div style={{ display:'flex', gap:8, marginBottom:16 }}>
-            <ExportBtn icon="📄" label={exporting==='pdf-alu' ? '⟳ A gerar...' : 'Exportar PDF'} onClick={() => doExport('pdf-alu', () => exportRelatorioAlunos(alunos as any))} color="var(--gb-red)"/>
+            <ExportBtn icon="📄" label={exporting==='pdf-alu' ? '⟳ A gerar...' : 'Exportar PDF'} onClick={() => doExport('pdf-alu', () => exportRelatorioAlunos(mockAlunos as any))} color="var(--gb-red)"/>
             <ExportBtn icon="📊" label={exporting==='csv-alu' ? '⟳ A gerar...' : 'Exportar CSV'} onClick={() => doExport('csv-alu', () => exportCSV(
               ['Nome','Faixa','Grau','Plano','Frequência','Status','Matrícula'],
-              alunos.map(a => [a.nome, a.faixa, a.grau, a.plano, `${a.frequencia}%`, a.status, a.dataMatricula]),
+              mockAlunos.map(a => [a.nome, a.faixa, a.grau, a.plano, `${a.frequencia}%`, a.status, a.dataMatricula]),
               'GB_Alunos'
             ))} color="#16A34A"/>
           </div>
@@ -309,9 +301,9 @@ export function RelatoriosPage() {
             <Card style={{ padding:'20px 22px' }}>
               <SectionLabel>Distribuição de Faixas</SectionLabel>
               {Object.entries(BELT_BG).map(([faixa, bg]) => {
-                const count = alunos.filter(a => a.faixa === faixa).length;
+                const count = mockAlunos.filter(a => a.faixa === faixa).length;
                 if (!count) return null;
-                const pct = Math.round((count/alunos.length)*100);
+                const pct = Math.round((count/mockAlunos.length)*100);
                 return (
                   <div key={faixa} style={{ marginBottom:10 }}>
                     <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
@@ -334,12 +326,12 @@ export function RelatoriosPage() {
             <Card style={{ padding:'20px 22px' }}>
               <SectionLabel>Atividade de Matrículas</SectionLabel>
               {[
-                ['Total matriculados', kpis.totalAlunos],
-                ['Ativos', kpis.alunosAtivos],
-                ['Inativos', kpis.totalAlunos - kpis.alunosAtivos],
-                ['Novos este mês', kpis.novosAlunos],
-                ['Cancelamentos', kpis.cancelamentos],
-                ['Taxa de crescimento', `+${kpis.novosAlunos - kpis.cancelamentos} alunos/mês`],
+                ['Total matriculados', mockKPIs.totalAlunos],
+                ['Ativos', mockKPIs.alunosAtivos],
+                ['Inativos', mockKPIs.totalAlunos - mockKPIs.alunosAtivos],
+                ['Novos este mês', mockKPIs.novosAlunos],
+                ['Cancelamentos', mockKPIs.cancelamentos],
+                ['Taxa de crescimento', `+${mockKPIs.novosAlunos - mockKPIs.cancelamentos} alunos/mês`],
               ].map(([k,v]) => (
                 <div key={String(k)} style={{ display:'flex', justifyContent:'space-between', padding:'9px 0', borderBottom:'1px solid var(--border-subtle)' }}>
                   <span style={{ color:'var(--text-secondary)', fontSize:13 }}>{k}</span>
@@ -356,9 +348,9 @@ export function RelatoriosPage() {
           <Card style={{ padding:'20px 22px' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
               <SectionLabel>Frequência por Aluno</SectionLabel>
-              <ExportBtn icon="📊" label="CSV" onClick={() => exportCSV(['Nome','Frequência','Status'],alunos.map(a=>[a.nome,`${a.frequencia}%`,a.status]),'GB_Frequencia')} color="#16A34A"/>
+              <ExportBtn icon="📊" label="CSV" onClick={() => exportCSV(['Nome','Frequência','Status'],mockAlunos.map(a=>[a.nome,`${a.frequencia}%`,a.status]),'GB_Frequencia')} color="#16A34A"/>
             </div>
-            {alunos.filter(a => a.status==='ativo').sort((a,b) => b.frequencia-a.frequencia).map(a => (
+            {mockAlunos.filter(a => a.status==='ativo').sort((a,b) => b.frequencia-a.frequencia).map(a => (
               <div key={a.id} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:9 }}>
                 <div style={{ width:26, height:26, borderRadius:'50%', background:'var(--bg-elevated)', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-muted)', fontSize:10, fontWeight:700, flexShrink:0 }}>{a.nome.charAt(0)}</div>
                 <div style={{ flex:1 }}>
@@ -422,10 +414,10 @@ export function RelatoriosPage() {
             <SectionLabel>Exportar Relatórios</SectionLabel>
             <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
               {[
-                { label:'Relatório Financeiro — PDF',        icon:'📄', fn: () => exportRelatorioFinanceiro(pagamentos as any) },
-                { label:'Relatório de Alunos — PDF',         icon:'📄', fn: () => exportRelatorioAlunos(alunos as any) },
-                { label:'Pagamentos — CSV (Excel)',           icon:'📊', fn: () => exportCSV(['Aluno','Valor','Estado','Data'],pagamentos.map(p=>[p.alunoNome,p.valor,p.status,p.vencimento]),'Pagamentos') },
-                { label:'Alunos — CSV (Excel)',               icon:'📊', fn: () => exportCSV(['Nome','Faixa','Plano','Freq'],alunos.map(a=>[a.nome,a.faixa,a.plano,a.frequencia]),'Alunos') },
+                { label:'Relatório Financeiro — PDF',        icon:'📄', fn: () => exportRelatorioFinanceiro(mockPagamentos as any) },
+                { label:'Relatório de Alunos — PDF',         icon:'📄', fn: () => exportRelatorioAlunos(mockAlunos as any) },
+                { label:'Pagamentos — CSV (Excel)',           icon:'📊', fn: () => exportCSV(['Aluno','Valor','Estado','Data'],mockPagamentos.map(p=>[p.alunoNome,p.valor,p.status,p.vencimento]),'Pagamentos') },
+                { label:'Alunos — CSV (Excel)',               icon:'📊', fn: () => exportCSV(['Nome','Faixa','Plano','Freq'],mockAlunos.map(a=>[a.nome,a.faixa,a.plano,a.frequencia]),'Alunos') },
                 { label:'SAF-T PT — TOConline',               icon:'🧾', fn: () => alert('SAF-T exportado via TOConline') },
               ].map(r => (
                 <button key={r.label} onClick={() => doExport(r.label, r.fn)} style={{ display:'flex', alignItems:'center', gap:10, background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)', padding:'11px 14px', fontSize:13, color:'var(--text-primary)', fontWeight:500, cursor:'pointer', textAlign:'left' as const, transition:'all 0.12s' }}

@@ -1,6 +1,5 @@
-// @ts-nocheck
 import { useState, useEffect, useCallback } from 'react';
-import { usePresencas, useTurmas, useAlunos } from '../../lib/useData';
+import { mockPresencas, mockTurmas, mockAlunos } from '../../data/mockData';
 import { ACADEMIA } from '../../data/mockData';
 import { beltConfig } from '../../lib/gbBrand';
 import KioskMode from './KioskMode';
@@ -231,14 +230,8 @@ function GpsFencePanel({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function CheckinPage() {
-  const { data: alunos } = useAlunos();
-  const { data: turmas } = useTurmas();
-  const { data: checkInsDB, refetch: refetchPresencas } = usePresencas();
-  // Sync with Supabase data
-  useEffect(() => { if (checkInsDB?.length) setCheckIns(checkInsDB); }, [checkInsDB]);
-
   const [kioskMode, setKioskMode] = useState(false);
-  const [checkIns, setCheckIns] = useState<any[]>([]);
+  const [checkIns, setCheckIns] = useState(mockPresencas);
   const [turmaFilter, setTurmaFilter] = useState('todas');
   const [fenceRadius, setFenceRadius] = useState(ACADEMIA_COORDS.radius);
   const [gps, setGps] = useState<GpsState>({ status: 'idle', lat: null, lng: null, accuracy: null, distancia: null, lastUpdate: null });
@@ -287,7 +280,7 @@ export default function CheckinPage() {
 
   // ── Manual check-in ──────────────────────────────────────────────────────────
   const manualCheckin = (alunoId: string) => {
-    const aluno = alunos.find(a => a.id === alunoId);
+    const aluno = mockAlunos.find(a => a.id === alunoId);
     if (!aluno) return;
     const newEntry = { id: `pr${Date.now()}`, alunoId, alunoNome: aluno.nome, turmaId: 't1', turmaNome: 'Jiu-Jitsu Adultos — Noite 1', data: today, hora: new Date().toTimeString().slice(0, 5), tipo: 'checkin' as const, metodo: 'gps' as const };
     setCheckIns(prev => [newEntry, ...prev]);
@@ -390,7 +383,7 @@ export default function CheckinPage() {
           </div>
           <select value={turmaFilter} onChange={e => setTurmaFilter(e.target.value)} style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '7px 10px', fontSize: 12.5, marginBottom: 10, cursor: 'pointer', color: 'var(--text-primary)' }}>
             <option value="todas">Todas as turmas</option>
-            {turmas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
+            {mockTurmas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
           </select>
           <div style={{ maxHeight: 300, overflowY: 'auto' }}>
             {checkIns.slice(0, 12).map((p, i) => (
@@ -417,7 +410,7 @@ export default function CheckinPage() {
           {gps.status !== 'inside' && gps.status !== 'idle' && <span style={{ background: 'rgba(200,16,46,0.06)', color: 'var(--gb-red)', fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 99 }}>GPS não confirmado</span>}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 8 }}>
-          {alunos.filter(a => a.status === 'ativo').map(a => {
+          {mockAlunos.filter(a => a.status === 'ativo').map(a => {
             const done = checkIns.some(c => c.alunoId === a.id && c.data === today);
             const bc = beltConfig[a.faixa];
             return (

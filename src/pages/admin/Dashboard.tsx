@@ -1,7 +1,5 @@
-// @ts-nocheck
 import { useState } from 'react';
-import { useKPIs, usePagamentos, usePresencas, useAlunos, useTurmas } from '../../lib/useData';
-import { revenueHistory } from '../../data/mockData';
+import { mockKPIs, mockPagamentos, mockPresencas, mockAlunos, revenueHistory, mockTurmas } from '../../data/mockData';
 import { beltConfig } from '../../lib/gbBrand';
 
 function KPI({ label, value, sub, accent = 'var(--gb-red)', delta, icon }: {
@@ -48,14 +46,9 @@ const NIVEL_COLOR: Record<string, string> = {
 };
 
 export default function Dashboard() {
-  const { data: alunos } = useAlunos();
-  const { data: pagamentos } = usePagamentos();
-  const { data: presencas } = usePresencas();
-  const { data: turmas } = useTurmas();
-  const { data: kpis } = useKPIs();
   const [quickAction, setQuickAction] = useState<string | null>(null);
-  const vencidos  = pagamentos.filter(p => p.status === 'vencido');
-  const pendentes = pagamentos.filter(p => p.status === 'pendente');
+  const vencidos  = mockPagamentos.filter(p => p.status === 'vencido');
+  const pendentes = mockPagamentos.filter(p => p.status === 'pendente');
   const maxR = Math.max(...revenueHistory.map(r => r.valor));
   const now = new Date();
   const horaAtual = now.getHours();
@@ -108,12 +101,12 @@ export default function Dashboard() {
 
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12, marginBottom: 18 }}>
-        <KPI label="Alunos Ativos"   value={kpis.alunosAtivos}    accent="var(--gb-red)"  delta={`${kpis.totalAlunos} total`}    icon="👥"/>
-        <KPI label="Receita Mensal"  value={`€${kpis.receitaMensal.toLocaleString('pt-PT')}`} accent="#16A34A" delta="↑ +1.5% vs Abr" icon="💰"/>
+        <KPI label="Alunos Ativos"   value={mockKPIs.alunosAtivos}    accent="var(--gb-red)"  delta={`${mockKPIs.totalAlunos} total`}    icon="👥"/>
+        <KPI label="Receita Mensal"  value={`€${mockKPIs.receitaMensal.toLocaleString('pt-PT')}`} accent="#16A34A" delta="↑ +1.5% vs Abr" icon="💰"/>
         <KPI label="A Receber"       value={`€${pendentes.reduce((s,p)=>s+p.valor,0)}`} accent="#D97706" sub={`${pendentes.length} pendentes`} icon="⏳"/>
         <KPI label="Vencidos"        value={vencidos.length}           accent="var(--gb-red)"  sub="Ação necessária"                      icon="⚠️"/>
-        <KPI label="Frequência"      value={`${kpis.taxaFrequencia}%`} accent="#2563EB"   sub="Este mês"                             icon="📊"/>
-        <KPI label="Retenção"        value={`${kpis.taxaRetencao}%`}  accent="#7C3AED"   sub="Últimos 12 meses"                     icon="🔄"/>
+        <KPI label="Frequência"      value={`${mockKPIs.taxaFrequencia}%`} accent="#2563EB"   sub="Este mês"                             icon="📊"/>
+        <KPI label="Retenção"        value={`${mockKPIs.taxaRetencao}%`}  accent="#7C3AED"   sub="Últimos 12 meses"                     icon="🔄"/>
       </div>
 
       {/* Quick actions */}
@@ -156,14 +149,14 @@ export default function Dashboard() {
         {/* Belt distribution */}
         <Card title="Distribuição de Faixas">
           {Object.entries(beltConfig).map(([faixa, cfg]) => {
-            const count = alunos.filter(a => a.faixa === faixa).length;
+            const count = mockAlunos.filter(a => a.faixa === faixa).length;
             if (!count) return null;
             return (
               <div key={faixa} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <div style={{ width: 20, height: 7, background: cfg.bg, borderRadius: 2, border: faixa === 'branca' ? '1px solid var(--border-strong)' : 'none', flexShrink: 0 }}/>
                 <span style={{ color: 'var(--text-secondary)', fontSize: 11.5, width: 52, textTransform: 'capitalize' as const }}>{cfg.label}</span>
                 <div style={{ flex: 1, background: 'var(--bg-elevated)', borderRadius: 99, height: 5, overflow: 'hidden' }}>
-                  <div style={{ background: cfg.bg === '#F0EEFF' ? '#aaa' : cfg.bg, height: '100%', width: `${(count / alunos.length) * 100}%` }}/>
+                  <div style={{ background: cfg.bg === '#F0EEFF' ? '#aaa' : cfg.bg, height: '100%', width: `${(count / mockAlunos.length) * 100}%` }}/>
                 </div>
                 <span style={{ color: 'var(--text-muted)', fontSize: 11, width: 14, textAlign: 'right' as const }}>{count}</span>
               </div>
@@ -220,7 +213,7 @@ export default function Dashboard() {
         <Card title="Check-ins Recentes" action={
           <span style={{ background: 'rgba(22,163,74,0.08)', color: '#16A34A', fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 99 }}>● LIVE</span>
         }>
-          {presencas.slice(0, 5).map(p => (
+          {mockPresencas.slice(0, 5).map(p => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid var(--border-subtle)' }}>
               <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#16A34A', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>✓</div>
               <div style={{ flex: 1 }}>

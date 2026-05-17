@@ -1,6 +1,5 @@
-// @ts-nocheck
 import { useState } from 'react';
-import { useAlunos, usePagamentos, usePresencas } from '../../lib/useData';
+import { mockAlunos, mockPagamentos, mockPresencas } from '../../data/mockData';
 import { useAuth } from '../../lib/auth';
 import { GB, beltConfig } from '../../lib/gbBrand';
 import type { Belt } from '../../types';
@@ -24,15 +23,12 @@ function NavCard({ icon, label, desc, accent, onClick }: { icon: string; label: 
 }
 
 export default function PortalAluno({ onNavigate }: { onNavigate?: (page: string) => void }) {
-  const { data: alunos } = useAlunos();
-  const { data: pagamentos } = usePagamentos();
-  const { data: presencas } = usePresencas();
   const [showEditPerfil, setShowEditPerfil] = useState(false);
   const [showContrato, setShowContrato] = useState(false);
   const { user } = useAuth();
-  const aluno = alunos.find(a => a.email === user?.email) || alunos[0];
-  const meusPagamentos = pagamentos.filter(p => p.alunoId === aluno.id);
-  const minhasPresencas = presencas.filter(p => p.alunoId === aluno.id);
+  const aluno = mockAlunos.find(a => a.email === user?.email) || mockAlunos[0];
+  const pagamentos = mockPagamentos.filter(p => p.alunoId === aluno.id);
+  const presencas = mockPresencas.filter(p => p.alunoId === aluno.id);
   const proximoPagamento = pagamentos.find(p => p.status === 'pendente' || p.status === 'vencido');
 
   const bc = beltConfig[aluno.faixa];
@@ -139,7 +135,7 @@ export default function PortalAluno({ onNavigate }: { onNavigate?: (page: string
       {/* Stats row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
         {[
-          { label: 'Aulas este mês', value: minhasPresencas.length, accent: GB.red },
+          { label: 'Aulas este mês', value: presencas.length, accent: GB.red },
           { label: 'Frequência',     value: `${aluno.frequencia}%`, accent: aluno.frequencia >= 80 ? '#22C55E' : '#F59E0B' },
           { label: 'Grau na faixa',  value: `${aluno.grau}/4`, accent: '#A78BFA' },
           { label: 'Dias de treino', value: '842', accent: '#3B82F6' },
@@ -182,7 +178,7 @@ export default function PortalAluno({ onNavigate }: { onNavigate?: (page: string
       {/* Recent activity */}
       <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '18px 20px' }}>
         <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 14 }}>Atividade Recente</div>
-        {minhasPresencas.length > 0 ? minhasPresencas.slice(0, 4).map(p => (
+        {presencas.length > 0 ? presencas.slice(0, 4).map(p => (
           <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--border-subtle)' }}>
             <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#22C55E', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>✓</div>
             <div style={{ flex: 1 }}>

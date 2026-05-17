@@ -1,6 +1,5 @@
-// @ts-nocheck
 import { useState } from 'react';
-import { usePlanos } from '../../lib/useData';
+import { mockPlanos } from '../../data/mockData';
 import { GB, beltConfig } from '../../lib/gbBrand';
 import type { Belt } from '../../types';
 
@@ -36,7 +35,6 @@ function Input({ value, onChange, placeholder, type = 'text' }: { value: string;
 }
 
 export default function NovaMatriculaModal({ onClose, onSuccess }: NovaMatriculaModalProps) {
-  const { data: planos } = usePlanos();
   const [step, setStep] = useState<Step>('plano');
   const [processing, setProcessing] = useState(false);
 
@@ -54,7 +52,7 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: NovaMatricula
   const [aceitouTermos, setAceitouTermos] = useState(false);
 
   const stepIdx = STEP_ORDER.indexOf(step);
-  const planoSel = planos.find(p => p.id === planoId);
+  const planoSel = mockPlanos.find(p => p.id === planoId);
 
   const next = () => {
     const nextStep = STEP_ORDER[stepIdx + 1];
@@ -129,7 +127,7 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: NovaMatricula
             <div>
               <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 16 }}>Selecionar Plano</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {planos.filter(p => p.ativo).map(p => (
+                {mockPlanos.filter(p => p.ativo).map(p => (
                   <button key={p.id} onClick={() => setPlanoId(p.id)}
                     style={{ background: planoId === p.id ? GB.redGlow : 'var(--bg-elevated)', border: `2px solid ${planoId === p.id ? GB.red : 'var(--border)'}`, borderRadius: 'var(--radius-md)', padding: '14px 16px', textAlign: 'left', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>

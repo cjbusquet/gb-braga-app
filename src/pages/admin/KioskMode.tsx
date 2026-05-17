@@ -1,7 +1,5 @@
-// @ts-nocheck
 import { useState, useEffect, useCallback } from 'react';
-import { useAlunos, useTurmas } from '../../lib/useData';
-import { ACADEMIA } from '../../data/mockData';
+import { mockAlunos, mockTurmas, ACADEMIA } from '../../data/mockData';
 import { beltConfig } from '../../lib/gbBrand';
 import { GBIcon } from '../../components/GBLogo';
 import type { Aluno } from '../../types';
@@ -21,8 +19,6 @@ interface Props { onExit: () => void }
 type CheckInState = 'idle' | 'locating' | 'success' | 'outside' | 'error';
 
 export default function KioskMode({ onExit }: Props) {
-  const { data: alunos } = useAlunos();
-  const { data: turmas } = useTurmas();
   const [state, setState] = useState<CheckInState>('idle');
   const [lastCheckin, setLastCheckin] = useState<{nome:string;faixa:string;hora:string;dist:number}|null>(null);
   const [todayCount, setTodayCount] = useState(12);
@@ -44,10 +40,10 @@ export default function KioskMode({ onExit }: Props) {
   }, [state]);
 
   const horaAtual = currentTime.getHours();
-  const turmaAtual = turmas.find(t => {
+  const turmaAtual = mockTurmas.find(t => {
     const inicio = parseInt(t.horario.split(':')[0]);
     return inicio <= horaAtual && horaAtual < inicio + 2;
-  }) || turmas[0];
+  }) || mockTurmas[0];
 
   const doCheckin = useCallback((aluno: Aluno) => {
     if (state !== 'idle') return;
@@ -87,7 +83,7 @@ export default function KioskMode({ onExit }: Props) {
     );
   }, [state]);
 
-  const filteredAlunos = alunos.filter(a =>
+  const filteredAlunos = mockAlunos.filter(a =>
     a.status === 'ativo' && a.nome.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -224,7 +220,7 @@ export default function KioskMode({ onExit }: Props) {
           )}
 
           <div style={{ maxHeight: showManual ? 420 : 380, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {(showManual ? filteredAlunos : alunos.filter(a => a.status === 'ativo').slice(0, 6)).map(a => {
+            {(showManual ? filteredAlunos : mockAlunos.filter(a => a.status === 'ativo').slice(0, 6)).map(a => {
               const bc = beltConfig[a.faixa];
               return (
                 <button key={a.id} onClick={() => doCheckin(a)}
