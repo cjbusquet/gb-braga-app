@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import type { User, UserRole } from '../types';
 import { mockUsers } from '../data/mockData';
@@ -7,6 +8,7 @@ import { supabase, isConfigured } from './supabaseClient';
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
+  register: (email: string, password: string, nome: string) => Promise<{ ok: boolean; confirmEmail: boolean; message: string }>;
   logout: () => void;
   switchRole: (role: UserRole) => void;
   loading: boolean;
@@ -18,36 +20,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser]       = useState<User | null>(null);
   const [loading, setLoading] = useState(isConfigured);
 
-  useEffect(() => {
-    if (!isConfigured) { setLoading(false); return; }
-
-    // Check existing session
-    supabase.auth.getSession().then(({ data: { session } }: any) => {
-      if (session?.user) {
-        loadProfile(session.user.id, session.user.email!);
-      } else {
-        setLoading(false);
-      }
-    }).catch(() => setLoading(false));
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event: any, session: any) => {
-        if (session?.user) {
-          loadProfile(session.user.id, session.user.email!);
-        } else {
-          setUser(null);
-          setLoading(false);
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  async function loadProfile(id: string, email: string) {
+  const loadProfile = useCallback(async (id: string, email: string) => {
     try {
-      // Use service role bypass via RPC or direct query
       const { data, error } = await supabase
         .from('profiles')
         .select('id, nome, email, role, matricula_completa, telefone, created_at')
@@ -82,7 +56,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    if (!isConfigured) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLoading(false);
+      return;
+    }
+
+    // Check existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        loadProfile(session.user.id, session.user.email!);
+      } else {
+        setLoading(false);
+      }
+    }).catch(() => setLoading(false));
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session?.user) {
+          loadProfile(session.user.id, session.user.email!);
+        } else {
+          setUser(null);
+          setLoading(false);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [loadProfile]);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     // Demo mode — no Supabase
@@ -110,6 +115,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const register = async (email: string, password: string, nome: string): Promise<{ ok: boolean; confirmEmail: boolean; message: string }> => {
+    // Demo mode — simulate registration
+    if (!isConfigured) {
+      setUser({ id: crypto.randomUUID(), nome, email, role: 'aluno', matriculaCompleta: false, createdAt: new Date().toISOString() });
+      return { ok: true, confirmEmail: false, message: '' };
+    }
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { nome } },
+      });
+      if (error) return { ok: false, confirmEmail: false, message: error.message };
+      if (data.user) {
+        if (data.session) {
+          // Email confirmation disabled → user is immediately active
+          await loadProfile(data.user.id, data.user.email!);
+          return { ok: true, confirmEmail: false, message: '' };
+        }
+        // Email confirmation required
+        return { ok: true, confirmEmail: true, message: '' };
+      }
+      return { ok: false, confirmEmail: false, message: 'Erro desconhecido. Tente novamente.' };
+    } catch (e) {
+      return { ok: false, confirmEmail: false, message: String(e) };
+    }
+  };
+
   const logout = async () => {
     if (isConfigured) await supabase.auth.signOut();
     setUser(null);
@@ -122,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, switchRole, loading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, switchRole, loading }}>
       {loading ? (
         <div style={{ height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#fff' }}>
           <div style={{ textAlign:'center' }}>
