@@ -1,346 +1,244 @@
 // @ts-nocheck
 import { useState, useEffect } from 'react';
-import { useGraduacoes, useAlunos, db } from '../../lib/useData';
+import { useAlunos, useGraduacoes, db } from '../../lib/useData';
 import { GB, beltConfig } from '../../lib/gbBrand';
-import type { Belt } from '../../types';
 
-const BELTS: Belt[] = ['branca','cinza','amarela','laranja','verde','azul','roxa','marrom','preta'];
+const FAIXAS = ['branca','cinza','amarela','laranja','verde','azul','roxa','marrom','preta'];
 
-function BeltBar({ faixa, grau, size = 'sm' }: { faixa: Belt; grau: number; size?: 'sm' | 'lg' }) {
-  const bc = beltConfig[faixa];
-  const w = size === 'lg' ? 72 : 28;
-  const h = size === 'lg' ? 14 : 7;
+function proxFaixaGrau(faixa: string, grau: number): { faixa: string; grau: number } {
+  if (grau < 4) return { faixa, grau: grau + 1 };
+  const idx = FAIXAS.indexOf(faixa);
+  if (idx < FAIXAS.length - 1) return { faixa: FAIXAS[idx + 1], grau: 0 };
+  return { faixa, grau };
+}
+
+function BeltBadge({ faixa, grau }: { faixa: string; grau: number }) {
+  const cfg = beltConfig[faixa] || { bg: '#888', text: '#fff' };
   return (
-    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-      <div style={{ width: w, height: h, background: bc?.bg || '#888', borderRadius: 3, border: faixa === 'branca' ? '1px solid #555' : 'none', position: 'relative', overflow: 'hidden', boxShadow: `0 0 8px ${(bc?.bg || '#888')}44` }}>
-        {Array.from({ length: grau }).map((_, i) => (
-          <div key={i} style={{ position: 'absolute', right: `${(i * (100/(grau+1))) + 4}%`, top: 0, bottom: 0, width: `${Math.max(2, 100/(grau * 4))}%`, background: '#111', opacity: 0.4 }}/>
-        ))}
-      </div>
-      {size === 'lg' && <span style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, textTransform: 'capitalize' as const }}>{bc?.label} · {grau}° Grau</span>}
-    </div>
+    <span style={{ background: cfg.bg, color: cfg.text, fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 99, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+      {faixa.charAt(0).toUpperCase() + faixa.slice(1)} {grau > 0 ? `· G${grau}` : ''}
+    </span>
   );
 }
 
-function Card({ children, style = {} }: { children: React.ReactNode; style?: React.CSSProperties }) {
-  return <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', ...style }}>{children}</div>;
-}
-
-function TabBar({ tabs, active, onSelect }: { tabs: { id: string; label: string; icon: string }[]; active: string; onSelect: (id: string) => void }) {
-  return (
-    <div style={{ display: 'flex', gap: 2, marginBottom: 16, borderBottom: '1px solid var(--border)' }}>
-      {tabs.map(t => (
-        <button key={t.id} onClick={() => onSelect(t.id)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: '9px 14px', fontSize: 13, color: active === t.id ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: active === t.id ? 600 : 400, borderBottom: `2px solid ${active === t.id ? GB.red : 'transparent'}`, marginBottom: -1 }}>
-          <span style={{ fontSize: 14 }}>{t.icon}</span>{t.label}
-        </button>
-      ))}
-    </div>
-  );
-}
+type Tab = 'candidatos' | 'registar' | 'historico';
 
 export default function GraduacaoPage() {
-  const { data: alunos } = useAlunos();
+  const { data: alunos }      = useAlunos();
   const { data: graduacoesDB } = useGraduacoes();
-  useEffect(() => { if (graduacoesDB?.length) setGraduacoes(graduacoesDB); }, [graduacoesDB]);
-
-  const [tab, setTab] = useState<'candidatos' | 'registar' | 'historico' | 'cerimonia'>('candidatos');
-  const [novaFaixa, setNovaFaixa] = useState<Belt>('azul');
-  const [novoGrau, setNovoGrau] = useState(1);
-  const [alunoSel, setAlunoSel] = useState('');
-  const [obs, setObs] = useState('');
-  const [notificarAluno, setNotificarAluno] = useState(true);
-  const [success, setSuccess] = useState(false);
+  const [tab, setTab]          = useState<Tab>('candidatos');
   const [graduacoes, setGraduacoes] = useState<any[]>([]);
+  const [alunoSel, setAlunoSel]     = useState('');
+  const [novaFaixa, setNovaFaixa]   = useState('branca');
+  const [novoGrau, setNovoGrau]     = useState(0);
+  const [obs, setObs]               = useState('');
+  const [notificar, setNotificar]   = useState(true);
+  const [saving, setSaving]         = useState(false);
+  const [success, setSuccess]       = useState(false);
 
-  const candidatos = alunos.filter(a => a.status === 'ativo' && a.frequencia >= 70);
+  useEffect(() => {
+    if (graduacoesDB?.length) setGraduacoes(graduacoesDB);
+  }, [graduacoesDB]);
 
-  const handleRegistar = () => {
+  // When aluno changes, pre-fill next belt
+  useEffect(() => {
     if (!alunoSel) return;
-    const aluno = alunos.find(a => a.id === alunoSel);
-    if (!aluno) return;
-    const nova = {
-      id: `g${Date.now()}`, alunoId: alunoSel, alunoNome: aluno.nome,
-      faixaAnterior: aluno.faixa, grauAnterior: aluno.grau,
-      faixaNova: novaFaixa, grauNovo: novoGrau,
-      data: new Date().toISOString().split('T')[0],
-      professorId: 'p1', professorNome: 'João Santos', observacao: obs,
-    };
-    setGraduacoes(p => [nova, ...p]);
-    // Save to Supabase
-    db.registarGraduacao({
-      alunoId: alunoSel, alunoNome: aluno.nome,
-      faixaAnterior: aluno.faixa, grauAnterior: aluno.grau,
-      faixaNova: novaFaixa, grauNovo: novoGrau,
-      professorNome: 'Professor', observacao: obs,
-    }).catch(console.error);
-    setSuccess(true);
-    // Notify student via WhatsApp
-    const belt = novaFaixa.charAt(0).toUpperCase() + novaFaixa.slice(1);
-    const msg = `🎖️ Parabéns ${aluno.nome.split(' ')[0]}! Foi promovido(a) a Faixa ${belt} ${novoGrau}° Grau na Gracie Barra Braga! OSS! 🥋`;
-    if (notificarAluno) {
-      console.log('WhatsApp:', aluno.nome, msg);
+    const aluno = alunos.find((a: any) => a.id === alunoSel);
+    if (aluno) {
+      const prox = proxFaixaGrau(aluno.faixa || 'branca', aluno.grau || 0);
+      setNovaFaixa(prox.faixa);
+      setNovoGrau(prox.grau);
     }
-    setTimeout(() => { setSuccess(false); setAlunoSel(''); setObs(''); setTab('historico'); }, 2000);
+  }, [alunoSel, alunos]);
+
+  const candidatos = alunos.filter((a: any) => (a.frequencia || 0) >= 70);
+
+  const handleRegistar = async () => {
+    if (!alunoSel) return;
+    const aluno = alunos.find((a: any) => a.id === alunoSel);
+    if (!aluno) return;
+    setSaving(true);
+    try {
+      const nova = {
+        id: `g${Date.now()}`,
+        alunoId: alunoSel, alunoNome: aluno.nome,
+        faixaAnterior: aluno.faixa || 'branca', grauAnterior: aluno.grau || 0,
+        faixaNova: novaFaixa, grauNovo: novoGrau,
+        data: new Date().toISOString().split('T')[0],
+        professorNome: 'Professor', observacao: obs,
+      };
+      setGraduacoes(p => [nova, ...p]);
+      await db.registarGraduacao({
+        alunoId: alunoSel, alunoNome: aluno.nome,
+        faixaAnterior: aluno.faixa || 'branca', grauAnterior: aluno.grau || 0,
+        faixaNova: novaFaixa, grauNovo: novoGrau,
+        professorNome: 'Professor', observacao: obs,
+      });
+      setSuccess(true);
+      setTimeout(() => { setSuccess(false); setAlunoSel(''); setObs(''); setTab('historico'); }, 2000);
+    } catch (e) {
+      console.error('Erro ao registar graduação:', e);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const alunoSelecionado = alunos.find(a => a.id === alunoSel);
-  const nextBelt = BELTS[BELTS.indexOf(alunoSelecionado?.faixa || 'branca') + (novoGrau === 0 ? 1 : 0)] || 'preta';
+  const inp: React.CSSProperties = {
+    width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-sm)', padding: '9px 11px', color: 'var(--text-primary)',
+    fontSize: 13, boxSizing: 'border-box', fontFamily: 'var(--font-ui)',
+  };
 
   return (
     <div>
-      <div style={{ marginBottom: 18 }}>
-        <div style={{ color: 'var(--text-muted)', fontSize: 10.5, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 3 }}>Academia</div>
-        <h1 style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 700 }}>Graduação</h1>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 18 }}>
+        <div>
+          <div style={{ color: 'var(--text-muted)', fontSize: 10.5, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 3 }}>Academia</div>
+          <h1 style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 800, fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>Graduação</h1>
+        </div>
       </div>
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
-        {[
-          { label: 'Candidatos elegíveis', value: candidatos.length, accent: GB.red },
-          { label: 'Graduações este ano', value: graduacoes.length, accent: '#A78BFA' },
-          { label: 'Próxima cerimónia', value: 'Jun 2025', accent: '#F59E0B' },
-          { label: 'Taxa frequência mín.', value: '70%', accent: '#22C55E' },
-        ].map(s => (
-          <div key={s.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '14px 16px', borderTop: `2px solid ${s.accent}` }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: 10.5, marginBottom: 4 }}>{s.label}</div>
-            <div style={{ color: 'var(--text-primary)', fontSize: 22, fontWeight: 700 }}>{s.value}</div>
-          </div>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 0 }}>
+        {([['candidatos','Candidatos'],['registar','Registar'],['historico','Histórico']] as const).map(([id, label]) => (
+          <button key={id} onClick={() => setTab(id)}
+            style={{ background: 'none', border: 'none', borderBottom: `2px solid ${tab === id ? GB.red : 'transparent'}`, padding: '8px 16px', color: tab === id ? GB.red : 'var(--text-muted)', fontSize: 13, fontWeight: tab === id ? 700 : 400, cursor: 'pointer', marginBottom: -1 }}>
+            {label}
+          </button>
         ))}
       </div>
 
-      <TabBar active={tab} onSelect={s => setTab(s as typeof tab)} tabs={[
-        { id: 'candidatos', label: 'Candidatos', icon: '🎯' },
-        { id: 'registar', label: 'Registar', icon: '🎖️' },
-        { id: 'historico', label: 'Histórico', icon: '📋' },
-        { id: 'cerimonia', label: 'Cerimónia', icon: '🏆' },
-      ]}/>
-
-      {/* ── CANDIDATOS ── */}
+      {/* CANDIDATOS */}
       {tab === 'candidatos' && (
         <div>
-          <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
-            {[['Frequência','≥ 70%','#7C3AED'],['Tempo mínimo','3 meses','#2563EB'],['Grau limite','< Grau 4','var(--gb-red)']].map(([k,v,c]) => (
-              <div key={k} style={{ flex: 1, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', textAlign: 'center' }}>
-                <div style={{ color: c, fontSize: 18, fontWeight: 800, fontFamily: 'var(--font-mono)' }}>{v}</div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 10.5, marginTop: 2 }}>Requisito: {k}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+          <div style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontSize: 18 }}>⚡</span>
               <div>
-                <div style={{ color: '#F59E0B', fontSize: 13, fontWeight: 700 }}>Próxima Cerimónia — Junho 2025</div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 1 }}>{candidatos.length} alunos elegíveis · histórico de aulas verificado</div>
+                <div style={{ color: '#F59E0B', fontSize: 13, fontWeight: 700 }}>{candidatos.length} alunos elegíveis</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>Frequência ≥ 70%</div>
               </div>
             </div>
-            <button onClick={() => alert(`✅ WhatsApp enviado para ${candidatos.length} alunos!\n\nMensagem: "Parabéns! Foram selecionados para a próxima cerimónia de graduação Gracie Barra Braga. Data a confirmar. OSS! 🎖️"`)}
-              style={{ background: '#25D366', border: 'none', borderRadius: 7, padding: '8px 14px', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-              💬 Notificar todos via WhatsApp
+            <button onClick={() => alert(`WhatsApp enviado para ${candidatos.length} alunos!`)}
+              style={{ background: '#25D366', border: 'none', borderRadius: 7, padding: '8px 14px', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+              💬 Notificar todos
             </button>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
-            {candidatos.map(aluno => {
-              const bc = beltConfig[aluno.faixa];
-              const nextIdx = BELTS.indexOf(aluno.faixa) + (aluno.grau >= 4 ? 1 : 0);
-              const proxFaixa = aluno.grau >= 4 ? (BELTS[nextIdx] || aluno.faixa) : aluno.faixa;
-              const proxGrau = aluno.grau >= 4 ? 1 : aluno.grau + 1;
-              const proxBc = beltConfig[proxFaixa];
-              return (
-                <Card key={aluno.id} style={{ padding: 18 }}>
-                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: bc?.bg || '#888', borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0' }}/>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, paddingTop: 4 }}>
-                    <div style={{ width: 38, height: 38, borderRadius: '50%', background: (bc?.bg || '#888') + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', color: bc?.bg === '#F0EEFF' ? '#888' : (bc?.bg || GB.red), fontWeight: 700, fontSize: 14, flexShrink: 0 }}>{aluno.nome.charAt(0)}</div>
-                    <div>
-                      <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}>{aluno.nome}</div>
-                      <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>
-                      Frequência: {aluno.frequencia}% · {Math.round(aluno.frequencia * 0.8)} aulas
-                    </div>
-                    </div>
-                  </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', marginBottom: 12 }}>
-                    <div style={{ textAlign: 'center' as const, flex: 1 }}>
-                      <div style={{ color: 'var(--text-muted)', fontSize: 9, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 5 }}>ATUAL</div>
-                      <BeltBar faixa={aluno.faixa} grau={aluno.grau} size="sm"/>
-                      <div style={{ color: 'var(--text-secondary)', fontSize: 10.5, marginTop: 4, textTransform: 'capitalize' as const }}>{bc?.label} G{aluno.grau}</div>
-                    </div>
-                    <span style={{ color: 'var(--text-muted)', fontSize: 16 }}>→</span>
-                    <div style={{ textAlign: 'center' as const, flex: 1 }}>
-                      <div style={{ color: '#22C55E', fontSize: 9, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 5 }}>PRÓXIMA</div>
-                      <BeltBar faixa={proxFaixa} grau={proxGrau} size="sm"/>
-                      <div style={{ color: '#22C55E', fontSize: 10.5, marginTop: 4, textTransform: 'capitalize' as const, fontWeight: 600 }}>{proxBc?.label} G{proxGrau}</div>
-                    </div>
-                  </div>
-
-                  <button onClick={() => { setTab('registar'); setAlunoSel(aluno.id); setNovaFaixa(proxFaixa); setNovoGrau(proxGrau); }}
-                    style={{ width: '100%', background: GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: `0 0 10px ${GB.redGlow}` }}>
-                    🎖️ Registar Graduação
-                  </button>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ── REGISTAR ── */}
-      {tab === 'registar' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <Card style={{ padding: 24 }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 18 }}>Registar Graduação</div>
-
-            {success && (
-              <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 'var(--radius-md)', padding: '14px 18px', marginBottom: 18, textAlign: 'center' as const }}>
-                <div style={{ fontSize: 28, marginBottom: 6 }}>🎖️</div>
-                <div style={{ color: '#22C55E', fontSize: 14, fontWeight: 700 }}>Graduação registada! OSS!</div>
-              </div>
-            )}
-
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.8px', textTransform: 'uppercase' as const, display: 'block', marginBottom: 5 }}>Aluno</label>
-              <select value={alunoSel} onChange={e => setAlunoSel(e.target.value)} style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '9px 12px', color: 'var(--text-primary)', fontSize: 13, cursor: 'pointer' }}>
-                <option value="">Selecionar aluno...</option>
-                {candidatos.map(a => <option key={a.id} value={a.id}>{a.nome} — {beltConfig[a.faixa]?.label} G{a.grau}</option>)}
-              </select>
+          {candidatos.length === 0 ? (
+            <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>🥋</div>
+              <div>Nenhum candidato com frequência ≥ 70%</div>
+              <div style={{ fontSize: 12, marginTop: 4 }}>Adiciona presenças para os alunos aparecerem aqui</div>
             </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
-              <div>
-                <label style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.8px', textTransform: 'uppercase' as const, display: 'block', marginBottom: 5 }}>Nova Faixa</label>
-                <select value={novaFaixa} onChange={e => setNovaFaixa(e.target.value as Belt)} style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '9px 12px', color: 'var(--text-primary)', fontSize: 13, cursor: 'pointer' }}>
-                  {BELTS.map(b => <option key={b} value={b}>{beltConfig[b]?.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.8px', textTransform: 'uppercase' as const, display: 'block', marginBottom: 5 }}>Grau</label>
-                <select value={novoGrau} onChange={e => setNovoGrau(Number(e.target.value))} style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '9px 12px', color: 'var(--text-primary)', fontSize: 13, cursor: 'pointer' }}>
-                  {[0,1,2,3,4].map(g => <option key={g} value={g}>{g}° Grau</option>)}
-                </select>
-              </div>
-            </div>
-
-            <div style={{ marginBottom: 18 }}>
-              <label style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.8px', textTransform: 'uppercase' as const, display: 'block', marginBottom: 5 }}>Observação</label>
-              <textarea value={obs} onChange={e => setObs(e.target.value)} placeholder="Excelente evolução técnica, dedicação exemplar. Oss!" rows={3}
-                style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '9px 12px', color: 'var(--text-primary)', fontSize: 13, resize: 'none', fontFamily: 'var(--font-ui)' }}/>
-            </div>
-
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setTab('candidatos')} style={{ flex: 1, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '11px', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>Cancelar</button>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: notificarAluno ? 'rgba(37,211,102,0.06)' : 'var(--bg-elevated)', border: `1px solid ${notificarAluno ? 'rgba(37,211,102,0.3)' : 'var(--border)'}`, borderRadius: 'var(--radius-sm)', cursor: 'pointer', marginBottom: 0 }}>
-                <input type="checkbox" checked={notificarAluno} onChange={() => setNotificarAluno(n => !n)} style={{ accentColor: '#25D366', width: 15, height: 15 }}/>
-                <span style={{ color: 'var(--text-secondary)', fontSize: 12.5 }}>💬 Notificar aluno via WhatsApp</span>
-              </label>
-              <button onClick={handleRegistar} style={{ flex: 2, background: GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: `0 0 14px ${GB.redGlow}` }}>
-                🎖️ Confirmar — OSS!
-              </button>
-            </div>
-          </Card>
-
-          {/* Preview */}
-          <Card style={{ padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 24, textAlign: 'center' as const }}>Preview da Graduação</div>
-            {alunoSelecionado && (
-              <>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>🎖️</div>
-                <div style={{ color: 'var(--text-primary)', fontSize: 18, fontWeight: 700, marginBottom: 4, textAlign: 'center' as const }}>{alunoSelecionado.nome}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, margin: '20px 0' }}>
-                  <div style={{ textAlign: 'center' as const }}>
-                    <BeltBar faixa={alunoSelecionado.faixa} grau={alunoSelecionado.grau} size="lg"/>
-                  </div>
-                  <span style={{ color: 'var(--text-muted)', fontSize: 22 }}>→</span>
-                  <div style={{ textAlign: 'center' as const }}>
-                    <BeltBar faixa={novaFaixa} grau={novoGrau} size="lg"/>
+          ) : candidatos.map((aluno: any) => {
+            const prox = proxFaixaGrau(aluno.faixa || 'branca', aluno.grau || 0);
+            return (
+              <div key={aluno.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 16, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: 16, fontWeight: 700, flexShrink: 0 }}>
+                  {aluno.nome.charAt(0)}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{aluno.nome}</div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <BeltBadge faixa={aluno.faixa || 'branca'} grau={aluno.grau || 0} />
+                    <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>→</span>
+                    <BeltBadge faixa={prox.faixa} grau={prox.grau} />
+                    <span style={{ color: 'var(--text-muted)', fontSize: 11, marginLeft: 8 }}>Freq: {aluno.frequencia || 0}%</span>
                   </div>
                 </div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center' as const, fontStyle: 'italic' }}>{obs}</div>
-              </>
-            )}
-            {!alunoSelecionado && (
-              <div style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center' as const }}>Selecione um aluno para ver o preview</div>
-            )}
-          </Card>
+                <button onClick={() => { setAlunoSel(aluno.id); setNovaFaixa(prox.faixa); setNovoGrau(prox.grau); setTab('registar'); }}
+                  style={{ background: GB.red, border: 'none', borderRadius: 7, padding: '8px 14px', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: 'var(--shadow-red)', flexShrink: 0 }}>
+                  🎖️ Registar
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {/* ── HISTÓRICO ── */}
-      {tab === 'historico' && (
-        <Card>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                {['Aluno', 'De', 'Para', 'Data', 'Professor', 'Observação'].map(h => (
-                  <th key={h} style={{ padding: '11px 14px', textAlign: 'left', fontSize: 10.5, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
+      {/* REGISTAR */}
+      {tab === 'registar' && (
+        <div style={{ maxWidth: 600 }}>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 24 }}>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 5 }}>Aluno *</label>
+              <select value={alunoSel} onChange={e => setAlunoSel(e.target.value)} style={inp}>
+                <option value="">— Seleccionar aluno —</option>
+                {alunos.map((a: any) => (
+                  <option key={a.id} value={a.id}>{a.nome} · {a.faixa} G{a.grau}</option>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              {graduacoes.map(g => (
-                <tr key={g.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                  <td style={{ padding: '11px 14px', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{g.alunoNome}</td>
-                  <td style={{ padding: '11px 14px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <BeltBar faixa={g.faixaAnterior} grau={g.grauAnterior} size="sm"/>
-                      <span style={{ color: 'var(--text-muted)', fontSize: 10.5, textTransform: 'capitalize', marginLeft: 2 }}>G{g.grauAnterior}</span>
-                    </div>
-                  </td>
-                  <td style={{ padding: '11px 14px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <BeltBar faixa={g.faixaNova} grau={g.grauNovo} size="sm"/>
-                      <span style={{ color: '#22C55E', fontSize: 10.5, textTransform: 'capitalize', fontWeight: 600, marginLeft: 2 }}>G{g.grauNovo}</span>
-                    </div>
-                  </td>
-                  <td style={{ padding: '11px 14px', fontSize: 12, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>{g.data}</td>
-                  <td style={{ padding: '11px 14px', fontSize: 12, color: 'var(--text-secondary)' }}>{g.professorNome}</td>
-                  <td style={{ padding: '11px 14px', fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>{g.observacao || '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
+              </select>
+              {alunos.length === 0 && (
+                <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 4 }}>Nenhum aluno encontrado. Adiciona alunos primeiro.</div>
+              )}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+              <div>
+                <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 5 }}>Nova Faixa</label>
+                <select value={novaFaixa} onChange={e => setNovaFaixa(e.target.value)} style={inp}>
+                  {FAIXAS.map(f => <option key={f} value={f}>{f.charAt(0).toUpperCase() + f.slice(1)}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 5 }}>Novo Grau</label>
+                <select value={novoGrau} onChange={e => setNovoGrau(parseInt(e.target.value))} style={inp}>
+                  {[0,1,2,3,4].map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 5 }}>Observações</label>
+              <textarea value={obs} onChange={e => setObs(e.target.value)} rows={2} placeholder="Notas sobre a graduação..."
+                style={{ ...inp, resize: 'none' }}/>
+            </div>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, cursor: 'pointer' }}>
+              <input type="checkbox" checked={notificar} onChange={() => setNotificar(n => !n)} style={{ accentColor: '#25D366', width: 15, height: 15 }}/>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>💬 Notificar aluno via WhatsApp</span>
+            </label>
+
+            {success && (
+              <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, padding: '10px 14px', marginBottom: 14, color: '#16A34A', fontSize: 13, fontWeight: 600 }}>
+                ✓ Graduação registada! OSS! 🥋
+              </div>
+            )}
+
+            <button onClick={handleRegistar} disabled={!alunoSel || saving || success}
+              style={{ width: '100%', background: success ? '#22C55E' : !alunoSel || saving ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '12px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: !alunoSel || saving ? 'not-allowed' : 'pointer', boxShadow: success || !alunoSel ? 'none' : 'var(--shadow-red)' }}>
+              {success ? '✓ Graduação registada!' : saving ? 'A guardar...' : '🎖️ Confirmar Graduação — OSS!'}
+            </button>
+          </div>
+        </div>
       )}
 
-      {/* ── CERIMÓNIA ── */}
-      {tab === 'cerimonia' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <Card style={{ padding: 22 }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 16 }}>Próxima Cerimónia</div>
-            <div style={{ background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: 16, textAlign: 'center' as const }}>
-              <div style={{ color: 'var(--text-primary)', fontSize: 24, fontWeight: 700 }}>28 Junho 2025</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>Sábado · 10:00 — Tatame Principal</div>
+      {/* HISTÓRICO */}
+      {tab === 'historico' && (
+        <div>
+          {graduacoes.length === 0 ? (
+            <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>🎖️</div>
+              <div>Sem graduações registadas</div>
             </div>
-            {[
-              ['Candidatos confirmados', candidatos.length],
-              ['Faixas a atribuir', '6 azuis, 3 roxas, 1 marrom'],
-              ['Professor responsável', 'João Santos'],
-              ['Convidados', 'Familiares permitidos'],
-            ].map(([k, v]) => (
-              <div key={String(k)} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>{k}</span>
-                <span style={{ color: 'var(--text-primary)', fontSize: 12, fontWeight: 600 }}>{v}</span>
+          ) : graduacoes.map((g: any) => (
+            <div key={g.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 16, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{g.alunoNome || g.aluno_nome}</div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <BeltBadge faixa={g.faixaAnterior || g.faixa_anterior || 'branca'} grau={g.grauAnterior || g.grau_anterior || 0} />
+                  <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>→</span>
+                  <BeltBadge faixa={g.faixaNova || g.faixa_nova || 'branca'} grau={g.grauNovo || g.grau_novo || 0} />
+                </div>
               </div>
-            ))}
-            <button style={{ width: '100%', marginTop: 16, background: GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '10px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-              💬 Notificar Candidatos (WhatsApp)
-            </button>
-          </Card>
-          <Card style={{ padding: 22 }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 16 }}>Candidatos Confirmados</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {candidatos.map(a => {
-                const bc = beltConfig[a.faixa];
-                return (
-                  <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)' }}>
-                    <BeltBar faixa={a.faixa} grau={a.grau} size="sm"/>
-                    <span style={{ flex: 1, color: 'var(--text-primary)', fontSize: 12.5, fontWeight: 500 }}>{a.nome}</span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{a.frequencia}%</span>
-                    <span style={{ color: '#22C55E', fontSize: 11 }}>✓</span>
-                  </div>
-                );
-              })}
+              <div style={{ textAlign: 'right', color: 'var(--text-muted)', fontSize: 12 }}>
+                {g.data}<br/>{g.professorNome || g.professor_nome || '—'}
+              </div>
             </div>
-          </Card>
+          ))}
         </div>
       )}
     </div>

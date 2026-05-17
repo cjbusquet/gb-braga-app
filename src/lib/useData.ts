@@ -46,7 +46,8 @@ export function useAlunos(filtros?: { status?: string }) {
     async () => {
       let q = supabase.from('alunos').select('*').order('nome');
       if (filtros?.status) q = q.eq('status', filtros.status);
-      return q;
+      const res = await q;
+      return { data: res.data?.map(mapAluno) ?? null, error: res.error };
     },
     mock.mockAlunos,
     [filtros?.status]
@@ -57,7 +58,10 @@ export function useAlunos(filtros?: { status?: string }) {
 export function useTurmas() {
   return useQuery(
     'turmas',
-    () => supabase.from('turmas').select('*').order('nome'),
+    async () => {
+      const res = await supabase.from('turmas').select('*').order('nome');
+      return { data: res.data?.map(mapTurma) ?? null, error: res.error };
+    },
     mock.mockTurmas
   );
 }
@@ -69,7 +73,8 @@ export function usePagamentos(alunoId?: string) {
     async () => {
       let q = supabase.from('pagamentos').select('*').order('vencimento', { ascending: false });
       if (alunoId) q = q.eq('aluno_id', alunoId);
-      return q;
+      const res = await q;
+      return { data: res.data?.map(mapPagamento) ?? null, error: res.error };
     },
     alunoId ? mock.mockPagamentos.filter(p => p.alunoId === alunoId) : mock.mockPagamentos,
     [alunoId]
@@ -87,7 +92,8 @@ export function usePresencas(alunoId?: string, limit = 100) {
         .order('data', { ascending: false })
         .limit(limit);
       if (alunoId) q = q.eq('aluno_id', alunoId);
-      return q;
+      const res = await q;
+      return { data: res.data?.map(mapPresenca) ?? null, error: res.error };
     },
     alunoId ? mock.mockPresencas.filter(p => p.alunoId === alunoId) : mock.mockPresencas,
     [alunoId, limit]
@@ -101,7 +107,8 @@ export function useGraduacoes(alunoId?: string) {
     async () => {
       let q = supabase.from('graduacoes').select('*').order('data', { ascending: false });
       if (alunoId) q = q.eq('aluno_id', alunoId);
-      return q;
+      const res = await q;
+      return { data: res.data?.map(mapGraduacao) ?? null, error: res.error };
     },
     alunoId ? mock.mockGraduacoes.filter(g => g.alunoId === alunoId) : mock.mockGraduacoes,
     [alunoId]
@@ -121,7 +128,10 @@ export function usePlanos() {
 export function useContratos() {
   return useQuery(
     'contratos',
-    () => supabase.from('contratos').select('*').order('data_inicio', { ascending: false }),
+    async () => {
+      const res = await supabase.from('contratos').select('*').order('data_inicio', { ascending: false });
+      return { data: res.data?.map(mapContrato) ?? null, error: res.error };
+    },
     mock.mockContratos || []
   );
 }
@@ -369,3 +379,112 @@ export const db = {
       .eq('id', id);
   },
 };
+
+// ── MAPPERS: Supabase snake_case → App camelCase ──────────────
+export function mapAluno(r: any) {
+  if (!r) return r;
+  return {
+    id:              r.id,
+    nome:            r.nome,
+    email:           r.email,
+    telefone:        r.telefone || '',
+    whatsapp:        r.whatsapp || '',
+    dataNascimento:  r.data_nascimento || r.dataNascimento || '',
+    nif:             r.nif || '',
+    morada:          r.morada || '',
+    codPostal:       r.cod_postal || r.codPostal || '',
+    faixa:           r.faixa || 'branca',
+    grau:            r.grau ?? 0,
+    dataMatricula:   r.data_matricula || r.dataMatricula || '',
+    plano:           r.plano_nome || r.plano || '',
+    planoId:         r.plano_id || r.planoId || '',
+    status:          r.status || 'ativo',
+    frequencia:      r.frequencia ?? 0,
+    responsavel:     r.responsavel || '',
+    stripeCustomerId: r.stripe_customer_id || r.stripeCustomerId || '',
+    stripeSubId:     r.stripe_subscription_id || '',
+    metodoPagamento: r.metodo_pagamento || 'stripe',
+    numerarioAprovado: r.numerario_aprovado || false,
+  };
+}
+
+export function mapPresenca(r: any) {
+  if (!r) return r;
+  return {
+    id:        r.id,
+    alunoId:   r.aluno_id   || r.alunoId,
+    alunoNome: r.aluno_nome || r.alunoNome,
+    turmaId:   r.turma_id   || r.turmaId   || '',
+    turmaNome: r.turma_nome || r.turmaNome  || '',
+    data:      r.data,
+    hora:      r.hora,
+    tipo:      r.tipo    || 'checkin',
+    metodo:    r.metodo  || 'manual',
+  };
+}
+
+export function mapPagamento(r: any) {
+  if (!r) return r;
+  return {
+    id:               r.id,
+    alunoId:          r.aluno_id    || r.alunoId,
+    alunoNome:        r.aluno_nome  || r.alunoNome,
+    plano:            r.plano_nome  || r.plano || '',
+    planoId:          r.plano_id    || r.planoId || '',
+    valor:            r.valor,
+    vencimento:       r.vencimento,
+    pagamento:        r.data_pagamento?.split('T')[0] || r.pagamento || '',
+    status:           r.status,
+    metodo:           r.metodo || '',
+    stripePaymentId:  r.stripe_payment_id || '',
+  };
+}
+
+export function mapGraduacao(r: any) {
+  if (!r) return r;
+  return {
+    id:             r.id,
+    alunoId:        r.aluno_id       || r.alunoId,
+    alunoNome:      r.aluno_nome     || r.alunoNome,
+    faixaAnterior:  r.faixa_anterior || r.faixaAnterior || 'branca',
+    grauAnterior:   r.grau_anterior  ?? r.grauAnterior ?? 0,
+    faixaNova:      r.faixa_nova     || r.faixaNova || 'branca',
+    grauNovo:       r.grau_novo      ?? r.grauNovo ?? 0,
+    data:           r.data,
+    professorNome:  r.professor_nome || r.professorNome || '',
+    observacao:     r.observacao || '',
+  };
+}
+
+export function mapContrato(r: any) {
+  if (!r) return r;
+  return {
+    id:             r.id,
+    alunoId:        r.aluno_id   || r.alunoId,
+    alunoNome:      r.aluno_nome || r.alunoNome,
+    plano:          r.plano_nome || r.plano || '',
+    valor:          r.valor,
+    dataInicio:     r.data_inicio || r.dataInicio || '',
+    dataFim:        r.data_fim    || r.dataFim    || '',
+    status:         r.status || 'ativo',
+    assinado:       r.assinado || false,
+    dataAssinatura: r.data_assinatura || '',
+  };
+}
+
+export function mapTurma(r: any) {
+  if (!r) return r;
+  return {
+    id:            r.id,
+    nome:          r.nome,
+    professorId:   r.professor_id   || '',
+    professorNome: r.professor_nome || r.professorNome || '',
+    horario:       r.horario || '',
+    diaSemana:     r.dias_semana    || r.diaSemana || [],
+    sala:          r.sala || '',
+    capacidade:    r.capacidade || 20,
+    inscritos:     r.inscritos ?? 0,
+    nivel:         r.nivel || 'all',
+    tipo:          r.tipo  || 'gi',
+  };
+}
