@@ -58,8 +58,19 @@ function canAccess(role: UserRole, page: string): boolean {
 function AppContent() {
   const { user } = useAuth();
   const [currentPage, setCurrentPage] = useState('');
+  const [registering, setRegistering] = useState(false);
 
-  if (!user) return <LoginPage />;
+  if (!user) {
+    if (registering) {
+      return (
+        <FluxoMatricula
+          registerMode
+          onVoltar={() => setRegistering(false)}
+        />
+      );
+    }
+    return <LoginPage onRegister={() => setRegistering(true)} />;
+  }
 
   const defaultPage = user.role === 'aluno' ? 'portal' : 'dashboard';
   const page = currentPage || defaultPage;

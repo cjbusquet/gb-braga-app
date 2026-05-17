@@ -14,6 +14,8 @@ interface FichaData {
   nomeEE: string; nifEE: string; telEE: string; emailEE: string;
   encPagamento: 'aluno' | 'ee' | 'outro';
   nomePag: string; nifPag: string; telPag: string; emailPag: string;
+  /* account creation — only used in registerMode */
+  senha: string; confirmarSenha: string;
 }
 
 interface ContratoData {
@@ -53,17 +55,22 @@ function StepBar({ step, isStaff = false }: { step: Step; isStaff?: boolean }) {
   );
 }
 
-function FichaInscricao({ onNext }: { onNext:(d:FichaData)=>void }) {
-  const blank: FichaData = { nomeAluno:'', dataNasc:'', nif:'', morada:'', codPostal:'', telefone:'', email:'', faixa:'', necessidades:'', temEE:false, nomeEE:'', nifEE:'', telEE:'', emailEE:'', encPagamento:'aluno', nomePag:'', nifPag:'', telPag:'', emailPag:'' };
+function FichaInscricao({ onNext, registerMode = false }: { onNext:(d:FichaData)=>void; registerMode?: boolean }) {
+  const blank: FichaData = {
+    nomeAluno:'', dataNasc:'', nif:'', morada:'', codPostal:'', telefone:'', email:'',
+    faixa:'', necessidades:'', temEE:false, nomeEE:'', nifEE:'', telEE:'', emailEE:'',
+    encPagamento:'aluno', nomePag:'', nifPag:'', telPag:'', emailPag:'',
+    senha:'', confirmarSenha:'',
+  };
   const [d, setD] = useState<FichaData>(blank);
   const [err, setErr] = useState<Record<string,string>>({});
 
   const set = (k: keyof FichaData) => (e: React.ChangeEvent<any>) =>
     setD(p => ({ ...p, [k]: e.target.type==='checkbox' ? e.target.checked : e.target.value }));
 
-  const field = (k: keyof FichaData, label: string, type='text', ph='') => (
+  const field = (k: keyof FichaData, label: string, type='text', ph='', required=true) => (
     <div style={{ marginBottom:12 }}>
-      <label style={LBL}>{label} *</label>
+      <label style={LBL}>{label}{required ? ' *' : ''}</label>
       <input type={type} value={d[k] as string} onChange={set(k)} placeholder={ph}
         style={{ ...INP, borderColor: err[k]?'#C8102E':'#E2E0DB' }}
         onFocus={e=>(e.target.style.borderColor='#C8102E')}
@@ -88,6 +95,10 @@ function FichaInscricao({ onNext }: { onNext:(d:FichaData)=>void }) {
       if (!d.emailEE.includes('@')) e.emailEE='Email inválido';
     }
     if (d.encPagamento==='outro' && !d.nomePag.trim()) e.nomePag='Obrigatório';
+    if (registerMode) {
+      if (d.senha.length < 6) e.senha='Mínimo 6 caracteres';
+      if (d.senha !== d.confirmarSenha) e.confirmarSenha='As passwords não coincidem';
+    }
     setErr(e);
     return Object.keys(e).length===0;
   };
@@ -107,7 +118,7 @@ function FichaInscricao({ onNext }: { onNext:(d:FichaData)=>void }) {
       </p>
 
       <div style={SEC}>🥋 Identificação do Aluno</div>
-      <p style={{ color:'#9896A4', fontSize:11, marginBottom:14 }}>Todos os campos são obrigatórios</p>
+      <p style={{ color:'#9896A4', fontSize:11, marginBottom:14 }}>Todos os campos marcados com * são obrigatórios</p>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
         {field('nomeAluno','Nome do Aluno')}
         {field('dataNasc','Data de Nascimento','date')}
@@ -140,14 +151,12 @@ function FichaInscricao({ onNext }: { onNext:(d:FichaData)=>void }) {
         <span style={{ color:'#333', fontSize:13 }}>Aplicável (menor de 18 anos ou dependente)</span>
       </div>
       {d.temEE && (
-        <>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
-            {field('nomeEE','Nome')}
-            {field('nifEE','NIF','text','000000000')}
-            {field('telEE','Telefone','tel')}
-            {field('emailEE','Email','email')}
-          </div>
-        </>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+          {field('nomeEE','Nome')}
+          {field('nifEE','NIF','text','000000000')}
+          {field('telEE','Telefone','tel')}
+          {field('emailEE','Email','email')}
+        </div>
       )}
 
       <div style={SEC}>💳 Encarregado do Pagamento da Mensalidade</div>
@@ -170,6 +179,20 @@ function FichaInscricao({ onNext }: { onNext:(d:FichaData)=>void }) {
             {field('emailPag','Email','email')}
           </div>
         </div>
+      )}
+
+      {/* ── Password section (only in registerMode) ── */}
+      {registerMode && (
+        <>
+          <div style={{ ...SEC, marginTop:8 }}>🔑 Criar Acesso à Plataforma</div>
+          <p style={{ color:'#9896A4', fontSize:12, marginBottom:14, lineHeight:1.6 }}>
+            Define a password que vais usar para entrar no portal do aluno.
+          </p>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+            {field('senha','Password','password','Mínimo 6 caracteres')}
+            {field('confirmarSenha','Confirmar Password','password','Repete a password')}
+          </div>
+        </>
       )}
 
       <div style={{ display:'flex', justifyContent:'flex-end', marginTop:16 }}>
@@ -294,7 +317,6 @@ function EscolhaPagamento({ ficha, onNext, onBack }: { ficha:FichaData; onNext:(
   return (
     <div style={CARD}>
       <div style={SEC}>📋 Escolha o Plano</div>
-
       <div style={{ display:'flex', gap:8, marginBottom:18, flexWrap:'wrap' }}>
         {CATEGORIAS.map(c=>(
           <button key={c.id} onClick={()=>{ setCat(c.id); setPlanoId(''); }}
@@ -303,7 +325,6 @@ function EscolhaPagamento({ ficha, onNext, onBack }: { ficha:FichaData; onNext:(
           </button>
         ))}
       </div>
-
       <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:22 }}>
         {planos.map(p=>(
           <button key={p.id} onClick={()=>setPlanoId(p.id)}
@@ -321,19 +342,13 @@ function EscolhaPagamento({ ficha, onNext, onBack }: { ficha:FichaData; onNext:(
       </div>
 
       <div style={SEC}>💳 Forma de Pagamento</div>
-
-      {/* Stripe */}
       <label style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'14px 18px', background: metodo==='stripe'?'rgba(200,16,46,0.04)':'#F7F6F4', border:`2px solid ${metodo==='stripe'?'#C8102E':'#E2E0DB'}`, borderRadius:12, cursor:'pointer', marginBottom:10 }}>
         <input type="radio" name="met" checked={metodo==='stripe'} onChange={()=>setMetodo('stripe')} style={{ marginTop:3, accentColor:'#C8102E' }}/>
         <div>
           <div style={{ color:'#111', fontSize:14, fontWeight:700, marginBottom:3 }}>💳 Débito Automático — Stripe</div>
-          <div style={{ color:'#9896A4', fontSize:12.5, lineHeight:1.5 }}>
-            Cartão de débito ou crédito. Cobrança automática no dia 5 de cada mês. Cancelamento a qualquer momento. 100% seguro.
-          </div>
+          <div style={{ color:'#9896A4', fontSize:12.5, lineHeight:1.5 }}>Cartão de débito ou crédito. Cobrança automática no dia 5 de cada mês. Cancelamento a qualquer momento. 100% seguro.</div>
         </div>
       </label>
-
-      {/* Numerário */}
       <label style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'14px 18px', background: metodo==='numerario'?'rgba(217,119,6,0.05)':'#F7F6F4', border:`2px solid ${metodo==='numerario'?'#D97706':'#E2E0DB'}`, borderRadius:12, cursor:'pointer', marginBottom:20 }}>
         <input type="radio" name="met" checked={metodo==='numerario'} onChange={()=>setMetodo('numerario')} style={{ marginTop:3, accentColor:'#D97706' }}/>
         <div>
@@ -341,7 +356,6 @@ function EscolhaPagamento({ ficha, onNext, onBack }: { ficha:FichaData; onNext:(
           <div style={{ color:'#9896A4', fontSize:12.5, lineHeight:1.5 }}>
             Pagamento em dinheiro na receção até ao dia 5 de cada mês.
             <span style={{ color:'#D97706', fontWeight:700 }}> Requer aprovação do Super Administrador.</span>
-            {' '}A inscrição ficará pendente até ser autorizada.
           </div>
         </div>
       </label>
@@ -395,21 +409,96 @@ function Pendente({ ficha, plano }: { ficha:FichaData; plano:Plano|undefined }) 
   );
 }
 
-function Completo({ ficha, plano, isStaff }: { ficha:FichaData; plano:Plano|undefined; isStaff?:boolean }) {
-  const { user } = useAuth();
+type AccountStatus = 'idle' | 'creating' | 'ok' | 'confirm_email' | 'error';
 
-  // Mark profile as enrolled in Supabase
+function Completo({ ficha, plano, isStaff, registerMode }: { ficha:FichaData; plano:Plano|undefined; isStaff?:boolean; registerMode?:boolean }) {
+  const { user } = useAuth();
+  const [acctStatus, setAcctStatus] = useState<AccountStatus>(registerMode ? 'creating' : 'idle');
+  const [acctErr, setAcctErr] = useState('');
+
   useEffect(() => {
-    if (!user) return;
+    if (!registerMode) {
+      // Non-register mode: just mark profile as enrolled
+      if (!user) return;
+      import('../../lib/supabaseClient').then(({ supabase, isConfigured }) => {
+        if (isConfigured) {
+          supabase.from('profiles').update({ matricula_completa: true }).eq('id', user.id).then(() => {});
+        }
+      });
+      return;
+    }
+
+    // Register mode: create Supabase account from ficha data
     import('../../lib/supabaseClient').then(({ supabase, isConfigured }) => {
-      if (isConfigured) {
-        supabase.from('profiles')
-          .update({ matricula_completa: true })
-          .eq('id', user.id)
-          .then(() => {});
-      }
+      if (!isConfigured) { setAcctStatus('ok'); return; }
+      supabase.auth.signUp({
+        email: ficha.email,
+        password: ficha.senha,
+        options: { data: { nome: ficha.nomeAluno } },
+      }).then(({ data, error }) => {
+        if (error) {
+          const msg = error.message.includes('already registered')
+            ? 'Este email já está registado. Vai ao Login e usa "Entrar".'
+            : error.message;
+          setAcctErr(msg);
+          setAcctStatus('error');
+          return;
+        }
+        if (data.session && data.user) {
+          // Auto-signed in — upsert profile with full details
+          supabase.from('profiles').upsert({
+            id: data.user.id,
+            nome: ficha.nomeAluno,
+            email: ficha.email,
+            telefone: ficha.telefone,
+            role: 'aluno',
+            matricula_completa: true,
+          }).then(() => setAcctStatus('ok'));
+        } else {
+          // Email confirmation required
+          setAcctStatus('confirm_email');
+        }
+      });
     });
-  }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (acctStatus === 'creating') {
+    return (
+      <div style={{ ...CARD, textAlign:'center', padding:'40px 28px' }}>
+        <div style={{ width:48, height:48, border:'4px solid #F0EFEC', borderTop:'4px solid #C8102E', borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 20px' }}/>
+        <p style={{ color:'#5C5B66', fontSize:14 }}>A criar a tua conta...</p>
+        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+      </div>
+    );
+  }
+
+  if (acctStatus === 'confirm_email') {
+    return (
+      <div style={{ ...CARD, textAlign:'center', padding:'32px 28px' }}>
+        <div style={{ fontSize:52, marginBottom:16 }}>📬</div>
+        <h2 style={{ color:'#111', fontSize:20, fontWeight:800, fontFamily:"'Arial Black',sans-serif", textTransform:'uppercase', marginBottom:10 }}>Confirma o teu email</h2>
+        <p style={{ color:'#5C5B66', fontSize:13.5, lineHeight:1.7, maxWidth:460, margin:'0 auto 16px' }}>
+          Enviámos um email de confirmação para <strong>{ficha.email}</strong>.<br/>
+          Clica no link para activar a conta e depois volta aqui para entrar.
+        </p>
+        <div style={{ color:'#9896A4', fontSize:12.5, marginTop:12 }}>
+          <a href="https://wa.me/351927773854" style={{ color:'#25D366', fontWeight:700 }}>💬 Suporte WhatsApp</a>
+        </div>
+      </div>
+    );
+  }
+
+  if (acctStatus === 'error') {
+    return (
+      <div style={{ ...CARD, textAlign:'center', padding:'32px 28px' }}>
+        <div style={{ fontSize:48, marginBottom:16 }}>⚠️</div>
+        <h2 style={{ color:'#C8102E', fontSize:18, fontWeight:800, fontFamily:"'Arial Black',sans-serif", marginBottom:10 }}>Erro ao criar conta</h2>
+        <p style={{ color:'#5C5B66', fontSize:13.5, lineHeight:1.7 }}>{acctErr}</p>
+        <a href="mailto:atendimento@gbbraga.com" style={{ color:'#C8102E', fontSize:13, marginTop:14, display:'block' }}>atendimento@gbbraga.com</a>
+      </div>
+    );
+  }
 
   return (
     <div style={{ ...CARD, textAlign:'center', padding:'32px 28px' }}>
@@ -417,24 +506,43 @@ function Completo({ ficha, plano, isStaff }: { ficha:FichaData; plano:Plano|unde
       <h2 style={{ color:'#16A34A', fontSize:20, fontWeight:800, fontFamily:"'Arial Black',sans-serif", textTransform:'uppercase', marginBottom:10 }}>Bem-vindo à família GB! 🥋</h2>
       <p style={{ color:'#5C5B66', fontSize:13.5, lineHeight:1.7, maxWidth:480, margin:'0 auto 22px' }}>
         {isStaff
-          ? <>Ficha e contrato concluídos, <strong>{ficha.nomeAluno.split(' ')[0]}</strong>! O teu perfil está activo. OSS! 🥋</>
+          ? <>Ficha e contrato concluídos, <strong>{ficha.nomeAluno.split(' ')[0]}</strong>! O perfil está activo. OSS! 🥋</>
+          : registerMode
+          ? <>Matrícula concluída, <strong>{ficha.nomeAluno.split(' ')[0]}</strong>! A tua conta foi criada. Já podes entrar no portal do aluno. OSS! 🥋</>
           : <>Inscrição concluída, <strong>{ficha.nomeAluno.split(' ')[0]}</strong>! O débito automático Stripe está ativo. OSS!</>
         }
       </p>
       <div style={{ background:'rgba(22,163,74,0.05)', border:'1px solid rgba(22,163,74,0.2)', borderRadius:12, padding:'16px 20px', maxWidth:400, margin:'0 auto 20px', textAlign:'left' }}>
-        {[['Aluno',ficha.nomeAluno],['Plano',plano?.nome||'—'],['Mensalidade',plano?`€${plano.valor}/mês`:'—'],['1.ª cobrança','Dia 5 do mês seguinte'],['Pagamento','💳 Stripe — débito automático']].map(([k,v])=>(
+        {[['Aluno',ficha.nomeAluno],['Email',ficha.email],['Plano',plano?.nome||'—'],['Mensalidade',plano?`€${plano.valor}/mês`:'—']].map(([k,v])=>(
           <div key={k} style={{ display:'flex', justifyContent:'space-between', padding:'5px 0', borderBottom:'1px solid rgba(22,163,74,0.1)' }}>
             <span style={{ color:'#16A34A', fontSize:12.5 }}>{k}</span>
             <span style={{ color:'#111', fontSize:12.5, fontWeight:600 }}>{v}</span>
           </div>
         ))}
       </div>
+      {registerMode && acctStatus === 'ok' && (
+        <p style={{ color:'#9896A4', fontSize:12, marginTop:8 }}>
+          Já podes fechar esta página e{' '}
+          <a href="/" style={{ color:'#C8102E', fontWeight:700 }}>entrar com o teu email e password</a>.
+        </p>
+      )}
     </div>
   );
 }
 
-/** embedded=true → rendered inside admin Layout (no outer header/wrapper) */
-export default function FluxoMatricula({ embedded = false }: { onConcludo?: () => void; embedded?: boolean }) {
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface FluxoMatriculaProps {
+  onConcludo?: () => void;
+  /** rendered inside admin Layout — hides own header/wrapper */
+  embedded?: boolean;
+  /** public self-registration — adds password fields, creates Supabase account */
+  registerMode?: boolean;
+  /** called when user clicks "← Voltar ao login" in registerMode */
+  onVoltar?: () => void;
+}
+
+export default function FluxoMatricula({ embedded = false, registerMode = false, onVoltar }: FluxoMatriculaProps) {
   const { data: planos } = usePlanos();
   const { user } = useAuth();
   const [step, setStep] = useState<Step>('ficha');
@@ -443,29 +551,36 @@ export default function FluxoMatricula({ embedded = false }: { onConcludo?: () =
   const [, setMetodo] = useState<'stripe'|'numerario'>('stripe');
   const plano = planos.find(p=>p.id===planoId);
 
-  // Staff não precisa de pagamento — salta directamente para completo
-  const isStaff = user?.role === 'superadmin' || user?.role === 'admin' || user?.role === 'professor';
+  const isStaff = !registerMode && (user?.role === 'superadmin' || user?.role === 'admin' || user?.role === 'professor');
 
   useEffect(() => { if (!embedded) window.scrollTo(0,0); }, [step, embedded]);
 
   const content = (
     <>
       {!embedded && (
-        <div style={{ color:'#C8102E', fontSize:10.5, fontWeight:700, letterSpacing:'1.5px', textTransform:'uppercase', marginBottom:4 }}>Gracie Barra Braga</div>
+        <div style={{ color:'#C8102E', fontSize:10.5, fontWeight:700, letterSpacing:'1.5px', textTransform:'uppercase', marginBottom:4 }}>
+          Gracie Barra Braga
+        </div>
       )}
-      <h1 style={{ color:'#111', fontSize: embedded ? 18 : 22, fontWeight:900, fontFamily:"'Arial Black',sans-serif", textTransform:'uppercase', marginBottom:20 }}>
-        {embedded ? '📋 Nova Matrícula de Aluno' : 'Nova Matrícula'}
-      </h1>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+        <h1 style={{ color:'#111', fontSize: embedded ? 18 : 22, fontWeight:900, fontFamily:"'Arial Black',sans-serif", textTransform:'uppercase', margin:0 }}>
+          {embedded ? '📋 Nova Matrícula de Aluno' : registerMode ? 'Matrícula' : 'Nova Matrícula'}
+        </h1>
+        {registerMode && onVoltar && step === 'ficha' && (
+          <button onClick={onVoltar} style={{ background:'none', border:'1px solid #E2E0DB', borderRadius:8, padding:'7px 14px', color:'#9896A4', fontSize:13, cursor:'pointer', fontFamily:'inherit' }}>
+            ← Voltar ao login
+          </button>
+        )}
+      </div>
       <StepBar step={step} isStaff={isStaff}/>
-      {step==='ficha' && <FichaInscricao onNext={d=>{ setFicha(d); setStep('contrato'); }}/>}
-      {step==='contrato' && ficha && <ContratoAssinatura ficha={ficha} onBack={()=>setStep('ficha')} onNext={()=>setStep(isStaff ? 'completo' : 'pagamento')}/>}
+      {step==='ficha'     && <FichaInscricao registerMode={registerMode} onNext={d=>{ setFicha(d); setStep('contrato'); }}/>}
+      {step==='contrato'  && ficha && <ContratoAssinatura ficha={ficha} onBack={()=>setStep('ficha')} onNext={()=>setStep(isStaff ? 'completo' : 'pagamento')}/>}
       {step==='pagamento' && ficha && <EscolhaPagamento ficha={ficha} onBack={()=>setStep('contrato')} onNext={(pid,met)=>{ setPlanoId(pid); setMetodo(met); setStep(met==='numerario'?'pendente':'completo'); }}/>}
-      {step==='pendente' && ficha && <Pendente ficha={ficha} plano={plano}/>}
-      {step==='completo' && ficha && <Completo ficha={ficha} plano={plano} isStaff={isStaff}/>}
+      {step==='pendente'  && ficha && <Pendente ficha={ficha} plano={plano}/>}
+      {step==='completo'  && ficha && <Completo ficha={ficha} plano={plano} isStaff={isStaff} registerMode={registerMode}/>}
     </>
   );
 
-  /* ── Embedded inside admin Layout ── */
   if (embedded) {
     return (
       <div style={{ maxWidth:720, margin:'0 auto', padding:'4px 0 32px', fontFamily:"'DM Sans',system-ui,sans-serif" }}>
@@ -474,7 +589,6 @@ export default function FluxoMatricula({ embedded = false }: { onConcludo?: () =
     );
   }
 
-  /* ── Standalone full-page (student enrollment) ── */
   return (
     <div style={{ minHeight:'100vh', background:'#F7F6F4', fontFamily:"'DM Sans',system-ui,sans-serif" }}>
       <header style={{ background:'#fff', borderBottom:'1px solid #E2E0DB', padding:'0 24px', height:64, display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100, boxShadow:'0 1px 4px rgba(0,0,0,0.06)' }}>
