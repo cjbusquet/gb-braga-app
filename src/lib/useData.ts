@@ -1,40 +1,42 @@
-// @ts-nocheck
-/**
- * useData — hooks React ligados ao Supabase
- * Fallback automático para mockData se Supabase não configurado
- */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, isConfigured } from './supabaseClient';
 import * as mock from '../data/mockData';
 
 // ── Generic hook ─────────────────────────────────────────────
+// key encodes query identity — change it to trigger a re-fetch (e.g. `alunos:${status}`)
 function useQuery<T>(
   key: string,
-  supabaseQuery: () => Promise<any>,
-  fallback: T[],
-  deps: any[] = []
+  supabaseQuery: () => Promise<{ data: T[] | null; error: unknown }>,
+  fallback: T[]
 ) {
   const [data, setData]       = useState<T[]>(fallback);
   const [loading, setLoading] = useState(isConfigured);
   const [error, setError]     = useState<string | null>(null);
 
+  // key encodes when the query should re-run; supabaseQuery/fallback change
+  // on every render (inline functions/arrays) so are intentionally omitted
   const fetch = useCallback(async () => {
     if (!isConfigured) { setData(fallback); setLoading(false); return; }
     setLoading(true);
     try {
       const { data: rows, error: err } = await supabaseQuery();
       if (err) throw err;
-      setData(rows ?? fallback);
+      setData((rows as T[]) ?? fallback);
       setError(null);
-    } catch (e: any) {
-      console.warn(`[${key}] Supabase error:`, e.message);
-      setError(e.message);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn(`[${key}] Supabase error:`, msg);
+      setError(msg);
       setData(fallback);
     } finally {
       setLoading(false);
     }
-  }, deps);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
 
+  // fetch() is async — setState is called asynchronously, not synchronously
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetch(); }, [fetch]);
   return { data, loading, error, refetch: fetch };
 }
@@ -42,15 +44,14 @@ function useQuery<T>(
 // ── ALUNOS ────────────────────────────────────────────────────
 export function useAlunos(filtros?: { status?: string }) {
   return useQuery(
-    'alunos',
+    `alunos:${filtros?.status ?? ''}`,
     async () => {
       let q = supabase.from('alunos').select('*').order('nome');
       if (filtros?.status) q = q.eq('status', filtros.status);
       const res = await q;
       return { data: res.data?.map(mapAluno) ?? null, error: res.error };
     },
-    mock.mockAlunos,
-    [filtros?.status]
+    mock.mockAlunos
   );
 }
 
@@ -69,22 +70,21 @@ export function useTurmas() {
 // ── PAGAMENTOS ────────────────────────────────────────────────
 export function usePagamentos(alunoId?: string) {
   return useQuery(
-    'pagamentos',
+    `pagamentos:${alunoId ?? ''}`,
     async () => {
       let q = supabase.from('pagamentos').select('*').order('vencimento', { ascending: false });
       if (alunoId) q = q.eq('aluno_id', alunoId);
       const res = await q;
       return { data: res.data?.map(mapPagamento) ?? null, error: res.error };
     },
-    alunoId ? mock.mockPagamentos.filter(p => p.alunoId === alunoId) : mock.mockPagamentos,
-    [alunoId]
+    alunoId ? mock.mockPagamentos.filter(p => p.alunoId === alunoId) : mock.mockPagamentos
   );
 }
 
 // ── PRESENÇAS ─────────────────────────────────────────────────
 export function usePresencas(alunoId?: string, limit = 100) {
   return useQuery(
-    'presencas',
+    `presencas:${alunoId ?? ''}:${limit}`,
     async () => {
       let q = supabase
         .from('presencas')
@@ -95,23 +95,21 @@ export function usePresencas(alunoId?: string, limit = 100) {
       const res = await q;
       return { data: res.data?.map(mapPresenca) ?? null, error: res.error };
     },
-    alunoId ? mock.mockPresencas.filter(p => p.alunoId === alunoId) : mock.mockPresencas,
-    [alunoId, limit]
+    alunoId ? mock.mockPresencas.filter(p => p.alunoId === alunoId) : mock.mockPresencas
   );
 }
 
 // ── GRADUAÇÕES ────────────────────────────────────────────────
 export function useGraduacoes(alunoId?: string) {
   return useQuery(
-    'graduacoes',
+    `graduacoes:${alunoId ?? ''}`,
     async () => {
       let q = supabase.from('graduacoes').select('*').order('data', { ascending: false });
       if (alunoId) q = q.eq('aluno_id', alunoId);
       const res = await q;
       return { data: res.data?.map(mapGraduacao) ?? null, error: res.error };
     },
-    alunoId ? mock.mockGraduacoes.filter(g => g.alunoId === alunoId) : mock.mockGraduacoes,
-    [alunoId]
+    alunoId ? mock.mockGraduacoes.filter(g => g.alunoId === alunoId) : mock.mockGraduacoes
   );
 }
 
@@ -119,7 +117,7 @@ export function useGraduacoes(alunoId?: string) {
 export function usePlanos() {
   return useQuery(
     'planos',
-    () => supabase.from('planos').select('*').eq('ativo', true).order('valor'),
+    async () => supabase.from('planos').select('*').eq('ativo', true).order('valor'),
     mock.mockPlanos
   );
 }
@@ -147,7 +145,7 @@ export function useKPIs() {
       // Calculate KPIs from real data
       const [alunosRes, pagRes] = await Promise.all([
         supabase.from('alunos').select('id, status, data_matricula'),
-        supabase.from('pagamentos').select('valor, status, data_pagamento, vencimento'),
+        supabase.from('pagamentos').select('aluno_id, valor, status, data_pagamento, vencimento'),
       ]);
 
       const alunos    = alunosRes.data || [];
@@ -179,6 +177,7 @@ export function useKPIs() {
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { refetch(); }, [refetch]);
   return { data, loading, refetch };
 }
@@ -189,18 +188,19 @@ export const db = {
   criarAluno: async (dados: any) => {
     if (!isConfigured) return null;
     const { data, error } = await supabase.from('alunos').insert({
-      nome:       dados.nome,
-      email:      dados.email,
-      telefone:   dados.telefone,
-      nif:        dados.nif,
-      faixa:      dados.faixa || 'branca',
-      grau:       dados.grau  || 0,
-      plano_id:   dados.planoId,
-      plano_nome: dados.planoNome,
-      morada:     dados.morada,
-      cod_postal: dados.codPostal,
-      status:     'ativo',
-      data_matricula: new Date().toISOString().split('T')[0],
+      nome:            dados.nome,
+      email:           dados.email,
+      telefone:        dados.telefone,
+      nif:             dados.nif,
+      faixa:           dados.faixa || 'branca',
+      grau:            dados.grau  || 0,
+      plano_id:        dados.planoId   || null,
+      plano_nome:      dados.planoNome || null,
+      morada:          dados.morada    || null,
+      cod_postal:      dados.codPostal || null,
+      data_nascimento: dados.dataNasc  || null,
+      status:          dados.status    || 'ativo',
+      data_matricula:  new Date().toISOString().split('T')[0],
     }).select().single();
     if (error) throw error;
     return data;

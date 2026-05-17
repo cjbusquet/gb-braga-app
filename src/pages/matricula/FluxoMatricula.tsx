@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect } from 'react';
-import { usePlanos } from '../../lib/useData';
+import { usePlanos, db } from '../../lib/useData';
 import { useAuth } from '../../lib/auth';
 import { GBLogoFull } from '../../components/GBLogo';
 import type { Plano } from '../../types';
@@ -385,43 +385,111 @@ function EscolhaPagamento({ ficha, onNext, onBack }: { ficha:FichaData; onNext:(
 
 type AccountStatus = 'idle' | 'creating' | 'ok' | 'confirm_email' | 'error';
 
-function Pendente({ ficha, plano, registerMode, onVoltar }: {
-  ficha: FichaData; plano: Plano|undefined;
+function Pendente({ ficha, contrato, plano, registerMode, onVoltar }: {
+  ficha: FichaData; contrato: ContratoData | null; plano: Plano|undefined;
   registerMode?: boolean; onVoltar?: () => void;
 }) {
-  const [acctStatus, setAcctStatus] = useState<AccountStatus>(registerMode ? 'creating' : 'idle');
+  const { user } = useAuth();
+  const [acctStatus, setAcctStatus] = useState<AccountStatus>('creating');
   const [acctErr, setAcctErr] = useState('');
 
   useEffect(() => {
-    if (!registerMode) return;
-    // Create Supabase account (numerário path — same as Completo)
-    import('../../lib/supabaseClient').then(({ supabase, isConfigured }) => {
-      if (!isConfigured) { setAcctStatus('ok'); return; }
-      supabase.auth.signUp({
-        email: ficha.email,
-        password: ficha.senha,
-        options: { data: { nome: ficha.nomeAluno } },
-      }).then(({ data, error }) => {
+    const run = async () => {
+      const { supabase, isConfigured } = await import('../../lib/supabaseClient');
+
+      let authUserId: string | null = user?.id ?? null;
+      let needsConfirm = false;
+
+      /* 1 ── Create auth account (registerMode only) */
+      if (registerMode) {
+        if (!isConfigured) { setAcctStatus('ok'); return; }
+        const { data, error } = await supabase.auth.signUp({
+          email: ficha.email,
+          password: ficha.senha,
+          options: { data: { nome: ficha.nomeAluno } },
+        });
         if (error) {
-          const msg = error.message.includes('already registered')
+          setAcctErr(error.message.includes('already registered')
             ? 'Este email já está registado. Vai ao Login e usa "Entrar".'
-            : error.message;
-          setAcctErr(msg);
+            : error.message);
           setAcctStatus('error');
           return;
         }
-        if (data.user) {
-          // Upsert profile (matricula_completa=false — admin needs to approve)
-          supabase.from('profiles').upsert({
-            id: data.user.id,
-            nome: ficha.nomeAluno,
-            email: ficha.email,
-            telefone: ficha.telefone,
-            role: 'aluno',
-            matricula_completa: false,
-          }).then(() => setAcctStatus(data.session ? 'ok' : 'confirm_email'));
-        }
-      });
+        authUserId = data.user?.id ?? null;
+        needsConfirm = !data.session;
+      }
+
+      /* 2 ── Insert into alunos (status: inativo — awaiting admin approval) */
+      let alunoId: string | null = null;
+      try {
+        const alunoData = await db.criarAluno({
+          nome:      ficha.nomeAluno,
+          email:     ficha.email,
+          telefone:  ficha.telefone,
+          nif:       ficha.nif,
+          faixa:     ficha.faixa || 'branca',
+          grau:      0,
+          morada:    ficha.morada,
+          codPostal: ficha.codPostal,
+          dataNasc:  ficha.dataNasc,
+          planoId:   plano?.id   ?? null,
+          planoNome: plano?.nome ?? null,
+          status:    'inativo',
+        });
+        alunoId = alunoData?.id ?? null;
+      } catch (e) { console.warn('criarAluno (pendente) error:', e); }
+
+      /* 3 ── Save contract */
+      if (alunoId && contrato) {
+        try {
+          await db.criarContrato({
+            alunoId,
+            alunoNome:     ficha.nomeAluno,
+            alunoNif:      ficha.nif,
+            planoId:       plano?.id    ?? null,
+            planoNome:     plano?.nome  ?? null,
+            valor:         plano?.valor ?? 0,
+            assinaturaImg: contrato.assinatura,
+            aceitaImagem:  contrato.aceitaImagem,
+            aceitaRGPD:    contrato.aceitaRGPD,
+            encPagamento:  ficha.encPagamento,
+          });
+        } catch (e) { console.warn('criarContrato (pendente) error:', e); }
+      }
+
+      /* 4 ── Submit cash payment request */
+      if (alunoId) {
+        try {
+          await db.submeterNumerario({
+            alunoId,
+            nomeAluno: ficha.nomeAluno,
+            email:     ficha.email,
+            telefone:  ficha.telefone,
+            planoId:   plano?.id    ?? null,
+            planoNome: plano?.nome  ?? null,
+            valor:     plano?.valor ?? 0,
+          });
+        } catch (e) { console.warn('submeterNumerario error:', e); }
+      }
+
+      /* 5 ── Update profile (matricula_completa = false — pending approval) */
+      if (authUserId && isConfigured) {
+        await supabase.from('profiles').upsert({
+          id:                authUserId,
+          nome:              ficha.nomeAluno,
+          email:             ficha.email,
+          telefone:          ficha.telefone,
+          role:              'aluno',
+          matricula_completa: false,
+        });
+      }
+
+      setAcctStatus(needsConfirm ? 'confirm_email' : 'ok');
+    };
+
+    run().catch(e => {
+      console.error('Pendente save error:', e);
+      setAcctStatus('ok'); // still show the pending screen even if DB save fails
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -480,54 +548,116 @@ function Pendente({ ficha, plano, registerMode, onVoltar }: {
   );
 }
 
-function Completo({ ficha, plano, isStaff, registerMode }: { ficha:FichaData; plano:Plano|undefined; isStaff?:boolean; registerMode?:boolean }) {
+function Completo({ ficha, contrato, plano, isStaff, registerMode }: {
+  ficha: FichaData; contrato: ContratoData | null; plano: Plano|undefined;
+  isStaff?: boolean; registerMode?: boolean;
+}) {
   const { user } = useAuth();
-  const [acctStatus, setAcctStatus] = useState<AccountStatus>(registerMode ? 'creating' : 'idle');
+  const [acctStatus, setAcctStatus] = useState<AccountStatus>('creating');
   const [acctErr, setAcctErr] = useState('');
 
   useEffect(() => {
-    if (!registerMode) {
-      // Non-register mode: just mark profile as enrolled
-      if (!user) return;
-      import('../../lib/supabaseClient').then(({ supabase, isConfigured }) => {
-        if (isConfigured) {
-          supabase.from('profiles').update({ matricula_completa: true }).eq('id', user.id).then(() => {});
-        }
-      });
-      return;
-    }
+    const run = async () => {
+      const { supabase, isConfigured } = await import('../../lib/supabaseClient');
 
-    // Register mode: create Supabase account from ficha data
-    import('../../lib/supabaseClient').then(({ supabase, isConfigured }) => {
-      if (!isConfigured) { setAcctStatus('ok'); return; }
-      supabase.auth.signUp({
-        email: ficha.email,
-        password: ficha.senha,
-        options: { data: { nome: ficha.nomeAluno } },
-      }).then(({ data, error }) => {
+      let authUserId: string | null = user?.id ?? null;
+      let needsConfirm = false;
+
+      /* 1 ── Create Supabase auth account (registerMode only) */
+      if (registerMode) {
+        if (!isConfigured) { setAcctStatus('ok'); return; }
+        const { data, error } = await supabase.auth.signUp({
+          email: ficha.email,
+          password: ficha.senha,
+          options: { data: { nome: ficha.nomeAluno } },
+        });
         if (error) {
-          const msg = error.message.includes('already registered')
+          setAcctErr(error.message.includes('already registered')
             ? 'Este email já está registado. Vai ao Login e usa "Entrar".'
-            : error.message;
-          setAcctErr(msg);
+            : error.message);
           setAcctStatus('error');
           return;
         }
-        if (data.session && data.user) {
-          // Auto-signed in — upsert profile with full details
-          supabase.from('profiles').upsert({
-            id: data.user.id,
-            nome: ficha.nomeAluno,
-            email: ficha.email,
-            telefone: ficha.telefone,
-            role: 'aluno',
-            matricula_completa: true,
-          }).then(() => setAcctStatus('ok'));
-        } else {
-          // Email confirmation required
-          setAcctStatus('confirm_email');
-        }
-      });
+        authUserId = data.user?.id ?? null;
+        needsConfirm = !data.session;
+      }
+
+      /* 2 ── Insert into alunos table */
+      let alunoId: string | null = null;
+      try {
+        const alunoData = await db.criarAluno({
+          nome:      ficha.nomeAluno,
+          email:     ficha.email,
+          telefone:  ficha.telefone,
+          nif:       ficha.nif,
+          faixa:     ficha.faixa || 'branca',
+          grau:      0,
+          morada:    ficha.morada,
+          codPostal: ficha.codPostal,
+          dataNasc:  ficha.dataNasc,
+          planoId:   plano?.id   ?? null,
+          planoNome: plano?.nome ?? null,
+          status:    'ativo',
+        });
+        alunoId = alunoData?.id ?? null;
+      } catch (e) {
+        console.warn('criarAluno error:', e);
+      }
+
+      /* 3 ── Save contract */
+      if (alunoId && contrato) {
+        try {
+          await db.criarContrato({
+            alunoId,
+            alunoNome:     ficha.nomeAluno,
+            alunoNif:      ficha.nif,
+            planoId:       plano?.id    ?? null,
+            planoNome:     plano?.nome  ?? null,
+            valor:         plano?.valor ?? 0,
+            assinaturaImg: contrato.assinatura,
+            aceitaImagem:  contrato.aceitaImagem,
+            aceitaRGPD:    contrato.aceitaRGPD,
+            encPagamento:  ficha.encPagamento,
+          });
+        } catch (e) { console.warn('criarContrato error:', e); }
+      }
+
+      /* 4 ── Create first monthly payment record */
+      if (alunoId && plano) {
+        try {
+          const venc = new Date();
+          venc.setDate(5);
+          if (venc <= new Date()) venc.setMonth(venc.getMonth() + 1);
+          await db.criarPagamento({
+            alunoId,
+            alunoNome: ficha.nomeAluno,
+            planoId:   plano.id,
+            planoNome: plano.nome,
+            valor:     plano.valor,
+            vencimento: venc.toISOString().split('T')[0],
+          });
+        } catch (e) { console.warn('criarPagamento error:', e); }
+      }
+
+      /* 5 ── Update profile (matricula_completa = true) */
+      if (authUserId && isConfigured) {
+        await supabase.from('profiles').upsert({
+          id:                authUserId,
+          nome:              ficha.nomeAluno,
+          email:             ficha.email,
+          telefone:          ficha.telefone,
+          role:              'aluno',
+          matricula_completa: true,
+        });
+      }
+
+      setAcctStatus(needsConfirm ? 'confirm_email' : 'ok');
+    };
+
+    run().catch(e => {
+      console.error('Completo save error:', e);
+      setAcctErr(String(e));
+      setAcctStatus('error');
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -614,10 +744,11 @@ interface FluxoMatriculaProps {
 export default function FluxoMatricula({ embedded = false, registerMode = false, onVoltar }: FluxoMatriculaProps) {
   const { data: planos } = usePlanos();
   const { user } = useAuth();
-  const [step, setStep] = useState<Step>('ficha');
-  const [ficha, setFicha] = useState<FichaData | null>(null);
+  const [step, setStep]       = useState<Step>('ficha');
+  const [ficha, setFicha]     = useState<FichaData | null>(null);
+  const [contrato, setContrato] = useState<ContratoData | null>(null);
   const [planoId, setPlanoId] = useState('');
-  const [, setMetodo] = useState<'stripe'|'numerario'>('stripe');
+  const [, setMetodo]         = useState<'stripe'|'numerario'>('stripe');
   const plano = planos.find(p=>p.id===planoId);
 
   const isStaff = !registerMode && (user?.role === 'superadmin' || user?.role === 'admin' || user?.role === 'professor');
@@ -643,10 +774,10 @@ export default function FluxoMatricula({ embedded = false, registerMode = false,
       </div>
       <StepBar step={step} isStaff={isStaff}/>
       {step==='ficha'     && <FichaInscricao registerMode={registerMode} onNext={d=>{ setFicha(d); setStep('contrato'); }}/>}
-      {step==='contrato'  && ficha && <ContratoAssinatura ficha={ficha} onBack={()=>setStep('ficha')} onNext={()=>setStep(isStaff ? 'completo' : 'pagamento')}/>}
+      {step==='contrato'  && ficha && <ContratoAssinatura ficha={ficha} onBack={()=>setStep('ficha')} onNext={c=>{ setContrato(c); setStep(isStaff ? 'completo' : 'pagamento'); }}/>}
       {step==='pagamento' && ficha && <EscolhaPagamento ficha={ficha} onBack={()=>setStep('contrato')} onNext={(pid,met)=>{ setPlanoId(pid); setMetodo(met); setStep(met==='numerario'?'pendente':'completo'); }}/>}
-      {step==='pendente'  && ficha && <Pendente ficha={ficha} plano={plano} registerMode={registerMode} onVoltar={onVoltar}/>}
-      {step==='completo'  && ficha && <Completo ficha={ficha} plano={plano} isStaff={isStaff} registerMode={registerMode}/>}
+      {step==='pendente'  && ficha && <Pendente ficha={ficha} contrato={contrato} plano={plano} registerMode={registerMode} onVoltar={onVoltar}/>}
+      {step==='completo'  && ficha && <Completo ficha={ficha} contrato={contrato} plano={plano} isStaff={isStaff} registerMode={registerMode}/>}
     </>
   );
 
