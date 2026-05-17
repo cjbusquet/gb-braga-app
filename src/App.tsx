@@ -77,8 +77,9 @@ function AppContent() {
   };
 
   const renderPage = () => {
-    // Aluno routes — if not enrolled, show enrollment flow
-    if (user.role === 'aluno' && !(user as any).matriculaCompleta) {
+    // All roles — if not enrolled, show enrollment flow
+    // Staff (superadmin/admin/professor) skip the payment step automatically
+    if (!(user as any).matriculaCompleta) {
       return <FluxoMatricula onConcludo={() => {}} />;
     }
     if (user.role === 'aluno') {
