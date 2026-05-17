@@ -383,7 +383,49 @@ function EscolhaPagamento({ ficha, onNext, onBack }: { ficha:FichaData; onNext:(
   );
 }
 
-function Pendente({ ficha, plano }: { ficha:FichaData; plano:Plano|undefined }) {
+type AccountStatus = 'idle' | 'creating' | 'ok' | 'confirm_email' | 'error';
+
+function Pendente({ ficha, plano, registerMode, onVoltar }: {
+  ficha: FichaData; plano: Plano|undefined;
+  registerMode?: boolean; onVoltar?: () => void;
+}) {
+  const [acctStatus, setAcctStatus] = useState<AccountStatus>(registerMode ? 'creating' : 'idle');
+  const [acctErr, setAcctErr] = useState('');
+
+  useEffect(() => {
+    if (!registerMode) return;
+    // Create Supabase account (numerário path — same as Completo)
+    import('../../lib/supabaseClient').then(({ supabase, isConfigured }) => {
+      if (!isConfigured) { setAcctStatus('ok'); return; }
+      supabase.auth.signUp({
+        email: ficha.email,
+        password: ficha.senha,
+        options: { data: { nome: ficha.nomeAluno } },
+      }).then(({ data, error }) => {
+        if (error) {
+          const msg = error.message.includes('already registered')
+            ? 'Este email já está registado. Vai ao Login e usa "Entrar".'
+            : error.message;
+          setAcctErr(msg);
+          setAcctStatus('error');
+          return;
+        }
+        if (data.user) {
+          // Upsert profile (matricula_completa=false — admin needs to approve)
+          supabase.from('profiles').upsert({
+            id: data.user.id,
+            nome: ficha.nomeAluno,
+            email: ficha.email,
+            telefone: ficha.telefone,
+            role: 'aluno',
+            matricula_completa: false,
+          }).then(() => setAcctStatus(data.session ? 'ok' : 'confirm_email'));
+        }
+      });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div style={{ ...CARD, textAlign:'center', padding:'32px 28px' }}>
       <div style={{ fontSize:48, marginBottom:16 }}>⏳</div>
@@ -391,6 +433,26 @@ function Pendente({ ficha, plano }: { ficha:FichaData; plano:Plano|undefined }) 
       <p style={{ color:'#5C5B66', fontSize:13.5, lineHeight:1.7, maxWidth:480, margin:'0 auto 22px' }}>
         A tua inscrição foi registada com <strong>pagamento em numerário</strong>. Um administrador irá rever e aprovar o pedido. Receberás um contacto em <strong>{ficha.email}</strong> quando a conta estiver ativa.
       </p>
+
+      {/* Account status feedback (registerMode only) */}
+      {registerMode && acctStatus === 'creating' && (
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:10, marginBottom:18, color:'#9896A4', fontSize:13 }}>
+          <div style={{ width:18, height:18, border:'2px solid #E2E0DB', borderTop:'2px solid #D97706', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+          A criar a tua conta...
+          <style>{`@keyframes spin { to { transform:rotate(360deg) } }`}</style>
+        </div>
+      )}
+      {registerMode && acctStatus === 'confirm_email' && (
+        <div style={{ background:'#FFF7ED', border:'1px solid #FED7AA', borderRadius:10, padding:'12px 16px', maxWidth:440, margin:'0 auto 18px', fontSize:13, color:'#92400E', lineHeight:1.6 }}>
+          📬 <strong>Verifica o teu email</strong> — enviámos um link de confirmação para <strong>{ficha.email}</strong> para ativares a conta.
+        </div>
+      )}
+      {registerMode && acctStatus === 'error' && (
+        <div style={{ background:'rgba(200,16,46,0.05)', border:'1px solid rgba(200,16,46,0.2)', borderRadius:10, padding:'12px 16px', maxWidth:440, margin:'0 auto 18px', fontSize:13, color:'#C8102E' }}>
+          ⚠️ {acctErr}
+        </div>
+      )}
+
       <div style={{ background:'#FFFBEB', border:'1px solid #FCD34D', borderRadius:12, padding:'16px 20px', maxWidth:400, margin:'0 auto 20px', textAlign:'left' }}>
         <div style={{ color:'#92400E', fontSize:11, fontWeight:700, letterSpacing:'0.8px', textTransform:'uppercase', marginBottom:8 }}>Detalhes da inscrição</div>
         {[['Aluno',ficha.nomeAluno],['Plano',plano?.nome||'—'],['Mensalidade',plano?`€${plano.valor}/mês`:'—'],['Pagamento','Numerário — aguarda aprovação'],['Email',ficha.email]].map(([k,v])=>(
@@ -400,16 +462,23 @@ function Pendente({ ficha, plano }: { ficha:FichaData; plano:Plano|undefined }) 
           </div>
         ))}
       </div>
-      <div style={{ color:'#9896A4', fontSize:12.5 }}>
+
+      <div style={{ color:'#9896A4', fontSize:12.5, marginBottom:22 }}>
         <a href="https://wa.me/351927773854" style={{ color:'#25D366', fontWeight:700 }}>💬 +351 927 773 854</a>
         {' · '}
         <a href="mailto:atendimento@gbbraga.com" style={{ color:'#C8102E' }}>atendimento@gbbraga.com</a>
       </div>
+
+      {/* Back to login button — always shown in registerMode */}
+      {registerMode && onVoltar && (
+        <button onClick={onVoltar}
+          style={{ background:'#F0EFEC', border:'1px solid #E2E0DB', borderRadius:10, padding:'12px 28px', color:'#5C5B66', fontSize:14, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+          ← Voltar ao Login
+        </button>
+      )}
     </div>
   );
 }
-
-type AccountStatus = 'idle' | 'creating' | 'ok' | 'confirm_email' | 'error';
 
 function Completo({ ficha, plano, isStaff, registerMode }: { ficha:FichaData; plano:Plano|undefined; isStaff?:boolean; registerMode?:boolean }) {
   const { user } = useAuth();
@@ -576,7 +645,7 @@ export default function FluxoMatricula({ embedded = false, registerMode = false,
       {step==='ficha'     && <FichaInscricao registerMode={registerMode} onNext={d=>{ setFicha(d); setStep('contrato'); }}/>}
       {step==='contrato'  && ficha && <ContratoAssinatura ficha={ficha} onBack={()=>setStep('ficha')} onNext={()=>setStep(isStaff ? 'completo' : 'pagamento')}/>}
       {step==='pagamento' && ficha && <EscolhaPagamento ficha={ficha} onBack={()=>setStep('contrato')} onNext={(pid,met)=>{ setPlanoId(pid); setMetodo(met); setStep(met==='numerario'?'pendente':'completo'); }}/>}
-      {step==='pendente'  && ficha && <Pendente ficha={ficha} plano={plano}/>}
+      {step==='pendente'  && ficha && <Pendente ficha={ficha} plano={plano} registerMode={registerMode} onVoltar={onVoltar}/>}
       {step==='completo'  && ficha && <Completo ficha={ficha} plano={plano} isStaff={isStaff} registerMode={registerMode}/>}
     </>
   );
