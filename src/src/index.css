@@ -1,0 +1,75 @@
+/* ── GB Braga — Global Styles ───────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border, #e0e0e0); border-radius: 3px; }
+
+/* Tables responsive */
+table { width: 100%; border-collapse: collapse; }
+@media (max-width: 767px) {
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+
+/* Inputs — prevent iOS zoom */
+@media (max-width: 767px) {
+  input, select, textarea { font-size: 16px !important; }
+}
+
+/* Touch targets */
+button { min-height: 36px; }
+@media (max-width: 767px) {
+  button { min-height: 44px; }
+}
+
+/* Animations */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* Safe areas for notch */
+@supports (padding: env(safe-area-inset-top)) {
+  .safe-top    { padding-top: env(safe-area-inset-top); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+}
+
+/* Modals full screen on mobile */
+@media (max-width: 767px) {
+  .modal-inner {
+    max-width: 100% !important;
+    max-height: 100vh !important;
+    height: 100dvh !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+  }
+  .modal-backdrop {
+    padding: 0 !important;
+    align-items: flex-end !important;
+  }
+}
+
+/* Grids responsive */
+@media (max-width: 767px) {
+  .grid-2, .grid-3, .grid-4 {
+    grid-template-columns: 1fr !important;
+  }
+  .grid-kpi {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .grid-3, .grid-4 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
