@@ -17,11 +17,7 @@ const ROLES: { role: UserRole; email: string; label?: string }[] = [
 export default function LoginPage() {
   const { login } = useAuth();
   
-  // Debug: log Supabase config status on mount
-  if (typeof window !== 'undefined') {
-    console.log('🔍 Supabase URL:', import.meta.env.VITE_SUPABASE_URL || 'NÃO DEFINIDA');
-    console.log('🔍 isConfigured:', isConfigured);
-  }
+
   const [email, setEmail] = useState('');
   const [pw, setPw]       = useState('');
   const [err, setErr]     = useState('');
