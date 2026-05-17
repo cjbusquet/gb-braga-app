@@ -6,7 +6,7 @@ import { GB, beltConfig } from '../../lib/gbBrand';
 const FAIXAS = ['branca','cinza','amarela','laranja','verde','azul','roxa','marrom','preta'];
 const CATS   = ['adulto','kids','familia','fundador'];
 
-export default function NovaMatriculaModal({ onClose }: { onClose: () => void }) {
+export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: () => void; onSuccess?: () => void }) {
   const { data: todosPlanos } = usePlanos();
   const [step, setStep]       = useState<1|2|3|4|5>(1);
   const [cat, setCat]         = useState('adulto');
@@ -43,6 +43,7 @@ export default function NovaMatriculaModal({ onClose }: { onClose: () => void })
         planoId, planoNome: planoSel?.nome,
       });
       setSaved(true);
+      onSuccess?.();
       setTimeout(onClose, 1500);
     } catch (e) {
       console.error('Erro ao criar aluno:', e);

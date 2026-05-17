@@ -186,7 +186,7 @@ export default function AlunosPage() {
   return (
     <div>
       {EditModal}
-      {showMatricula && <NovaMatriculaModal onClose={() => setShowMatricula(false)}/>}
+      {showMatricula && <NovaMatriculaModal onClose={() => setShowMatricula(false)} onSuccess={() => { setShowMatricula(false); refetch(); }}/>}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 18 }}>
         <div>
           <div style={{ color: 'var(--text-muted)', fontSize: 10.5, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 3 }}>Academia</div>
