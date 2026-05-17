@@ -1,10 +1,48 @@
 /* ── GB Braga — Global Styles ───────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ── Design Tokens (CSS Variables) ──────────────────────────── */
+:root {
+  /* Surfaces */
+  --bg-base:     #F7F6F4;
+  --bg-card:     #FFFFFF;
+  --bg-elevated: #F0EFEC;
+
+  /* Text */
+  --text-primary:   #111111;
+  --text-secondary: #5C5B66;
+  --text-muted:     #9896A4;
+
+  /* Borders */
+  --border:        #E2E0DB;
+  --border-subtle: #EDECE9;
+
+  /* Radii */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  /* Typography */
+  --font-ui:      'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'Arial Black', 'Arial Bold', sans-serif;
+  --font-mono:    'DM Mono', 'Courier New', monospace;
+
+  /* Shadows */
+  --shadow-xs:  0 1px 4px rgba(0,0,0,0.06);
+  --shadow-sm:  0 2px 8px rgba(0,0,0,0.08);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.12);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,0.16);
+  --shadow-red: 0 4px 14px rgba(200,16,46,0.30);
+}
+
 html { font-size: 16px; -webkit-text-size-adjust: 100%; }
 
 body {
-  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-ui);
+  background: var(--bg-base);
+  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;

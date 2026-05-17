@@ -1,5 +1,5 @@
-// @ts-nocheck
 import { useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { useAuth } from '../../lib/auth';
 import { GB, roleThemes } from '../../lib/gbBrand';
 import { GBLogoFull } from '../GBLogo';
@@ -37,7 +37,7 @@ const NAV_ITEMS: NavItem[] = [
 interface LayoutProps {
   currentPage: string;
   onNavigate: (page: string) => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export default function Layout({ currentPage, onNavigate, children }: LayoutProps) {
@@ -47,7 +47,7 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
+    const check = () => setIsMobile(window.innerWidth < 1024);
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
@@ -170,16 +170,20 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
       {/* Main area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-        {/* Mobile top bar */}
+        {/* Mobile / Tablet top bar with hamburger */}
         {isMobile && (
-          <div style={{ height: 56, background: 'var(--bg-card)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', flexShrink: 0, zIndex: 100 }}>
-            <button onClick={() => setMobileOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, display: 'flex', flexDirection: 'column', gap: 5, minHeight: 44, justifyContent: 'center' }}>
-              <span style={{ display: 'block', width: 22, height: 2, background: 'var(--text-primary)', borderRadius: 1 }}/>
-              <span style={{ display: 'block', width: 16, height: 2, background: 'var(--text-primary)', borderRadius: 1 }}/>
-              <span style={{ display: 'block', width: 22, height: 2, background: 'var(--text-primary)', borderRadius: 1 }}/>
+          <div style={{ height: 58, background: 'var(--bg-card)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', flexShrink: 0, zIndex: 100, boxShadow: 'var(--shadow-xs)' }}>
+            {/* Hamburger ☰ */}
+            <button
+              onClick={() => setMobileOpen(true)}
+              aria-label="Abrir menu"
+              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 5, minHeight: 44, justifyContent: 'center', alignItems: 'center' }}>
+              <span style={{ display: 'block', width: 20, height: 2, background: 'var(--text-primary)', borderRadius: 2 }}/>
+              <span style={{ display: 'block', width: 14, height: 2, background: 'var(--text-primary)', borderRadius: 2 }}/>
+              <span style={{ display: 'block', width: 20, height: 2, background: 'var(--text-primary)', borderRadius: 2 }}/>
             </button>
-            <GBLogoFull size={36}/>
-            <div style={{ width: 44, height: 44, borderRadius: '50%', background: rt.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 700 }}>
+            <GBLogoFull size={38}/>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: rt.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 700, boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
               {user.nome?.charAt(0) || '?'}
             </div>
           </div>

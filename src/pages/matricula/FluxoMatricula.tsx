@@ -1,4 +1,4 @@
-// @ts-nocheck
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect } from 'react';
 import { usePlanos } from '../../lib/useData';
 import { useAuth } from '../../lib/auth';
@@ -284,10 +284,11 @@ function ContratoAssinatura({ ficha, onNext, onBack }: { ficha:FichaData; onNext
 }
 
 function EscolhaPagamento({ ficha, onNext, onBack }: { ficha:FichaData; onNext:(pid:string,met:'stripe'|'numerario')=>void; onBack:()=>void }) {
+  const { data: allPlanos } = usePlanos();
   const [cat, setCat] = useState('adulto');
   const [planoId, setPlanoId] = useState('');
   const [metodo, setMetodo] = useState<'stripe'|'numerario'>('stripe');
-  const planos = planos.filter(p=>p.ativo && (p as any).categoria===cat);
+  const planos = allPlanos.filter(p=>p.ativo && (p as any).categoria===cat);
   const sel = planos.find(p=>p.id===planoId);
 
   return (
@@ -432,20 +433,48 @@ function Completo({ ficha, plano, isStaff }: { ficha:FichaData; plano:Plano|unde
   );
 }
 
-export default function FluxoMatricula({ onConcludo }: { onConcludo?: () => void }) {
+/** embedded=true → rendered inside admin Layout (no outer header/wrapper) */
+export default function FluxoMatricula({ embedded = false }: { onConcludo?: () => void; embedded?: boolean }) {
   const { data: planos } = usePlanos();
   const { user } = useAuth();
   const [step, setStep] = useState<Step>('ficha');
   const [ficha, setFicha] = useState<FichaData | null>(null);
   const [planoId, setPlanoId] = useState('');
-  const [metodo, setMetodo] = useState<'stripe'|'numerario'>('stripe');
+  const [, setMetodo] = useState<'stripe'|'numerario'>('stripe');
   const plano = planos.find(p=>p.id===planoId);
 
   // Staff não precisa de pagamento — salta directamente para completo
   const isStaff = user?.role === 'superadmin' || user?.role === 'admin' || user?.role === 'professor';
 
-  useEffect(() => { window.scrollTo(0,0); }, [step]);
+  useEffect(() => { if (!embedded) window.scrollTo(0,0); }, [step, embedded]);
 
+  const content = (
+    <>
+      {!embedded && (
+        <div style={{ color:'#C8102E', fontSize:10.5, fontWeight:700, letterSpacing:'1.5px', textTransform:'uppercase', marginBottom:4 }}>Gracie Barra Braga</div>
+      )}
+      <h1 style={{ color:'#111', fontSize: embedded ? 18 : 22, fontWeight:900, fontFamily:"'Arial Black',sans-serif", textTransform:'uppercase', marginBottom:20 }}>
+        {embedded ? '📋 Nova Matrícula de Aluno' : 'Nova Matrícula'}
+      </h1>
+      <StepBar step={step} isStaff={isStaff}/>
+      {step==='ficha' && <FichaInscricao onNext={d=>{ setFicha(d); setStep('contrato'); }}/>}
+      {step==='contrato' && ficha && <ContratoAssinatura ficha={ficha} onBack={()=>setStep('ficha')} onNext={()=>setStep(isStaff ? 'completo' : 'pagamento')}/>}
+      {step==='pagamento' && ficha && <EscolhaPagamento ficha={ficha} onBack={()=>setStep('contrato')} onNext={(pid,met)=>{ setPlanoId(pid); setMetodo(met); setStep(met==='numerario'?'pendente':'completo'); }}/>}
+      {step==='pendente' && ficha && <Pendente ficha={ficha} plano={plano}/>}
+      {step==='completo' && ficha && <Completo ficha={ficha} plano={plano} isStaff={isStaff}/>}
+    </>
+  );
+
+  /* ── Embedded inside admin Layout ── */
+  if (embedded) {
+    return (
+      <div style={{ maxWidth:720, margin:'0 auto', padding:'4px 0 32px', fontFamily:"'DM Sans',system-ui,sans-serif" }}>
+        {content}
+      </div>
+    );
+  }
+
+  /* ── Standalone full-page (student enrollment) ── */
   return (
     <div style={{ minHeight:'100vh', background:'#F7F6F4', fontFamily:"'DM Sans',system-ui,sans-serif" }}>
       <header style={{ background:'#fff', borderBottom:'1px solid #E2E0DB', padding:'0 24px', height:64, display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100, boxShadow:'0 1px 4px rgba(0,0,0,0.06)' }}>
@@ -455,14 +484,7 @@ export default function FluxoMatricula({ onConcludo }: { onConcludo?: () => void
         </div>
       </header>
       <div style={{ maxWidth:720, margin:'0 auto', padding:'32px 20px' }}>
-        <div style={{ color:'#C8102E', fontSize:10.5, fontWeight:700, letterSpacing:'1.5px', textTransform:'uppercase', marginBottom:4 }}>Gracie Barra Braga</div>
-        <h1 style={{ color:'#111', fontSize:22, fontWeight:900, fontFamily:"'Arial Black',sans-serif", textTransform:'uppercase', marginBottom:20 }}>Nova Matrícula</h1>
-        <StepBar step={step} isStaff={isStaff}/>
-        {step==='ficha' && <FichaInscricao onNext={d=>{ setFicha(d); setStep('contrato'); }}/>}
-        {step==='contrato' && ficha && <ContratoAssinatura ficha={ficha} onBack={()=>setStep('ficha')} onNext={()=>setStep(isStaff ? 'completo' : 'pagamento')}/>}
-        {step==='pagamento' && ficha && <EscolhaPagamento ficha={ficha} onBack={()=>setStep('contrato')} onNext={(pid,met)=>{ setPlanoId(pid); setMetodo(met); setStep(met==='numerario'?'pendente':'completo'); }}/>}
-        {step==='pendente' && ficha && <Pendente ficha={ficha} plano={plano}/>}
-        {step==='completo' && ficha && <Completo ficha={ficha} plano={plano} isStaff={isStaff}/>}
+        {content}
       </div>
     </div>
   );

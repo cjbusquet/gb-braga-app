@@ -15,7 +15,6 @@ import ContratosPage from './pages/admin/ContratosPage';
 import IntegracoesPage from './pages/admin/IntegracoesPage';
 import ChatPage from './pages/admin/ChatPage';
 import { SuperAdminDashboard, RelatoriosPage } from './pages/admin/SpecialPages';
-import MatriculaPublica from './pages/public/MatriculaPublica';
 import FluxoMatricula from './pages/matricula/FluxoMatricula';
 import PendentesNumerario from './pages/admin/PendentesNumerario';
 import ProfessorView from './pages/professor/ProfessorView';
@@ -80,7 +79,7 @@ function AppContent() {
     // Only alunos need to complete enrollment
     // Staff (superadmin/admin/professor/atendimento) go straight to dashboard
     const isStaff = ['superadmin','admin','professor','atendimento'].includes(user.role);
-    if (!isStaff && !(user as any).matriculaCompleta) {
+    if (!isStaff && !user.matriculaCompleta) {
       return <FluxoMatricula onConcludo={() => {}} />;
     }
     if (user.role === 'aluno') {
@@ -124,7 +123,7 @@ function AppContent() {
       case 'integracoes':  return <IntegracoesPage />;
       case 'config':       return <ConfigPage />;
       case 'numerario':    return <PendentesNumerario />;
-      case 'matricula':    return <MatriculaPublica />;
+      case 'matricula':    return <FluxoMatricula embedded />;
       default:             return <Dashboard />;
     }
   };
