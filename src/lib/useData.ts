@@ -1,37 +1,35 @@
 // @ts-nocheck
 /**
- * useData — hooks React que ligam a app ao Supabase.
- * Se Supabase não estiver configurado, usa mockData como fallback.
- * 
- * Padrão: const { data, loading, error, refetch } = useAlunos()
+ * useData — hooks React ligados ao Supabase
+ * Fallback automático para mockData se Supabase não configurado
  */
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, isConfigured } from './supabaseClient';
 import * as mock from '../data/mockData';
-import type { Aluno, Turma, Pagamento, Presenca, Graduacao, Plano, Contrato } from '../types';
 
-// ── Helper ───────────────────────────────────────────────────────────────────
+// ── Generic hook ─────────────────────────────────────────────
 function useQuery<T>(
-  supabaseQuery: () => Promise<{ data: T[] | null; error: any }>,
-  mockData: T[],
+  key: string,
+  supabaseQuery: () => Promise<any>,
+  fallback: T[],
   deps: any[] = []
 ) {
-  const [data, setData]     = useState<T[]>(mockData);
+  const [data, setData]       = useState<T[]>(fallback);
   const [loading, setLoading] = useState(isConfigured);
-  const [error, setError]   = useState<string | null>(null);
+  const [error, setError]     = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
-    if (!isConfigured) { setData(mockData); setLoading(false); return; }
+    if (!isConfigured) { setData(fallback); setLoading(false); return; }
     setLoading(true);
     try {
       const { data: rows, error: err } = await supabaseQuery();
       if (err) throw err;
-      setData((rows as T[]) ?? mockData);
+      setData(rows ?? fallback);
       setError(null);
     } catch (e: any) {
-      console.error('useQuery error:', e.message);
+      console.warn(`[${key}] Supabase error:`, e.message);
       setError(e.message);
-      setData(mockData); // fallback to mock on error
+      setData(fallback);
     } finally {
       setLoading(false);
     }
@@ -41,207 +39,174 @@ function useQuery<T>(
   return { data, loading, error, refetch: fetch };
 }
 
-// ── MAP: Supabase row → App type ──────────────────────────────────────────────
-const mapAluno = (r: any): Aluno => ({
-  id: r.id, nome: r.nome, email: r.email,
-  telefone: r.telefone || '', whatsapp: r.whatsapp,
-  dataNascimento: r.data_nascimento || '',
-  faixa: r.faixa || 'branca', grau: r.grau ?? 0,
-  dataMatricula: r.data_matricula || '',
-  plano: r.plano_nome || r.plano_id || '',
-  status: r.status || 'ativo',
-  frequencia: r.frequencia ?? 0,
-  responsavel: r.responsavel,
-  stripeCustomerId: r.stripe_customer_id,
-});
-
-const mapTurma = (r: any): Turma => ({
-  id: r.id, nome: r.nome,
-  professorId: r.professor_id || '',
-  professorNome: r.professor_nome || '',
-  horario: r.horario || '',
-  diaSemana: r.dias_semana || [],
-  sala: r.sala || '',
-  capacidade: r.capacidade || 20,
-  inscritos: r.inscritos ?? 0,
-  nivel: r.nivel || 'all',
-  tipo: r.tipo || 'gi',
-});
-
-const mapPagamento = (r: any): Pagamento => ({
-  id: r.id, alunoId: r.aluno_id, alunoNome: r.aluno_nome,
-  valor: r.valor, vencimento: r.vencimento,
-  pagamento: r.data_pagamento?.split('T')[0],
-  status: r.status, metodo: r.metodo,
-  plano: r.plano_nome || '',
-  stripePaymentId: r.stripe_payment_id,
-});
-
-const mapPresenca = (r: any): Presenca => ({
-  id: r.id, alunoId: r.aluno_id, alunoNome: r.aluno_nome,
-  turmaId: r.turma_id || '', turmaNome: r.turma_nome || '',
-  data: r.data, hora: r.hora,
-  tipo: r.tipo || 'checkin', metodo: r.metodo || 'gps',
-});
-
-const mapGraduacao = (r: any): Graduacao => ({
-  id: r.id, alunoId: r.aluno_id, alunoNome: r.aluno_nome,
-  faixaAnterior: r.faixa_anterior, grauAnterior: r.grau_anterior,
-  faixaNova: r.faixa_nova, grauNovo: r.grau_novo,
-  data: r.data, professorId: r.professor_id || '',
-  professorNome: r.professor_nome || '', observacao: r.observacao,
-});
-
-const mapPlano = (r: any): Plano => ({
-  id: r.id, nome: r.nome, valor: r.valor,
-  descricao: r.descricao || '', aulas: 'ilimitado',
-  ativo: r.ativo, stripePriceId: r.stripe_price_id_live,
-  categoria: r.categoria,
-});
-
-const mapContrato = (r: any): Contrato => ({
-  id: r.id, alunoId: r.aluno_id, alunoNome: r.aluno_nome,
-  plano: r.plano_nome || '', dataInicio: r.data_inicio,
-  dataFim: r.data_fim, valor: r.valor,
-  status: r.status, assinado: r.assinado,
-  dataAssinatura: r.data_assinatura,
-});
-
-// ── HOOKS ────────────────────────────────────────────────────────────────────
+// ── ALUNOS ────────────────────────────────────────────────────
 export function useAlunos(filtros?: { status?: string }) {
-  return useQuery<Aluno>(
+  return useQuery(
+    'alunos',
     async () => {
       let q = supabase.from('alunos').select('*').order('nome');
       if (filtros?.status) q = q.eq('status', filtros.status);
-      const res = await q;
-      return { data: res.data?.map(mapAluno) ?? null, error: res.error };
+      return q;
     },
     mock.mockAlunos,
     [filtros?.status]
   );
 }
 
+// ── TURMAS ────────────────────────────────────────────────────
 export function useTurmas() {
-  return useQuery<Turma>(
-    async () => {
-      const res = await supabase.from('turmas').select('*').order('nome');
-      return { data: res.data?.map(mapTurma) ?? null, error: res.error };
-    },
+  return useQuery(
+    'turmas',
+    () => supabase.from('turmas').select('*').order('nome'),
     mock.mockTurmas
   );
 }
 
+// ── PAGAMENTOS ────────────────────────────────────────────────
 export function usePagamentos(alunoId?: string) {
-  return useQuery<Pagamento>(
+  return useQuery(
+    'pagamentos',
     async () => {
       let q = supabase.from('pagamentos').select('*').order('vencimento', { ascending: false });
       if (alunoId) q = q.eq('aluno_id', alunoId);
-      const res = await q;
-      return { data: res.data?.map(mapPagamento) ?? null, error: res.error };
+      return q;
     },
-    alunoId
-      ? mock.mockPagamentos.filter(p => p.alunoId === alunoId)
-      : mock.mockPagamentos,
+    alunoId ? mock.mockPagamentos.filter(p => p.alunoId === alunoId) : mock.mockPagamentos,
     [alunoId]
   );
 }
 
-export function usePresencas(alunoId?: string, limit = 50) {
-  return useQuery<Presenca>(
+// ── PRESENÇAS ─────────────────────────────────────────────────
+export function usePresencas(alunoId?: string, limit = 100) {
+  return useQuery(
+    'presencas',
     async () => {
-      let q = supabase.from('presencas').select('*').order('data', { ascending: false }).limit(limit);
+      let q = supabase
+        .from('presencas')
+        .select('id, aluno_id, aluno_nome, turma_id, turma_nome, data, hora, tipo, metodo, created_at')
+        .order('data', { ascending: false })
+        .limit(limit);
       if (alunoId) q = q.eq('aluno_id', alunoId);
-      const res = await q;
-      return { data: res.data?.map(mapPresenca) ?? null, error: res.error };
+      return q;
     },
-    alunoId
-      ? mock.mockPresencas.filter(p => p.alunoId === alunoId)
-      : mock.mockPresencas,
+    alunoId ? mock.mockPresencas.filter(p => p.alunoId === alunoId) : mock.mockPresencas,
     [alunoId, limit]
   );
 }
 
+// ── GRADUAÇÕES ────────────────────────────────────────────────
 export function useGraduacoes(alunoId?: string) {
-  return useQuery<Graduacao>(
+  return useQuery(
+    'graduacoes',
     async () => {
       let q = supabase.from('graduacoes').select('*').order('data', { ascending: false });
       if (alunoId) q = q.eq('aluno_id', alunoId);
-      const res = await q;
-      return { data: res.data?.map(mapGraduacao) ?? null, error: res.error };
+      return q;
     },
-    alunoId
-      ? mock.mockGraduacoes.filter(g => g.alunoId === alunoId)
-      : mock.mockGraduacoes,
+    alunoId ? mock.mockGraduacoes.filter(g => g.alunoId === alunoId) : mock.mockGraduacoes,
     [alunoId]
   );
 }
 
+// ── PLANOS ────────────────────────────────────────────────────
 export function usePlanos() {
-  return useQuery<Plano>(
-    async () => {
-      const res = await supabase.from('planos').select('*').eq('ativo', true).order('valor');
-      return { data: res.data?.map(mapPlano) ?? null, error: res.error };
-    },
+  return useQuery(
+    'planos',
+    () => supabase.from('planos').select('*').eq('ativo', true).order('valor'),
     mock.mockPlanos
   );
 }
 
+// ── CONTRATOS ─────────────────────────────────────────────────
 export function useContratos() {
-  return useQuery<Contrato>(
-    async () => {
-      const res = await supabase.from('contratos').select('*').order('data_inicio', { ascending: false });
-      return { data: res.data?.map(mapContrato) ?? null, error: res.error };
-    },
-    mock.mockContratos
+  return useQuery(
+    'contratos',
+    () => supabase.from('contratos').select('*').order('data_inicio', { ascending: false }),
+    mock.mockContratos || []
   );
 }
 
+// ── KPIs ──────────────────────────────────────────────────────
 export function useKPIs() {
-  const [data, setData] = useState(mock.mockKPIs);
+  const [data, setData]       = useState(mock.mockKPIs);
   const [loading, setLoading] = useState(isConfigured);
 
-  useEffect(() => {
-    if (!isConfigured) return;
-    supabase.from('v_kpis').select('*').single().then(({ data: row }) => {
-      if (row) setData({
-        totalAlunos: row.total_alunos ?? 0,
-        alunosAtivos: row.alunos_ativos ?? 0,
-        receitaMensal: row.receita_mensal ?? 0,
-        receitaPrevista: row.receita_prevista ?? 0,
-        inadimplentes: row.inadimplentes ?? 0,
+  const refetch = useCallback(async () => {
+    if (!isConfigured) { setLoading(false); return; }
+    try {
+      // Calculate KPIs from real data
+      const [alunosRes, pagRes] = await Promise.all([
+        supabase.from('alunos').select('id, status, data_matricula'),
+        supabase.from('pagamentos').select('valor, status, data_pagamento, vencimento'),
+      ]);
+
+      const alunos    = alunosRes.data || [];
+      const pags      = pagRes.data    || [];
+      const now       = new Date();
+      const mesAtual  = now.toISOString().slice(0, 7);
+
+      const ativos    = alunos.filter(a => a.status === 'ativo').length;
+      const novos     = alunos.filter(a => a.data_matricula?.startsWith(mesAtual)).length;
+      const pagMes    = pags.filter(p => p.status === 'pago' && p.data_pagamento?.startsWith(mesAtual));
+      const receita   = pagMes.reduce((s, p) => s + (parseFloat(p.valor) || 0), 0);
+      const inadimp   = new Set(pags.filter(p => p.status === 'vencido').map(p => p.aluno_id)).size;
+
+      setData({
+        totalAlunos:    alunos.length,
+        alunosAtivos:   ativos,
+        receitaMensal:  receita,
+        receitaPrevista: pags.filter(p => p.status === 'pendente').reduce((s,p) => s + (parseFloat(p.valor)||0), 0),
+        inadimplentes:  inadimp,
         taxaFrequencia: 0,
-        novosAlunos: row.novos_alunos ?? 0,
-        cancelamentos: 0,
-        taxaRetencao: 0,
+        novosAlunos:    novos,
+        cancelamentos:  alunos.filter(a => a.status === 'inativo').length,
+        taxaRetencao:   ativos > 0 ? Math.round((ativos / alunos.length) * 100) : 0,
       });
+    } catch (e) {
+      console.warn('useKPIs error:', e);
+    } finally {
       setLoading(false);
-    });
+    }
   }, []);
 
-  return { data, loading };
+  useEffect(() => { refetch(); }, [refetch]);
+  return { data, loading, refetch };
 }
 
-// ── MUTATIONS ────────────────────────────────────────────────────────────────
+// ── MUTATIONS ─────────────────────────────────────────────────
 export const db = {
-  // Alunos
-  criarAluno: async (aluno: Partial<Aluno>) => {
+
+  criarAluno: async (dados: any) => {
     if (!isConfigured) return null;
     const { data, error } = await supabase.from('alunos').insert({
-      nome: aluno.nome, email: aluno.email, telefone: aluno.telefone,
-      faixa: aluno.faixa || 'branca', grau: aluno.grau || 0,
-      plano_nome: aluno.plano, status: 'ativo',
+      nome:       dados.nome,
+      email:      dados.email,
+      telefone:   dados.telefone,
+      nif:        dados.nif,
+      faixa:      dados.faixa || 'branca',
+      grau:       dados.grau  || 0,
+      plano_id:   dados.planoId,
+      plano_nome: dados.planoNome,
+      morada:     dados.morada,
+      cod_postal: dados.codPostal,
+      status:     'ativo',
+      data_matricula: new Date().toISOString().split('T')[0],
     }).select().single();
     if (error) throw error;
     return data;
   },
 
-  atualizarAluno: async (id: string, campos: Partial<Aluno>) => {
+  atualizarAluno: async (id: string, campos: any) => {
     if (!isConfigured) return null;
-    const { data, error } = await supabase.from('alunos').update({
-      nome: campos.nome, email: campos.email, telefone: campos.telefone,
-      faixa: campos.faixa, grau: campos.grau, status: campos.status,
-      plano_nome: campos.plano,
-    }).eq('id', id).select().single();
+    const map: any = {};
+    if (campos.nome)      map.nome      = campos.nome;
+    if (campos.email)     map.email     = campos.email;
+    if (campos.telefone)  map.telefone  = campos.telefone;
+    if (campos.nif)       map.nif       = campos.nif;
+    if (campos.status)    map.status    = campos.status;
+    if (campos.faixa)     map.faixa     = campos.faixa;
+    if (campos.grau !== undefined) map.grau = campos.grau;
+    const { data, error } = await supabase.from('alunos').update(map).eq('id', id).select().single();
     if (error) throw error;
     return data;
   },
@@ -251,92 +216,135 @@ export const db = {
     await supabase.from('alunos').update({ status: 'suspenso' }).eq('id', id);
   },
 
-  // Presenças
-  registarPresenca: async (dados: {
-    alunoId: string; alunoNome: string;
-    turmaId?: string; turmaNome?: string;
-    metodo: string; gpsLat?: number; gpsLng?: number; gpsDist?: number;
-  }) => {
+  registarPresenca: async (dados: any) => {
     if (!isConfigured) return null;
     const { data, error } = await supabase.from('presencas').insert({
-      aluno_id: dados.alunoId, aluno_nome: dados.alunoNome,
-      turma_id: dados.turmaId, turma_nome: dados.turmaNome,
-      data: new Date().toISOString().split('T')[0],
-      hora: new Date().toTimeString().slice(0, 8),
-      tipo: 'checkin', metodo: dados.metodo,
-      gps_lat: dados.gpsLat, gps_lng: dados.gpsLng, gps_dist_m: dados.gpsDist,
+      aluno_id:   dados.alunoId,
+      aluno_nome: dados.alunoNome,
+      turma_id:   dados.turmaId   || null,
+      turma_nome: dados.turmaNome || null,
+      data:       new Date().toISOString().split('T')[0],
+      hora:       new Date().toTimeString().slice(0, 8),
+      tipo:       'checkin',
+      metodo:     dados.metodo || 'manual',
+      gps_lat:    dados.gpsLat   || null,
+      gps_lng:    dados.gpsLng   || null,
+      gps_dist_m: dados.gpsDist  || null,
     }).select().single();
     if (error) throw error;
     return data;
   },
 
-  // Pagamentos
   marcarPago: async (id: string, metodo: string) => {
     if (!isConfigured) return;
-    await supabase.from('pagamentos').update({
-      status: 'pago',
-      data_pagamento: new Date().toISOString(),
+    const { error } = await supabase.from('pagamentos').update({
+      status:          'pago',
+      data_pagamento:  new Date().toISOString(),
       metodo,
     }).eq('id', id);
+    if (error) throw error;
   },
 
-  // Graduações
-  registarGraduacao: async (dados: {
-    alunoId: string; alunoNome: string;
-    faixaAnterior: string; grauAnterior: number;
-    faixaNova: string; grauNovo: number;
-    professorNome: string; observacao?: string;
-  }) => {
+  criarPagamento: async (dados: any) => {
+    if (!isConfigured) return null;
+    const { data, error } = await supabase.from('pagamentos').insert({
+      aluno_id:   dados.alunoId,
+      aluno_nome: dados.alunoNome,
+      plano_id:   dados.planoId,
+      plano_nome: dados.planoNome,
+      valor:      dados.valor,
+      vencimento: dados.vencimento,
+      status:     'pendente',
+    }).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  registarGraduacao: async (dados: any) => {
     if (!isConfigured) return null;
     const { data, error } = await supabase.from('graduacoes').insert({
-      aluno_id: dados.alunoId, aluno_nome: dados.alunoNome,
-      faixa_anterior: dados.faixaAnterior, grau_anterior: dados.grauAnterior,
-      faixa_nova: dados.faixaNova, grau_novo: dados.grauNovo,
-      data: new Date().toISOString().split('T')[0],
-      professor_nome: dados.professorNome, observacao: dados.observacao,
+      aluno_id:       dados.alunoId,
+      aluno_nome:     dados.alunoNome,
+      faixa_anterior: dados.faixaAnterior,
+      grau_anterior:  dados.grauAnterior,
+      faixa_nova:     dados.faixaNova,
+      grau_novo:      dados.grauNovo,
+      data:           new Date().toISOString().split('T')[0],
+      professor_nome: dados.professorNome,
+      observacao:     dados.observacao || null,
     }).select().single();
     if (error) throw error;
-    // Update aluno faixa
-    await supabase.from('alunos').update({
-      faixa: dados.faixaNova, grau: dados.grauNovo,
-    }).eq('id', dados.alunoId);
+    // Actualizar faixa do aluno
+    await supabase.from('alunos').update({ faixa: dados.faixaNova, grau: dados.grauNovo }).eq('id', dados.alunoId);
     return data;
   },
 
-  // Contratos
-  criarContrato: async (dados: {
-    alunoId: string; alunoNome: string; alunoNif: string;
-    planoId: string; planoNome: string; valor: number;
-    assinaturaImg: string; aceitaImagem: boolean; aceitaRGPD: boolean;
-    encPagamento: string;
-  }) => {
+  criarContrato: async (dados: any) => {
     if (!isConfigured) return null;
     const { data, error } = await supabase.from('contratos').insert({
-      aluno_id: dados.alunoId, aluno_nome: dados.alunoNome, aluno_nif: dados.alunoNif,
-      plano_id: dados.planoId, plano_nome: dados.planoNome, valor: dados.valor,
-      assinado: true, data_assinatura: new Date().toISOString(),
-      assinatura_img: dados.assinaturaImg,
-      aceita_imagem: dados.aceitaImagem, aceita_rgpd: dados.aceitaRGPD,
-      aceita_contrato: true, enc_pagamento: dados.encPagamento,
+      aluno_id:        dados.alunoId,
+      aluno_nome:      dados.alunoNome,
+      aluno_nif:       dados.alunoNif,
+      plano_id:        dados.planoId,
+      plano_nome:      dados.planoNome,
+      valor:           dados.valor,
+      assinado:        true,
+      data_assinatura: new Date().toISOString(),
+      assinatura_img:  dados.assinaturaImg,
+      aceita_imagem:   dados.aceitaImagem,
+      aceita_rgpd:     dados.aceitaRGPD,
+      aceita_contrato: true,
+      enc_pagamento:   dados.encPagamento,
     }).select().single();
     if (error) throw error;
-    // Mark profile as enrolled
-    await supabase.from('profiles')
-      .update({ matricula_completa: true })
-      .eq('id', dados.alunoId);
+    await supabase.from('profiles').update({ matricula_completa: true }).eq('id', dados.alunoId);
     return data;
   },
 
-  // Numerário
-  submeterNumerario: async (dados: {
-    alunoId: string; nomeAluno: string; email: string;
-    telefone: string; planoId: string; planoNome: string; valor: number;
-  }) => {
+  criarTurma: async (dados: any) => {
+    if (!isConfigured) return null;
+    const { data, error } = await supabase.from('turmas').insert({
+      nome:           dados.nome,
+      professor_nome: dados.professorNome || null,
+      horario:        dados.horario,
+      dias_semana:    dados.diasSemana || [],
+      sala:           dados.sala       || null,
+      capacidade:     dados.capacidade || 20,
+      nivel:          dados.nivel      || 'all',
+      tipo:           dados.tipo       || 'gi',
+      ativa:          true,
+    }).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  enviarMensagem: async (dados: any) => {
+    if (!isConfigured) return null;
+    const { data, error } = await supabase.from('mensagens').insert({
+      para_id:    dados.paraId,
+      para_nome:  dados.paraNome,
+      canal:      dados.canal,
+      assunto:    dados.assunto || null,
+      corpo:      dados.corpo,
+      remetente:  dados.remetente,
+      status:     'enviado',
+      enviado_em: new Date().toISOString(),
+    }).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  submeterNumerario: async (dados: any) => {
     if (!isConfigured) return null;
     const { data, error } = await supabase.from('pedidos_numerario').insert({
-      aluno_id: dados.alunoId, nome_aluno: dados.nomeAluno, email: dados.email,
-      telefone: dados.telefone, plano_id: dados.planoId,
-      plano_nome: dados.planoNome, valor: dados.valor, status: 'pendente',
+      aluno_id:   dados.alunoId,
+      nome_aluno: dados.nomeAluno,
+      email:      dados.email,
+      telefone:   dados.telefone,
+      plano_id:   dados.planoId,
+      plano_nome: dados.planoNome,
+      valor:      dados.valor,
+      status:     'pendente',
     }).select().single();
     if (error) throw error;
     return data;
@@ -344,16 +352,13 @@ export const db = {
 
   aprovarNumerario: async (id: string, nota: string) => {
     if (!isConfigured) return;
-    const { data } = await supabase.from('pedidos_numerario')
+    const { data, error } = await supabase.from('pedidos_numerario')
       .update({ status: 'aprovado', nota_admin: nota, aprovado_em: new Date().toISOString() })
       .eq('id', id).select().single();
+    if (error) throw error;
     if (data?.aluno_id) {
-      await supabase.from('alunos')
-        .update({ numerario_aprovado: true, metodo_pagamento: 'numerario' })
-        .eq('id', data.aluno_id);
-      await supabase.from('profiles')
-        .update({ matricula_completa: true })
-        .eq('email', data.email);
+      await supabase.from('alunos').update({ numerario_aprovado: true, metodo_pagamento: 'numerario' }).eq('id', data.aluno_id);
+      await supabase.from('profiles').update({ matricula_completa: true }).eq('email', data.email);
     }
   },
 
@@ -362,87 +367,5 @@ export const db = {
     await supabase.from('pedidos_numerario')
       .update({ status: 'rejeitado', nota_admin: nota })
       .eq('id', id);
-  },
-
-  criarTurma: async (dados: {
-    nome: string; professorNome?: string; horario: string;
-    diasSemana?: string[]; sala?: string; capacidade?: number;
-    nivel?: string; tipo?: string;
-  }) => {
-    if (!isConfigured) return null;
-    const { data, error } = await supabase.from('turmas').insert({
-      nome: dados.nome,
-      professor_nome: dados.professorNome,
-      horario: dados.horario,
-      dias_semana: dados.diasSemana || [],
-      sala: dados.sala,
-      capacidade: dados.capacidade || 20,
-      nivel: dados.nivel || 'all',
-      tipo: dados.tipo || 'gi',
-      ativa: true,
-    }).select().single();
-    if (error) throw error;
-    return data;
-  },
-
-  criarPagamento: async (dados: {
-    alunoId: string; alunoNome: string; planoId?: string;
-    planoNome?: string; valor: number; vencimento: string;
-  }) => {
-    if (!isConfigured) return null;
-    const { data, error } = await supabase.from('pagamentos').insert({
-      aluno_id: dados.alunoId,
-      aluno_nome: dados.alunoNome,
-      plano_id: dados.planoId,
-      plano_nome: dados.planoNome,
-      valor: dados.valor,
-      vencimento: dados.vencimento,
-      status: 'pendente',
-    }).select().single();
-    if (error) throw error;
-    return data;
-  },
-
-  criarAluno: async (dados: {
-    nome: string; email: string; telefone?: string;
-    nif?: string; faixa?: string; grau?: number;
-    planoId?: string; planoNome?: string; morada?: string; codPostal?: string;
-  }) => {
-    if (!isConfigured) return null;
-    const { data, error } = await supabase.from('alunos').insert({
-      nome: dados.nome,
-      email: dados.email,
-      telefone: dados.telefone,
-      nif: dados.nif,
-      faixa: dados.faixa || 'branca',
-      grau: dados.grau || 0,
-      plano_id: dados.planoId,
-      plano_nome: dados.planoNome,
-      morada: dados.morada,
-      cod_postal: dados.codPostal,
-      status: 'ativo',
-      data_matricula: new Date().toISOString().split('T')[0],
-    }).select().single();
-    if (error) throw error;
-    return data;
-  },
-
-  enviarMensagem: async (dados: {
-    paraId: string; paraNome: string; canal: string;
-    assunto?: string; corpo: string; remetente: string;
-  }) => {
-    if (!isConfigured) return null;
-    const { data, error } = await supabase.from('mensagens').insert({
-      para_id: dados.paraId,
-      para_nome: dados.paraNome,
-      canal: dados.canal,
-      assunto: dados.assunto,
-      corpo: dados.corpo,
-      remetente: dados.remetente,
-      status: 'enviado',
-      enviado_em: new Date().toISOString(),
-    }).select().single();
-    if (error) throw error;
-    return data;
   },
 };
