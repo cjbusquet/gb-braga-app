@@ -32,5 +32,6 @@
     "vite": "^8.0.10"
   },
   "description": "Gracie Barra Braga — Sistema de Gestão da Academia",
-  "author": "Tribo Laurada Lda."
+  "author": "Tribo Laurada Lda.",
+  "packageManager": "pnpm@9.0.0"
 }
