@@ -56,19 +56,28 @@ function canAccess(role: UserRole, page: string): boolean {
 }
 
 function AppContent() {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const [currentPage, setCurrentPage] = useState('');
   const [registering, setRegistering] = useState(false);
 
+  // Keep the enrollment flow mounted even after signUp() fires onAuthStateChange.
+  // If we checked !user first, the Completo component would be replaced mid-flight
+  // before it finishes saving alunos/contratos and setting matricula_completa.
+  if (registering) {
+    return (
+      <FluxoMatricula
+        registerMode
+        onVoltar={() => setRegistering(false)}
+        onConcludo={async () => {
+          // Re-read the profile so matriculaCompleta is updated before unmounting
+          await refreshProfile();
+          setRegistering(false);
+        }}
+      />
+    );
+  }
+
   if (!user) {
-    if (registering) {
-      return (
-        <FluxoMatricula
-          registerMode
-          onVoltar={() => setRegistering(false)}
-        />
-      );
-    }
     return <LoginPage onRegister={() => setRegistering(true)} />;
   }
 

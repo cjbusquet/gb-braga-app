@@ -548,9 +548,9 @@ function Pendente({ ficha, contrato, plano, registerMode, onVoltar }: {
   );
 }
 
-function Completo({ ficha, contrato, plano, isStaff, registerMode }: {
+function Completo({ ficha, contrato, plano, isStaff, registerMode, onConcludo }: {
   ficha: FichaData; contrato: ContratoData | null; plano: Plano|undefined;
-  isStaff?: boolean; registerMode?: boolean;
+  isStaff?: boolean; registerMode?: boolean; onConcludo?: () => void;
 }) {
   const { user } = useAuth();
   const [acctStatus, setAcctStatus] = useState<AccountStatus>('creating');
@@ -651,6 +651,11 @@ function Completo({ ficha, contrato, plano, isStaff, registerMode }: {
           .eq('id', authUserId);
       }
 
+      if (!needsConfirm) {
+        // All DB work done and session is live — notify parent so it can
+        // refresh the user profile and unmount this registration flow.
+        onConcludo?.();
+      }
       setAcctStatus(needsConfirm ? 'confirm_email' : 'ok');
     };
 
@@ -741,7 +746,7 @@ interface FluxoMatriculaProps {
   onVoltar?: () => void;
 }
 
-export default function FluxoMatricula({ embedded = false, registerMode = false, onVoltar }: FluxoMatriculaProps) {
+export default function FluxoMatricula({ embedded = false, registerMode = false, onVoltar, onConcludo }: FluxoMatriculaProps) {
   const { data: planos } = usePlanos();
   const { user } = useAuth();
   const [step, setStep]       = useState<Step>('ficha');
@@ -777,7 +782,7 @@ export default function FluxoMatricula({ embedded = false, registerMode = false,
       {step==='contrato'  && ficha && <ContratoAssinatura ficha={ficha} onBack={()=>setStep('ficha')} onNext={c=>{ setContrato(c); setStep(isStaff ? 'completo' : 'pagamento'); }}/>}
       {step==='pagamento' && ficha && <EscolhaPagamento ficha={ficha} onBack={()=>setStep('contrato')} onNext={(pid,met)=>{ setPlanoId(pid); setMetodo(met); setStep(met==='numerario'?'pendente':'completo'); }}/>}
       {step==='pendente'  && ficha && <Pendente ficha={ficha} contrato={contrato} plano={plano} registerMode={registerMode} onVoltar={onVoltar}/>}
-      {step==='completo'  && ficha && <Completo ficha={ficha} contrato={contrato} plano={plano} isStaff={isStaff} registerMode={registerMode}/>}
+      {step==='completo'  && ficha && <Completo ficha={ficha} contrato={contrato} plano={plano} isStaff={isStaff} registerMode={registerMode} onConcludo={onConcludo}/>}
     </>
   );
 

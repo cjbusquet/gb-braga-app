@@ -11,6 +11,7 @@ interface AuthContextType {
   register: (email: string, password: string, nome: string) => Promise<{ ok: boolean; confirmEmail: boolean; message: string }>;
   logout: () => void;
   switchRole: (role: UserRole) => void;
+  refreshProfile: () => Promise<void>;
   loading: boolean;
 }
 
@@ -143,6 +144,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshProfile = useCallback(async () => {
+    if (!isConfigured) return;
+    // Re-read the profiles row so matriculaCompleta etc. reflect latest DB state
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await loadProfile(session.user.id, session.user.email!);
+    }
+  }, [loadProfile]);
+
   const logout = async () => {
     if (isConfigured) await supabase.auth.signOut();
     setUser(null);
@@ -155,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, switchRole, loading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, switchRole, refreshProfile, loading }}>
       {loading ? (
         <div style={{ height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#fff' }}>
           <div style={{ textAlign:'center' }}>
