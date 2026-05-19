@@ -21,42 +21,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser]       = useState<User | null>(null);
   const [loading, setLoading] = useState(isConfigured);
 
+  const mapProfile = (data: any, email: string): User => ({
+    id:               data.id,
+    nome:             data.nome || email.split('@')[0],
+    email:            data.email,
+    role:             data.role as UserRole,
+    matriculaCompleta: data.matricula_completa,
+    telefone:         data.telefone,
+    createdAt:        data.created_at,
+  });
+
   const loadProfile = useCallback(async (id: string, email: string) => {
     try {
-      const { data, error } = await supabase
+      // ── 1. Try to read existing profile ──────────────────────────
+      const { data } = await supabase
         .from('profiles')
         .select('id, nome, email, role, matricula_completa, telefone, created_at')
         .eq('id', id)
         .maybeSingle();
 
       if (data) {
-        setUser({
-          id: data.id,
-          nome: data.nome || email.split('@')[0],
-          email: data.email,
-          role: data.role as UserRole,
-          matriculaCompleta: data.matricula_completa,
-          telefone: data.telefone,
-          createdAt: data.created_at,
-        });
+        setUser(mapProfile(data, email));
+        return;
+      }
+
+      // ── 2. Profile missing — trigger may not exist or failed.
+      //       Try to create it (requires "Utilizador cria próprio perfil" policy).
+      console.warn('Profile not found — attempting self-create for', email);
+      const { data: created, error: createErr } = await supabase
+        .from('profiles')
+        .upsert({ id, nome: email.split('@')[0], email, role: 'aluno', matricula_completa: false },
+                 { onConflict: 'id' })
+        .select('id, nome, email, role, matricula_completa, telefone, created_at')
+        .maybeSingle();
+
+      if (created) {
+        setUser(mapProfile(created, email));
       } else {
-        // Profile not found or RLS blocked — create minimal user from email
-        console.warn('Profile not found, using email fallback. Error:', error?.message);
-        setUser({
-          id,
-          nome: email.split('@')[0],
-          email,
-          role: 'aluno',
-          matriculaCompleta: false,
-          createdAt: new Date().toISOString(),
-        });
+        // Self-create also failed (e.g. INSERT policy not yet applied).
+        // Log and use a local fallback so the app at least loads.
+        console.error('Profile self-create failed:', createErr?.message,
+          '— run supabase/patches/02_profile_self_create.sql');
+        setUser({ id, nome: email.split('@')[0], email, role: 'aluno',
+                  matriculaCompleta: false, createdAt: new Date().toISOString() });
       }
     } catch (e) {
       console.error('loadProfile error:', e);
-      setUser({ id, nome: email.split('@')[0], email, role: 'aluno', matriculaCompleta: false, createdAt: new Date().toISOString() });
+      setUser({ id, nome: email.split('@')[0], email, role: 'aluno',
+                matriculaCompleta: false, createdAt: new Date().toISOString() });
     } finally {
       setLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
