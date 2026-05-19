@@ -475,13 +475,14 @@ function Pendente({ ficha, contrato, plano, registerMode, onVoltar }: {
 
       /* 5 ── Update profile (matricula_completa = false — pending approval) */
       if (authUserId && isConfigured) {
-        await supabase.from('profiles')
+        const { error: profErr } = await supabase.from('profiles')
           .update({
             nome:               ficha.nomeAluno,
             telefone:           ficha.telefone,
             matricula_completa: false,
           })
           .eq('id', authUserId);
+        if (profErr) console.error('Profile update error (pendente):', profErr.message, profErr.code);
       }
 
       setAcctStatus(needsConfirm ? 'confirm_email' : 'ok');
@@ -642,13 +643,14 @@ function Completo({ ficha, contrato, plano, isStaff, registerMode, onConcludo }:
 
       /* 5 ── Update profile (matricula_completa = true) */
       if (authUserId && isConfigured) {
-        await supabase.from('profiles')
+        const { error: profErr } = await supabase.from('profiles')
           .update({
             nome:               ficha.nomeAluno,
             telefone:           ficha.telefone,
             matricula_completa: true,
           })
           .eq('id', authUserId);
+        if (profErr) console.error('Profile update error:', profErr.message, profErr.code);
       }
 
       if (!needsConfirm) {

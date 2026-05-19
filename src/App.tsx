@@ -100,7 +100,9 @@ function AppContent() {
     // Staff (superadmin/admin/professor/atendimento) go straight to dashboard
     const isStaff = ['superadmin','admin','professor','atendimento'].includes(user.role);
     if (!isStaff && !user.matriculaCompleta) {
-      return <FluxoMatricula onConcludo={() => {}} />;
+      // onConcludo refreshes the profile so matriculaCompleta becomes true
+      // and this block is no longer entered on the next render.
+      return <FluxoMatricula onConcludo={refreshProfile} />;
     }
     if (user.role === 'aluno') {
       switch (safePage) {
