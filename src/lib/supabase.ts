@@ -1,4 +1,4 @@
-// @ts-nocheck
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Future production file — not yet imported in the app
 // See DEPLOY.md for usage instructions
 

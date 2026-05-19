@@ -1,9 +1,8 @@
-// @ts-nocheck
 import { useState, useEffect, useCallback } from 'react';
 import { useAlunos, useTurmas } from '../../lib/useData';
 import { ACADEMIA } from '../../data/mockData';
 import { beltConfig } from '../../lib/gbBrand';
-import { GBIcon } from '../../components/GBLogo';
+import { GBLogo } from '../../components/GBLogo';
 import type { Aluno } from '../../types';
 
 const ACADEMIA_COORDS = { lat: 41.5484, lng: -8.4259, radius: 100 };
@@ -97,7 +96,7 @@ export default function KioskMode({ onExit }: Props) {
       {/* Top bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 28px', borderBottom: '1px solid #1A1A20', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <GBIcon size={38} bg="#C8102E"/>
+          <GBLogo size={38}/>
           <div>
             <div style={{ color: '#fff', fontSize: 16, fontWeight: 700, fontFamily: 'var(--font-display)', textTransform: 'uppercase' as const }}>Gracie Barra Braga</div>
             <div style={{ color: '#4A4A58', fontSize: 11 }}>Check-in por GPS · {ACADEMIA.morada.split(',')[0]}</div>

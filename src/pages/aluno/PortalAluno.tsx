@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from 'react';
 import { useAlunos, usePagamentos, usePresencas } from '../../lib/useData';
 import { useAuth } from '../../lib/auth';
@@ -31,7 +30,6 @@ export default function PortalAluno({ onNavigate }: { onNavigate?: (page: string
   const [showContrato, setShowContrato] = useState(false);
   const { user } = useAuth();
   const aluno = alunos.find(a => a.email === user?.email) || alunos[0];
-  const meusPagamentos = pagamentos.filter(p => p.alunoId === aluno.id);
   const minhasPresencas = presencas.filter(p => p.alunoId === aluno.id);
   const proximoPagamento = pagamentos.find(p => p.status === 'pendente' || p.status === 'vencido');
 

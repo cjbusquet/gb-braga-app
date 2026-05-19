@@ -187,19 +187,28 @@ export const db = {
 
   criarAluno: async (dados: any) => {
     if (!isConfigured) return null;
+    // Normalize faixa to a valid belt_type enum value.
+    // Form values like 'Cinza e Branca' or 'Branca' must map to
+    // lowercase single-word values ('cinza', 'branca', …).
+    const rawFaixa: string = (dados.faixa || '').toLowerCase().trim();
+    const faixaEnum = rawFaixa.split(/\s+/)[0] || 'branca';
+    const validFaixas = ['branca','cinza','amarela','laranja','verde','azul','roxa','marrom','preta'];
+    const faixa = validFaixas.includes(faixaEnum) ? faixaEnum : 'branca';
+
     const { data, error } = await supabase.from('alunos').insert({
+      profile_id:      dados.profileId    || null,
       nome:            dados.nome,
       email:           dados.email,
-      telefone:        dados.telefone,
-      nif:             dados.nif,
-      faixa:           dados.faixa || 'branca',
-      grau:            dados.grau  || 0,
-      plano_id:        dados.planoId   || null,
-      plano_nome:      dados.planoNome || null,
-      morada:          dados.morada    || null,
-      cod_postal:      dados.codPostal || null,
-      data_nascimento: dados.dataNasc  || null,
-      status:          dados.status    || 'ativo',
+      telefone:        dados.telefone     || null,
+      nif:             dados.nif          || null,
+      faixa,
+      grau:            dados.grau         ?? 0,
+      plano_id:        dados.planoId      || null,
+      plano_nome:      dados.planoNome    || null,
+      morada:          dados.morada       || null,
+      cod_postal:      dados.codPostal    || null,
+      data_nascimento: dados.dataNasc     || null,
+      status:          dados.status       || 'ativo',
       data_matricula:  new Date().toISOString().split('T')[0],
     }).select().single();
     if (error) throw error;
@@ -294,20 +303,22 @@ export const db = {
     const { data, error } = await supabase.from('contratos').insert({
       aluno_id:        dados.alunoId,
       aluno_nome:      dados.alunoNome,
-      aluno_nif:       dados.alunoNif,
-      plano_id:        dados.planoId,
-      plano_nome:      dados.planoNome,
-      valor:           dados.valor,
+      aluno_nif:       dados.alunoNif    || null,
+      plano_id:        dados.planoId     || null,
+      plano_nome:      dados.planoNome   || null,
+      valor:           dados.valor       ?? 0,
       assinado:        true,
       data_assinatura: new Date().toISOString(),
-      assinatura_img:  dados.assinaturaImg,
-      aceita_imagem:   dados.aceitaImagem,
-      aceita_rgpd:     dados.aceitaRGPD,
+      assinatura_img:  dados.assinaturaImg || null,
+      aceita_imagem:   dados.aceitaImagem  ?? false,
+      aceita_rgpd:     dados.aceitaRGPD    ?? false,
       aceita_contrato: true,
-      enc_pagamento:   dados.encPagamento,
+      enc_pagamento:   dados.encPagamento  || 'aluno',
     }).select().single();
     if (error) throw error;
-    await supabase.from('profiles').update({ matricula_completa: true }).eq('id', dados.alunoId);
+    // NOTE: profiles.matricula_completa is set separately by the
+    // enrollment flow using the correct auth user ID — do NOT update
+    // it here (dados.alunoId is the alunos UUID, not the profile UUID).
     return data;
   },
 

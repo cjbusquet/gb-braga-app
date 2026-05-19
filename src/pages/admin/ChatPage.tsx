@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useRef, useEffect } from 'react';
 import { useAlunos } from '../../lib/useData';
 import { beltConfig } from '../../lib/gbBrand';
@@ -93,11 +92,13 @@ export default function ChatPage() {
   // Mark as read when opening
   useEffect(() => {
     if (alunoAtivo && conversas[alunoAtivo]?.naoLidas > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setConversas(prev => ({
         ...prev,
         [alunoAtivo]: { ...prev[alunoAtivo], naoLidas: 0, msgs: prev[alunoAtivo].msgs.map(m => ({ ...m, lida: true })) }
       }));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [alunoAtivo]);
 
   const enviar = () => {

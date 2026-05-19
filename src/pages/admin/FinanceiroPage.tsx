@@ -1,4 +1,4 @@
-// @ts-nocheck
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { usePagamentos, usePlanos, useAlunos, db } from '../../lib/useData';
 import { GB } from '../../lib/gbBrand';
@@ -38,8 +38,6 @@ export default function FinanceiroPage() {
     vencido:  { color:GB.red,   bg:'rgba(200,16,46,0.08)', label:'Vencido' },
     cancelado:{ color:'#6B7280', bg:'rgba(107,114,128,0.1)',label:'Cancelado' },
   };
-
-  const inp: React.CSSProperties = { background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:6, padding:'6px 10px', color:'var(--text-primary)', fontSize:12, cursor:'pointer' };
 
   return (
     <div>

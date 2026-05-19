@@ -423,6 +423,7 @@ function Pendente({ ficha, contrato, plano, registerMode, onVoltar }: {
       let alunoId: string | null = null;
       try {
         const alunoData = await db.criarAluno({
+          profileId: authUserId,
           nome:      ficha.nomeAluno,
           email:     ficha.email,
           telefone:  ficha.telefone,
@@ -474,14 +475,13 @@ function Pendente({ ficha, contrato, plano, registerMode, onVoltar }: {
 
       /* 5 ── Update profile (matricula_completa = false — pending approval) */
       if (authUserId && isConfigured) {
-        await supabase.from('profiles').upsert({
-          id:                authUserId,
-          nome:              ficha.nomeAluno,
-          email:             ficha.email,
-          telefone:          ficha.telefone,
-          role:              'aluno',
-          matricula_completa: false,
-        });
+        await supabase.from('profiles')
+          .update({
+            nome:               ficha.nomeAluno,
+            telefone:           ficha.telefone,
+            matricula_completa: false,
+          })
+          .eq('id', authUserId);
       }
 
       setAcctStatus(needsConfirm ? 'confirm_email' : 'ok');
@@ -586,6 +586,7 @@ function Completo({ ficha, contrato, plano, isStaff, registerMode }: {
       let alunoId: string | null = null;
       try {
         const alunoData = await db.criarAluno({
+          profileId: authUserId,
           nome:      ficha.nomeAluno,
           email:     ficha.email,
           telefone:  ficha.telefone,
@@ -641,14 +642,13 @@ function Completo({ ficha, contrato, plano, isStaff, registerMode }: {
 
       /* 5 ── Update profile (matricula_completa = true) */
       if (authUserId && isConfigured) {
-        await supabase.from('profiles').upsert({
-          id:                authUserId,
-          nome:              ficha.nomeAluno,
-          email:             ficha.email,
-          telefone:          ficha.telefone,
-          role:              'aluno',
-          matricula_completa: true,
-        });
+        await supabase.from('profiles')
+          .update({
+            nome:               ficha.nomeAluno,
+            telefone:           ficha.telefone,
+            matricula_completa: true,
+          })
+          .eq('id', authUserId);
       }
 
       setAcctStatus(needsConfirm ? 'confirm_email' : 'ok');

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from 'react';
 import { useTurmas, useAlunos, usePresencas, useGraduacoes } from '../../lib/useData';
 import { useAuth } from '../../lib/auth';
@@ -91,11 +90,11 @@ export default function ProfessorView() {
               <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 14 }}>Horário Semanal</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 6 }}>
                 {DAYS_ABR.map((d, i) => {
-                  const turmas = turmas.filter(t => t.diaSemana.includes(DAYS_FULL[i]));
+                  const dayTurmas = turmas.filter(t => t.diaSemana.includes(DAYS_FULL[i]));
                   return (
                     <div key={d} style={{ textAlign: 'center' as const }}>
-                      <div style={{ color: turmas.length ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, marginBottom: 5 }}>{d}</div>
-                      {turmas.length > 0 ? turmas.map((t, ti) => (
+                      <div style={{ color: dayTurmas.length ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, marginBottom: 5 }}>{d}</div>
+                      {dayTurmas.length > 0 ? dayTurmas.map((t, ti) => (
                         <div key={ti} style={{ background: 'rgba(200,16,46,0.07)', border: '1px solid rgba(200,16,46,0.18)', borderRadius: 5, padding: '3px 2px', marginBottom: 3 }}>
                           <div style={{ color: 'var(--gb-red)', fontSize: 8.5, fontWeight: 700, lineHeight: 1.2 }}>{t.horario.split('-')[0]}</div>
                         </div>

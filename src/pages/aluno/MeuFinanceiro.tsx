@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { usePagamentos, useAlunos } from '../../lib/useData';
 import { mockTocDocumentos } from '../../data/mockData';
 import { useAuth } from '../../lib/auth';

@@ -1,4 +1,4 @@
-// @ts-nocheck
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { GBLogoFull } from '../../components/GBLogo';
 import { usePlanos } from '../../lib/useData';
@@ -129,8 +129,8 @@ export default function MatriculaPublica() {
             {/* Categoria cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 14, marginBottom: 40 }}>
               {CATEGORIAS.map(cat => {
-                const planos = planos.filter(p => p.ativo && (p as any).categoria === cat.id);
-                const minPrice = planos.length ? Math.min(...planos.map(p => p.valor)) : 0;
+                const catPlanos = planos.filter(p => p.ativo && (p as any).categoria === cat.id);
+                const minPrice = catPlanos.length ? Math.min(...catPlanos.map(p => p.valor)) : 0;
                 return (
                   <div key={cat.id} onClick={() => { setCategoria(cat.id); setStep('plano'); }}
                     style={{ background: '#fff', border: '1px solid #E2E0DB', borderRadius: 14, padding: '22px 18px', cursor: 'pointer', textAlign: 'center' as const, transition: 'all 0.15s', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
@@ -200,8 +200,8 @@ export default function MatriculaPublica() {
           <p style={{ textAlign: 'center' as const, color: '#9896A4', fontSize: 14, marginBottom: 30 }}>Escolhe a categoria para ver os planos disponíveis</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
             {CATEGORIAS.map(cat => {
-              const planos = planos.filter(p => p.ativo && (p as any).categoria === cat.id);
-              const minPrice = Math.min(...planos.map(p => p.valor));
+              const catPlanos = planos.filter(p => p.ativo && (p as any).categoria === cat.id);
+              const minPrice = Math.min(...catPlanos.map(p => p.valor));
               return (
                 <button key={cat.id} onClick={() => { setCategoria(cat.id); setStep('plano'); }}
                   style={{ background: '#fff', border: '2px solid #E2E0DB', borderRadius: 14, padding: '24px 20px', textAlign: 'center' as const, cursor: 'pointer', transition: 'all 0.15s', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}

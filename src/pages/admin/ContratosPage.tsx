@@ -1,14 +1,11 @@
-// @ts-nocheck
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
-import { useContratos, useAlunos, usePlanos } from '../../lib/useData';
+import { useContratos } from '../../lib/useData';
 import { GB } from '../../lib/gbBrand';
 
 export default function ContratosPage() {
-  const { data: contratos, refetch } = useContratos();
-  const { data: alunos }             = useAlunos();
-  const { data: planos }             = usePlanos();
-  const [filtro, setFiltro]          = useState('todos');
-  const [showNovo, setShowNovo]      = useState(false);
+  const { data: contratos } = useContratos();
+  const [filtro, setFiltro] = useState('todos');
 
   const filtered = contratos.filter((c: any) => filtro === 'todos' || c.status === filtro);
 

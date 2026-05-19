@@ -386,6 +386,55 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- ── ENROLLMENT SELF-REGISTRATION POLICIES ────────────────────
+-- Allow newly registered aluno (role = 'aluno') to write their
+-- own data during the enrollment flow.  Staff paths use the
+-- existing admin policies above; these add the student path.
+
+-- 1. alunos — student can insert own record
+CREATE POLICY "Aluno auto-registo" ON alunos
+  FOR INSERT
+  WITH CHECK (
+    email = (SELECT email FROM profiles WHERE id = auth.uid())
+    OR auth_role() IN ('admin','superadmin','atendimento')
+  );
+
+-- 2. contratos — student can insert own contract
+CREATE POLICY "Aluno insere contrato" ON contratos
+  FOR INSERT
+  WITH CHECK (
+    aluno_id IN (
+      SELECT id FROM alunos
+      WHERE email = (SELECT email FROM profiles WHERE id = auth.uid())
+    )
+    OR auth_role() IN ('admin','superadmin')
+  );
+
+-- 3. pagamentos — student can insert own first payment record
+CREATE POLICY "Aluno insere pagamento" ON pagamentos
+  FOR INSERT
+  WITH CHECK (
+    aluno_id IN (
+      SELECT id FROM alunos
+      WHERE email = (SELECT email FROM profiles WHERE id = auth.uid())
+    )
+    OR auth_role() IN ('admin','superadmin')
+  );
+
+-- 4. pedidos_numerario — student can submit cash-payment request
+CREATE POLICY "Aluno submete numerario" ON pedidos_numerario
+  FOR INSERT
+  WITH CHECK (
+    email = (SELECT email FROM profiles WHERE id = auth.uid())
+    OR auth_role() IN ('admin','superadmin','atendimento')
+  );
+
+-- 5. profiles — any authenticated user can update their own profile
+--    (required to set matricula_completa after enrollment)
+CREATE POLICY "Aluno atualiza próprio perfil" ON profiles
+  FOR UPDATE
+  USING (id = auth.uid());
+
 -- ============================================================
 -- Schema completo: 15 tabelas, RLS em todas, 2 views, 3 funções
 -- Pronto para produção GB Braga

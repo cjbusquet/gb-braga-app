@@ -1,4 +1,4 @@
-// @ts-nocheck
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useKPIs, useAlunos, usePagamentos, usePresencas, useTurmas } from '../../lib/useData';
 import { GB } from '../../lib/gbBrand';
 

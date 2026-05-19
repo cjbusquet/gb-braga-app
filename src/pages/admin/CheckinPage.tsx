@@ -1,8 +1,7 @@
-// @ts-nocheck
-import { useState, useEffect, useRef } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState } from 'react';
 import { usePresencas, useAlunos, useTurmas, db } from '../../lib/useData';
 import { GB } from '../../lib/gbBrand';
-import { ACADEMIA } from '../../data/mockData';
 
 const ACADEMIA_LAT = 41.5484, ACADEMIA_LNG = -8.4259;
 
@@ -16,18 +15,13 @@ export default function CheckinPage() {
   const { data: alunos }   = useAlunos();
   const { data: turmas }   = useTurmas();
   const { data: presencasDB, refetch } = usePresencas();
-  const [checkIns, setCheckIns] = useState<any[]>([]);
+  const checkIns = presencasDB ?? [];
   const [tab, setTab]           = useState<'gps'|'manual'|'live'>('live');
   const [gpsStatus, setGpsStatus] = useState<'idle'|'checking'|'inside'|'outside'|'denied'>('idle');
   const [gpsDist, setGpsDist]   = useState<number|null>(null);
   const [fenceRadius, setFenceRadius] = useState(100);
-  const [turmaFilter, setTurmaFilter] = useState('');
-  const [kioskMode, setKioskMode] = useState(false);
-  const [myCheckin, setMyCheckin] = useState<any>(null);
-
-  useEffect(() => {
-    if (presencasDB?.length) setCheckIns(presencasDB);
-  }, [presencasDB]);
+  const [, setKioskMode] = useState(false);
+  const [, setTurmaFilter] = useState('');
 
   const checkGPS = () => {
     setGpsStatus('checking');
@@ -54,7 +48,6 @@ export default function CheckinPage() {
       hora: new Date().toTimeString().slice(0,5),
       tipo: 'checkin', metodo: gpsStatus==='inside' ? 'gps' : 'manual',
     };
-    setCheckIns(prev => [nova, ...prev]);
     try {
       await db.registarPresenca({ alunoId, alunoNome, turmaId, turmaNome, metodo: nova.metodo, gpsDist: gpsDist??undefined });
       refetch();

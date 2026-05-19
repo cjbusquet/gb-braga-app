@@ -1,4 +1,4 @@
-// @ts-nocheck
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { useTurmas, useAlunos, db } from '../../lib/useData';
 import { GB } from '../../lib/gbBrand';

@@ -1,4 +1,4 @@
-import type { Aluno, Professor, Turma, Pagamento, Presenca, Mensagem, Graduacao, Plano, KPIs, Notificacao, Contrato, User, TocDocumento, TocConfig } from '../types';
+import type { Aluno, Professor, Turma, Pagamento, Presenca, Mensagem, Graduacao, Plano, KPIs, Contrato, User, TocDocumento, TocConfig } from '../types';
 
 // ─── DADOS REAIS — Gracie Barra Braga ────────────────────────────────────────
 // Fonte: gbbraga.com | Morada: Rua Nova Santa Cruz 11, 4710-409 Braga

@@ -12,8 +12,6 @@ const VIDEOS = [
   { id: 8, titulo: 'Sistema de Joelho na Barriga', nivel: 'verde', duracao: '35min', prof: 'João Santos', desc: 'Controlo, transições e finalizações.' },
 ];
 
-const CATEGORIAS = ['Todos', 'Guarda', 'Passagem', 'Finalização', 'Posição'];
-
 export default function Conteudo() {
   const [filterNivel, setFilterNivel] = useState('todos');
   const [busca, setBusca] = useState('');

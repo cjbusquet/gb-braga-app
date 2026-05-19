@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from 'react';
 import { useAlunos } from '../../lib/useData';
 import { mockMensagens } from '../../data/mockData';

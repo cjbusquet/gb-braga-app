@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useTurmas, usePresencas, useAlunos } from '../../lib/useData';
 import { useAuth } from '../../lib/auth';
 import { GB } from '../../lib/gbBrand';

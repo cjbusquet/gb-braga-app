@@ -1,4 +1,4 @@
-// @ts-nocheck
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import { useAlunos, useGraduacoes, db } from '../../lib/useData';
 import { GB, beltConfig } from '../../lib/gbBrand';
@@ -28,6 +28,10 @@ export default function GraduacaoPage() {
   const { data: graduacoesDB } = useGraduacoes();
   const [tab, setTab]          = useState<Tab>('candidatos');
   const [graduacoes, setGraduacoes] = useState<any[]>([]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (graduacoesDB?.length) setGraduacoes(graduacoesDB);
+  }, [graduacoesDB]);
   const [alunoSel, setAlunoSel]     = useState('');
   const [novaFaixa, setNovaFaixa]   = useState('branca');
   const [novoGrau, setNovoGrau]     = useState(0);
@@ -36,16 +40,13 @@ export default function GraduacaoPage() {
   const [saving, setSaving]         = useState(false);
   const [success, setSuccess]       = useState(false);
 
-  useEffect(() => {
-    if (graduacoesDB?.length) setGraduacoes(graduacoesDB);
-  }, [graduacoesDB]);
-
   // When aluno changes, pre-fill next belt
   useEffect(() => {
     if (!alunoSel) return;
     const aluno = alunos.find((a: any) => a.id === alunoSel);
     if (aluno) {
       const prox = proxFaixaGrau(aluno.faixa || 'branca', aluno.grau || 0);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setNovaFaixa(prox.faixa);
       setNovoGrau(prox.grau);
     }

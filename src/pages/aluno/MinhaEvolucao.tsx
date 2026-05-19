@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useGraduacoes, useAlunos, usePresencas } from '../../lib/useData';
 import { useAuth } from '../../lib/auth';
 import { GB, beltConfig } from '../../lib/gbBrand';

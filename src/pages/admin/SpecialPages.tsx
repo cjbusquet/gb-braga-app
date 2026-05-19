@@ -1,4 +1,4 @@
-// @ts-nocheck
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { useKPIs, useAlunos, usePagamentos } from '../../lib/useData';
 import { revenueHistory } from '../../data/mockData';
@@ -51,9 +51,9 @@ const REDE_12M = [
 ];
 
 export function SuperAdminDashboard() {
-  const { data: kpis } = useKPIs();
-  const { data: alunos } = useAlunos();
-  const { data: pagamentos } = usePagamentos();
+  useKPIs();
+  useAlunos();
+  usePagamentos();
   const totalAlunos  = ACADEMIAS.reduce((s,a) => s+a.alunos,0);
   const totalReceita = ACADEMIAS.reduce((s,a) => s+a.receita,0);
   const totalInadimp = ACADEMIAS.reduce((s,a) => s+a.inadimp,0);

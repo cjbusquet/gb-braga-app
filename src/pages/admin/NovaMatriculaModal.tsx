@@ -1,7 +1,7 @@
-// @ts-nocheck
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { usePlanos, db } from '../../lib/useData';
-import { GB, beltConfig } from '../../lib/gbBrand';
+import { GB } from '../../lib/gbBrand';
 
 const FAIXAS = ['branca','cinza','amarela','laranja','verde','azul','roxa','marrom','preta'];
 const CATS   = ['adulto','kids','familia','fundador'];
