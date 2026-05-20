@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type React from 'react';
 import { GB } from '../../lib/gbBrand';
 import { defaultTocConfig } from '../../data/mockData';
@@ -18,6 +18,58 @@ const SECTIONS: { id: Section; label: string; icon: string; desc: string; supera
   { id: 'compliance', label: 'IPDJ / RGPD',          icon: '📋', desc: 'Legal e conformidade' },
 ];
 
+// ─── useConfig hook — loads/saves a section's config from the `configuracoes` table ──
+function useConfig<T extends object>(secao: string, defaults: T) {
+  const [data, setData]     = useState<T>(defaults);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving]   = useState(false);
+  const [saved, setSaved]     = useState(false);
+
+  useEffect(() => {
+    if (!isConfigured) { setLoading(false); return; }
+    supabase
+      .from('configuracoes')
+      .select('dados')
+      .eq('secao', secao)
+      .maybeSingle()
+      .then(({ data: row }) => {
+        if (row?.dados && typeof row.dados === 'object') {
+          setData(prev => ({ ...prev, ...(row.dados as Partial<T>) }));
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [secao]);
+
+  const save = async (override?: T) => {
+    const toSave = override ?? data;
+    if (!isConfigured) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+      return;
+    }
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase
+        .from('configuracoes')
+        .upsert(
+          { secao, dados: toSave, updated_at: new Date().toISOString(), updated_by: user?.id },
+          { onConflict: 'secao' }
+        );
+    } catch (e) {
+      console.error('useConfig save error:', e);
+    }
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
+  return { data, setData, loading, saving, saved, save };
+}
+
+// ─── Small UI helpers ─────────────────────────────────────────────────────────
 function Label({ children }: { children: React.ReactNode }) {
   return <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 12 }}>{children}</div>;
 }
@@ -43,11 +95,11 @@ function Card({ children, style = {} }: { children: React.ReactNode; style?: Rea
   return <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 22, ...style }}>{children}</div>;
 }
 
-function SaveBar({ onSave, saved }: { onSave: () => void; saved: boolean }) {
+function SaveBar({ onSave, saved, saving = false }: { onSave: () => void; saved: boolean; saving?: boolean }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
-      <button onClick={onSave} style={{ background: saved ? '#22C55E' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '10px 22px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: `0 0 16px ${saved ? 'rgba(34,197,94,0.2)' : GB.redGlow}` }}>
-        {saved ? '✓ Guardado' : '💾 Guardar Configuração'}
+      <button onClick={onSave} disabled={saving} style={{ background: saved ? '#22C55E' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '10px 22px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: `0 0 16px ${saved ? 'rgba(34,197,94,0.2)' : GB.redGlow}`, opacity: saving ? 0.7 : 1 }}>
+        {saving ? '⟳ A guardar...' : saved ? '✓ Guardado' : '💾 Guardar Configuração'}
       </button>
     </div>
   );
@@ -55,10 +107,9 @@ function SaveBar({ onSave, saved }: { onSave: () => void; saved: boolean }) {
 
 // ─── TOConline Section ────────────────────────────────────────────────────────
 function TocSection() {
-  const [cfg, setCfg] = useState<TocConfig>(defaultTocConfig);
+  const { data: cfg, setData: setCfg, loading, saving, saved, save } = useConfig<TocConfig>('toconline', defaultTocConfig);
   const [testing, setTesting] = useState(false);
   const [connStatus, setConnStatus] = useState<'idle' | 'ok' | 'fail'>('idle');
-  const [saved, setSaved] = useState(false);
 
   const update = (key: keyof TocConfig, val: string | boolean) =>
     setCfg(c => ({ ...c, [key]: val }));
@@ -70,7 +121,7 @@ function TocSection() {
     setTesting(false);
   };
 
-  const save = () => { setSaved(true); setTimeout(() => setSaved(false), 2500); };
+  if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 24 }}>A carregar configuração...</div>;
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -131,9 +182,9 @@ function TocSection() {
               color: connStatus === 'ok' ? '#22C55E' : connStatus === 'fail' ? GB.red : 'var(--text-secondary)' }}>
             {testing ? '⟳ A testar...' : connStatus === 'ok' ? '✓ Ligação OK' : connStatus === 'fail' ? '✕ Sem ligação' : '⚡ Testar Ligação'}
           </button>
-          <button onClick={save}
-            style={{ flex: 2, background: saved ? '#22C55E' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '10px', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-            {saved ? '✓ Guardado!' : '💾 Guardar'}
+          <button onClick={() => save()} disabled={saving}
+            style={{ flex: 2, background: saved ? '#22C55E' : saving ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '10px', color: '#fff', fontSize: 12, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+            {saving ? '⟳ A guardar...' : saved ? '✓ Guardado!' : '💾 Guardar'}
           </button>
         </div>
       </Card>
@@ -204,17 +255,39 @@ const PLANOS_STRIPE = [
   { id:'pl-familia-4-fund', nome:'Família 4 Fundador',    valor:190, cat:'fundador' },
 ];
 
+type StripeConfig = {
+  mode: 'test' | 'live';
+  pk: string;
+  sk: string;
+  whsec: string;
+  priceIds: Record<string, string>;
+};
+
+const defaultStripe: StripeConfig = {
+  mode: 'test',
+  pk: '',
+  sk: '',
+  whsec: '',
+  priceIds: Object.fromEntries(PLANOS_STRIPE.map(p => [p.id, ''])),
+};
+
 function StripeSection() {
-  const [mode, setMode] = useState<'test'|'live'>('test');
-  const [pk, setPk] = useState('');
-  const [sk, setSk] = useState('');
-  const [whsec, setWhsec] = useState('');
-  const [priceIds, setPriceIds] = useState<Record<string,string>>(() =>
-    Object.fromEntries(PLANOS_STRIPE.map(p => [p.id, '']))
-  );
-  const [saved, setSaved] = useState(false);
+  const { data, setData, loading, saving, saved, save } = useConfig<StripeConfig>('stripe', defaultStripe);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<'ok'|'err'|null>(null);
+
+  const mode    = data.mode;
+  const pk      = data.pk;
+  const sk      = data.sk;
+  const whsec   = data.whsec;
+  const priceIds = data.priceIds ?? defaultStripe.priceIds;
+
+  const setMode    = (m: 'test'|'live')  => setData(p => ({ ...p, mode: m }));
+  const setPk      = (v: string)          => setData(p => ({ ...p, pk: v }));
+  const setSk      = (v: string)          => setData(p => ({ ...p, sk: v }));
+  const setWhsec   = (v: string)          => setData(p => ({ ...p, whsec: v }));
+  const setPriceId = (id: string, v: string) =>
+    setData(p => ({ ...p, priceIds: { ...p.priceIds, [id]: v } }));
 
   const testConn = async () => {
     setTesting(true); setTestResult(null);
@@ -223,6 +296,8 @@ function StripeSection() {
     setTestResult(sk.startsWith('sk_') ? 'ok' : 'err');
     setTimeout(() => setTestResult(null), 4000);
   };
+
+  if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 24 }}>A carregar configuração...</div>;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -273,8 +348,9 @@ function StripeSection() {
               👤 Customer Portal →
             </a>
           </div>
-          <button onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 2500); }} style={{ background: saved ? '#22C55E' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 20px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-            {saved ? '✓ Guardado' : '💾 Guardar'}
+          <button onClick={() => save()} disabled={saving}
+            style={{ background: saved ? '#22C55E' : saving ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 20px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+            {saving ? '⟳ A guardar...' : saved ? '✓ Guardado' : '💾 Guardar'}
           </button>
         </div>
       </Card>
@@ -297,15 +373,16 @@ function StripeSection() {
                 <div style={{ color: 'var(--text-primary)', fontSize: 12, fontWeight: 600 }}>{p.nome}</div>
                 <div style={{ color: 'var(--text-muted)', fontSize: 10.5 }}>€{p.valor}/mês</div>
               </div>
-              <input value={priceIds[p.id]} onChange={e => setPriceIds(prev => ({ ...prev, [p.id]: e.target.value }))}
+              <input value={priceIds[p.id] ?? ''} onChange={e => setPriceId(p.id, e.target.value)}
                 placeholder={`price_${mode === 'live' ? 'live' : 'test'}_...`}
                 style={{ flex: 1, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 9px', color: 'var(--text-primary)', fontSize: 11.5, fontFamily: 'var(--font-mono)' }}/>
             </div>
           ))}
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 14 }}>
-          <button onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 2500); }} style={{ background: saved ? '#22C55E' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 20px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-            {saved ? '✓ Guardado' : '💾 Guardar Price IDs'}
+          <button onClick={() => save()} disabled={saving}
+            style={{ background: saved ? '#22C55E' : saving ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 20px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+            {saving ? '⟳ A guardar...' : saved ? '✓ Guardado' : '💾 Guardar Price IDs'}
           </button>
         </div>
       </Card>
@@ -335,10 +412,13 @@ function StripeSection() {
 }
 
 // ─── WhatsApp Section ─────────────────────────────────────────────────────────
+type WaConfig = { num: string; token: string };
+
 function WhatsAppSection() {
-  const [num, setNum] = useState('+351912345679');
-  const [token, setToken] = useState('');
-  const [saved, setSaved] = useState(false);
+  const { data, setData, loading, saving, saved, save } = useConfig<WaConfig>('whatsapp', { num: '+351912345679', token: '' });
+
+  if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 24 }}>A carregar configuração...</div>;
+
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
       <Card>
@@ -350,12 +430,12 @@ function WhatsAppSection() {
           </div>
         </div>
         <Field label="Número WhatsApp Business">
-          <Input value={num} onChange={setNum} placeholder="+351..." mono />
+          <Input value={data.num} onChange={v => setData(p => ({ ...p, num: v }))} placeholder="+351..." mono />
         </Field>
         <Field label="Access Token (Meta)">
-          <Input value={token} onChange={setToken} placeholder="EAA..." type="password" mono />
+          <Input value={data.token} onChange={v => setData(p => ({ ...p, token: v }))} placeholder="EAA..." type="password" mono />
         </Field>
-        <SaveBar onSave={() => { setSaved(true); setTimeout(() => setSaved(false), 2500); }} saved={saved} />
+        <SaveBar onSave={() => save()} saved={saved} saving={saving} />
       </Card>
       <Card>
         <Label>Templates aprovados</Label>
@@ -376,9 +456,17 @@ function WhatsAppSection() {
 }
 
 // ─── Generic placeholder sections ────────────────────────────────────────────
-function SimpleSection({ title, icon, bg, fields }: { title: string; icon: string; bg: string; fields: { label: string; placeholder: string; type?: string }[] }) {
-  const [vals, setVals] = useState<Record<string, string>>({});
-  const [saved, setSaved] = useState(false);
+function SimpleSection({ secao, title, icon, bg, fields }: {
+  secao: string;
+  title: string;
+  icon: string;
+  bg: string;
+  fields: { label: string; placeholder: string; type?: string }[];
+}) {
+  const { data: vals, setData: setVals, loading, saving, saved, save } = useConfig<Record<string, string>>(secao, {});
+
+  if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 24 }}>A carregar configuração...</div>;
+
   return (
     <div style={{ maxWidth: 560 }}>
       <Card>
@@ -388,10 +476,15 @@ function SimpleSection({ title, icon, bg, fields }: { title: string; icon: strin
         </div>
         {fields.map(f => (
           <Field key={f.label} label={f.label}>
-            <Input value={vals[f.label] || ''} onChange={v => setVals(p => ({ ...p, [f.label]: v }))} placeholder={f.placeholder} type={f.type || 'text'} />
+            <Input
+              value={vals[f.label] || ''}
+              onChange={v => setVals(p => ({ ...p, [f.label]: v }))}
+              placeholder={f.placeholder}
+              type={f.type || 'text'}
+            />
           </Field>
         ))}
-        <SaveBar onSave={() => { setSaved(true); setTimeout(() => setSaved(false), 2500); }} saved={saved} />
+        <SaveBar onSave={() => save()} saved={saved} saving={saving} />
       </Card>
     </div>
   );
@@ -558,20 +651,20 @@ export default function ConfigPage() {
       case 'toconline':  return <TocSection />;
       case 'stripe':     return <StripeSection />;
       case 'whatsapp':   return <WhatsAppSection />;
-      case 'email':      return <SimpleSection title="Email / SMTP" icon="📧" bg="#1E3A5F" fields={[
+      case 'email':      return <SimpleSection secao="email" title="Email / SMTP" icon="📧" bg="#1E3A5F" fields={[
         { label: 'Servidor SMTP', placeholder: 'smtp.gmail.com' },
         { label: 'Porta', placeholder: '587' },
         { label: 'Email remetente', placeholder: 'noreply@graciebarra.pt' },
         { label: 'Password', placeholder: '••••••••', type: 'password' },
       ]}/>;
-      case 'academia':   return <SimpleSection title="Academia" icon="🏫" bg="#1A1A1A" fields={[
+      case 'academia':   return <SimpleSection secao="academia" title="Academia" icon="🏫" bg="#1A1A1A" fields={[
         { label: 'Nome da academia', placeholder: 'Gracie Barra Braga' },
         { label: 'Morada', placeholder: 'Rua..., 4700 Braga' },
         { label: 'Telefone', placeholder: '+351 927 773 854' },
         { label: 'Email', placeholder: 'atendimento@gbbraga.com' },
         { label: 'NIF', placeholder: '512345678' },
       ]}/>;
-      case 'compliance': return <SimpleSection title="IPDJ / RGPD" icon="📋" bg="#2D1B69" fields={[
+      case 'compliance': return <SimpleSection secao="compliance" title="IPDJ / RGPD" icon="📋" bg="#2D1B69" fields={[
         { label: 'Número alvará IPDJ', placeholder: 'AL-XXXXX' },
         { label: 'DPO (Responsável RGPD)', placeholder: 'Nome do responsável' },
         { label: 'Email RGPD', placeholder: 'rgpd@graciebarra.pt' },
