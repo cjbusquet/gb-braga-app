@@ -495,20 +495,148 @@ function SimpleSection({ secao, title, icon, bg, fields }: {
 // ─── Equipa Section (superadmin only) ────────────────────────────────────────
 type StaffRole = 'professor' | 'admin' | 'atendimento';
 const STAFF_ROLES: { value: StaffRole; label: string; desc: string }[] = [
-  { value: 'professor',  label: 'Professor',   desc: 'Acesso a turmas, check-in e graduação' },
-  { value: 'admin',      label: 'Administrador', desc: 'Acesso total exceto gestão de superadmin' },
-  { value: 'atendimento', label: 'Atendimento', desc: 'Registo de alunos, check-in e comunicação' },
+  { value: 'professor',   label: 'Professor',     desc: 'Acesso a turmas, check-in e graduação' },
+  { value: 'admin',       label: 'Administrador', desc: 'Acesso total exceto gestão de superadmin' },
+  { value: 'atendimento', label: 'Atendimento',   desc: 'Registo de alunos, check-in e comunicação' },
 ];
+
+const ROLE_BADGE: Record<string, { label: string; color: string; bg: string }> = {
+  superadmin:  { label: 'Superadmin',     color: '#7C3AED', bg: 'rgba(124,58,237,0.10)' },
+  admin:       { label: 'Administrador',  color: '#1D4ED8', bg: 'rgba(29,78,216,0.10)'  },
+  professor:   { label: 'Professor',      color: '#EA580C', bg: 'rgba(234,88,12,0.10)'  },
+  atendimento: { label: 'Atendimento',    color: '#16A34A', bg: 'rgba(22,163,74,0.10)'  },
+};
+
+type StaffMember = {
+  id: string;
+  nome: string;
+  email: string;
+  role: string;
+  telefone: string;
+  nif: string;
+  morada: string;
+};
+
+function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => void }) {
+  const [open, setOpen]   = useState(false);
+  const [d, setD]         = useState(member);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved]   = useState(false);
+  const [err, setErr]       = useState('');
+
+  const INP: React.CSSProperties = {
+    width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)',
+    fontSize: 12.5, fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box',
+  };
+
+  const saveStaff = async () => {
+    setSaving(true); setErr('');
+    const { error } = await supabase
+      .from('profiles')
+      .update({ nome: d.nome, telefone: d.telefone || null, nif: d.nif || null, morada: d.morada || null })
+      .eq('id', d.id);
+    setSaving(false);
+    if (error) { setErr(error.message); return; }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+    onSaved();
+  };
+
+  const badge = ROLE_BADGE[d.role] ?? ROLE_BADGE['atendimento'];
+
+  return (
+    <div style={{ background: 'var(--bg-card)', border: `1px solid ${open ? GB.red : 'var(--border)'}`, borderRadius: 'var(--radius-lg)', overflow: 'hidden', transition: 'border-color 0.15s' }}>
+      {/* Header row */}
+      <button onClick={() => setOpen(o => !o)}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+        <div style={{ width: 38, height: 38, borderRadius: '50%', background: `${badge.bg}`, border: `2px solid ${badge.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
+          {d.role === 'professor' ? '🥋' : d.role === 'admin' ? '⚙️' : d.role === 'superadmin' ? '👑' : '📞'}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ color: 'var(--text-primary)', fontSize: 13.5, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.nome}</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: 11.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.email}</div>
+        </div>
+        <span style={{ background: badge.bg, color: badge.color, fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 99, flexShrink: 0 }}>{badge.label}</span>
+        <span style={{ color: 'var(--text-muted)', fontSize: 14, marginLeft: 4 }}>{open ? '▲' : '▼'}</span>
+      </button>
+
+      {/* Expanded edit form */}
+      {open && (
+        <div style={{ padding: '0 18px 18px', borderTop: '1px solid var(--border-subtle)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 14 }}>
+            <div>
+              <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 4 }}>Nome completo</label>
+              <input value={d.nome} onChange={e => setD(p => ({ ...p, nome: e.target.value }))} style={INP} />
+            </div>
+            <div>
+              <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 4 }}>Email</label>
+              <input value={d.email} readOnly style={{ ...INP, opacity: 0.55, cursor: 'not-allowed' }} title="O email não pode ser alterado aqui" />
+            </div>
+            <div>
+              <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 4 }}>Telefone</label>
+              <input value={d.telefone} onChange={e => setD(p => ({ ...p, telefone: e.target.value }))} placeholder="+351 9xx xxx xxx" style={INP} />
+            </div>
+            <div>
+              <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 4 }}>NIF</label>
+              <input value={d.nif} onChange={e => setD(p => ({ ...p, nif: e.target.value }))} placeholder="123456789" style={INP} />
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 4 }}>Morada</label>
+              <input value={d.morada} onChange={e => setD(p => ({ ...p, morada: e.target.value }))} placeholder="Rua..., 4700 Braga" style={INP} />
+            </div>
+          </div>
+          {err && <div style={{ color: GB.red, fontSize: 11.5, marginTop: 8, fontWeight: 600 }}>⚠ {err}</div>}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+            <button onClick={saveStaff} disabled={saving}
+              style={{ background: saved ? '#22C55E' : saving ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '8px 20px', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+              {saving ? '⟳ A guardar...' : saved ? '✓ Guardado' : '💾 Guardar'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function EquipaSection() {
   const { user } = useAuth();
-  const [nome,  setNome]  = useState('');
-  const [email, setEmail] = useState('');
-  const [role,  setRole]  = useState<StaffRole>('professor');
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ link: string; email: string } | null>(null);
-  const [err, setErr] = useState('');
-  const [copied, setCopied] = useState(false);
+
+  // ── Staff list state ──────────────────────────────────────────────────────
+  const [staff, setStaff]       = useState<StaffMember[]>([]);
+  const [loadingList, setLoadingList] = useState(true);
+  const [showInvite, setShowInvite]   = useState(false);
+
+  const loadStaff = async () => {
+    if (!isConfigured) { setLoadingList(false); return; }
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, nome, email, role, telefone, nif, morada')
+      .in('role', ['superadmin', 'admin', 'professor', 'atendimento'])
+      .order('role')
+      .order('nome');
+    setStaff((data ?? []).map(r => ({
+      id: r.id,
+      nome: r.nome ?? '',
+      email: r.email ?? '',
+      role: r.role ?? '',
+      telefone: r.telefone ?? '',
+      nif: r.nif ?? '',
+      morada: r.morada ?? '',
+    })));
+    setLoadingList(false);
+  };
+
+  useEffect(() => { loadStaff(); }, []);
+
+  // ── Invite form state ─────────────────────────────────────────────────────
+  const [nome,  setNome]   = useState('');
+  const [email, setEmail]  = useState('');
+  const [role,  setRole]   = useState<StaffRole>('professor');
+  const [inviting, setInviting] = useState(false);
+  const [result,   setResult]  = useState<{ link: string; email: string } | null>(null);
+  const [err,      setErr]     = useState('');
+  const [copied,   setCopied]  = useState(false);
 
   const INP: React.CSSProperties = {
     width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
@@ -519,17 +647,14 @@ function EquipaSection() {
   const invite = async () => {
     if (!nome.trim()) return setErr('Preenche o nome.');
     if (!email.includes('@')) return setErr('Email inválido.');
-    setErr(''); setLoading(true); setResult(null);
-
+    setErr(''); setInviting(true); setResult(null);
     try {
       if (!isConfigured) {
-        // Demo mode — simulate
         await new Promise(r => setTimeout(r, 800));
         setResult({ link: 'https://demo.mode/invite-link-would-appear-here', email });
-        setLoading(false);
+        setInviting(false);
         return;
       }
-
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-staff`,
@@ -549,11 +674,12 @@ function EquipaSection() {
       } else {
         setResult({ link: data.action_link || '', email: data.email });
         setNome(''); setEmail(''); setRole('professor');
+        loadStaff(); // refresh list
       }
     } catch (e) {
       setErr(String(e));
     }
-    setLoading(false);
+    setInviting(false);
   };
 
   const copy = () => {
@@ -569,71 +695,96 @@ function EquipaSection() {
   }
 
   return (
-    <div style={{ maxWidth: 560 }}>
-      {/* Invite form */}
-      <Card style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--border-subtle)' }}>
-          <div style={{ width: 40, height: 40, background: GB.red, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>👥</div>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: 20, alignItems: 'start' }}>
+
+      {/* ── Left: staff list ── */}
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <div>
-            <div style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 700 }}>Convidar Membro de Equipa</div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>O convidado recebe um link para definir a sua própria password</div>
+            <div style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 700 }}>Equipa</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 11.5 }}>{staff.length} membro{staff.length !== 1 ? 's' : ''}</div>
           </div>
+          <button onClick={() => { setShowInvite(s => !s); setResult(null); setErr(''); }}
+            style={{ background: showInvite ? 'var(--bg-elevated)' : GB.red, border: showInvite ? '1px solid var(--border)' : 'none', borderRadius: 'var(--radius-sm)', padding: '8px 16px', color: showInvite ? 'var(--text-secondary)' : '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>
+            {showInvite ? '✕ Fechar' : '+ Convidar membro'}
+          </button>
         </div>
 
-        <Field label="Nome completo">
-          <input value={nome} onChange={e => setNome(e.target.value)} placeholder="ex: João Silva" style={INP} />
-        </Field>
-        <Field label="Email">
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="joao@gbbraga.com" style={INP} />
-        </Field>
-        <Field label="Função / Role">
+        {loadingList ? (
+          <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 16 }}>A carregar equipa...</div>
+        ) : staff.length === 0 ? (
+          <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 16, textAlign: 'center' }}>Nenhum membro de equipa encontrado.</div>
+        ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {STAFF_ROLES.map(r => (
-              <label key={r.value} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: role === r.value ? 'rgba(200,16,46,0.06)' : 'var(--bg-elevated)', border: `1.5px solid ${role === r.value ? GB.red : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer' }}>
-                <input type="radio" name="staffRole" checked={role === r.value} onChange={() => setRole(r.value)} style={{ accentColor: GB.red }} />
-                <div>
-                  <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}>{r.label}</div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>{r.desc}</div>
-                </div>
-              </label>
+            {staff.map(m => (
+              <StaffCard key={m.id} member={m} onSaved={loadStaff} />
             ))}
           </div>
-        </Field>
+        )}
+      </div>
 
-        {err && <div style={{ color: GB.red, fontSize: 12, marginBottom: 12, fontWeight: 600 }}>⚠ {err}</div>}
-
-        <button onClick={invite} disabled={loading}
-          style={{ width: '100%', background: loading ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', boxShadow: loading ? 'none' : `0 4px 12px ${GB.redGlow}` }}>
-          {loading ? 'A criar conta...' : '✉ Criar Conta e Gerar Link de Convite'}
-        </button>
-      </Card>
-
-      {/* Result: show the invite link */}
-      {result && (
-        <Card style={{ border: `1.5px solid #22C55E` }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-            <span style={{ fontSize: 22 }}>✅</span>
-            <div>
-              <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 700 }}>Conta criada para {result.email}</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Copia o link abaixo e envia ao novo membro</div>
-            </div>
-          </div>
-          {result.link ? (
-            <>
-              <div style={{ background: 'var(--bg-elevated)', borderRadius: 8, padding: '10px 12px', marginBottom: 10, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-secondary)', wordBreak: 'break-all', border: '1px solid var(--border)' }}>
-                {result.link}
+      {/* ── Right: invite form (toggle) ── */}
+      {showInvite && (
+        <div>
+          <Card style={{ marginBottom: result ? 16 : 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, paddingBottom: 14, borderBottom: '1px solid var(--border-subtle)' }}>
+              <div style={{ width: 38, height: 38, background: GB.red, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>✉️</div>
+              <div>
+                <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 700 }}>Convidar Membro</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>O convidado define a sua própria password</div>
               </div>
-              <button onClick={copy} style={{ background: copied ? '#22C55E' : 'var(--bg-elevated)', border: `1px solid ${copied ? '#22C55E' : 'var(--border)'}`, borderRadius: 8, padding: '8px 16px', color: copied ? '#fff' : 'var(--text-primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer', width: '100%' }}>
-                {copied ? '✓ Copiado!' : '📋 Copiar link'}
-              </button>
-              <p style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 10, lineHeight: 1.6 }}>
-                ⚠ O link é de uso único e expira em 24h. O membro deve abri-lo para definir a sua password antes de aceder à plataforma.
-              </p>
-            </>
-          ) : (
-            <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>Conta criada mas o link de convite não pôde ser gerado. Partilha o acesso manualmente através do Supabase Dashboard.</p>
+            </div>
+            <Field label="Nome completo">
+              <input value={nome} onChange={e => setNome(e.target.value)} placeholder="ex: João Silva" style={INP} />
+            </Field>
+            <Field label="Email">
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="joao@gbbraga.com" style={INP} />
+            </Field>
+            <Field label="Função">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {STAFF_ROLES.map(r => (
+                  <label key={r.value} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: role === r.value ? 'rgba(200,16,46,0.06)' : 'var(--bg-elevated)', border: `1.5px solid ${role === r.value ? GB.red : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer' }}>
+                    <input type="radio" name="staffRole" checked={role === r.value} onChange={() => setRole(r.value)} style={{ accentColor: GB.red }} />
+                    <div>
+                      <div style={{ color: 'var(--text-primary)', fontSize: 12.5, fontWeight: 600 }}>{r.label}</div>
+                      <div style={{ color: 'var(--text-muted)', fontSize: 10.5 }}>{r.desc}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </Field>
+            {err && <div style={{ color: GB.red, fontSize: 12, marginBottom: 10, fontWeight: 600 }}>⚠ {err}</div>}
+            <button onClick={invite} disabled={inviting}
+              style={{ width: '100%', background: inviting ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: inviting ? 'not-allowed' : 'pointer', boxShadow: inviting ? 'none' : `0 4px 12px ${GB.redGlow}` }}>
+              {inviting ? 'A criar conta...' : '✉ Criar e Gerar Link'}
+            </button>
+          </Card>
+
+          {result && (
+            <Card style={{ border: '1.5px solid #22C55E' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <span style={{ fontSize: 20 }}>✅</span>
+                <div>
+                  <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 700 }}>Conta criada!</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>{result.email}</div>
+                </div>
+              </div>
+              {result.link ? (
+                <>
+                  <div style={{ background: 'var(--bg-elevated)', borderRadius: 8, padding: '8px 10px', marginBottom: 8, fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--text-secondary)', wordBreak: 'break-all', border: '1px solid var(--border)' }}>
+                    {result.link}
+                  </div>
+                  <button onClick={copy} style={{ background: copied ? '#22C55E' : 'var(--bg-elevated)', border: `1px solid ${copied ? '#22C55E' : 'var(--border)'}`, borderRadius: 8, padding: '7px 14px', color: copied ? '#fff' : 'var(--text-primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer', width: '100%' }}>
+                    {copied ? '✓ Copiado!' : '📋 Copiar link'}
+                  </button>
+                  <p style={{ color: 'var(--text-muted)', fontSize: 10.5, marginTop: 8, lineHeight: 1.5 }}>⚠ Link de uso único — expira em 24h.</p>
+                </>
+              ) : (
+                <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>Conta criada. Gera o link manualmente no Supabase Dashboard.</p>
+              )}
+            </Card>
           )}
-        </Card>
+        </div>
       )}
     </div>
   );
