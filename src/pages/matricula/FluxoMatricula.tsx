@@ -65,6 +65,21 @@ function FichaInscricao({ onNext, registerMode = false }: { onNext:(d:FichaData)
   const [d, setD] = useState<FichaData>(blank);
   const [err, setErr] = useState<Record<string,string>>({});
 
+  // ── Compute whether student is under 18 ────────────────────────────────────
+  const isMinor = (() => {
+    if (!d.dataNasc) return false;
+    const today = new Date();
+    const birth = new Date(d.dataNasc);
+    const age = today.getFullYear() - birth.getFullYear() -
+      (today < new Date(today.getFullYear(), birth.getMonth(), birth.getDate()) ? 1 : 0);
+    return age < 18;
+  })();
+
+  // When student is a minor, force temEE = true
+  useEffect(() => {
+    if (isMinor) setD(p => ({ ...p, temEE: true }));
+  }, [isMinor]);
+
   const set = (k: keyof FichaData) => (e: React.ChangeEvent<any>) =>
     setD(p => ({ ...p, [k]: e.target.type==='checkbox' ? e.target.checked : e.target.value }));
 
@@ -88,7 +103,7 @@ function FichaInscricao({ onNext, registerMode = false }: { onNext:(d:FichaData)
     if (!/^\d{4}-\d{3}$/.test(d.codPostal)) e.codPostal='Formato: 4710-409';
     if (!d.telefone.trim()) e.telefone='Obrigatório';
     if (!d.email.includes('@')) e.email='Email inválido';
-    if (d.temEE) {
+    if (d.temEE || isMinor) {
       if (!d.nomeEE.trim()) e.nomeEE='Obrigatório';
       if (!/^\d{9}$/.test(d.nifEE)) e.nifEE='9 dígitos';
       if (!d.telEE.trim()) e.telEE='Obrigatório';
@@ -144,13 +159,33 @@ function FichaInscricao({ onNext, registerMode = false }: { onNext:(d:FichaData)
           style={{ ...INP, resize:'none' }}/>
       </div>
 
-      <div style={SEC}>👤 Encarregado de Educação</div>
-      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14, padding:'10px 14px', background:'#F7F6F4', borderRadius:8, cursor:'pointer' }}
-        onClick={()=>setD(p=>({...p, temEE:!p.temEE}))}>
-        <input type="checkbox" checked={d.temEE} onChange={()=>{}} style={{ width:16, height:16, accentColor:'#C8102E', cursor:'pointer' }}/>
-        <span style={{ color:'#333', fontSize:13 }}>Aplicável (menor de 18 anos ou dependente)</span>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14, paddingBottom:8, borderBottom:'2px solid #E2E0DB' }}>
+        <span style={{ color:'#111', fontSize:15, fontWeight:700 }}>👤 Encarregado de Educação</span>
+        {isMinor && (
+          <span style={{ background:'#C8102E', color:'#fff', fontSize:10, fontWeight:800, letterSpacing:'0.6px', textTransform:'uppercase', borderRadius:6, padding:'3px 9px' }}>
+            Obrigatório
+          </span>
+        )}
       </div>
-      {d.temEE && (
+
+      {isMinor ? (
+        /* Minor: locked notice — cannot uncheck */
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14, padding:'10px 14px', background:'rgba(200,16,46,0.06)', border:'1.5px solid rgba(200,16,46,0.25)', borderRadius:8 }}>
+          <span style={{ fontSize:16 }}>⚠️</span>
+          <span style={{ color:'#C8102E', fontSize:13, fontWeight:600 }}>
+            O aluno tem menos de 18 anos — dados do Encarregado de Educação são obrigatórios.
+          </span>
+        </div>
+      ) : (
+        /* Adult: optional toggle */
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14, padding:'10px 14px', background:'#F7F6F4', borderRadius:8, cursor:'pointer' }}
+          onClick={()=>setD(p=>({...p, temEE:!p.temEE}))}>
+          <input type="checkbox" checked={d.temEE} onChange={()=>{}} style={{ width:16, height:16, accentColor:'#C8102E', cursor:'pointer' }}/>
+          <span style={{ color:'#333', fontSize:13 }}>Aplicável (menor de 18 anos ou dependente)</span>
+        </div>
+      )}
+
+      {(d.temEE || isMinor) && (
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
           {field('nomeEE','Nome')}
           {field('nifEE','NIF','text','000000000')}

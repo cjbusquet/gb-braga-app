@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type React from 'react';
 import { AuthProvider, useAuth } from './lib/auth';
 import type { UserRole } from './types';
 import LoginPage from './pages/LoginPage';
@@ -55,10 +56,82 @@ function canAccess(role: UserRole, page: string): boolean {
   return allowed.includes(role);
 }
 
+// ─── Password Setup Screen (staff invite flow) ────────────────────────────────
+function SetPasswordScreen() {
+  const { completePasswordSetup, logout } = useAuth();
+  const [pw, setPw]       = useState('');
+  const [pw2, setPw2]     = useState('');
+  const [err, setErr]     = useState('');
+  const [saving, setSaving] = useState(false);
+  const [done, setDone]   = useState(false);
+
+  const handle = async () => {
+    if (pw.length < 6)       return setErr('Mínimo 6 caracteres.');
+    if (pw !== pw2)           return setErr('As passwords não coincidem.');
+    setSaving(true); setErr('');
+    const { ok, message } = await completePasswordSetup(pw);
+    setSaving(false);
+    if (!ok) return setErr(message);
+    setDone(true);
+  };
+
+  const INP: React.CSSProperties = { width: '100%', border: '1.5px solid #E2E0DB', borderRadius: 8, padding: '11px 13px', fontSize: 14, fontFamily: 'inherit', outline: 'none', background: '#fff', color: '#111', boxSizing: 'border-box' };
+
+  if (done) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F7F6F4' }}>
+      <div style={{ background: '#fff', borderRadius: 16, padding: 40, maxWidth: 400, textAlign: 'center', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+        <h2 style={{ fontFamily: "'Arial Black',sans-serif", textTransform: 'uppercase', color: '#111', marginBottom: 8 }}>Password definida!</h2>
+        <p style={{ color: '#666', fontSize: 14, marginBottom: 24 }}>A tua conta está pronta. Bem-vindo à equipa Gracie Barra Braga.</p>
+        <button onClick={() => window.location.reload()} style={{ background: '#C8102E', border: 'none', borderRadius: 10, padding: '12px 32px', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+          Entrar na plataforma →
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F7F6F4' }}>
+      <div style={{ background: '#fff', borderRadius: 16, padding: 40, maxWidth: 420, width: '100%', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+          <div style={{ width: 44, height: 44, background: '#C8102E', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🔑</div>
+          <div>
+            <div style={{ fontFamily: "'Arial Black',sans-serif", fontWeight: 900, fontSize: 16, textTransform: 'uppercase', color: '#111' }}>Define a tua password</div>
+            <div style={{ color: '#999', fontSize: 12 }}>Gracie Barra Braga — Acesso de equipa</div>
+          </div>
+        </div>
+        <p style={{ color: '#666', fontSize: 13, marginBottom: 22, lineHeight: 1.6, background: 'rgba(200,16,46,0.04)', border: '1px solid rgba(200,16,46,0.12)', borderRadius: 8, padding: '10px 14px' }}>
+          A tua conta foi criada pelo administrador. Escolhe a password que vais usar para aceder à plataforma.
+        </p>
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ display: 'block', color: '#666', fontSize: 11, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 5 }}>Nova Password *</label>
+          <input type="password" value={pw} onChange={e => setPw(e.target.value)} placeholder="Mínimo 6 caracteres" style={INP} />
+        </div>
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: 'block', color: '#666', fontSize: 11, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 5 }}>Confirmar Password *</label>
+          <input type="password" value={pw2} onChange={e => setPw2(e.target.value)} placeholder="Repete a password" style={INP} />
+        </div>
+        {err && <div style={{ color: '#C8102E', fontSize: 12, marginBottom: 14, fontWeight: 600 }}>{err}</div>}
+        <button onClick={handle} disabled={saving} style={{ width: '100%', background: saving ? '#aaa' : '#C8102E', border: 'none', borderRadius: 10, padding: '13px', color: '#fff', fontSize: 14, fontWeight: 800, fontFamily: "'Arial Black',sans-serif", textTransform: 'uppercase' as const, letterSpacing: '1px', cursor: saving ? 'not-allowed' : 'pointer', boxShadow: saving ? 'none' : '0 4px 14px rgba(200,16,46,0.3)' }}>
+          {saving ? 'A guardar...' : 'Confirmar Password →'}
+        </button>
+        <button onClick={() => logout()} style={{ width: '100%', marginTop: 10, background: 'transparent', border: '1px solid #E2E0DB', borderRadius: 10, padding: '10px', color: '#999', fontSize: 13, cursor: 'pointer' }}>
+          Cancelar
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AppContent() {
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshProfile, pendingPasswordSetup } = useAuth();
   const [currentPage, setCurrentPage] = useState('');
   const [registering, setRegistering] = useState(false);
+
+  // Staff invite: user clicked a recovery link — must set their own password first
+  if (pendingPasswordSetup) {
+    return <SetPasswordScreen />;
+  }
 
   // Keep the enrollment flow mounted even after signUp() fires onAuthStateChange.
   // If we checked !user first, the Completo component would be replaced mid-flight

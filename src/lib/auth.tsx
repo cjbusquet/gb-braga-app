@@ -13,13 +13,17 @@ interface AuthContextType {
   switchRole: (role: UserRole) => void;
   refreshProfile: () => Promise<void>;
   loading: boolean;
+  /** True when user clicked a staff invite recovery link and must set their password */
+  pendingPasswordSetup: boolean;
+  completePasswordSetup: (newPassword: string) => Promise<{ ok: boolean; message: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser]       = useState<User | null>(null);
-  const [loading, setLoading] = useState(isConfigured);
+  const [user, setUser]                         = useState<User | null>(null);
+  const [loading, setLoading]                   = useState(isConfigured);
+  const [pendingPasswordSetup, setPending]      = useState(false);
 
   const mapProfile = (data: any, email: string): User => ({
     id:               data.id,
@@ -46,12 +50,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // ── 2. Profile missing — trigger may not exist or failed.
-      //       Try to create it (requires "Utilizador cria próprio perfil" policy).
+      //       INSERT only (ignoreDuplicates) — never overwrite an existing row,
+      //       which would reset matricula_completa back to false.
       console.warn('Profile not found — attempting self-create for', email);
       const { data: created, error: createErr } = await supabase
         .from('profiles')
         .upsert({ id, nome: email.split('@')[0], email, role: 'aluno', matricula_completa: false },
-                 { onConflict: 'id' })
+                 { onConflict: 'id', ignoreDuplicates: true })
         .select('id, nome, email, role, matricula_completa, telefone, created_at')
         .maybeSingle();
 
@@ -93,7 +98,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          // Staff member clicked their invite link — let them set a password
+          // Load their profile so user is populated, but keep pendingPasswordSetup=true
+          if (session?.user) {
+            loadProfile(session.user.id, session.user.email!);
+          }
+          setPending(true);
+          return;
+        }
         if (session?.user) {
           loadProfile(session.user.id, session.user.email!);
         } else {
@@ -169,9 +183,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [loadProfile]);
 
+  const completePasswordSetup = async (newPassword: string): Promise<{ ok: boolean; message: string }> => {
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) return { ok: false, message: error.message };
+      setPending(false);
+      return { ok: true, message: '' };
+    } catch (e) {
+      return { ok: false, message: String(e) };
+    }
+  };
+
   const logout = async () => {
     if (isConfigured) await supabase.auth.signOut();
     setUser(null);
+    setPending(false);
   };
 
   const switchRole = (role: UserRole) => {
@@ -181,7 +207,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, switchRole, refreshProfile, loading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, switchRole, refreshProfile, loading, pendingPasswordSetup, completePasswordSetup }}>
       {loading ? (
         <div style={{ height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#fff' }}>
           <div style={{ textAlign:'center' }}>

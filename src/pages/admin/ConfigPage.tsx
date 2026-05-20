@@ -1,17 +1,21 @@
 import { useState } from 'react';
+import type React from 'react';
 import { GB } from '../../lib/gbBrand';
 import { defaultTocConfig } from '../../data/mockData';
+import { supabase, isConfigured } from '../../lib/supabaseClient';
+import { useAuth } from '../../lib/auth';
 import type { TocConfig } from '../../types';
 
-type Section = 'toconline' | 'stripe' | 'whatsapp' | 'email' | 'academia' | 'compliance';
+type Section = 'equipa' | 'toconline' | 'stripe' | 'whatsapp' | 'email' | 'academia' | 'compliance';
 
-const SECTIONS: { id: Section; label: string; icon: string; desc: string }[] = [
-  { id: 'toconline',  label: 'TOConline',          icon: '🧾', desc: 'Faturação certificada AT' },
-  { id: 'stripe',     label: 'Stripe',             icon: '💳', desc: 'Pagamentos online' },
-  { id: 'whatsapp',   label: 'WhatsApp Business',  icon: '💬', desc: 'Comunicação com alunos' },
-  { id: 'email',      label: 'Email / SMTP',        icon: '📧', desc: 'Notificações por email' },
-  { id: 'academia',   label: 'Academia',            icon: '🏫', desc: 'Dados gerais e horários' },
-  { id: 'compliance', label: 'IPDJ / RGPD',         icon: '📋', desc: 'Legal e conformidade' },
+const SECTIONS: { id: Section; label: string; icon: string; desc: string; superadminOnly?: boolean }[] = [
+  { id: 'equipa',     label: 'Equipa',             icon: '👥', desc: 'Convidar professores e staff', superadminOnly: true },
+  { id: 'toconline',  label: 'TOConline',           icon: '🧾', desc: 'Faturação certificada AT' },
+  { id: 'stripe',     label: 'Stripe',              icon: '💳', desc: 'Pagamentos online' },
+  { id: 'whatsapp',   label: 'WhatsApp Business',   icon: '💬', desc: 'Comunicação com alunos' },
+  { id: 'email',      label: 'Email / SMTP',         icon: '📧', desc: 'Notificações por email' },
+  { id: 'academia',   label: 'Academia',             icon: '🏫', desc: 'Dados gerais e horários' },
+  { id: 'compliance', label: 'IPDJ / RGPD',          icon: '📋', desc: 'Legal e conformidade' },
 ];
 
 function Label({ children }: { children: React.ReactNode }) {
@@ -393,12 +397,164 @@ function SimpleSection({ title, icon, bg, fields }: { title: string; icon: strin
   );
 }
 
+// ─── Equipa Section (superadmin only) ────────────────────────────────────────
+type StaffRole = 'professor' | 'admin' | 'atendimento';
+const STAFF_ROLES: { value: StaffRole; label: string; desc: string }[] = [
+  { value: 'professor',  label: 'Professor',   desc: 'Acesso a turmas, check-in e graduação' },
+  { value: 'admin',      label: 'Administrador', desc: 'Acesso total exceto gestão de superadmin' },
+  { value: 'atendimento', label: 'Atendimento', desc: 'Registo de alunos, check-in e comunicação' },
+];
+
+function EquipaSection() {
+  const { user } = useAuth();
+  const [nome,  setNome]  = useState('');
+  const [email, setEmail] = useState('');
+  const [role,  setRole]  = useState<StaffRole>('professor');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{ link: string; email: string } | null>(null);
+  const [err, setErr] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const INP: React.CSSProperties = {
+    width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-sm)', padding: '9px 11px', color: 'var(--text-primary)',
+    fontSize: 12.5, fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box',
+  };
+
+  const invite = async () => {
+    if (!nome.trim()) return setErr('Preenche o nome.');
+    if (!email.includes('@')) return setErr('Email inválido.');
+    setErr(''); setLoading(true); setResult(null);
+
+    try {
+      if (!isConfigured) {
+        // Demo mode — simulate
+        await new Promise(r => setTimeout(r, 800));
+        setResult({ link: 'https://demo.mode/invite-link-would-appear-here', email });
+        setLoading(false);
+        return;
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-staff`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON,
+          },
+          body: JSON.stringify({ email, nome, role }),
+        }
+      );
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setErr(data.error || 'Erro ao criar conta.');
+      } else {
+        setResult({ link: data.action_link || '', email: data.email });
+        setNome(''); setEmail(''); setRole('professor');
+      }
+    } catch (e) {
+      setErr(String(e));
+    }
+    setLoading(false);
+  };
+
+  const copy = () => {
+    if (result?.link) {
+      navigator.clipboard.writeText(result.link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  if (user?.role !== 'superadmin') {
+    return <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 24 }}>Acesso restrito a superadmin.</div>;
+  }
+
+  return (
+    <div style={{ maxWidth: 560 }}>
+      {/* Invite form */}
+      <Card style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--border-subtle)' }}>
+          <div style={{ width: 40, height: 40, background: GB.red, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>👥</div>
+          <div>
+            <div style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 700 }}>Convidar Membro de Equipa</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>O convidado recebe um link para definir a sua própria password</div>
+          </div>
+        </div>
+
+        <Field label="Nome completo">
+          <input value={nome} onChange={e => setNome(e.target.value)} placeholder="ex: João Silva" style={INP} />
+        </Field>
+        <Field label="Email">
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="joao@gbbraga.com" style={INP} />
+        </Field>
+        <Field label="Função / Role">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {STAFF_ROLES.map(r => (
+              <label key={r.value} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: role === r.value ? 'rgba(200,16,46,0.06)' : 'var(--bg-elevated)', border: `1.5px solid ${role === r.value ? GB.red : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer' }}>
+                <input type="radio" name="staffRole" checked={role === r.value} onChange={() => setRole(r.value)} style={{ accentColor: GB.red }} />
+                <div>
+                  <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}>{r.label}</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>{r.desc}</div>
+                </div>
+              </label>
+            ))}
+          </div>
+        </Field>
+
+        {err && <div style={{ color: GB.red, fontSize: 12, marginBottom: 12, fontWeight: 600 }}>⚠ {err}</div>}
+
+        <button onClick={invite} disabled={loading}
+          style={{ width: '100%', background: loading ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', boxShadow: loading ? 'none' : `0 4px 12px ${GB.redGlow}` }}>
+          {loading ? 'A criar conta...' : '✉ Criar Conta e Gerar Link de Convite'}
+        </button>
+      </Card>
+
+      {/* Result: show the invite link */}
+      {result && (
+        <Card style={{ border: `1.5px solid #22C55E` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+            <span style={{ fontSize: 22 }}>✅</span>
+            <div>
+              <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 700 }}>Conta criada para {result.email}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Copia o link abaixo e envia ao novo membro</div>
+            </div>
+          </div>
+          {result.link ? (
+            <>
+              <div style={{ background: 'var(--bg-elevated)', borderRadius: 8, padding: '10px 12px', marginBottom: 10, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-secondary)', wordBreak: 'break-all', border: '1px solid var(--border)' }}>
+                {result.link}
+              </div>
+              <button onClick={copy} style={{ background: copied ? '#22C55E' : 'var(--bg-elevated)', border: `1px solid ${copied ? '#22C55E' : 'var(--border)'}`, borderRadius: 8, padding: '8px 16px', color: copied ? '#fff' : 'var(--text-primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer', width: '100%' }}>
+                {copied ? '✓ Copiado!' : '📋 Copiar link'}
+              </button>
+              <p style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 10, lineHeight: 1.6 }}>
+                ⚠ O link é de uso único e expira em 24h. O membro deve abri-lo para definir a sua password antes de aceder à plataforma.
+              </p>
+            </>
+          ) : (
+            <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>Conta criada mas o link de convite não pôde ser gerado. Partilha o acesso manualmente através do Supabase Dashboard.</p>
+          )}
+        </Card>
+      )}
+    </div>
+  );
+}
+
 // ─── Main ConfigPage ──────────────────────────────────────────────────────────
 export default function ConfigPage() {
-  const [active, setActive] = useState<Section>('toconline');
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'superadmin';
+  const visibleSections = SECTIONS.filter(s => !s.superadminOnly || isSuperAdmin);
+  const defaultSection: Section = isSuperAdmin ? 'equipa' : 'toconline';
+  const [active, setActive] = useState<Section>(defaultSection);
 
   const renderSection = () => {
     switch (active) {
+      case 'equipa':     return <EquipaSection />;
       case 'toconline':  return <TocSection />;
       case 'stripe':     return <StripeSection />;
       case 'whatsapp':   return <WhatsAppSection />;
@@ -435,7 +591,7 @@ export default function ConfigPage() {
         {/* Sidebar nav */}
         <div style={{ width: 210, flexShrink: 0 }}>
           <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
-            {SECTIONS.map(s => (
+            {visibleSections.map(s => (
               <button key={s.id} onClick={() => setActive(s.id)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 10, width: '100%',
