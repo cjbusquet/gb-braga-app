@@ -32,13 +32,15 @@ function useConfig<T extends object>(secao: string, defaults: T) {
       .select('dados')
       .eq('secao', secao)
       .maybeSingle()
-      .then(({ data: row }) => {
-        if (row?.dados && typeof row.dados === 'object') {
-          setData(prev => ({ ...prev, ...(row.dados as Partial<T>) }));
-        }
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+      .then(
+        ({ data: row }) => {
+          if (row?.dados && typeof row.dados === 'object') {
+            setData(prev => ({ ...prev, ...(row.dados as Partial<T>) }));
+          }
+          setLoading(false);
+        },
+        () => setLoading(false)
+      );
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [secao]);
 

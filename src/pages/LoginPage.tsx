@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useAuth } from '../lib/auth';
 import { GB, roleThemes } from '../lib/gbBrand';
 import { GBLogoFull } from '../components/GBLogo';
-import { isConfigured } from '../lib/supabaseClient';
+import { supabase, isConfigured } from '../lib/supabaseClient';
 import type { UserRole } from '../types';
 
 const DEMO_ROLES: { role: UserRole; email: string; label?: string }[] = [
@@ -33,12 +33,16 @@ interface LoginPageProps {
 
 export default function LoginPage({ onRegister }: LoginPageProps) {
   const { login } = useAuth();
-  const [tab, setTab]         = useState<'login' | 'register'>('login');
-  const [email, setEmail]     = useState('');
-  const [pw, setPw]           = useState('');
-  const [err, setErr]         = useState('');
-  const [loading, setLoading] = useState(false);
-  const [active, setActive]   = useState<string | null>(null);
+  const [tab, setTab]           = useState<'login' | 'register'>('login');
+  const [email, setEmail]       = useState('');
+  const [pw, setPw]             = useState('');
+  const [err, setErr]           = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [active, setActive]     = useState<string | null>(null);
+  const [forgotMode, setForgot] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetErr, setResetErr]   = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +50,21 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
     const ok = await login(email, pw);
     setLoading(false);
     if (!ok) setErr('Email ou password incorrectos.');
+  };
+
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.includes('@')) return setResetErr('Introduz um email válido.');
+    setResetErr(''); setResetLoading(true);
+    try {
+      const redirectTo = window.location.origin;
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+      if (error) setResetErr(error.message);
+      else setResetSent(true);
+    } catch (e) {
+      setResetErr(String(e));
+    }
+    setResetLoading(false);
   };
 
   const quick = async (role: UserRole, em: string) => {
@@ -102,6 +121,44 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
           {/* ══ LOGIN ══ */}
           {tab === 'login' && (
             <>
+              {/* ── Forgot password view ── */}
+              {forgotMode ? (
+                <>
+                  <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4, fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: '1px' }}>Recuperar Password</h1>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 22 }}>Indica o teu email e enviamos um link para definires uma nova password.</p>
+
+                  {resetSent ? (
+                    <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 'var(--radius-sm)', padding: '16px 18px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 32, marginBottom: 10 }}>📧</div>
+                      <div style={{ color: '#16A34A', fontWeight: 700, fontSize: 14, marginBottom: 6 }}>Email enviado!</div>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.6 }}>
+                        Verifica a tua caixa de entrada em <strong>{email}</strong>.<br/>O link expira em 24h.
+                      </div>
+                      <button onClick={() => { setForgot(false); setResetSent(false); }} style={{ marginTop: 16, background: 'transparent', border: `1px solid var(--border)`, borderRadius: 'var(--radius-sm)', padding: '8px 20px', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>
+                        ← Voltar ao login
+                      </button>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleForgot}>
+                      <div style={{ marginBottom: 18 }}>
+                        <label style={LBL}>Email</label>
+                        <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+                          placeholder="seu@email.com" required style={INP} onFocus={focus} onBlur={blur}/>
+                      </div>
+                      {resetErr && <p style={{ color: GB.red, fontSize: 13, marginBottom: 12, fontWeight: 500 }}>{resetErr}</p>}
+                      <button type="submit" disabled={resetLoading}
+                        style={{ width: '100%', background: resetLoading ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', color: '#fff', fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-display)', letterSpacing: '1px', textTransform: 'uppercase', cursor: resetLoading ? 'not-allowed' : 'pointer', boxShadow: resetLoading ? 'none' : 'var(--shadow-red)', minHeight: 48 }}>
+                        {resetLoading ? 'A enviar...' : '📧 Enviar link de recuperação'}
+                      </button>
+                      <button type="button" onClick={() => { setForgot(false); setResetErr(''); }}
+                        style={{ width: '100%', marginTop: 10, background: 'transparent', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '11px', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>
+                        ← Voltar ao login
+                      </button>
+                    </form>
+                  )}
+                </>
+              ) : (
+                <>
               <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4, fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: '1px' }}>Entrar</h1>
               <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 22 }}>Acede ao painel da tua academia</p>
 
@@ -111,10 +168,16 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
                   <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                     placeholder="seu@email.com" required style={INP} onFocus={focus} onBlur={blur}/>
                 </div>
-                <div style={{ marginBottom: 20 }}>
+                <div style={{ marginBottom: 6 }}>
                   <label style={LBL}>Password</label>
                   <input type="password" value={pw} onChange={e => setPw(e.target.value)}
                     placeholder="••••••••" required style={INP} onFocus={focus} onBlur={blur}/>
+                </div>
+                <div style={{ textAlign: 'right', marginBottom: 18 }}>
+                  <button type="button" onClick={() => { setForgot(true); setErr(''); setResetErr(''); setResetSent(false); }}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+                    Esqueceste a password?
+                  </button>
                 </div>
                 {err && <p style={{ color: GB.red, fontSize: 13, marginBottom: 12, fontWeight: 500 }}>{err}</p>}
                 <button type="submit" disabled={loading}
@@ -122,9 +185,11 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
                   {loading ? 'A entrar...' : 'Entrar'}
                 </button>
               </form>
+                </>
+              )}
 
               {/* Demo buttons */}
-              {!isConfigured && (
+              {!isConfigured && !forgotMode && (
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0 12px' }}>
                     <div style={{ flex: 1, height: 1, background: 'var(--border)' }}/>
@@ -151,7 +216,7 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
                 </>
               )}
 
-              {isConfigured && (
+              {isConfigured && !forgotMode && (
                 <div style={{ marginTop: 18, textAlign: 'center' }}>
                   <a href="mailto:atendimento@gbbraga.com" style={{ color: 'var(--text-muted)', fontSize: 12 }}>
                     Problemas? atendimento@gbbraga.com
