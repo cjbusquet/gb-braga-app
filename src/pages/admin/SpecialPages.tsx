@@ -50,24 +50,90 @@ const REDE_12M = [
   { m:'Fev',v:70100},{m:'Mar',v:74600},{m:'Abr',v:73800},{m:'Mai',v:75150},
 ];
 
+type Academia = typeof ACADEMIAS[0];
+
+function NovaAcademiaModal({ onClose, onAdd }: { onClose: () => void; onAdd: (a: Academia) => void }) {
+  const [nome,    setNome]    = useState('');
+  const [cidade,  setCidade]  = useState('');
+  const [err,     setErr]     = useState('');
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nome.trim() || !cidade.trim()) { setErr('Preenche o nome e a cidade.'); return; }
+    onAdd({
+      id:          nome.toLowerCase().replace(/\s+/g, '-').slice(0, 4),
+      nome:        `GB ${nome.trim()}`,
+      cidade:      cidade.trim(),
+      alunos:      0, receita: 0, crescimento: 0,
+      freq:        0, inadimp: 0, status: 'nova',
+    });
+    onClose();
+  };
+
+  const overlay: React.CSSProperties = {
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(3px)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
+  };
+  const box: React.CSSProperties = {
+    background: 'var(--bg-card)', border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-lg)', padding: '28px 32px', width: 420, boxShadow: 'var(--shadow-lg)',
+  };
+  const field: React.CSSProperties = {
+    width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-sm)', padding: '9px 12px', color: 'var(--text-primary)',
+    fontSize: 13, outline: 'none', boxSizing: 'border-box',
+  };
+  const label: React.CSSProperties = { color: 'var(--text-secondary)', fontSize: 11.5, fontWeight: 600, marginBottom: 5, display: 'block' };
+
+  return (
+    <div style={overlay} onClick={onClose}>
+      <div style={box} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
+          <h2 style={{ color: 'var(--text-primary)', fontSize: 16, fontWeight: 800, margin: 0 }}>Nova Academia</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 18, cursor: 'pointer', lineHeight: 1 }}>✕</button>
+        </div>
+        <form onSubmit={submit}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={label}>Nome da cidade / localização</label>
+            <input value={nome} onChange={e => setNome(e.target.value)} placeholder="ex: Guimarães" style={field} autoFocus />
+          </div>
+          <div style={{ marginBottom: 22 }}>
+            <label style={label}>Cidade</label>
+            <input value={cidade} onChange={e => setCidade(e.target.value)} placeholder="ex: Guimarães" style={field} />
+          </div>
+          {err && <div style={{ color: 'var(--gb-red)', fontSize: 12, marginBottom: 14 }}>{err}</div>}
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button type="button" onClick={onClose} style={{ flex: 1, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '9px 0', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancelar</button>
+            <button type="submit" style={{ flex: 2, background: 'var(--gb-red)', border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 0', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: 'var(--shadow-red)' }}>Adicionar Academia</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export function SuperAdminDashboard() {
   useKPIs();
   useAlunos();
   usePagamentos();
-  const totalAlunos  = ACADEMIAS.reduce((s,a) => s+a.alunos,0);
-  const totalReceita = ACADEMIAS.reduce((s,a) => s+a.receita,0);
-  const totalInadimp = ACADEMIAS.reduce((s,a) => s+a.inadimp,0);
+  const [academias, setAcademias] = useState<Academia[]>(ACADEMIAS);
+  const [showNova,  setShowNova]  = useState(false);
+
+  const totalAlunos  = academias.reduce((s,a) => s+a.alunos,0);
+  const totalReceita = academias.reduce((s,a) => s+a.receita,0);
+  const totalInadimp = academias.reduce((s,a) => s+a.inadimp,0);
   const maxR = Math.max(...REDE_12M.map(r => r.v));
 
   return (
     <div>
+      {showNova && <NovaAcademiaModal onClose={() => setShowNova(false)} onAdd={a => setAcademias(prev => [...prev, a])} />}
       <div style={{ marginBottom: 20 }}>
         <div style={{ color: 'var(--text-muted)', fontSize: 10.5, letterSpacing:'1px', textTransform:'uppercase' as const, marginBottom: 3 }}>Rede Gracie Barra Portugal</div>
         <h1 style={{ color: 'var(--text-primary)', fontSize: 22, fontWeight: 800, fontFamily: 'var(--font-display)', letterSpacing: '0.5px', textTransform: 'uppercase' as const }}>Super Admin</h1>
       </div>
 
       <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:12, marginBottom:20 }}>
-        <Stat label="Total Alunos"  value={totalAlunos}                        accent="var(--gb-red)"   sub={`${ACADEMIAS.length} academias`}/>
+        <Stat label="Total Alunos"  value={totalAlunos}                        accent="var(--gb-red)"   sub={`${academias.length} academias`}/>
         <Stat label="Receita Mensal" value={`€${totalReceita.toLocaleString()}`} accent="#16A34A"        delta="↑ +11% vs ant."/>
         <Stat label="Inadimplentes" value={totalInadimp}                        accent="#D97706"        sub="toda a rede"/>
         <Stat label="Freq. Média"   value="81%"                                 accent="#2563EB"/>
@@ -95,14 +161,14 @@ export function SuperAdminDashboard() {
         </Card>
         <Card style={{ padding:'20px 22px' }}>
           <SectionLabel>Receita por Academia</SectionLabel>
-          {ACADEMIAS.map(a => (
+          {academias.map(a => (
             <div key={a.id} style={{ marginBottom:10 }}>
               <div style={{ display:'flex', justifyContent:'space-between', marginBottom:3 }}>
                 <span style={{ color:'var(--text-secondary)', fontSize:12 }}>{a.nome}</span>
                 <span style={{ color:'var(--text-primary)', fontSize:12, fontWeight:700, fontFamily:'var(--font-mono)' }}>€{a.receita.toLocaleString()}</span>
               </div>
               <div style={{ background:'var(--bg-elevated)', borderRadius:99, height:5, overflow:'hidden' }}>
-                <div style={{ background: a.crescimento >= 0 ? 'var(--gb-red)' : '#D97706', height:'100%', width:`${(a.receita/ACADEMIAS[2].receita)*100}%`, opacity: 0.75 }}/>
+                <div style={{ background: a.crescimento >= 0 ? 'var(--gb-red)' : '#D97706', height:'100%', width:`${(a.receita/Math.max(...academias.map(x=>x.receita),1))*100}%`, opacity: 0.75 }}/>
               </div>
             </div>
           ))}
@@ -112,7 +178,7 @@ export function SuperAdminDashboard() {
       <Card>
         <div style={{ padding:'14px 18px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <SectionLabel>Academias da Rede</SectionLabel>
-          <button style={{ background:'var(--gb-red)', border:'none', borderRadius:'var(--radius-sm)', padding:'7px 14px', color:'#fff', fontSize:12, fontWeight:700, cursor:'pointer', boxShadow:'var(--shadow-red)' }}>+ Nova Academia</button>
+          <button onClick={() => setShowNova(true)} style={{ background:'var(--gb-red)', border:'none', borderRadius:'var(--radius-sm)', padding:'7px 14px', color:'#fff', fontSize:12, fontWeight:700, cursor:'pointer', boxShadow:'var(--shadow-red)' }}>+ Nova Academia</button>
         </div>
         <table style={{ width:'100%', borderCollapse:'collapse' }}>
           <thead>
@@ -123,7 +189,7 @@ export function SuperAdminDashboard() {
             </tr>
           </thead>
           <tbody>
-            {ACADEMIAS.map(a => (
+            {academias.map(a => (
               <tr key={a.id} style={{ borderBottom:'1px solid var(--border-subtle)', cursor:'pointer' }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
@@ -157,7 +223,7 @@ export function SuperAdminDashboard() {
                   </span>
                 </td>
                 <td style={{ padding:'12px 14px' }}>
-                  <button style={{ background:'var(--gb-red-glow)', border:'1px solid var(--gb-red-border)', borderRadius:5, padding:'4px 10px', color:'var(--gb-red)', fontSize:11, fontWeight:700, cursor:'pointer' }}>Gerir →</button>
+                  <button style={{ background:'var(--gb-red)', border:'none', borderRadius:5, padding:'4px 10px', color:'#fff', fontSize:11, fontWeight:700, cursor:'pointer' }}>Gerir →</button>
                 </td>
               </tr>
             ))}
