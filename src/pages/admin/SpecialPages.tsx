@@ -54,17 +54,17 @@ const REDE_12M = [
 type Academia = typeof ACADEMIAS[0];
 
 function NovaAcademiaModal({ onClose, onAdd }: { onClose: () => void; onAdd: (a: Academia) => void }) {
-  const [nome,    setNome]    = useState('');
-  const [cidade,  setCidade]  = useState('');
-  const [err,     setErr]     = useState('');
+  const [cidade, setCidade] = useState('');
+  const [err,    setErr]    = useState('');
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nome.trim() || !cidade.trim()) { setErr('Preenche o nome e a cidade.'); return; }
+    const c = cidade.trim();
+    if (!c) { setErr('Indica a cidade da nova academia.'); return; }
     onAdd({
-      id:          nome.toLowerCase().replace(/\s+/g, '-').slice(0, 4),
-      nome:        `GB ${nome.trim()}`,
-      cidade:      cidade.trim(),
+      id:          c.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '-').slice(0, 6),
+      nome:        `GB ${c}`,
+      cidade:      c,
       alunos:      0, receita: 0, crescimento: 0,
       freq:        0, inadimp: 0, status: 'nova',
     });
@@ -72,40 +72,57 @@ function NovaAcademiaModal({ onClose, onAdd }: { onClose: () => void; onAdd: (a:
   };
 
   const overlay: React.CSSProperties = {
-    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(3px)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20,
   };
   const box: React.CSSProperties = {
     background: 'var(--bg-card)', border: '1px solid var(--border)',
-    borderRadius: 'var(--radius-lg)', padding: '28px 32px', width: 420, boxShadow: 'var(--shadow-lg)',
+    borderRadius: 'var(--radius-lg)', padding: '28px 28px', width: '100%', maxWidth: 400, boxShadow: 'var(--shadow-lg)',
   };
-  const field: React.CSSProperties = {
-    width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-    borderRadius: 'var(--radius-sm)', padding: '9px 12px', color: 'var(--text-primary)',
-    fontSize: 13, outline: 'none', boxSizing: 'border-box',
+  const inp: React.CSSProperties = {
+    width: '100%', background: 'var(--bg-elevated)', border: `1px solid ${err ? 'var(--gb-red)' : 'var(--border)'}`,
+    borderRadius: 'var(--radius-sm)', padding: '11px 13px', color: 'var(--text-primary)',
+    fontSize: 15, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
   };
-  const label: React.CSSProperties = { color: 'var(--text-secondary)', fontSize: 11.5, fontWeight: 600, marginBottom: 5, display: 'block' };
 
   return (
     <div style={overlay} onClick={onClose}>
       <div style={box} onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
-          <h2 style={{ color: 'var(--text-primary)', fontSize: 16, fontWeight: 800, margin: 0 }}>Nova Academia</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 18, cursor: 'pointer', lineHeight: 1 }}>✕</button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 3 }}>Rede Gracie Barra Portugal</div>
+            <h2 style={{ color: 'var(--text-primary)', fontSize: 16, fontWeight: 800, margin: 0 }}>+ Nova Academia</h2>
+          </div>
+          <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: 4 }}>✕</button>
         </div>
+
         <form onSubmit={submit}>
-          <div style={{ marginBottom: 16 }}>
-            <label style={label}>Nome da cidade / localização</label>
-            <input value={nome} onChange={e => setNome(e.target.value)} placeholder="ex: Guimarães" style={field} autoFocus />
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 11.5, fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: 7 }}>
+              Cidade
+            </label>
+            <input
+              value={cidade}
+              onChange={e => { setCidade(e.target.value); setErr(''); }}
+              placeholder="ex: Barcelos, Guimarães, Faro…"
+              style={inp}
+              autoFocus
+            />
+            {err && <div style={{ color: 'var(--gb-red)', fontSize: 12, marginTop: 5 }}>⚠ {err}</div>}
+            <div style={{ color: 'var(--text-muted)', fontSize: 11.5, marginTop: 6 }}>
+              A academia será registada como <strong style={{ color: 'var(--text-secondary)' }}>GB {cidade.trim() || '…'}</strong>
+            </div>
           </div>
-          <div style={{ marginBottom: 22 }}>
-            <label style={label}>Cidade</label>
-            <input value={cidade} onChange={e => setCidade(e.target.value)} placeholder="ex: Guimarães" style={field} />
-          </div>
-          {err && <div style={{ color: 'var(--gb-red)', fontSize: 12, marginBottom: 14 }}>{err}</div>}
+
           <div style={{ display: 'flex', gap: 10 }}>
-            <button type="button" onClick={onClose} style={{ flex: 1, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '9px 0', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancelar</button>
-            <button type="submit" style={{ flex: 2, background: 'var(--gb-red)', border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 0', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: 'var(--shadow-red)' }}>Adicionar Academia</button>
+            <button type="button" onClick={onClose}
+              style={{ flex: 1, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '11px 0', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+              Cancelar
+            </button>
+            <button type="submit"
+              style={{ flex: 2, background: 'var(--gb-red)', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 0', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', boxShadow: 'var(--shadow-red)', fontFamily: 'inherit' }}>
+              Adicionar Academia
+            </button>
           </div>
         </form>
       </div>
@@ -154,7 +171,7 @@ export function SuperAdminDashboard() {
               return (
                 <div key={i} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
                   {last && <span style={{ fontSize:9, color:'var(--gb-red)', fontWeight:800 }}>€{(r.v/1000).toFixed(0)}k</span>}
-                  <div style={{ width:'100%', background: last ? 'var(--gb-red)' : 'var(--bg-elevated)', borderRadius:'3px 3px 0 0', height:`${(r.v/maxR)*110}px`, boxShadow: last ? 'var(--shadow-red)' : 'none' }}/>
+                  <div style={{ width:'100%', background: last ? 'var(--gb-red)' : 'rgba(200,16,46,0.18)', borderRadius:'3px 3px 0 0', height:`${(r.v/maxR)*110}px`, boxShadow: last ? 'var(--shadow-red)' : 'none', transition:'opacity 0.15s' }}/>
                   <span style={{ fontSize:9.5, color: last ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: last ? 700 : 400 }}>{r.m}</span>
                 </div>
               );
@@ -340,7 +357,7 @@ export function RelatoriosPage() {
                   return (
                     <div key={i} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:5 }}>
                       <span style={{ fontSize:9.5, color: last ? 'var(--gb-red)' : 'var(--text-muted)', fontWeight: last ? 800 : 400 }}>€{(r.valor/1000).toFixed(1)}k</span>
-                      <div style={{ width:'100%', background: last ? 'var(--gb-red)' : 'var(--bg-elevated)', borderRadius:'4px 4px 0 0', height:`${(r.valor/maxR)*115}px`, boxShadow: last ? 'var(--shadow-red)' : 'none' }}/>
+                      <div style={{ width:'100%', background: last ? 'var(--gb-red)' : 'rgba(200,16,46,0.18)', borderRadius:'4px 4px 0 0', height:`${(r.valor/maxR)*115}px`, boxShadow: last ? 'var(--shadow-red)' : 'none', transition:'opacity 0.15s' }}/>
                       <span style={{ fontSize:10.5, color: last ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: last ? 700 : 400 }}>{r.mes}</span>
                     </div>
                   );

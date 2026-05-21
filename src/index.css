@@ -29,6 +29,14 @@
   --font-display: 'Arial Black', 'Arial Bold', sans-serif;
   --font-mono:    'DM Mono', 'Courier New', monospace;
 
+  /* Brand colours (also available as CSS variables for use in stylesheets) */
+  --gb-red:      #C8102E;
+  --gb-red-dark: #A00D24;
+  --gb-red-glow: rgba(200,16,46,0.12);
+
+  /* Borders (strong variant used for belt swatch outlines) */
+  --border-strong: #C8C6C0;
+
   /* Shadows */
   --shadow-xs:  0 1px 4px rgba(0,0,0,0.06);
   --shadow-sm:  0 2px 8px rgba(0,0,0,0.08);

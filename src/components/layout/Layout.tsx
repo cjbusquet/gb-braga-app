@@ -231,9 +231,9 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
       {/* Main area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-        {/* Mobile top bar */}
+        {/* Mobile top bar — paddingTop accounts for safe-area (notch/island) in PWA standalone mode */}
         {isMobile && (
-          <div style={{ height: 56, background: 'var(--bg-card)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', flexShrink: 0, zIndex: 100, boxShadow: 'var(--shadow-xs)' }}>
+          <div style={{ minHeight: 56, background: 'var(--bg-card)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', paddingTop: 'env(safe-area-inset-top)', flexShrink: 0, zIndex: 100, boxShadow: 'var(--shadow-xs)' }}>
             <GBLogoFull size={36}/>
             <div style={{ color: 'var(--text-muted)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               {visibleNav.find(n => n.id === currentPage)?.label || ''}
