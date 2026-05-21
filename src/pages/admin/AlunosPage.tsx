@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useAlunos, db } from '../../lib/useData';
 import { GB, beltConfig } from '../../lib/gbBrand';
+import { useMobile } from '../../lib/useMobile';
 import NovaMatriculaModal from './NovaMatriculaModal';
 
 function EditAlunoModal({ aluno, onClose }: { aluno: any; onClose: () => void }) {
@@ -58,6 +59,7 @@ export default function AlunosPage() {
   const [selected, setSelected]     = useState<any>(null);
   const [editModal, setEditModal]   = useState(false);
   const [showMatricula, setShowMatricula] = useState(false);
+  const { isMobile }                = useMobile();
 
   const filtered = alunos.filter((a: any) => {
     const matchSearch = !search || a.nome?.toLowerCase().includes(search.toLowerCase()) || a.email?.toLowerCase().includes(search.toLowerCase());
@@ -70,14 +72,14 @@ export default function AlunosPage() {
       {showMatricula && <NovaMatriculaModal onClose={() => setShowMatricula(false)} onSuccess={() => { setShowMatricula(false); refetch(); }}/>}
       {editModal && selected && <EditAlunoModal aluno={selected} onClose={() => { setEditModal(false); refetch(); }}/>}
 
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:18 }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems: isMobile ? 'center' : 'flex-end', marginBottom:18, flexWrap:'wrap', gap:10 }}>
         <div>
           <div style={{ color:'var(--text-muted)', fontSize:10.5, letterSpacing:'1px', textTransform:'uppercase', marginBottom:3 }}>Academia</div>
           <h1 style={{ color:'var(--text-primary)', fontSize:20, fontWeight:800, fontFamily:'var(--font-display)', textTransform:'uppercase' }}>
             Alunos <span style={{ color:'var(--text-muted)', fontSize:14, fontWeight:400 }}>({filtered.length})</span>
           </h1>
         </div>
-        <button onClick={() => setShowMatricula(true)} style={{ background:GB.red, border:'none', borderRadius:'var(--radius-sm)', padding:'10px 18px', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', boxShadow:'var(--shadow-red)' }}>
+        <button onClick={() => setShowMatricula(true)} style={{ background:GB.red, border:'none', borderRadius:'var(--radius-sm)', padding:'10px 18px', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', boxShadow:'var(--shadow-red)', whiteSpace:'nowrap' }}>
           + Nova Matrícula
         </button>
       </div>
@@ -111,7 +113,7 @@ export default function AlunosPage() {
                   <div style={{ color:'var(--text-muted)', fontSize:13 }}>{selected.email}</div>
                 </div>
               </div>
-              <div style={{ display:'flex', gap:8 }}>
+              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
                 <button onClick={() => setEditModal(true)} style={{ background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)', padding:'8px 14px', color:'var(--text-secondary)', fontSize:12.5, cursor:'pointer' }}>✏️ Editar</button>
                 <button onClick={async () => { if(confirm('Suspender este aluno?')) { await db.suspenderAluno(selected.id); refetch(); setSelected(null); }}} style={{ background:'rgba(217,119,6,0.1)', border:'1px solid rgba(217,119,6,0.3)', borderRadius:'var(--radius-sm)', padding:'8px 14px', color:'#D97706', fontSize:12.5, cursor:'pointer' }}>⛔ Suspender</button>
               </div>

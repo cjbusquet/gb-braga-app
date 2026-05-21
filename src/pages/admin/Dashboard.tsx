@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useKPIs, useAlunos, usePagamentos, usePresencas, useTurmas } from '../../lib/useData';
 import { GB } from '../../lib/gbBrand';
+import { useMobile } from '../../lib/useMobile';
 
 function KpiCard({ label, value, sub, color = GB.red }: any) {
   return (
@@ -18,6 +19,7 @@ export default function Dashboard() {
   const { data: pagamentos }= usePagamentos();
   const { data: presencas } = usePresencas();
   const { data: turmas }    = useTurmas();
+  const { isMobile }        = useMobile();
 
   const hoje = new Date().toISOString().split('T')[0];
   const checkinsHoje = presencas.filter((p: any) => p.data === hoje);
@@ -46,7 +48,7 @@ export default function Dashboard() {
       </div>
 
       {/* Recent activity */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+      <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:16 }}>
 
         {/* Recent check-ins */}
         <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:20 }}>

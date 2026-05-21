@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { usePagamentos, usePlanos, useAlunos, db } from '../../lib/useData';
 import { GB } from '../../lib/gbBrand';
+import { useMobile } from '../../lib/useMobile';
 
 type Tab = 'cobranças' | 'planos' | 'toconline';
 
@@ -12,6 +13,7 @@ export default function FinanceiroPage() {
   const [tab, setTab]                 = useState<Tab>('cobranças');
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [saving, setSaving]           = useState<string|null>(null);
+  const { isMobile }                  = useMobile();
 
   const filtered = pagamentos.filter((p: any) =>
     filtroStatus === 'todos' || p.status === filtroStatus
@@ -49,7 +51,7 @@ export default function FinanceiroPage() {
       </div>
 
       {/* KPI Cards */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:20 }}>
+      <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap:12, marginBottom:20 }}>
         {[['Receita Mês', totais.pago, '#22C55E'],['Pendente', totais.pendente, '#F59E0B'],['Vencido', totais.vencido, GB.red]].map(([label,val,color]) => (
           <div key={label as string} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:16 }}>
             <div style={{ color:'var(--text-muted)', fontSize:10.5, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.8px', marginBottom:6 }}>{label as string}</div>
@@ -71,7 +73,7 @@ export default function FinanceiroPage() {
       {/* COBRANÇAS */}
       {tab === 'cobranças' && (
         <div>
-          <div style={{ display:'flex', gap:8, marginBottom:14 }}>
+          <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap' }}>
             {['todos','pago','pendente','vencido'].map(f => (
               <button key={f} onClick={() => setFiltroStatus(f)}
                 style={{ background:filtroStatus===f?GB.red:'var(--bg-card)', border:`1px solid ${filtroStatus===f?GB.red:'var(--border)'}`, borderRadius:'var(--radius-sm)', padding:'6px 14px', color:filtroStatus===f?'#fff':'var(--text-secondary)', fontSize:12.5, cursor:'pointer', textTransform:'capitalize' }}>
@@ -86,7 +88,8 @@ export default function FinanceiroPage() {
             </div>
           ) : (
             <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', overflow:'hidden' }}>
-              <table style={{ width:'100%', borderCollapse:'collapse' }}>
+              <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch' as any }}>
+              <table style={{ width:'100%', borderCollapse:'collapse', minWidth: isMobile ? 560 : undefined }}>
                 <thead>
                   <tr style={{ borderBottom:'1px solid var(--border-subtle)' }}>
                     {['Aluno','Plano','Valor','Vencimento','Estado','Ações'].map(h => (
@@ -133,6 +136,7 @@ export default function FinanceiroPage() {
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
         </div>

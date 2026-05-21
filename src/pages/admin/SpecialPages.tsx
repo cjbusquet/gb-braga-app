@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useKPIs, useAlunos, usePagamentos } from '../../lib/useData';
 import { revenueHistory } from '../../data/mockData';
 import { exportRelatorioFinanceiro, exportRelatorioAlunos, exportCSV } from '../../lib/reportExport';
+import { useMobile } from '../../lib/useMobile';
 
 // ─── Shared atoms ─────────────────────────────────────────────────────────────
 function Card({ children, style = {} }: { children: React.ReactNode; style?: React.CSSProperties }) {
@@ -118,6 +119,7 @@ export function SuperAdminDashboard() {
   usePagamentos();
   const [academias, setAcademias] = useState<Academia[]>(ACADEMIAS);
   const [showNova,  setShowNova]  = useState(false);
+  const { isMobile, isTablet }    = useMobile();
 
   const totalAlunos  = academias.reduce((s,a) => s+a.alunos,0);
   const totalReceita = academias.reduce((s,a) => s+a.receita,0);
@@ -132,7 +134,7 @@ export function SuperAdminDashboard() {
         <h1 style={{ color: 'var(--text-primary)', fontSize: 22, fontWeight: 800, fontFamily: 'var(--font-display)', letterSpacing: '0.5px', textTransform: 'uppercase' as const }}>Super Admin</h1>
       </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:12, marginBottom:20 }}>
+      <div style={{ display:'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : isTablet ? 'repeat(3,1fr)' : 'repeat(5,1fr)', gap:12, marginBottom:20 }}>
         <Stat label="Total Alunos"  value={totalAlunos}                        accent="var(--gb-red)"   sub={`${academias.length} academias`}/>
         <Stat label="Receita Mensal" value={`€${totalReceita.toLocaleString()}`} accent="#16A34A"        delta="↑ +11% vs ant."/>
         <Stat label="Inadimplentes" value={totalInadimp}                        accent="#D97706"        sub="toda a rede"/>
@@ -140,7 +142,7 @@ export function SuperAdminDashboard() {
         <Stat label="NPS Rede"      value="4.8★"                                accent="#7C3AED"        sub="últimos 30 dias"/>
       </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:'1.8fr 1fr', gap:16, marginBottom:16 }}>
+      <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1.8fr 1fr', gap:16, marginBottom:16 }}>
         <Card style={{ padding:'20px 22px' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18 }}>
             <SectionLabel>Receita da Rede — 12 meses</SectionLabel>
@@ -180,7 +182,8 @@ export function SuperAdminDashboard() {
           <SectionLabel>Academias da Rede</SectionLabel>
           <button onClick={() => setShowNova(true)} style={{ background:'var(--gb-red)', border:'none', borderRadius:'var(--radius-sm)', padding:'7px 14px', color:'#fff', fontSize:12, fontWeight:700, cursor:'pointer', boxShadow:'var(--shadow-red)' }}>+ Nova Academia</button>
         </div>
-        <table style={{ width:'100%', borderCollapse:'collapse' }}>
+        <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch' as any }}>
+        <table style={{ width:'100%', borderCollapse:'collapse', minWidth: isMobile ? 600 : undefined }}>
           <thead>
             <tr style={{ borderBottom:'1px solid var(--border-subtle)', background:'var(--bg-elevated)' }}>
               {['Academia','Cidade','Alunos','Receita','Crescimento','Frequência','Inadimp.','Status',''].map(h => (
@@ -229,6 +232,7 @@ export function SuperAdminDashboard() {
             ))}
           </tbody>
         </table>
+        </div>
       </Card>
     </div>
   );
@@ -245,6 +249,7 @@ export function RelatoriosPage() {
   const [periodo, setPeriodo] = useState('mes');
   const [exporting, setExporting] = useState<string | null>(null);
   const maxR = Math.max(...revenueHistory.map(r => r.valor));
+  const { isMobile } = useMobile();
 
   const doExport = async (type: string, fn: () => void) => {
     setExporting(type);
@@ -273,12 +278,12 @@ export function RelatoriosPage() {
 
   return (
     <div>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:20 }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems: isMobile ? 'flex-start' : 'flex-end', marginBottom:20, flexWrap:'wrap', gap:12 }}>
         <div>
           <div style={{ color:'var(--text-muted)', fontSize:10.5, letterSpacing:'1px', textTransform:'uppercase' as const, marginBottom:3 }}>Analytics</div>
           <h1 style={{ color:'var(--text-primary)', fontSize:22, fontWeight:800, fontFamily:'var(--font-display)', textTransform:'uppercase' as const }}>Relatórios</h1>
         </div>
-        <div style={{ display:'flex', gap:6 }}>
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
           {['semana','mes','trimestre','ano'].map(p => (
             <button key={p} onClick={() => setPeriodo(p)} style={{ background: periodo===p ? 'var(--gb-red)' : 'var(--bg-card)', border:`1px solid ${periodo===p ? 'var(--gb-red)' : 'var(--border)'}`, borderRadius:'var(--radius-sm)', padding:'6px 12px', color: periodo===p ? '#fff' : 'var(--text-secondary)', fontSize:11.5, fontWeight: periodo===p ? 700 : 400, textTransform:'capitalize' as const, cursor:'pointer' }}>
               {p}
@@ -288,7 +293,7 @@ export function RelatoriosPage() {
       </div>
 
       {/* KPI strip */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:10, marginBottom:20 }}>
+      <div style={{ display:'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(3,1fr) repeat(3,1fr)', gap:10, marginBottom:20 }}>
         {kpiRows.map(k => (
           <div key={k.label} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-md)', padding:'12px 14px', borderTop:`3px solid ${k.ok ? '#16A34A' : '#D97706'}` }}>
             <div style={{ color:'var(--text-muted)', fontSize:9.5, marginBottom:4, lineHeight:1.3 }}>{k.label}</div>
@@ -320,7 +325,7 @@ export function RelatoriosPage() {
             ))} color="#16A34A"/>
             <ExportBtn icon="🧾" label="SAF-T TOConline" onClick={() => alert('SAF-T gerado via TOConline API')} color="#635BFF"/>
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'1.6fr 1fr', gap:16 }}>
+          <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1.6fr 1fr', gap:16 }}>
             <Card style={{ padding:'20px 22px' }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18 }}>
                 <SectionLabel>Receita Mensal</SectionLabel>
@@ -371,7 +376,7 @@ export function RelatoriosPage() {
               'GB_Alunos'
             ))} color="#16A34A"/>
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+          <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:16 }}>
             <Card style={{ padding:'20px 22px' }}>
               <SectionLabel>Distribuição de Faixas</SectionLabel>
               {Object.entries(BELT_BG).map(([faixa, bg]) => {
@@ -418,7 +423,7 @@ export function RelatoriosPage() {
       )}
 
       {tab === 'frequencia' && (
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+        <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:16 }}>
           <Card style={{ padding:'20px 22px' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
               <SectionLabel>Frequência por Aluno</SectionLabel>
@@ -467,7 +472,7 @@ export function RelatoriosPage() {
       )}
 
       {tab === 'retencao' && (
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+        <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:16 }}>
           <Card style={{ padding:'20px 22px' }}>
             <SectionLabel>Retenção — últimos 6 meses</SectionLabel>
             {[

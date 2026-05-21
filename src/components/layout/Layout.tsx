@@ -34,6 +34,15 @@ const NAV_ITEMS: NavItem[] = [
   { icon:'✉', label:'Mensagens',   id:'mensagens',     roles:['aluno'], badge:1 },
 ];
 
+// Bottom nav items per role (max 4 + "Mais")
+const BOTTOM_NAV: Record<string, string[]> = {
+  aluno:       ['portal','minhas-aulas','evolucao','meu-financeiro'],
+  admin:       ['dashboard','alunos','checkin','turmas'],
+  atendimento: ['dashboard','alunos','checkin','comunicacao'],
+  professor:   ['dashboard','alunos','checkin','graduacao'],
+  superadmin:  ['dashboard','alunos','financeiro','config'],
+};
+
 interface LayoutProps {
   currentPage: string;
   onNavigate: (page: string) => void;
@@ -42,9 +51,9 @@ interface LayoutProps {
 
 export default function Layout({ currentPage, onNavigate, children }: LayoutProps) {
   const { user, logout } = useAuth();
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [collapsed,   setCollapsed]   = useState(false);
+  const [mobileOpen,  setMobileOpen]  = useState(false);
+  const [isMobile,    setIsMobile]    = useState(false);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 1024);
@@ -53,7 +62,6 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Close sidebar on mobile when navigating
   const handleNav = (id: string) => {
     onNavigate(id);
     if (isMobile) setMobileOpen(false);
@@ -61,11 +69,18 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
 
   if (!user) return null;
 
-  const rt         = roleThemes[user.role] || roleThemes.aluno;
-  const visibleNav = NAV_ITEMS.filter(n => n.roles.includes(user.role as UserRole));
+  const rt          = roleThemes[user.role] || roleThemes.aluno;
+  const visibleNav  = NAV_ITEMS.filter(n => n.roles.includes(user.role as UserRole));
   const isCollapsed = collapsed && !isMobile;
-  const sidebarW   = isCollapsed ? 64 : 240;
+  const sidebarW    = isCollapsed ? 64 : 240;
 
+  // Bottom nav items for this role
+  const bottomIds  = BOTTOM_NAV[user.role] || BOTTOM_NAV.admin;
+  const bottomItems = bottomIds
+    .map(id => visibleNav.find(n => n.id === id))
+    .filter(Boolean) as NavItem[];
+
+  /* ── Sidebar nav button ──────────────────────────── */
   const navBtn = (item: NavItem) => {
     const active = currentPage === item.id;
     return (
@@ -76,7 +91,9 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
           gap: isCollapsed ? 0 : 10,
           justifyContent: isCollapsed ? 'center' : 'flex-start',
           width: '100%', padding: isCollapsed ? '11px 0' : '10px 14px',
-          background: active ? `rgba(${rt.accent.replace('#','').match(/../g)?.map(x=>parseInt(x,16)).join(',')},0.12)` : 'transparent',
+          background: active
+            ? `rgba(${rt.accent.replace('#','').match(/../g)?.map(x=>parseInt(x,16)).join(',')},0.12)`
+            : 'transparent',
           border: 'none', borderRadius: 8, cursor: 'pointer',
           borderLeft: active ? `3px solid ${rt.accent}` : '3px solid transparent',
           transition: 'all 0.15s', position: 'relative',
@@ -99,6 +116,7 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
     );
   };
 
+  /* ── Sidebar ──────────────────────────────────────── */
   const sidebar = (
     <div style={{
       width: sidebarW, flexShrink: 0,
@@ -107,10 +125,10 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
       overflow: 'hidden', transition: 'width 0.2s',
       ...(isMobile ? {
         position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 200,
-        width: 'min(240px, 85vw)',
+        width: 'min(280px, 88vw)',
         transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
         transition: 'transform 0.25s ease',
-        boxShadow: mobileOpen ? '4px 0 24px rgba(0,0,0,0.2)' : 'none',
+        boxShadow: mobileOpen ? '4px 0 32px rgba(0,0,0,0.25)' : 'none',
       } : {})
     }}>
       {/* Logo */}
@@ -118,7 +136,7 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
         {!isCollapsed && <GBLogoFull size={44}/>}
         {isCollapsed && <span style={{ fontSize: 20 }}>🥋</span>}
         {isMobile && (
-          <button onClick={() => setMobileOpen(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}>✕</button>
+          <button onClick={() => setMobileOpen(false)} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--text-muted)', padding: 6, minHeight: 44 }}>✕</button>
         )}
       </div>
 
@@ -143,7 +161,7 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
       </div>
 
       {/* Bottom actions */}
-      <div style={{ padding: 8, borderTop: '1px solid var(--border)' }}>
+      <div style={{ padding: 8, borderTop: '1px solid var(--border)', paddingBottom: isMobile ? 'calc(8px + env(safe-area-inset-bottom))' : 8 }}>
         {!isMobile && (
           <button onClick={() => setCollapsed(c => !c)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 14px', background: 'none', border: 'none', borderRadius: 8, cursor: 'pointer', color: 'var(--text-muted)', fontSize: 12 }}>
             <span style={{ fontSize: 14, transform: isCollapsed ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>←</span>
@@ -158,6 +176,49 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
     </div>
   );
 
+  /* ── Bottom tab bar (mobile only) ────────────────── */
+  const bottomTabBar = isMobile && (
+    <div style={{
+      position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 190,
+      background: 'var(--bg-card)', borderTop: '1px solid var(--border)',
+      display: 'flex', alignItems: 'stretch',
+      paddingBottom: 'env(safe-area-inset-bottom)',
+      boxShadow: '0 -2px 12px rgba(0,0,0,0.08)',
+    }}>
+      {bottomItems.map(item => {
+        const active = currentPage === item.id;
+        return (
+          <button key={item.id} onClick={() => handleNav(item.id)} style={{
+            flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            gap: 3, padding: '8px 4px 10px', background: 'none', border: 'none', cursor: 'pointer',
+            borderTop: `2px solid ${active ? rt.accent : 'transparent'}`,
+            transition: 'all 0.15s', minHeight: 56, position: 'relative',
+          }}>
+            <span style={{ fontSize: 18, lineHeight: 1 }}>{item.icon}</span>
+            <span style={{ fontSize: 9.5, fontWeight: active ? 700 : 400, color: active ? rt.accent : 'var(--text-muted)', letterSpacing: '0.2px' }}>
+              {item.label}
+            </span>
+            {item.badge && (
+              <span style={{ position: 'absolute', top: 6, right: '50%', transform: 'translateX(8px)', background: GB.red, color: '#fff', fontSize: 9, fontWeight: 700, width: 14, height: 14, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {item.badge}
+              </span>
+            )}
+          </button>
+        );
+      })}
+      {/* "Mais" button */}
+      <button onClick={() => setMobileOpen(true)} style={{
+        flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        gap: 3, padding: '8px 4px 10px', background: 'none', border: 'none', cursor: 'pointer',
+        borderTop: '2px solid transparent', minHeight: 56,
+      }}>
+        <span style={{ fontSize: 18, lineHeight: 1 }}>⋯</span>
+        <span style={{ fontSize: 9.5, fontWeight: 400, color: 'var(--text-muted)' }}>Mais</span>
+      </button>
+    </div>
+  );
+
+  /* ── Render ──────────────────────────────────────── */
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', fontFamily: 'var(--font-ui)', background: 'var(--bg-base)' }}>
       {/* Backdrop on mobile */}
@@ -170,20 +231,14 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
       {/* Main area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-        {/* Mobile / Tablet top bar with hamburger */}
+        {/* Mobile top bar */}
         {isMobile && (
-          <div style={{ height: 58, background: 'var(--bg-card)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', flexShrink: 0, zIndex: 100, boxShadow: 'var(--shadow-xs)' }}>
-            {/* Hamburger ☰ */}
-            <button
-              onClick={() => setMobileOpen(true)}
-              aria-label="Abrir menu"
-              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 5, minHeight: 44, justifyContent: 'center', alignItems: 'center' }}>
-              <span style={{ display: 'block', width: 20, height: 2, background: 'var(--text-primary)', borderRadius: 2 }}/>
-              <span style={{ display: 'block', width: 14, height: 2, background: 'var(--text-primary)', borderRadius: 2 }}/>
-              <span style={{ display: 'block', width: 20, height: 2, background: 'var(--text-primary)', borderRadius: 2 }}/>
-            </button>
-            <GBLogoFull size={38}/>
-            <div style={{ width: 40, height: 40, borderRadius: '50%', background: rt.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 700, boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+          <div style={{ height: 56, background: 'var(--bg-card)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', flexShrink: 0, zIndex: 100, boxShadow: 'var(--shadow-xs)' }}>
+            <GBLogoFull size={36}/>
+            <div style={{ color: 'var(--text-muted)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              {visibleNav.find(n => n.id === currentPage)?.label || ''}
+            </div>
+            <div style={{ width: 38, height: 38, borderRadius: '50%', background: rt.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 700 }}>
               {user.nome?.charAt(0) || '?'}
             </div>
           </div>
@@ -204,11 +259,17 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
           </div>
         )}
 
-        {/* Page content */}
-        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: isMobile ? '16px' : '24px 28px' }}>
+        {/* Page content — extra bottom padding on mobile for the tab bar */}
+        <div style={{
+          flex: 1, overflowY: 'auto', overflowX: 'hidden',
+          padding: isMobile ? '16px 14px' : '24px 28px',
+          paddingBottom: isMobile ? 'calc(72px + env(safe-area-inset-bottom))' : undefined,
+        }}>
           {children}
         </div>
       </div>
+
+      {bottomTabBar}
     </div>
   );
 }

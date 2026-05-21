@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAlunos, usePagamentos, usePresencas } from '../../lib/useData';
 import { useAuth } from '../../lib/auth';
 import { GB, beltConfig } from '../../lib/gbBrand';
+import { useMobile } from '../../lib/useMobile';
 import type { Belt } from '../../types';
 
 const BELT_PATH: Belt[] = ['branca','cinza','amarela','laranja','verde','azul','roxa','marrom','preta'];
@@ -29,6 +30,7 @@ export default function PortalAluno({ onNavigate }: { onNavigate?: (page: string
   const [showEditPerfil, setShowEditPerfil] = useState(false);
   const [showContrato, setShowContrato] = useState(false);
   const { user } = useAuth();
+  const { isMobile } = useMobile();
   const aluno = alunos.find(a => a.email === user?.email) || alunos[0];
   const minhasPresencas = presencas.filter(p => p.alunoId === aluno.id);
   const proximoPagamento = pagamentos.find(p => p.status === 'pendente' || p.status === 'vencido');
@@ -103,25 +105,25 @@ export default function PortalAluno({ onNavigate }: { onNavigate?: (page: string
         {/* Subtle grid */}
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)', backgroundSize: '28px 28px', pointerEvents: 'none' }}/>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative' }}>
-          <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', flexWrap: isMobile ? 'wrap' : 'nowrap', gap: 12 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 6 }}>Bem-vindo de volta</div>
-            <h1 style={{ color: '#fff', fontSize: 26, fontWeight: 800, margin: 0, lineHeight: 1 }}>{aluno.nome}</h1>
+            <h1 style={{ color: '#fff', fontSize: isMobile ? 22 : 26, fontWeight: 800, margin: 0, lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{aluno.nome}</h1>
             <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 5 }}>Membro desde {aluno.dataMatricula}</div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 18 }}>
-              <div style={{ width: 52, height: 12, background: bc?.bg || '#888', borderRadius: 3, border: aluno.faixa === 'branca' ? '1px solid #555' : 'none', boxShadow: `0 0 14px ${(bc?.bg || '#888')}88` }}/>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
+              <div style={{ width: 48, height: 11, background: bc?.bg || '#888', borderRadius: 3, border: aluno.faixa === 'branca' ? '1px solid #555' : 'none', boxShadow: `0 0 14px ${(bc?.bg || '#888')}88`, flexShrink: 0 }}/>
               <span style={{ color: '#fff', fontSize: 13, fontWeight: 700, textTransform: 'capitalize' }}>{bc?.label} · {aluno.grau}° Grau</span>
             </div>
 
-            <div style={{ marginTop: 14 }}>
+            <div style={{ marginTop: 12 }}>
               <span style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.85)', fontSize: 11.5, fontWeight: 600, padding: '4px 12px', borderRadius: 99 }}>{aluno.plano}</span>
             </div>
           </div>
 
           {/* Belt progression circle */}
           <div style={{ textAlign: 'center', flexShrink: 0 }}>
-            <svg width="80" height="80" viewBox="0 0 80 80">
+            <svg width={isMobile ? 68 : 80} height={isMobile ? 68 : 80} viewBox="0 0 80 80">
               <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6"/>
               <circle cx="40" cy="40" r="34" fill="none" stroke={bc?.bg || GB.red} strokeWidth="6"
                 strokeDasharray={`${2 * Math.PI * 34 * progressoPct / 100} ${2 * Math.PI * 34}`}
@@ -135,7 +137,7 @@ export default function PortalAluno({ onNavigate }: { onNavigate?: (page: string
       </div>
 
       {/* Stats row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? 8 : 12, marginBottom: 16 }}>
         {[
           { label: 'Aulas este mês', value: minhasPresencas.length, accent: GB.red },
           { label: 'Frequência',     value: `${aluno.frequencia}%`, accent: aluno.frequencia >= 80 ? '#22C55E' : '#F59E0B' },
@@ -151,22 +153,24 @@ export default function PortalAluno({ onNavigate }: { onNavigate?: (page: string
 
       {/* Payment alert */}
       {proximoPagamento && (
-        <div style={{ background: proximoPagamento.status === 'vencido' ? 'rgba(200,16,46,0.08)' : 'rgba(245,158,11,0.07)', border: `1px solid ${proximoPagamento.status === 'vencido' ? 'rgba(200,16,46,0.3)' : 'rgba(245,158,11,0.25)'}`, borderRadius: 'var(--radius-md)', padding: '14px 18px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <div style={{ color: proximoPagamento.status === 'vencido' ? GB.red : '#F59E0B', fontSize: 12, fontWeight: 700, marginBottom: 3 }}>
-              {proximoPagamento.status === 'vencido' ? '⚠️ Pagamento em atraso' : '💳 Mensalidade a vencer'}
+        <div style={{ background: proximoPagamento.status === 'vencido' ? 'rgba(200,16,46,0.08)' : 'rgba(245,158,11,0.07)', border: `1px solid ${proximoPagamento.status === 'vencido' ? 'rgba(200,16,46,0.3)' : 'rgba(245,158,11,0.25)'}`, borderRadius: 'var(--radius-md)', padding: '14px 16px', marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10 }}>
+            <div>
+              <div style={{ color: proximoPagamento.status === 'vencido' ? GB.red : '#F59E0B', fontSize: 12, fontWeight: 700, marginBottom: 3 }}>
+                {proximoPagamento.status === 'vencido' ? '⚠️ Pagamento em atraso' : '💳 Mensalidade a vencer'}
+              </div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{proximoPagamento.plano} · Vence {proximoPagamento.vencimento}</div>
             </div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{proximoPagamento.plano} · Vence {proximoPagamento.vencimento}</div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 800, fontFamily: 'var(--font-mono)' }}>€{proximoPagamento.valor}</span>
-            <button style={{ background: '#635BFF', border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 16px', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 0 14px rgba(99,91,255,0.3)' }}>Pagar agora</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 800, fontFamily: 'var(--font-mono)' }}>€{proximoPagamento.valor}</span>
+              <button style={{ background: '#635BFF', border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 16px', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 0 14px rgba(99,91,255,0.3)', whiteSpace: 'nowrap' }}>Pagar agora</button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Navigation cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: isMobile ? 8 : 10, marginBottom: 16 }}>
         <NavCard icon="📅" label="Minhas Aulas"   desc="Horários e presenças"   accent="#3B82F6" onClick={() => onNavigate?.('minhas-aulas')}/>
         <NavCard icon="🎖️" label="Minha Evolução" desc="Faixa e graduações"     accent="#A78BFA" onClick={() => onNavigate?.('evolucao')}/>
         <NavCard icon="💳" label="Financeiro"     desc="Pagamentos e faturas"   accent="#22C55E" onClick={() => onNavigate?.('meu-financeiro')}/>
