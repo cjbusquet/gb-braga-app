@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAlunos } from '../../lib/useData';
 import { mockMensagens } from '../../data/mockData';
 import { GB } from '../../lib/gbBrand';
+import { supabase, isConfigured } from '../../lib/supabaseClient';
 
 type Canal = 'whatsapp' | 'sms' | 'email' | 'push';
 
@@ -47,15 +48,51 @@ export default function ComunicacaoPage() {
   const [assunto, setAssunto] = useState('');
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sendErr, setSendErr] = useState('');
+  const [sendResult, setSendResult] = useState<{ sent: number; total: number } | null>(null);
 
   const handleEnviar = async () => {
     if (!msg.trim()) return;
-    setSending(true);
-    await new Promise(r => setTimeout(r, 800));
+    setSending(true); setSendErr(''); setSendResult(null);
+
+    // Non-email channels: simulate (WhatsApp/SMS/Push not yet integrated)
+    if (canal !== 'email' || !isConfigured) {
+      await new Promise(r => setTimeout(r, 800));
+      setSending(false);
+      setSent(true);
+      setMsg('');
+      setTimeout(() => { setSent(false); setSendResult(null); }, 4000);
+      return;
+    }
+
+    // Email: call send-email edge function
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON,
+          },
+          body: JSON.stringify({ dest, assunto, corpo: msg }),
+        }
+      );
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setSendErr(data.error || 'Erro ao enviar.');
+      } else {
+        setSent(true);
+        setSendResult({ sent: data.sent, total: data.total });
+        setMsg(''); setAssunto('');
+        setTimeout(() => { setSent(false); setSendResult(null); }, 5000);
+      }
+    } catch (e) {
+      setSendErr(String(e));
+    }
     setSending(false);
-    setSent(true);
-    setMsg('');
-    setTimeout(() => setSent(false), 3000);
   };
 
   const applyTemplate = (t: typeof TEMPLATES[0]) => {
@@ -147,7 +184,12 @@ export default function ComunicacaoPage() {
 
             {sent && (
               <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', marginBottom: 14, color: '#22C55E', fontSize: 12, fontWeight: 600 }}>
-                ✓ Mensagem enviada com sucesso!
+                ✓ {sendResult ? `${sendResult.sent} de ${sendResult.total} email(s) enviado(s)!` : 'Mensagem enviada com sucesso!'}
+              </div>
+            )}
+            {sendErr && (
+              <div style={{ background: 'rgba(200,16,46,0.06)', border: '1px solid rgba(200,16,46,0.2)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', marginBottom: 14, color: GB.red, fontSize: 12, fontWeight: 600 }}>
+                ⚠ {sendErr}
               </div>
             )}
 
