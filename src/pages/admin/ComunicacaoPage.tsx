@@ -83,11 +83,16 @@ export default function ComunicacaoPage() {
       const data = await res.json();
       if (!res.ok || data.error) {
         setSendErr(data.error || 'Erro ao enviar.');
+      } else if (data.sent === 0) {
+        // Sent 0 — show first error from batch
+        const firstErr = data.errors?.[0] || 'Nenhum email enviado. Verifica as configurações SMTP.';
+        setSendErr(firstErr);
       } else {
         setSent(true);
         setSendResult({ sent: data.sent, total: data.total });
+        if (data.errors?.length) setSendErr(`${data.errors.length} erro(s): ${data.errors[0]}`);
         setMsg(''); setAssunto('');
-        setTimeout(() => { setSent(false); setSendResult(null); }, 5000);
+        setTimeout(() => { setSent(false); setSendResult(null); setSendErr(''); }, 6000);
       }
     } catch (e) {
       setSendErr(String(e));
