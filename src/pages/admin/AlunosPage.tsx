@@ -59,7 +59,29 @@ export default function AlunosPage() {
   const [selected, setSelected]     = useState<any>(null);
   const [editModal, setEditModal]   = useState(false);
   const [showMatricula, setShowMatricula] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
   const { isMobile }                = useMobile();
+
+  const changeStatus = async (newStatus: 'ativo' | 'suspenso' | 'inativo') => {
+    const labels: Record<string, string> = {
+      ativo:     'Reativar este aluno?',
+      suspenso:  'Suspender este aluno? O acesso será bloqueado temporariamente.',
+      inativo:   'Marcar este aluno como inativo? O perfil ficará arquivado.',
+    };
+    if (!confirm(labels[newStatus])) return;
+    setStatusLoading(true);
+    try {
+      await db.atualizarAluno(selected.id, { status: newStatus });
+      const updated = { ...selected, status: newStatus };
+      setSelected(updated);
+      refetch();
+    } catch (e) {
+      console.error('Erro ao alterar status:', e);
+      alert('Erro ao alterar o estado do aluno. Tente novamente.');
+    } finally {
+      setStatusLoading(false);
+    }
+  };
 
   const filtered = alunos.filter((a: any) => {
     const matchSearch = !search || a.nome?.toLowerCase().includes(search.toLowerCase()) || a.email?.toLowerCase().includes(search.toLowerCase());
@@ -114,16 +136,52 @@ export default function AlunosPage() {
                 </div>
               </div>
               <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-                <button onClick={() => setEditModal(true)} style={{ background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)', padding:'8px 14px', color:'var(--text-secondary)', fontSize:12.5, cursor:'pointer' }}>✏️ Editar</button>
-                <button onClick={async () => { if(confirm('Suspender este aluno?')) { await db.suspenderAluno(selected.id); refetch(); setSelected(null); }}} style={{ background:'rgba(217,119,6,0.1)', border:'1px solid rgba(217,119,6,0.3)', borderRadius:'var(--radius-sm)', padding:'8px 14px', color:'#D97706', fontSize:12.5, cursor:'pointer' }}>⛔ Suspender</button>
+                <button onClick={() => setEditModal(true)}
+                  style={{ background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)', padding:'8px 14px', color:'var(--text-secondary)', fontSize:12.5, cursor:'pointer' }}>
+                  ✏️ Editar
+                </button>
+
+                {/* Reativar — shown when suspenso or inativo */}
+                {(selected.status === 'suspenso' || selected.status === 'inativo') && (
+                  <button onClick={() => changeStatus('ativo')} disabled={statusLoading}
+                    style={{ background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.35)', borderRadius:'var(--radius-sm)', padding:'8px 14px', color:'#16A34A', fontSize:12.5, cursor:'pointer', opacity: statusLoading ? 0.5 : 1 }}>
+                    ✅ Reativar
+                  </button>
+                )}
+
+                {/* Suspender — shown when ativo or inativo */}
+                {selected.status !== 'suspenso' && (
+                  <button onClick={() => changeStatus('suspenso')} disabled={statusLoading}
+                    style={{ background:'rgba(217,119,6,0.1)', border:'1px solid rgba(217,119,6,0.3)', borderRadius:'var(--radius-sm)', padding:'8px 14px', color:'#D97706', fontSize:12.5, cursor:'pointer', opacity: statusLoading ? 0.5 : 1 }}>
+                    ⛔ Suspender
+                  </button>
+                )}
+
+                {/* Tornar Inativo — shown when ativo or suspenso */}
+                {selected.status !== 'inativo' && (
+                  <button onClick={() => changeStatus('inativo')} disabled={statusLoading}
+                    style={{ background:'rgba(107,114,128,0.08)', border:'1px solid rgba(107,114,128,0.25)', borderRadius:'var(--radius-sm)', padding:'8px 14px', color:'#6B7280', fontSize:12.5, cursor:'pointer', opacity: statusLoading ? 0.5 : 1 }}>
+                    🚫 Tornar Inativo
+                  </button>
+                )}
               </div>
             </div>
-            {[['NIF', selected.nif||'—'], ['Telefone', selected.telefone||'—'], ['Nascimento', selected.dataNascimento||'—'], ['Matrícula', selected.dataMatricula||'—'], ['Plano', selected.plano||'—'], ['Faixa', `${selected.faixa} · Grau ${selected.grau}`], ['Frequência', `${selected.frequencia||0}%`], ['Status', selected.status]].map(([k,v]) => (
+            {[['NIF', selected.nif||'—'], ['Telefone', selected.telefone||'—'], ['Nascimento', selected.dataNascimento||'—'], ['Matrícula', selected.dataMatricula||'—'], ['Plano', selected.plano||'—'], ['Faixa', `${selected.faixa} · Grau ${selected.grau}`], ['Frequência', `${selected.frequencia||0}%`]].map(([k,v]) => (
               <div key={k} style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid var(--border-subtle)' }}>
                 <span style={{ color:'var(--text-muted)', fontSize:12.5 }}>{k}</span>
                 <span style={{ color:'var(--text-primary)', fontSize:12.5, fontWeight:500 }}>{v}</span>
               </div>
             ))}
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0' }}>
+              <span style={{ color:'var(--text-muted)', fontSize:12.5 }}>Status</span>
+              <span style={{
+                background: selected.status==='ativo' ? 'rgba(34,197,94,0.1)' : selected.status==='suspenso' ? 'rgba(217,119,6,0.1)' : 'rgba(107,114,128,0.1)',
+                color:      selected.status==='ativo' ? '#16A34A'              : selected.status==='suspenso' ? '#D97706'              : '#6B7280',
+                fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:99, textTransform:'capitalize',
+              }}>
+                {selected.status==='ativo' ? '● Ativo' : selected.status==='suspenso' ? '⛔ Suspenso' : '○ Inativo'}
+              </span>
+            </div>
           </div>
         </div>
       ) : (
