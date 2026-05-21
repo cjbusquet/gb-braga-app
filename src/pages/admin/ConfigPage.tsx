@@ -4,6 +4,7 @@ import { GB } from '../../lib/gbBrand';
 import { defaultTocConfig } from '../../data/mockData';
 import { supabase, isConfigured } from '../../lib/supabaseClient';
 import { useAuth } from '../../lib/auth';
+import { useMobile } from '../../lib/useMobile';
 import type { TocConfig } from '../../types';
 
 type Section = 'equipa' | 'toconline' | 'stripe' | 'whatsapp' | 'email' | 'academia' | 'compliance';
@@ -112,6 +113,7 @@ function TocSection() {
   const { data: cfg, setData: setCfg, loading, saving, saved, save } = useConfig<TocConfig>('toconline', defaultTocConfig);
   const [testing, setTesting] = useState(false);
   const [connStatus, setConnStatus] = useState<'idle' | 'ok' | 'fail'>('idle');
+  const { isMobile } = useMobile();
 
   const update = (key: keyof TocConfig, val: string | boolean) =>
     setCfg(c => ({ ...c, [key]: val }));
@@ -126,7 +128,7 @@ function TocSection() {
   if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 24 }}>A carregar configuração...</div>;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
       {/* Left: form */}
       <Card>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--border-subtle)' }}>
@@ -168,7 +170,7 @@ function TocSection() {
         <Field label="Nome da empresa">
           <Input value={cfg.empresaNome} onChange={v => update('empresaNome', v)} placeholder="Gracie Barra Braga, Lda." />
         </Field>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10 }}>
           <Field label="NIF">
             <Input value={cfg.empresaNIF} onChange={v => update('empresaNIF', v)} placeholder="512345678" mono />
           </Field>
@@ -277,6 +279,7 @@ function StripeSection() {
   const { data, setData, loading, saving, saved, save } = useConfig<StripeConfig>('stripe', defaultStripe);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<'ok'|'err'|null>(null);
+  const { isMobile } = useMobile();
 
   const mode    = data.mode;
   const pk      = data.pk;
@@ -325,7 +328,7 @@ function StripeSection() {
             ⚠️ Modo LIVE — cobranças reais aos clientes!
           </div>
         )}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
           <Field label={`Chave Pública (pk_${mode}_)`}>
             <Input value={pk} onChange={setPk} placeholder={`pk_${mode}_...`} mono />
           </Field>
@@ -336,23 +339,21 @@ function StripeSection() {
         <Field label="Webhook Secret (whsec_)">
           <Input value={whsec} onChange={setWhsec} placeholder="whsec_..." type="password" mono />
         </Field>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={testConn} disabled={testing} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 16px', color: 'var(--text-secondary)', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-              {testing ? '⟳ A testar...' : '⚡ Testar ligação'}
-            </button>
-            {testResult === 'ok' && <span style={{ color: '#22C55E', fontSize: 12.5, fontWeight: 700 }}>✓ Ligação OK</span>}
-            {testResult === 'err' && <span style={{ color: 'var(--gb-red)', fontSize: 12.5, fontWeight: 700 }}>✕ Chave inválida</span>}
-            <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noreferrer" style={{ background: 'rgba(99,91,255,0.08)', border: '1px solid rgba(99,91,255,0.2)', borderRadius: 'var(--radius-sm)', padding: '8px 14px', color: '#635BFF', fontSize: 12, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5 }}>
-              🔗 Stripe Dashboard →
-            </a>
-            <a href="https://billing.stripe.com/p/login/test_28o3cS3Ub0GQdeU288" target="_blank" rel="noreferrer" style={{ background: 'rgba(99,91,255,0.08)', border: '1px solid rgba(99,91,255,0.2)', borderRadius: 'var(--radius-sm)', padding: '8px 14px', color: '#635BFF', fontSize: 12, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5 }}>
-              👤 Customer Portal →
-            </a>
-          </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16, alignItems: 'center' }}>
+          <button onClick={testConn} disabled={testing} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 14px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+            {testing ? '⟳ A testar...' : '⚡ Testar'}
+          </button>
+          {testResult === 'ok' && <span style={{ color: '#22C55E', fontSize: 12, fontWeight: 700 }}>✓ OK</span>}
+          {testResult === 'err' && <span style={{ color: 'var(--gb-red)', fontSize: 12, fontWeight: 700 }}>✕ Inválida</span>}
+          <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noreferrer" style={{ background: 'rgba(99,91,255,0.08)', border: '1px solid rgba(99,91,255,0.2)', borderRadius: 'var(--radius-sm)', padding: '8px 12px', color: '#635BFF', fontSize: 11.5, fontWeight: 600, textDecoration: 'none' }}>
+            🔗 Dashboard →
+          </a>
+          <a href="https://billing.stripe.com/p/login/test_28o3cS3Ub0GQdeU288" target="_blank" rel="noreferrer" style={{ background: 'rgba(99,91,255,0.08)', border: '1px solid rgba(99,91,255,0.2)', borderRadius: 'var(--radius-sm)', padding: '8px 12px', color: '#635BFF', fontSize: 11.5, fontWeight: 600, textDecoration: 'none' }}>
+            👤 Portal →
+          </a>
           <button onClick={() => save()} disabled={saving}
-            style={{ background: saved ? '#22C55E' : saving ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 20px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
-            {saving ? '⟳ A guardar...' : saved ? '✓ Guardado' : '💾 Guardar'}
+            style={{ marginLeft: 'auto', background: saved ? '#22C55E' : saving ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 20px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+            {saving ? '⟳' : saved ? '✓ Guardado' : '💾 Guardar'}
           </button>
         </div>
       </Card>
@@ -368,7 +369,7 @@ function StripeSection() {
             Ver Produtos →
           </a>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 8 }}>
           {PLANOS_STRIPE.map(p => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ flexShrink: 0, width: 120 }}>
@@ -418,11 +419,12 @@ type WaConfig = { num: string; token: string };
 
 function WhatsAppSection() {
   const { data, setData, loading, saving, saved, save } = useConfig<WaConfig>('whatsapp', { num: '+351912345679', token: '' });
+  const { isMobile } = useMobile();
 
   if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 24 }}>A carregar configuração...</div>;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
       <Card>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, paddingBottom: 16, borderBottom: '1px solid var(--border-subtle)' }}>
           <div style={{ width: 40, height: 40, background: '#075E54', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>💬</div>
@@ -523,6 +525,7 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
   const [saving, setSaving] = useState(false);
   const [saved, setSaved]   = useState(false);
   const [err, setErr]       = useState('');
+  const { isMobile }        = useMobile();
 
   const INP: React.CSSProperties = {
     width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
@@ -564,7 +567,7 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
       {/* Expanded edit form */}
       {open && (
         <div style={{ padding: '0 18px 18px', borderTop: '1px solid var(--border-subtle)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10, marginTop: 14 }}>
             <div>
               <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 4 }}>Nome completo</label>
               <input value={d.nome} onChange={e => setD(p => ({ ...p, nome: e.target.value }))} style={INP} />
@@ -601,6 +604,7 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
 
 function EquipaSection() {
   const { user } = useAuth();
+  const { isMobile } = useMobile();
 
   // ── Staff list state ──────────────────────────────────────────────────────
   const [staff, setStaff]       = useState<StaffMember[]>([]);
@@ -695,7 +699,7 @@ function EquipaSection() {
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: 20, alignItems: 'start' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 420px', gap: 20, alignItems: 'start' }}>
 
       {/* ── Left: staff list ── */}
       <div>
@@ -793,6 +797,7 @@ function EquipaSection() {
 // ─── Main ConfigPage ──────────────────────────────────────────────────────────
 export default function ConfigPage() {
   const { user } = useAuth();
+  const { isMobile } = useMobile();
   const isSuperAdmin = user?.role === 'superadmin';
   const visibleSections = SECTIONS.filter(s => !s.superadminOnly || isSuperAdmin);
   const defaultSection: Section = isSuperAdmin ? 'equipa' : 'toconline';
@@ -825,46 +830,80 @@ export default function ConfigPage() {
     }
   };
 
+  /* ── Mobile: horizontal scrollable tabs ── Desktop: vertical sidebar ── */
+  const mobileTabs = (
+    <div style={{
+      display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4,
+      marginBottom: 16, scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' as any,
+    }}>
+      {visibleSections.map(s => (
+        <button key={s.id} onClick={() => setActive(s.id)} style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+          flexShrink: 0, padding: '10px 14px', border: 'none', cursor: 'pointer',
+          background: active === s.id ? GB.redGlow : 'var(--bg-card)',
+          borderRadius: 'var(--radius-md)',
+          border: `1.5px solid ${active === s.id ? GB.red : 'var(--border)'}`,
+          minWidth: 72,
+        }}>
+          <span style={{ fontSize: 18 }}>{s.icon}</span>
+          <span style={{ color: active === s.id ? GB.red : 'var(--text-secondary)', fontSize: 10.5, fontWeight: active === s.id ? 700 : 500, whiteSpace: 'nowrap' }}>{s.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+
+  const desktopSidebar = (
+    <div style={{ width: 210, flexShrink: 0 }}>
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+        {visibleSections.map(s => (
+          <button key={s.id} onClick={() => setActive(s.id)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+              padding: '12px 14px', border: 'none', cursor: 'pointer',
+              background: active === s.id ? GB.redGlow : 'transparent',
+              borderLeft: `2px solid ${active === s.id ? GB.red : 'transparent'}`,
+              borderBottom: '1px solid var(--border-subtle)',
+              textAlign: 'left',
+            }}>
+            <span style={{ fontSize: 16 }}>{s.icon}</span>
+            <div>
+              <div style={{ color: active === s.id ? GB.red : 'var(--text-primary)', fontSize: 12.5, fontWeight: active === s.id ? 700 : 500, lineHeight: 1 }}>{s.label}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 10.5, marginTop: 2 }}>{s.desc}</div>
+            </div>
+            {s.id === 'toconline' && (
+              <span style={{ marginLeft: 'auto', background: 'rgba(245,158,11,0.15)', color: '#F59E0B', fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3 }}>PT</span>
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div>
       {/* Header */}
-      <div style={{ marginBottom: 22 }}>
+      <div style={{ marginBottom: isMobile ? 14 : 22 }}>
         <div style={{ color: 'var(--text-muted)', fontSize: 10.5, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 3 }}>Sistema</div>
         <h1 style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 700 }}>Configurações</h1>
       </div>
 
-      <div style={{ display: 'flex', gap: 20 }}>
-        {/* Sidebar nav */}
-        <div style={{ width: 210, flexShrink: 0 }}>
-          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
-            {visibleSections.map(s => (
-              <button key={s.id} onClick={() => setActive(s.id)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-                  padding: '12px 14px', border: 'none', cursor: 'pointer',
-                  background: active === s.id ? GB.redGlow : 'transparent',
-                  borderLeft: `2px solid ${active === s.id ? GB.red : 'transparent'}`,
-                  borderBottom: '1px solid var(--border-subtle)',
-                  textAlign: 'left',
-                }}>
-                <span style={{ fontSize: 16 }}>{s.icon}</span>
-                <div>
-                  <div style={{ color: active === s.id ? GB.red : 'var(--text-primary)', fontSize: 12.5, fontWeight: active === s.id ? 700 : 500, lineHeight: 1 }}>{s.label}</div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 10.5, marginTop: 2 }}>{s.desc}</div>
-                </div>
-                {s.id === 'toconline' && (
-                  <span style={{ marginLeft: 'auto', background: 'rgba(245,158,11,0.15)', color: '#F59E0B', fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3 }}>PT</span>
-                )}
-              </button>
-            ))}
+      {isMobile ? (
+        /* Mobile layout: tabs on top, content below */
+        <div>
+          {mobileTabs}
+          <div style={{ minWidth: 0 }}>
+            {renderSection()}
           </div>
         </div>
-
-        {/* Content */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {renderSection()}
+      ) : (
+        /* Desktop layout: sidebar + content */
+        <div style={{ display: 'flex', gap: 20 }}>
+          {desktopSidebar}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {renderSection()}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
