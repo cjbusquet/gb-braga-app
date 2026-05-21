@@ -14,6 +14,8 @@ interface FichaData {
   nomeEE: string; nifEE: string; telEE: string; emailEE: string;
   encPagamento: 'aluno' | 'ee' | 'outro';
   nomePag: string; nifPag: string; telPag: string; emailPag: string;
+  /* plano — only used in staff (isStaff) flow */
+  planoId: string;
   /* account creation — only used in registerMode */
   senha: string; confirmarSenha: string;
 }
@@ -55,13 +57,14 @@ function StepBar({ step, isStaff = false }: { step: Step; isStaff?: boolean }) {
   );
 }
 
-function FichaInscricao({ onNext, registerMode = false }: { onNext:(d:FichaData)=>void; registerMode?: boolean }) {
+function FichaInscricao({ onNext, registerMode = false, isStaff = false, planos = [] }: { onNext:(d:FichaData)=>void; registerMode?: boolean; isStaff?: boolean; planos?: import('../../types').Plano[] }) {
   const blank: FichaData = {
     nomeAluno:'', dataNasc:'', nif:'', morada:'', codPostal:'', telefone:'', email:'',
     faixa:'', necessidades:'', temEE:false, nomeEE:'', nifEE:'', telEE:'', emailEE:'',
     encPagamento:'aluno', nomePag:'', nifPag:'', telPag:'', emailPag:'',
-    senha:'', confirmarSenha:'',
+    planoId:'', senha:'', confirmarSenha:'',
   };
+  const [catStaff, setCatStaff] = useState('adulto');
   const [d, setD] = useState<FichaData>(blank);
   const [err, setErr] = useState<Record<string,string>>({});
 
@@ -214,6 +217,41 @@ function FichaInscricao({ onNext, registerMode = false }: { onNext:(d:FichaData)
             {field('emailPag','Email','email')}
           </div>
         </div>
+      )}
+
+      {/* ── Plano (staff enrollment only) ── */}
+      {isStaff && planos.length > 0 && (
+        <>
+          <div style={{ ...SEC, marginTop:8 }}>📋 Plano de Adesão</div>
+          <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap' }}>
+            {CATEGORIAS.map(c => (
+              <button key={c.id} onClick={()=>setCatStaff(c.id)}
+                style={{ display:'flex', alignItems:'center', gap:6, background: catStaff===c.id?'rgba(200,16,46,0.08)':'#F7F6F4', border:`1.5px solid ${catStaff===c.id?'#C8102E':'#E2E0DB'}`, borderRadius:8, padding:'7px 14px', cursor:'pointer', color: catStaff===c.id?'#C8102E':'#5C5B66', fontWeight: catStaff===c.id?700:400, fontSize:13, fontFamily:'inherit' }}>
+                {c.icon} {c.label}
+              </button>
+            ))}
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:22 }}>
+            {planos.filter(p => p.ativo && (p as any).categoria === catStaff).map(p => (
+              <button key={p.id} onClick={()=>setD(prev=>({...prev, planoId: p.id}))}
+                style={{ background: d.planoId===p.id?'rgba(200,16,46,0.04)':'#fff', border:`2px solid ${d.planoId===p.id?'#C8102E':'#E2E0DB'}`, borderRadius:12, padding:'13px 18px', textAlign:'left', cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', transition:'all 0.15s' }}>
+                <div>
+                  <div style={{ color:'#111', fontSize:14, fontWeight:700, marginBottom:2 }}>{p.nome}</div>
+                  <div style={{ color:'#9896A4', fontSize:12 }}>{p.descricao}</div>
+                </div>
+                <div style={{ textAlign:'right', flexShrink:0, marginLeft:16 }}>
+                  <div style={{ color: d.planoId===p.id?'#C8102E':'#111', fontSize:20, fontWeight:900, fontFamily:"'Arial Black',sans-serif" }}>€{p.valor}</div>
+                  <div style={{ color:'#9896A4', fontSize:11 }}>/mês</div>
+                </div>
+              </button>
+            ))}
+            {planos.filter(p => p.ativo && (p as any).categoria === catStaff).length === 0 && (
+              <p style={{ color:'#9896A4', fontSize:13, padding:'12px 16px', background:'#F7F6F4', borderRadius:8 }}>
+                Sem planos disponíveis nesta categoria.
+              </p>
+            )}
+          </div>
+        </>
       )}
 
       {/* ── Password section (only in registerMode) ── */}
@@ -427,6 +465,7 @@ function Pendente({ ficha, contrato, plano, registerMode, onVoltar }: {
   const { user } = useAuth();
   const [acctStatus, setAcctStatus] = useState<AccountStatus>('creating');
   const [acctErr, setAcctErr] = useState('');
+  const [contratoErr, setContratoErr] = useState('');
 
   useEffect(() => {
     const run = async () => {
@@ -490,7 +529,11 @@ function Pendente({ ficha, contrato, plano, registerMode, onVoltar }: {
             aceitaRGPD:    contrato.aceitaRGPD,
             encPagamento:  ficha.encPagamento,
           });
-        } catch (e) { console.warn('criarContrato (pendente) error:', e); }
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : String(e);
+          console.warn('criarContrato (pendente) error:', msg);
+          setContratoErr(msg);
+        }
       }
 
       /* 4 ── Submit cash payment request */
@@ -573,6 +616,13 @@ function Pendente({ ficha, contrato, plano, registerMode, onVoltar }: {
         <a href="mailto:atendimento@gbbraga.com" style={{ color:'#C8102E' }}>atendimento@gbbraga.com</a>
       </div>
 
+      {contratoErr && (
+        <div style={{ background:'rgba(200,16,46,0.05)', border:'1px solid rgba(200,16,46,0.25)', borderRadius:10, padding:'12px 16px', marginBottom:16, maxWidth:440, margin:'0 auto 16px', textAlign:'left' }}>
+          <div style={{ color:'#C8102E', fontSize:12, fontWeight:700, marginBottom:4 }}>⚠️ Erro ao guardar contrato</div>
+          <div style={{ color:'#C8102E', fontSize:12 }}>{contratoErr}</div>
+        </div>
+      )}
+
       {/* Back to login button — always shown in registerMode */}
       {registerMode && onVoltar && (
         <button onClick={onVoltar}
@@ -591,6 +641,7 @@ function Completo({ ficha, contrato, plano, isStaff, registerMode, onConcludo }:
   const { user } = useAuth();
   const [acctStatus, setAcctStatus] = useState<AccountStatus>('creating');
   const [acctErr, setAcctErr] = useState('');
+  const [contratoErr, setContratoErr] = useState('');
 
   useEffect(() => {
     const run = async () => {
@@ -656,7 +707,11 @@ function Completo({ ficha, contrato, plano, isStaff, registerMode, onConcludo }:
             aceitaRGPD:    contrato.aceitaRGPD,
             encPagamento:  ficha.encPagamento,
           });
-        } catch (e) { console.warn('criarContrato error:', e); }
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : String(e);
+          console.warn('criarContrato error:', msg);
+          setContratoErr(msg);
+        }
       }
 
       /* 4 ── Create first monthly payment record */
@@ -767,6 +822,13 @@ function Completo({ ficha, contrato, plano, isStaff, registerMode, onConcludo }:
           <a href="/" style={{ color:'#C8102E', fontWeight:700 }}>entrar com o teu email e password</a>.
         </p>
       )}
+      {contratoErr && (
+        <div style={{ background:'rgba(200,16,46,0.05)', border:'1px solid rgba(200,16,46,0.25)', borderRadius:10, padding:'12px 16px', marginTop:16, maxWidth:480, margin:'16px auto 0', textAlign:'left' }}>
+          <div style={{ color:'#C8102E', fontSize:12, fontWeight:700, marginBottom:4 }}>⚠️ Erro ao guardar contrato</div>
+          <div style={{ color:'#C8102E', fontSize:12 }}>{contratoErr}</div>
+          <div style={{ color:'#9896A4', fontSize:11, marginTop:6 }}>O aluno foi criado mas o contrato não foi guardado. Contacte o administrador.</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -793,7 +855,7 @@ export default function FluxoMatricula({ embedded = false, registerMode = false,
   const [, setMetodo]         = useState<'stripe'|'numerario'>('stripe');
   const plano = planos.find(p=>p.id===planoId);
 
-  const isStaff = !registerMode && (user?.role === 'superadmin' || user?.role === 'admin' || user?.role === 'professor');
+  const isStaff = !registerMode && (user?.role === 'superadmin' || user?.role === 'admin' || user?.role === 'professor' || user?.role === 'atendimento');
 
   useEffect(() => { if (!embedded) window.scrollTo(0,0); }, [step, embedded]);
 
@@ -815,7 +877,7 @@ export default function FluxoMatricula({ embedded = false, registerMode = false,
         )}
       </div>
       <StepBar step={step} isStaff={isStaff}/>
-      {step==='ficha'     && <FichaInscricao registerMode={registerMode} onNext={d=>{ setFicha(d); setStep('contrato'); }}/>}
+      {step==='ficha'     && <FichaInscricao registerMode={registerMode} isStaff={isStaff} planos={planos} onNext={d=>{ setFicha(d); if(d.planoId) setPlanoId(d.planoId); setStep('contrato'); }}/>}
       {step==='contrato'  && ficha && <ContratoAssinatura ficha={ficha} onBack={()=>setStep('ficha')} onNext={c=>{ setContrato(c); setStep(isStaff ? 'completo' : 'pagamento'); }}/>}
       {step==='pagamento' && ficha && <EscolhaPagamento ficha={ficha} onBack={()=>setStep('contrato')} onNext={(pid,met)=>{ setPlanoId(pid); setMetodo(met); setStep(met==='numerario'?'pendente':'completo'); }}/>}
       {step==='pendente'  && ficha && <Pendente ficha={ficha} contrato={contrato} plano={plano} registerMode={registerMode} onVoltar={onVoltar}/>}
