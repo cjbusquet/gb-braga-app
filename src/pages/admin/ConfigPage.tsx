@@ -839,7 +839,7 @@ export default function ConfigPage() {
       {visibleSections.map(s => (
         <button key={s.id} onClick={() => setActive(s.id)} style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-          flexShrink: 0, padding: '10px 14px', border: 'none', cursor: 'pointer',
+          flexShrink: 0, padding: '10px 14px', cursor: 'pointer',
           background: active === s.id ? GB.redGlow : 'var(--bg-card)',
           borderRadius: 'var(--radius-md)',
           border: `1.5px solid ${active === s.id ? GB.red : 'var(--border)'}`,
