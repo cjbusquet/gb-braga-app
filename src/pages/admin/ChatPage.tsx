@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAlunos } from '../../lib/useData';
 import { beltConfig } from '../../lib/gbBrand';
+import { useMobile } from '../../lib/useMobile';
 import type { Aluno } from '../../types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -73,13 +74,20 @@ function AlunoAvatar({ aluno, size = 38 }: { aluno: Aluno; size?: number }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ChatPage() {
   const { data: alunos } = useAlunos();
+  const { isMobile } = useMobile();
   const [conversas, setConversas] = useState(CONVERSAS_INIT);
   const [alunoAtivo, setAlunoAtivo] = useState<string>('a2');
+  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   const [texto, setTexto] = useState('');
   const [canal, setCanal] = useState<'interno' | 'whatsapp' | 'sms'>('interno');
   const [showTemplates, setShowTemplates] = useState(false);
   const [busca, setBusca] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const selectAluno = (id: string) => {
+    setAlunoAtivo(id);
+    if (isMobile) setMobileView('chat');
+  };
 
   const aluno = alunos.find(a => a.id === alunoAtivo);
   const conversa = conversas[alunoAtivo] || { alunoId: alunoAtivo, msgs: [], ultimaMsg: '—', naoLidas: 0 };
@@ -135,167 +143,208 @@ export default function ChatPage() {
     sms:      { icon: '📟', label: 'SMS', color: '#3B82F6' },
   };
 
-  return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 18 }}>
-        <div>
-          <div style={{ color: 'var(--text-muted)', fontSize: 10.5, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 3 }}>Academia</div>
-          <h1 style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 800, fontFamily: 'var(--font-display)', textTransform: 'uppercase' as const, display: 'flex', alignItems: 'center', gap: 10 }}>
-            Chat
-            {totalNaoLidas > 0 && <span style={{ background: 'var(--gb-red)', color: '#fff', fontSize: 12, fontWeight: 700, padding: '2px 9px', borderRadius: 99 }}>{totalNaoLidas}</span>}
-          </h1>
-        </div>
+  // ── shared height: fills viewport minus top bar + bottom nav ─────────────────
+  const chatH = isMobile
+    ? 'calc(100dvh - 56px - 72px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 28px)'
+    : 'calc(100vh - 160px)';
+
+  // ── reusable contact list ──────────────────────────────────────────────────
+  const contactList = (
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', height: isMobile ? chatH : '100%' }}>
+      <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)' }}>
+        <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="🔍 Pesquisar aluno..."
+          style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 11px', fontSize: 14, color: 'var(--text-primary)' }}/>
       </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 16, height: 'calc(100vh - 160px)' }}>
-
-        {/* ── Contact list ── */}
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
-          <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)' }}>
-            <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="🔍 Pesquisar aluno..."
-              style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '7px 10px', fontSize: 13, color: 'var(--text-primary)' }}/>
-          </div>
-          <div style={{ flex: 1, overflowY: 'auto' }}>
-            {alunosFiltrados.map(a => {
-              const conv = conversas[a.id];
-              const naoLidas = conv?.naoLidas || 0;
-              const ultimaMsg = conv?.msgs?.[conv.msgs.length - 1];
-              const isActive = a.id === alunoAtivo;
-              return (
-                <div key={a.id} onClick={() => setAlunoAtivo(a.id)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', cursor: 'pointer', borderBottom: '1px solid var(--border-subtle)', background: isActive ? 'rgba(200,16,46,0.05)' : 'transparent', borderLeft: `3px solid ${isActive ? 'var(--gb-red)' : 'transparent'}` }}
-                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--bg-elevated)'; }}
-                  onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
-                >
-                  <div style={{ position: 'relative' }}>
-                    <AlunoAvatar aluno={a} size={38}/>
-                    {naoLidas > 0 && <div style={{ position: 'absolute', top: -2, right: -2, width: 16, height: 16, borderRadius: '50%', background: 'var(--gb-red)', color: '#fff', fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white' }}>{naoLidas}</div>}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-                      <span style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: naoLidas > 0 ? 700 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{a.nome}</span>
-                      {conv && <span style={{ color: 'var(--text-muted)', fontSize: 10, flexShrink: 0, marginLeft: 6 }}>{conv.ultimaMsg}</span>}
-                    </div>
-                    <div style={{ color: naoLidas > 0 ? 'var(--text-secondary)' : 'var(--text-muted)', fontSize: 11.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, fontWeight: naoLidas > 0 ? 600 : 400 }}>
-                      {ultimaMsg ? (ultimaMsg.remetente === 'admin' ? '↩ ' : '') + ultimaMsg.texto : 'Iniciar conversa...'}
-                    </div>
-                  </div>
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {alunosFiltrados.map(a => {
+          const conv = conversas[a.id];
+          const naoLidas = conv?.naoLidas || 0;
+          const ultimaMsg = conv?.msgs?.[conv.msgs.length - 1];
+          const isActive = !isMobile && a.id === alunoAtivo;
+          return (
+            <div key={a.id} onClick={() => selectAluno(a.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: isMobile ? '13px 16px' : '11px 14px', cursor: 'pointer', borderBottom: '1px solid var(--border-subtle)', background: isActive ? 'rgba(200,16,46,0.05)' : 'transparent', borderLeft: `3px solid ${isActive ? 'var(--gb-red)' : 'transparent'}` }}
+              onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--bg-elevated)'; }}
+              onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+            >
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <AlunoAvatar aluno={a} size={isMobile ? 44 : 38}/>
+                {naoLidas > 0 && <div style={{ position: 'absolute', top: -2, right: -2, width: 17, height: 17, borderRadius: '50%', background: 'var(--gb-red)', color: '#fff', fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--bg-card)' }}>{naoLidas}</div>}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
+                  <span style={{ color: 'var(--text-primary)', fontSize: isMobile ? 14 : 13, fontWeight: naoLidas > 0 ? 700 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{a.nome}</span>
+                  {conv && <span style={{ color: 'var(--text-muted)', fontSize: 10.5, flexShrink: 0, marginLeft: 6 }}>{conv.ultimaMsg}</span>}
                 </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── Chat window ── */}
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
-          {aluno ? (
-            <>
-              {/* Header */}
-              <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-                <AlunoAvatar aluno={aluno} size={38}/>
-                <div style={{ flex: 1 }}>
-                  <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 700 }}>{aluno.nome}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
-                    <div style={{ width: 14, height: 5, background: beltConfig[aluno.faixa]?.bg || '#888', borderRadius: 2, border: aluno.faixa === 'branca' ? '1px solid var(--border-strong)' : 'none' }}/>
-                    <span style={{ color: 'var(--text-muted)', fontSize: 11, textTransform: 'capitalize' as const }}>{beltConfig[aluno.faixa]?.label} · {aluno.plano}</span>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {aluno.whatsapp && (
-                    <a href={`https://wa.me/${aluno.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer"
-                      style={{ background: 'rgba(37,211,102,0.1)', border: '1px solid rgba(37,211,102,0.2)', borderRadius: 'var(--radius-sm)', padding: '6px 12px', color: '#25D366', fontSize: 12, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5 }}>
-                      📱 WhatsApp
-                    </a>
-                  )}
-                  <button style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '6px 12px', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer' }}>
-                    Ver perfil →
-                  </button>
+                <div style={{ color: naoLidas > 0 ? 'var(--text-secondary)' : 'var(--text-muted)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, fontWeight: naoLidas > 0 ? 600 : 400 }}>
+                  {ultimaMsg ? (ultimaMsg.remetente === 'admin' ? '↩ ' : '') + ultimaMsg.texto : 'Iniciar conversa...'}
                 </div>
               </div>
+              {isMobile && <span style={{ color: 'var(--text-muted)', fontSize: 16, flexShrink: 0 }}>›</span>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 
-              {/* Messages */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {conversa.msgs.length === 0 ? (
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-                    <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.3 }}>💬</div>
-                    <div style={{ fontSize: 14 }}>Inicia a conversa com {aluno.nome.split(' ')[0]}</div>
-                    <div style={{ fontSize: 12, marginTop: 4 }}>Usa um template ou escreve uma mensagem</div>
-                  </div>
-                ) : (
-                  conversa.msgs.map(msg => {
-                    const isAdmin = msg.remetente === 'admin';
-                    const cCfg = CANAL_CONFIG[msg.canal];
-                    return (
-                      <div key={msg.id} style={{ display: 'flex', justifyContent: isAdmin ? 'flex-end' : 'flex-start' }}>
-                        <div style={{ maxWidth: '72%' }}>
-                          <div style={{ background: isAdmin ? 'var(--gb-red)' : 'var(--bg-elevated)', borderRadius: isAdmin ? '14px 14px 4px 14px' : '14px 14px 14px 4px', padding: '10px 14px', boxShadow: 'var(--shadow-xs)' }}>
-                            <p style={{ color: isAdmin ? '#fff' : 'var(--text-primary)', fontSize: 13.5, margin: 0, lineHeight: 1.5 }}>{msg.texto}</p>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, justifyContent: isAdmin ? 'flex-end' : 'flex-start' }}>
-                            <span style={{ color: 'var(--text-muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}>{msg.hora}</span>
-                            {msg.canal !== 'interno' && <span style={{ fontSize: 10, color: cCfg.color, fontWeight: 600 }}>{cCfg.icon} {cCfg.label}</span>}
-                            {isAdmin && <span style={{ color: msg.lida ? '#25D366' : 'var(--text-muted)', fontSize: 11 }}>✓✓</span>}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-                <div ref={messagesEndRef}/>
+  // ── reusable chat window ───────────────────────────────────────────────────
+  const chatWindow = (
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: isMobile ? 0 : 'var(--radius-lg)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', height: isMobile ? chatH : '100%' }}>
+      {aluno ? (
+        <>
+          {/* Header */}
+          <div style={{ padding: isMobile ? '10px 14px' : '12px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, background: 'var(--bg-card)' }}>
+            {/* Back button — mobile only */}
+            {isMobile && (
+              <button onClick={() => setMobileView('list')}
+                style={{ background: 'none', border: 'none', color: 'var(--gb-red)', fontSize: 20, cursor: 'pointer', padding: '4px 6px 4px 0', lineHeight: 1, flexShrink: 0 }}>
+                ‹
+              </button>
+            )}
+            <AlunoAvatar aluno={aluno} size={isMobile ? 36 : 38}/>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ color: 'var(--text-primary)', fontSize: isMobile ? 14 : 14, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{aluno.nome}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 1 }}>
+                <div style={{ width: 12, height: 4, background: beltConfig[aluno.faixa]?.bg || '#888', borderRadius: 2, border: aluno.faixa === 'branca' ? '1px solid var(--border-strong)' : 'none', flexShrink: 0 }}/>
+                <span style={{ color: 'var(--text-muted)', fontSize: 11, textTransform: 'capitalize' as const, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{beltConfig[aluno.faixa]?.label}{!isMobile && ` · ${aluno.plano}`}</span>
               </div>
-
-              {/* Templates panel */}
-              {showTemplates && (
-                <div style={{ borderTop: '1px solid var(--border)', padding: '10px 14px', background: 'var(--bg-elevated)', flexShrink: 0 }}>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 8 }}>Templates Rápidos</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 160, overflowY: 'auto' }}>
-                    {TEMPLATES.map((t, i) => (
-                      <button key={i} onClick={() => { setTexto(t); setShowTemplates(false); }}
-                        style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '7px 10px', fontSize: 12.5, color: 'var(--text-primary)', textAlign: 'left' as const, cursor: 'pointer' }}
-                        onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--gb-red)')}
-                        onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+              {aluno.whatsapp && (
+                <a href={`https://wa.me/${aluno.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer"
+                  style={{ background: 'rgba(37,211,102,0.1)', border: '1px solid rgba(37,211,102,0.2)', borderRadius: 'var(--radius-sm)', padding: isMobile ? '6px 10px' : '6px 12px', color: '#25D366', fontSize: 12, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {isMobile ? '📱' : '📱 WhatsApp'}
+                </a>
               )}
+              {!isMobile && (
+                <button style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '6px 12px', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer' }}>
+                  Ver perfil →
+                </button>
+              )}
+            </div>
+          </div>
 
-              {/* Input */}
-              <div style={{ padding: '12px 14px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
-                {/* Canal selector */}
-                <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-                  {(Object.entries(CANAL_CONFIG) as [typeof canal, typeof CANAL_CONFIG[typeof canal]][]).map(([id, cfg]) => (
-                    <button key={id} onClick={() => setCanal(id)} style={{ display: 'flex', alignItems: 'center', gap: 5, background: canal === id ? cfg.color + '15' : 'var(--bg-elevated)', border: `1px solid ${canal === id ? cfg.color : 'var(--border)'}`, borderRadius: 'var(--radius-sm)', padding: '4px 10px', fontSize: 11.5, color: canal === id ? cfg.color : 'var(--text-muted)', fontWeight: canal === id ? 700 : 400, cursor: 'pointer' }}>
-                      {cfg.icon} {cfg.label}
-                    </button>
-                  ))}
-                  <div style={{ flex: 1 }}/>
-                  <button onClick={() => setShowTemplates(!showTemplates)} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '4px 10px', fontSize: 11.5, color: showTemplates ? 'var(--gb-red)' : 'var(--text-muted)', cursor: 'pointer' }}>
-                    ⚡ Templates
-                  </button>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <textarea value={texto} onChange={e => setTexto(e.target.value)} placeholder={`Mensagem via ${CANAL_CONFIG[canal].label}...`} rows={2}
-                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); }}}
-                    style={{ flex: 1, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '9px 12px', fontSize: 13.5, color: 'var(--text-primary)', resize: 'none' as const, fontFamily: 'var(--font-ui)' }}
-                  />
-                  <button onClick={enviar} disabled={!texto.trim()}
-                    style={{ background: texto.trim() ? 'var(--gb-red)' : 'var(--bg-elevated)', border: 'none', borderRadius: 'var(--radius-sm)', padding: '0 20px', color: texto.trim() ? '#fff' : 'var(--text-muted)', fontSize: 18, cursor: texto.trim() ? 'pointer' : 'not-allowed', boxShadow: texto.trim() ? 'var(--shadow-red)' : 'none' }}>
-                    ↑
-                  </button>
-                </div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 10.5, marginTop: 5 }}>Enter para enviar · Shift+Enter para nova linha</div>
+          {/* Messages */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '12px 14px' : '16px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {conversa.msgs.length === 0 ? (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', padding: 40 }}>
+                <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.3 }}>💬</div>
+                <div style={{ fontSize: 14 }}>Inicia a conversa com {aluno.nome.split(' ')[0]}</div>
+                <div style={{ fontSize: 12, marginTop: 4 }}>Usa um template ou escreve uma mensagem</div>
               </div>
-            </>
-          ) : (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-              Seleciona um aluno para iniciar
+            ) : (
+              conversa.msgs.map(msg => {
+                const isAdmin = msg.remetente === 'admin';
+                const cCfg = CANAL_CONFIG[msg.canal];
+                return (
+                  <div key={msg.id} style={{ display: 'flex', justifyContent: isAdmin ? 'flex-end' : 'flex-start' }}>
+                    <div style={{ maxWidth: isMobile ? '85%' : '72%' }}>
+                      <div style={{ background: isAdmin ? 'var(--gb-red)' : 'var(--bg-elevated)', borderRadius: isAdmin ? '14px 14px 4px 14px' : '14px 14px 14px 4px', padding: '10px 13px', boxShadow: 'var(--shadow-xs)' }}>
+                        <p style={{ color: isAdmin ? '#fff' : 'var(--text-primary)', fontSize: 14, margin: 0, lineHeight: 1.5 }}>{msg.texto}</p>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3, justifyContent: isAdmin ? 'flex-end' : 'flex-start' }}>
+                        <span style={{ color: 'var(--text-muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}>{msg.hora}</span>
+                        {msg.canal !== 'interno' && <span style={{ fontSize: 10, color: cCfg.color, fontWeight: 600 }}>{cCfg.icon}</span>}
+                        {isAdmin && <span style={{ color: msg.lida ? '#25D366' : 'var(--text-muted)', fontSize: 11 }}>✓✓</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <div ref={messagesEndRef}/>
+          </div>
+
+          {/* Templates panel */}
+          {showTemplates && (
+            <div style={{ borderTop: '1px solid var(--border)', padding: '10px 14px', background: 'var(--bg-elevated)', flexShrink: 0, maxHeight: isMobile ? 180 : 170, overflowY: 'auto' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 7 }}>Templates Rápidos</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                {TEMPLATES.map((t, i) => (
+                  <button key={i} onClick={() => { setTexto(t); setShowTemplates(false); }}
+                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 11px', fontSize: 13, color: 'var(--text-primary)', textAlign: 'left' as const, cursor: 'pointer', lineHeight: 1.4 }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--gb-red)')}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
+
+          {/* Input bar */}
+          <div style={{ padding: isMobile ? '10px 12px' : '12px 14px', borderTop: '1px solid var(--border)', flexShrink: 0, background: 'var(--bg-card)' }}>
+            {/* Canal + templates row */}
+            <div style={{ display: 'flex', gap: 5, marginBottom: 8, alignItems: 'center' }}>
+              {(Object.entries(CANAL_CONFIG) as [typeof canal, typeof CANAL_CONFIG[typeof canal]][]).map(([id, cfg]) => (
+                <button key={id} onClick={() => setCanal(id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0 : 5, background: canal === id ? cfg.color + '15' : 'var(--bg-elevated)', border: `1px solid ${canal === id ? cfg.color : 'var(--border)'}`, borderRadius: 'var(--radius-sm)', padding: isMobile ? '5px 10px' : '4px 10px', fontSize: isMobile ? 16 : 11.5, color: canal === id ? cfg.color : 'var(--text-muted)', fontWeight: canal === id ? 700 : 400, cursor: 'pointer' }}>
+                  {cfg.icon}{!isMobile && ` ${cfg.label}`}
+                </button>
+              ))}
+              <div style={{ flex: 1 }}/>
+              <button onClick={() => setShowTemplates(!showTemplates)}
+                style={{ background: showTemplates ? 'rgba(200,16,46,0.08)' : 'var(--bg-elevated)', border: `1px solid ${showTemplates ? 'var(--gb-red)' : 'var(--border)'}`, borderRadius: 'var(--radius-sm)', padding: '5px 10px', fontSize: isMobile ? 15 : 11.5, color: showTemplates ? 'var(--gb-red)' : 'var(--text-muted)', cursor: 'pointer' }}>
+                {isMobile ? '⚡' : '⚡ Templates'}
+              </button>
+            </div>
+            {/* Textarea + send */}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+              <textarea value={texto} onChange={e => setTexto(e.target.value)}
+                placeholder={`Mensagem via ${CANAL_CONFIG[canal].label}...`}
+                rows={isMobile ? 1 : 2}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); }}}
+                style={{ flex: 1, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '10px 13px', fontSize: 14, color: 'var(--text-primary)', resize: 'none' as const, fontFamily: 'var(--font-ui)', lineHeight: 1.5 }}
+              />
+              <button onClick={enviar} disabled={!texto.trim()}
+                style={{ background: texto.trim() ? 'var(--gb-red)' : 'var(--bg-elevated)', border: 'none', borderRadius: 'var(--radius-md)', width: 44, height: 44, flexShrink: 0, color: texto.trim() ? '#fff' : 'var(--text-muted)', fontSize: 20, cursor: texto.trim() ? 'pointer' : 'not-allowed', boxShadow: texto.trim() ? 'var(--shadow-red)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                ↑
+              </button>
+            </div>
+            {!isMobile && <div style={{ color: 'var(--text-muted)', fontSize: 10.5, marginTop: 5 }}>Enter para enviar · Shift+Enter para nova linha</div>}
+          </div>
+        </>
+      ) : (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', flexDirection: 'column', gap: 10 }}>
+          <div style={{ fontSize: 36, opacity: 0.25 }}>💬</div>
+          <div style={{ fontSize: 13 }}>Seleciona um aluno para iniciar</div>
         </div>
-      </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div>
+      {/* Page header — hidden on mobile when in chat view */}
+      {(!isMobile || mobileView === 'list') && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 18 }}>
+          <div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 10.5, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 3 }}>Academia</div>
+            <h1 style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 800, fontFamily: 'var(--font-display)', textTransform: 'uppercase' as const, display: 'flex', alignItems: 'center', gap: 10 }}>
+              Chat
+              {totalNaoLidas > 0 && <span style={{ background: 'var(--gb-red)', color: '#fff', fontSize: 12, fontWeight: 700, padding: '2px 9px', borderRadius: 99 }}>{totalNaoLidas}</span>}
+            </h1>
+          </div>
+        </div>
+      )}
+
+      {/* Desktop: side-by-side grid */}
+      {!isMobile && (
+        <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 16, height: chatH }}>
+          {contactList}
+          {chatWindow}
+        </div>
+      )}
+
+      {/* Mobile: single-panel navigation */}
+      {isMobile && (
+        <div>
+          {mobileView === 'list' && contactList}
+          {mobileView === 'chat' && chatWindow}
+        </div>
+      )}
     </div>
   );
 }
