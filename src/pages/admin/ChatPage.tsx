@@ -143,14 +143,16 @@ export default function ChatPage() {
     sms:      { icon: '📟', label: 'SMS', color: '#3B82F6' },
   };
 
-  // ── shared height: fills viewport minus top bar + bottom nav ─────────────────
-  const chatH = isMobile
-    ? 'calc(100dvh - 56px - 72px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 28px)'
-    : 'calc(100vh - 160px)';
+  // ── shared height ─────────────────────────────────────────────────────────────
+  // Desktop: fixed-height panels inside the scrollable layout column
+  // Mobile: the window scrolls naturally; chat window fills the viewport
+  //         (body scroll lets Chrome auto-hide the address bar — the list is
+  //          just a normal list; chat view stretches to 100dvh via position:fixed)
+  const chatH = 'calc(100vh - 160px)';
 
   // ── reusable contact list ──────────────────────────────────────────────────
   const contactList = (
-    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', height: isMobile ? chatH : '100%' }}>
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', height: isMobile ? undefined : '100%' }}>
       <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)' }}>
         <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="🔍 Pesquisar aluno..."
           style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 11px', fontSize: 14, color: 'var(--text-primary)' }}/>
@@ -189,12 +191,28 @@ export default function ChatPage() {
   );
 
   // ── reusable chat window ───────────────────────────────────────────────────
+  // On mobile: position fixed so it covers the full screen (sits above body scroll)
   const chatWindow = (
-    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: isMobile ? 0 : 'var(--radius-lg)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', height: isMobile ? chatH : '100%' }}>
+    <div style={{
+      background: 'var(--bg-card)',
+      border: isMobile ? 'none' : '1px solid var(--border)',
+      borderRadius: isMobile ? 0 : 'var(--radius-lg)',
+      display: 'flex', flexDirection: 'column',
+      overflow: 'hidden',
+      boxShadow: 'var(--shadow-sm)',
+      // Mobile: fixed overlay that covers everything (top bar + bottom nav included)
+      ...(isMobile ? {
+        position: 'fixed' as const,
+        inset: 0,
+        zIndex: 150,
+      } : {
+        height: '100%',
+      }),
+    }}>
       {aluno ? (
         <>
-          {/* Header */}
-          <div style={{ padding: isMobile ? '10px 14px' : '12px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, background: 'var(--bg-card)' }}>
+          {/* Header — on mobile has extra top padding for notch */}
+          <div style={{ padding: isMobile ? '10px 14px' : '12px 18px', paddingTop: isMobile ? 'calc(env(safe-area-inset-top) + 10px)' : undefined, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, background: 'var(--bg-card)' }}>
             {/* Back button — mobile only */}
             {isMobile && (
               <button onClick={() => setMobileView('list')}
@@ -274,8 +292,8 @@ export default function ChatPage() {
             </div>
           )}
 
-          {/* Input bar */}
-          <div style={{ padding: isMobile ? '10px 12px' : '12px 14px', borderTop: '1px solid var(--border)', flexShrink: 0, background: 'var(--bg-card)' }}>
+          {/* Input bar — extra bottom padding for iPhone home indicator */}
+          <div style={{ padding: isMobile ? '10px 12px' : '12px 14px', paddingBottom: isMobile ? 'calc(env(safe-area-inset-bottom) + 10px)' : undefined, borderTop: '1px solid var(--border)', flexShrink: 0, background: 'var(--bg-card)' }}>
             {/* Canal + templates row */}
             <div style={{ display: 'flex', gap: 5, marginBottom: 8, alignItems: 'center' }}>
               {(Object.entries(CANAL_CONFIG) as [typeof canal, typeof CANAL_CONFIG[typeof canal]][]).map(([id, cfg]) => (

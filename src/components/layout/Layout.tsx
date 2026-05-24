@@ -220,7 +220,16 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
 
   /* ── Render ──────────────────────────────────────── */
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', fontFamily: 'var(--font-ui)', background: 'var(--bg-base)' }}>
+    <div style={{
+      display: 'flex',
+      // Desktop: fixed-height box, inner divs scroll
+      // Mobile: natural flow so window/body scrolls → Chrome auto-hides address bar
+      height:   isMobile ? undefined : '100vh',
+      minHeight: isMobile ? '100dvh' : undefined,
+      overflow: isMobile ? undefined : 'hidden',
+      fontFamily: 'var(--font-ui)',
+      background: 'var(--bg-base)',
+    }}>
       {/* Backdrop on mobile */}
       {isMobile && mobileOpen && (
         <div onClick={() => setMobileOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 199 }}/>
@@ -229,11 +238,28 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
       {sidebar}
 
       {/* Main area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{
+        flex: 1,
+        display: isMobile ? 'block' : 'flex',
+        flexDirection: isMobile ? undefined : 'column',
+        overflow: isMobile ? undefined : 'hidden',
+        // On mobile sidebar is position:fixed so main takes full width
+        width: isMobile ? '100%' : undefined,
+        minWidth: 0,
+      }}>
 
-        {/* Mobile top bar — paddingTop accounts for safe-area (notch/island) in PWA standalone mode */}
+        {/* Mobile top bar — position:fixed so window can scroll freely */}
         {isMobile && (
-          <div style={{ minHeight: 56, background: 'var(--bg-card)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', paddingTop: 'env(safe-area-inset-top)', flexShrink: 0, zIndex: 100, boxShadow: 'var(--shadow-xs)' }}>
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+            background: 'var(--bg-card)', borderBottom: '1px solid var(--border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '0 16px',
+            // Extra top padding for iPhone notch / Dynamic Island in PWA mode
+            paddingTop: 'env(safe-area-inset-top)',
+            minHeight: 56,
+            boxShadow: 'var(--shadow-xs)',
+          }}>
             <GBLogoFull size={36}/>
             <div style={{ color: 'var(--text-muted)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               {visibleNav.find(n => n.id === currentPage)?.label || ''}
@@ -259,11 +285,20 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
           </div>
         )}
 
-        {/* Page content — extra bottom padding on mobile for the tab bar */}
+        {/* Page content */}
         <div style={{
-          flex: 1, overflowY: 'auto', overflowX: 'hidden',
+          // Desktop: flex item that scrolls inside the fixed-height layout
+          flex: isMobile ? undefined : 1,
+          overflowY: isMobile ? undefined : 'auto',
+          overflowX: 'hidden',
           padding: isMobile ? '16px 14px' : '24px 28px',
-          paddingBottom: isMobile ? 'calc(72px + env(safe-area-inset-bottom))' : undefined,
+          // Mobile: push content below fixed top bar + leave room for fixed bottom nav
+          paddingTop: isMobile
+            ? 'calc(56px + env(safe-area-inset-top) + 16px)'
+            : undefined,
+          paddingBottom: isMobile
+            ? 'calc(72px + env(safe-area-inset-bottom) + 16px)'
+            : undefined,
         }}>
           {children}
         </div>
