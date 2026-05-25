@@ -32,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     role:             data.role as UserRole,
     matriculaCompleta: data.matricula_completa,
     telefone:         data.telefone,
+    avatar:           data.avatar_url ?? undefined,
     createdAt:        data.created_at,
   });
 
@@ -40,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // ── 1. Try to read existing profile ──────────────────────────
       const { data } = await supabase
         .from('profiles')
-        .select('id, nome, email, role, matricula_completa, telefone, created_at')
+        .select('id, nome, email, role, matricula_completa, telefone, created_at, avatar_url')
         .eq('id', id)
         .maybeSingle();
 

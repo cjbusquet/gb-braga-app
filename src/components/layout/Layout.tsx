@@ -142,15 +142,29 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
 
       {/* User info */}
       {!isCollapsed && (
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+        <div
+          onClick={() => handleNav('perfil')}
+          title="Ver perfil"
+          style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: '50%', background: rt.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
-              {user.nome?.charAt(0) || '?'}
+            <div style={{
+              width: 36, height: 36, borderRadius: '50%',
+              background: user.avatar ? 'transparent' : rt.accent,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontSize: 14, fontWeight: 700, flexShrink: 0,
+              overflow: 'hidden', border: `2px solid ${rt.accent}`,
+            }}>
+              {user.avatar
+                ? <img src={user.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : (user.nome?.charAt(0) || '?')
+              }
             </div>
-            <div style={{ overflow: 'hidden' }}>
+            <div style={{ overflow: 'hidden', flex: 1 }}>
               <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.nome}</div>
               <div style={{ color: rt.accent, fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{rt.label}</div>
             </div>
+            <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>›</span>
           </div>
         </div>
       )}
@@ -264,8 +278,22 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
             <div style={{ color: 'var(--text-muted)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               {visibleNav.find(n => n.id === currentPage)?.label || ''}
             </div>
-            <div style={{ width: 38, height: 38, borderRadius: '50%', background: rt.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 700 }}>
-              {user.nome?.charAt(0) || '?'}
+            <div
+              onClick={() => handleNav('perfil')}
+              title="Ver perfil"
+              style={{
+                width: 38, height: 38, borderRadius: '50%',
+                background: user.avatar ? 'transparent' : rt.accent,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#fff', fontSize: 14, fontWeight: 700,
+                overflow: 'hidden', cursor: 'pointer',
+                border: `2px solid ${rt.accent}`,
+              }}
+            >
+              {user.avatar
+                ? <img src={user.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : (user.nome?.charAt(0) || '?')
+              }
             </div>
           </div>
         )}
@@ -273,13 +301,26 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
         {/* Desktop top bar */}
         {!isMobile && (
           <div style={{ height: 56, background: 'var(--bg-card)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 24px', flexShrink: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div
+              onClick={() => handleNav('perfil')}
+              title="Ver perfil"
+              style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
+            >
               <div style={{ textAlign: 'right' }}>
                 <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}>{user.nome}</div>
                 <div style={{ color: rt.accent, fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase' }}>{rt.label}</div>
               </div>
-              <div style={{ width: 34, height: 34, borderRadius: '50%', background: rt.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 700 }}>
-                {user.nome?.charAt(0) || '?'}
+              <div style={{
+                width: 34, height: 34, borderRadius: '50%',
+                background: user.avatar ? 'transparent' : rt.accent,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#fff', fontSize: 13, fontWeight: 700,
+                overflow: 'hidden', border: `2px solid ${rt.accent}`,
+              }}>
+                {user.avatar
+                  ? <img src={user.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : (user.nome?.charAt(0) || '?')
+                }
               </div>
             </div>
           </div>

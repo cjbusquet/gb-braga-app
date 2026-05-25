@@ -25,6 +25,7 @@ import MinhaEvolucao from './pages/aluno/MinhaEvolucao';
 import MeuFinanceiro from './pages/aluno/MeuFinanceiro';
 import Conteudo from './pages/aluno/Conteudo';
 import Mensagens from './pages/aluno/Mensagens';
+import PerfilPage from './pages/PerfilPage';
 
 // ─── Role-based page access control ──────────────────────────────────────────
 const PAGE_ROLES: Record<string, UserRole[]> = {
@@ -48,6 +49,7 @@ const PAGE_ROLES: Record<string, UserRole[]> = {
   'meu-financeiro':['aluno'],
   conteudo:      ['aluno'],
   mensagens:     ['aluno'],
+  perfil:        ['superadmin','admin','atendimento','professor','aluno'],
 };
 
 function canAccess(role: UserRole, page: string): boolean {
@@ -185,6 +187,7 @@ function AppContent() {
         case 'meu-financeiro':  return <MeuFinanceiro />;
         case 'conteudo':        return <Conteudo />;
         case 'mensagens':       return <Mensagens />;
+        case 'perfil':          return <PerfilPage />;
         default:                return <PortalAluno onNavigate={handleNavigate}/>;
       }
     }
@@ -194,6 +197,7 @@ function AppContent() {
       switch (safePage) {
         case 'checkin':   return <CheckinPage />;
         case 'graduacao': return <GraduacaoPage />;
+        case 'perfil':    return <PerfilPage />;
         default:          return <ProfessorView />;
       }
     }
@@ -219,6 +223,7 @@ function AppContent() {
       case 'config':       return <ConfigPage />;
       case 'numerario':    return <PendentesNumerario />;
       case 'matricula':    return <FluxoMatricula embedded />;
+      case 'perfil':       return <PerfilPage />;
       default:             return <Dashboard />;
     }
   };
