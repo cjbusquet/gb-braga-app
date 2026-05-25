@@ -10,7 +10,7 @@ import type { TocConfig } from '../../types';
 type Section = 'equipa' | 'toconline' | 'stripe' | 'whatsapp' | 'email' | 'academia' | 'compliance';
 
 const SECTIONS: { id: Section; label: string; icon: string; desc: string; superadminOnly?: boolean }[] = [
-  { id: 'equipa',     label: 'Equipa',             icon: '👥', desc: 'Convidar professores e staff', superadminOnly: true },
+  { id: 'equipa',     label: 'Equipa',             icon: '👥', desc: 'Convidar professores e staff' },
   { id: 'toconline',  label: 'TOConline',           icon: '🧾', desc: 'Faturação certificada AT' },
   { id: 'stripe',     label: 'Stripe',              icon: '💳', desc: 'Pagamentos online' },
   { id: 'whatsapp',   label: 'WhatsApp Business',   icon: '💬', desc: 'Comunicação com alunos' },
@@ -694,9 +694,14 @@ function EquipaSection() {
     }
   };
 
-  if (user?.role !== 'superadmin') {
-    return <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 24 }}>Acesso restrito a superadmin.</div>;
+  if (!['superadmin', 'admin'].includes(user?.role ?? '')) {
+    return <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 24 }}>Acesso restrito a administradores.</div>;
   }
+
+  // Admin pode convidar professor e atendimento, mas não criar novos admin
+  const availableRoles = STAFF_ROLES.filter(r =>
+    user?.role === 'superadmin' ? true : r.value !== 'admin'
+  );
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 420px', gap: 20, alignItems: 'start' }}>
@@ -746,7 +751,7 @@ function EquipaSection() {
             </Field>
             <Field label="Função">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {STAFF_ROLES.map(r => (
+                {availableRoles.map(r => (
                   <label key={r.value} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: role === r.value ? 'rgba(200,16,46,0.06)' : 'var(--bg-elevated)', border: `1.5px solid ${role === r.value ? GB.red : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer' }}>
                     <input type="radio" name="staffRole" checked={role === r.value} onChange={() => setRole(r.value)} style={{ accentColor: GB.red }} />
                     <div>
@@ -799,8 +804,9 @@ export default function ConfigPage() {
   const { user } = useAuth();
   const { isMobile } = useMobile();
   const isSuperAdmin = user?.role === 'superadmin';
-  const visibleSections = SECTIONS.filter(s => !s.superadminOnly || isSuperAdmin);
-  const defaultSection: Section = isSuperAdmin ? 'equipa' : 'toconline';
+  const isAdmin      = user?.role === 'admin';
+  const visibleSections = SECTIONS.filter(s => !s.superadminOnly || isSuperAdmin || isAdmin);
+  const defaultSection: Section = (isSuperAdmin || isAdmin) ? 'equipa' : 'toconline';
   const [active, setActive] = useState<Section>(defaultSection);
 
   const renderSection = () => {

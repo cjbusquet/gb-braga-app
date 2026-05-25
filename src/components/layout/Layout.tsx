@@ -37,7 +37,7 @@ const NAV_ITEMS: NavItem[] = [
 // Bottom nav items per role (max 4 + "Mais")
 const BOTTOM_NAV: Record<string, string[]> = {
   aluno:       ['portal','minhas-aulas','evolucao','meu-financeiro'],
-  admin:       ['dashboard','alunos','checkin','turmas'],
+  admin:       ['dashboard','alunos','financeiro','config'],
   atendimento: ['dashboard','alunos','checkin','comunicacao'],
   professor:   ['dashboard','alunos','checkin','graduacao'],
   superadmin:  ['dashboard','alunos','financeiro','config'],
