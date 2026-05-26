@@ -454,7 +454,7 @@ function AlunoSection() {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function PerfilPage() {
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshProfile, logout } = useAuth();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   // Load avatar_url from DB on mount
@@ -510,6 +510,36 @@ export default function PerfilPage() {
           <AlunoSection />
         </SectionCard>
       )}
+
+      {/* Logout */}
+      <div style={{ marginTop: 8, marginBottom: 32 }}>
+        <button
+          onClick={logout}
+          style={{
+            width: '100%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            padding: '12px',
+            background: 'transparent',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
+            color: 'var(--text-muted)',
+            fontSize: 13, fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'border-color 0.15s, color 0.15s',
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLButtonElement).style.borderColor = GB.red;
+            (e.currentTarget as HTMLButtonElement).style.color = GB.red;
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)';
+            (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)';
+          }}
+        >
+          <span style={{ fontSize: 15 }}>⎋</span>
+          Terminar sessão
+        </button>
+      </div>
     </div>
   );
 }

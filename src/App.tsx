@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type React from 'react';
 import { AuthProvider, useAuth } from './lib/auth';
 import type { UserRole } from './types';
@@ -130,6 +130,32 @@ function AppContent() {
   const [currentPage, setCurrentPage] = useState('');
   const [registering, setRegistering] = useState(false);
 
+  // ── Back button support ───────────────────────────────────────────────────
+  // Must be declared before any conditional returns (Rules of Hooks).
+  // Guards internally with `if (!user)` so it's always called.
+  useEffect(() => {
+    if (!user) return;
+    const defPage = user.role === 'aluno' ? 'portal' : 'dashboard';
+
+    // Set a base history entry so the very first back press doesn't exit the app
+    history.replaceState({ page: defPage }, '', location.pathname + location.search);
+
+    const onPop = (e: PopStateEvent) => {
+      const p: string | undefined = e.state?.page;
+      if (p && canAccess(user.role, p)) {
+        setCurrentPage(p);
+      } else {
+        // No more in-app history — land on default (next back will exit as expected)
+        history.pushState({ page: defPage }, '', location.pathname + location.search);
+        setCurrentPage(defPage);
+      }
+    };
+
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]); // re-run only when the logged-in user changes
+
   // Staff invite: user clicked a recovery link — must set their own password first
   if (pendingPasswordSetup) {
     return <SetPasswordScreen />;
@@ -165,9 +191,10 @@ function AppContent() {
 
   const handleNavigate = (p: string) => {
     if (canAccess(user.role, p)) {
+      // Push a history entry so the mobile back button navigates within the app
+      history.pushState({ page: p }, '', location.pathname + location.search);
       setCurrentPage(p);
     }
-    // Silently ignore unauthorized navigation attempts
   };
 
   const renderPage = () => {
