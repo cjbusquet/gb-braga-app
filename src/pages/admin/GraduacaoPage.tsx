@@ -3,7 +3,15 @@ import { useState, useEffect } from 'react';
 import { useAlunos, useGraduacoes, db } from '../../lib/useData';
 import { GB, beltConfig } from '../../lib/gbBrand';
 
-const FAIXAS = ['branca','cinza','amarela','laranja','verde','azul','roxa','marrom','preta'];
+// Progressão completa GB: branca → faixas infantis → azul → adulto
+const FAIXAS = [
+  'branca',
+  'cinza-branca','cinza','cinza-preta',
+  'amarela-branca','amarela','amarela-preta',
+  'laranja-branca','laranja','laranja-preta',
+  'verde-branca','verde','verde-preta',
+  'azul','roxa','marrom','preta',
+];
 
 function proxFaixaGrau(faixa: string, grau: number): { faixa: string; grau: number } {
   if (grau < 4) return { faixa, grau: grau + 1 };
@@ -13,10 +21,10 @@ function proxFaixaGrau(faixa: string, grau: number): { faixa: string; grau: numb
 }
 
 function BeltBadge({ faixa, grau }: { faixa: string; grau: number }) {
-  const cfg = beltConfig[faixa] || { bg: '#888', text: '#fff' };
+  const cfg = beltConfig[faixa] || { bg: '#888', text: '#fff', label: faixa };
   return (
-    <span style={{ background: cfg.bg, color: cfg.text, fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 99, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-      {faixa.charAt(0).toUpperCase() + faixa.slice(1)} {grau > 0 ? `· G${grau}` : ''}
+    <span style={{ background: cfg.bg, color: cfg.text, fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 99, display: 'inline-flex', alignItems: 'center', gap: 4, border: faixa === 'branca' ? '1px solid #ccc' : 'none' }}>
+      {cfg.label} {grau > 0 ? `· G${grau}` : ''}
     </span>
   );
 }
@@ -181,7 +189,7 @@ export default function GraduacaoPage() {
               <div>
                 <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 5 }}>Nova Faixa</label>
                 <select value={novaFaixa} onChange={e => setNovaFaixa(e.target.value)} style={inp}>
-                  {FAIXAS.map(f => <option key={f} value={f}>{f.charAt(0).toUpperCase() + f.slice(1)}</option>)}
+                  {FAIXAS.map(f => <option key={f} value={f}>{(beltConfig[f]?.label) || f}</option>)}
                 </select>
               </div>
               <div>

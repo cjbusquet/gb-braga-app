@@ -1,6 +1,13 @@
 export type UserRole = 'superadmin' | 'admin' | 'atendimento' | 'professor' | 'aluno';
 
-export type Belt = 'branca' | 'cinza' | 'amarela' | 'laranja' | 'verde' | 'azul' | 'roxa' | 'marrom' | 'preta' | 'vermelha';
+export type Belt =
+  // Faixas adulto
+  | 'branca' | 'azul' | 'roxa' | 'marrom' | 'preta' | 'vermelha'
+  // Faixas infantil — progressão GB Kids
+  | 'cinza-branca' | 'cinza' | 'cinza-preta'
+  | 'amarela-branca' | 'amarela' | 'amarela-preta'
+  | 'laranja-branca' | 'laranja' | 'laranja-preta'
+  | 'verde-branca' | 'verde' | 'verde-preta';
 
 export type PaymentStatus = 'pago' | 'pendente' | 'vencido' | 'cancelado';
 

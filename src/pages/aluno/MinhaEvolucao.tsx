@@ -3,7 +3,14 @@ import { useAuth } from '../../lib/auth';
 import { GB, beltConfig } from '../../lib/gbBrand';
 import type { Belt } from '../../types';
 
-const BELT_PATH: Belt[] = ['branca','cinza','amarela','laranja','verde','azul','roxa','marrom','preta'];
+const BELT_PATH: Belt[] = [
+  'branca',
+  'cinza-branca','cinza','cinza-preta',
+  'amarela-branca','amarela','amarela-preta',
+  'laranja-branca','laranja','laranja-preta',
+  'verde-branca','verde','verde-preta',
+  'azul','roxa','marrom','preta',
+];
 
 export default function MinhaEvolucao() {
   const { data: alunos } = useAlunos();

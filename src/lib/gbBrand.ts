@@ -35,14 +35,27 @@ export const roleThemes: Record<UserRole, RoleTheme> = {
 };
 
 export const beltConfig: Record<string, { bg: string; text: string; label: string }> = {
-  branca:  { bg: '#F0EEFF', text: '#333',    label: 'Branca' },
-  cinza:   { bg: '#6B7280', text: '#fff',    label: 'Cinza' },
-  amarela: { bg: '#EAB308', text: '#1a1a1a', label: 'Amarela' },
-  laranja: { bg: '#EA580C', text: '#fff',    label: 'Laranja' },
-  verde:   { bg: '#16A34A', text: '#fff',    label: 'Verde' },
-  azul:    { bg: '#1D4ED8', text: '#fff',    label: 'Azul' },
-  roxa:    { bg: '#7C3AED', text: '#fff',    label: 'Roxa' },
-  marrom:  { bg: '#7C4A35', text: '#fff',    label: 'Marrom' },
-  preta:   { bg: '#111111', text: '#fff',    label: 'Preta' },
-  vermelha:{ bg: '#C8102E', text: '#fff',    label: 'Vermelha' },
+  // ── Adulto ────────────────────────────────────────────────────────────────
+  branca:  { bg: '#E5E7EB',                                                    text: '#333',    label: 'Branca' },
+  azul:    { bg: '#1D4ED8',                                                    text: '#fff',    label: 'Azul' },
+  roxa:    { bg: '#7C3AED',                                                    text: '#fff',    label: 'Roxa' },
+  marrom:  { bg: '#7C4A35',                                                    text: '#fff',    label: 'Marrom' },
+  preta:   { bg: '#111111',                                                    text: '#fff',    label: 'Preta' },
+  vermelha:{ bg: '#C8102E',                                                    text: '#fff',    label: 'Vermelha' },
+  // ── Infantil — cinza ──────────────────────────────────────────────────────
+  'cinza-branca':   { bg: 'linear-gradient(to right,#6B7280 55%,#E5E7EB 55%)', text: '#333',    label: 'Cinza/Branca' },
+  cinza:            { bg: '#6B7280',                                            text: '#fff',    label: 'Cinza' },
+  'cinza-preta':    { bg: 'linear-gradient(to right,#6B7280 55%,#111827 55%)', text: '#fff',    label: 'Cinza/Preta' },
+  // ── Infantil — amarela ────────────────────────────────────────────────────
+  'amarela-branca': { bg: 'linear-gradient(to right,#EAB308 55%,#E5E7EB 55%)', text: '#333',    label: 'Amarela/Branca' },
+  amarela:          { bg: '#EAB308',                                            text: '#1a1a1a', label: 'Amarela' },
+  'amarela-preta':  { bg: 'linear-gradient(to right,#EAB308 55%,#111827 55%)', text: '#1a1a1a', label: 'Amarela/Preta' },
+  // ── Infantil — laranja ────────────────────────────────────────────────────
+  'laranja-branca': { bg: 'linear-gradient(to right,#EA580C 55%,#E5E7EB 55%)', text: '#fff',    label: 'Laranja/Branca' },
+  laranja:          { bg: '#EA580C',                                            text: '#fff',    label: 'Laranja' },
+  'laranja-preta':  { bg: 'linear-gradient(to right,#EA580C 55%,#111827 55%)', text: '#fff',    label: 'Laranja/Preta' },
+  // ── Infantil — verde ──────────────────────────────────────────────────────
+  'verde-branca':   { bg: 'linear-gradient(to right,#16A34A 55%,#E5E7EB 55%)', text: '#fff',    label: 'Verde/Branca' },
+  verde:            { bg: '#16A34A',                                            text: '#fff',    label: 'Verde' },
+  'verde-preta':    { bg: 'linear-gradient(to right,#16A34A 55%,#111827 55%)', text: '#fff',    label: 'Verde/Preta' },
 };

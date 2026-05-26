@@ -1,9 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { usePlanos, db } from '../../lib/useData';
-import { GB } from '../../lib/gbBrand';
+import { GB, beltConfig } from '../../lib/gbBrand';
 
-const FAIXAS = ['branca','cinza','amarela','laranja','verde','azul','roxa','marrom','preta'];
+const FAIXAS = [
+  'branca',
+  'cinza-branca','cinza','cinza-preta',
+  'amarela-branca','amarela','amarela-preta',
+  'laranja-branca','laranja','laranja-preta',
+  'verde-branca','verde','verde-preta',
+  'azul','roxa','marrom','preta',
+];
 const CATS   = ['adulto','kids','familia','fundador'];
 
 export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: () => void; onSuccess?: () => void }) {
@@ -142,7 +149,7 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
               <div>
                 <label style={lbl}>Faixa actual</label>
                 <select value={faixa} onChange={e=>setFaixa(e.target.value)} style={{ ...inp, cursor:'pointer' }}>
-                  {FAIXAS.map(f => <option key={f} value={f}>{f.charAt(0).toUpperCase()+f.slice(1)}</option>)}
+                  {FAIXAS.map(f => <option key={f} value={f}>{beltConfig[f]?.label || f}</option>)}
                 </select>
               </div>
               <div>

@@ -5,18 +5,32 @@ import { supabase, isConfigured } from '../lib/supabaseClient';
 import { GB, roleThemes } from '../lib/gbBrand';
 import type { Belt } from '../types';
 
-// ─── Belt metadata ────────────────────────────────────────────────────────────
+// ─── Belt metadata (derived from gbBrand beltConfig) ─────────────────────────
+// Mapped to the Belt type keys — bicolor belts use CSS gradients as bg
 const BELT_META: Record<Belt, { label: string; bg: string; color: string }> = {
-  branca:   { label: 'Branca',   bg: '#E5E7EB', color: '#111111' },
-  cinza:    { label: 'Cinza',    bg: '#9CA3AF', color: '#ffffff' },
-  amarela:  { label: 'Amarela',  bg: '#F59E0B', color: '#ffffff' },
-  laranja:  { label: 'Laranja',  bg: '#F97316', color: '#ffffff' },
-  verde:    { label: 'Verde',    bg: '#16A34A', color: '#ffffff' },
-  azul:     { label: 'Azul',     bg: '#2563EB', color: '#ffffff' },
-  roxa:     { label: 'Roxa',     bg: '#7C3AED', color: '#ffffff' },
-  marrom:   { label: 'Marrom',   bg: '#92400E', color: '#ffffff' },
-  preta:    { label: 'Preta',    bg: '#111827', color: '#ffffff' },
-  vermelha: { label: 'Vermelha', bg: '#C8102E', color: '#ffffff' },
+  // Adulto
+  branca:           { label: 'Branca',         bg: '#E5E7EB',                                                    color: '#111111' },
+  azul:             { label: 'Azul',           bg: '#2563EB',                                                    color: '#ffffff' },
+  roxa:             { label: 'Roxa',           bg: '#7C3AED',                                                    color: '#ffffff' },
+  marrom:           { label: 'Marrom',         bg: '#92400E',                                                    color: '#ffffff' },
+  preta:            { label: 'Preta',          bg: '#111827',                                                    color: '#ffffff' },
+  vermelha:         { label: 'Vermelha',       bg: '#C8102E',                                                    color: '#ffffff' },
+  // Infantil — cinza
+  'cinza-branca':   { label: 'Cinza/Branca',   bg: 'linear-gradient(to right,#6B7280 55%,#E5E7EB 55%)',          color: '#333333' },
+  cinza:            { label: 'Cinza',          bg: '#6B7280',                                                    color: '#ffffff' },
+  'cinza-preta':    { label: 'Cinza/Preta',    bg: 'linear-gradient(to right,#6B7280 55%,#111827 55%)',          color: '#ffffff' },
+  // Infantil — amarela
+  'amarela-branca': { label: 'Amarela/Branca', bg: 'linear-gradient(to right,#EAB308 55%,#E5E7EB 55%)',          color: '#333333' },
+  amarela:          { label: 'Amarela',        bg: '#EAB308',                                                    color: '#111111' },
+  'amarela-preta':  { label: 'Amarela/Preta',  bg: 'linear-gradient(to right,#EAB308 55%,#111827 55%)',          color: '#111111' },
+  // Infantil — laranja
+  'laranja-branca': { label: 'Laranja/Branca', bg: 'linear-gradient(to right,#EA580C 55%,#E5E7EB 55%)',          color: '#ffffff' },
+  laranja:          { label: 'Laranja',        bg: '#F97316',                                                    color: '#ffffff' },
+  'laranja-preta':  { label: 'Laranja/Preta',  bg: 'linear-gradient(to right,#EA580C 55%,#111827 55%)',          color: '#ffffff' },
+  // Infantil — verde
+  'verde-branca':   { label: 'Verde/Branca',   bg: 'linear-gradient(to right,#16A34A 55%,#E5E7EB 55%)',          color: '#ffffff' },
+  verde:            { label: 'Verde',          bg: '#16A34A',                                                    color: '#ffffff' },
+  'verde-preta':    { label: 'Verde/Preta',    bg: 'linear-gradient(to right,#16A34A 55%,#111827 55%)',          color: '#ffffff' },
 };
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
