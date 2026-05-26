@@ -182,9 +182,23 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
             {!isCollapsed && 'Colapsar'}
           </button>
         )}
-        <button onClick={logout} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 14px', background: 'none', border: 'none', borderRadius: 8, cursor: 'pointer', color: 'var(--text-muted)', fontSize: 12 }}>
-          <span style={{ fontSize: 14 }}>⎋</span>
-          {!isCollapsed && 'Sair'}
+        <button
+          onClick={logout}
+          style={{
+            display: 'flex', alignItems: 'center',
+            gap: isCollapsed ? 0 : 10,
+            justifyContent: isCollapsed ? 'center' : 'flex-start',
+            width: '100%',
+            padding: isCollapsed ? '11px 0' : '10px 14px',
+            background: 'none', border: 'none', borderRadius: 8,
+            cursor: 'pointer',
+            color: '#EF4444',
+            fontSize: 13, fontWeight: 600,
+          }}
+          title={isCollapsed ? 'Terminar sessão' : undefined}
+        >
+          <span style={{ fontSize: 15, flexShrink: 0 }}>⎋</span>
+          {!isCollapsed && 'Terminar sessão'}
         </button>
       </div>
     </div>
