@@ -16,9 +16,9 @@ const BELT_META: Record<Belt, { label: string; bg: string; color: string }> = {
   preta:            { label: 'Preta',          bg: '#111827',                                                    color: '#ffffff' },
   vermelha:         { label: 'Vermelha',       bg: '#C8102E',                                                    color: '#ffffff' },
   // Infantil — cinza
-  'cinza-branca':   { label: 'Cinza/Branca',   bg: 'linear-gradient(to right,#6B7280 55%,#E5E7EB 55%)',          color: '#333333' },
-  cinza:            { label: 'Cinza',          bg: '#6B7280',                                                    color: '#ffffff' },
-  'cinza-preta':    { label: 'Cinza/Preta',    bg: 'linear-gradient(to right,#6B7280 55%,#111827 55%)',          color: '#ffffff' },
+  'cinza-branca':   { label: 'Cinza/Branca',   bg: 'linear-gradient(to right,#888888 55%,#E5E7EB 55%)',          color: '#333333' },
+  cinza:            { label: 'Cinza',          bg: '#888888',                                                    color: '#ffffff' },
+  'cinza-preta':    { label: 'Cinza/Preta',    bg: 'linear-gradient(to right,#888888 55%,#111827 55%)',          color: '#ffffff' },
   // Infantil — amarela
   'amarela-branca': { label: 'Amarela/Branca', bg: 'linear-gradient(to right,#EAB308 55%,#E5E7EB 55%)',          color: '#333333' },
   amarela:          { label: 'Amarela',        bg: '#EAB308',                                                    color: '#111111' },

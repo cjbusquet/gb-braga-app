@@ -43,9 +43,9 @@ export const beltConfig: Record<string, { bg: string; text: string; label: strin
   preta:   { bg: '#111111',                                                    text: '#fff',    label: 'Preta' },
   vermelha:{ bg: '#C8102E',                                                    text: '#fff',    label: 'Vermelha' },
   // ── Infantil — cinza ──────────────────────────────────────────────────────
-  'cinza-branca':   { bg: 'linear-gradient(to right,#6B7280 55%,#E5E7EB 55%)', text: '#333',    label: 'Cinza/Branca' },
-  cinza:            { bg: '#6B7280',                                            text: '#fff',    label: 'Cinza' },
-  'cinza-preta':    { bg: 'linear-gradient(to right,#6B7280 55%,#111827 55%)', text: '#fff',    label: 'Cinza/Preta' },
+  'cinza-branca':   { bg: 'linear-gradient(to right,#888888 55%,#E5E7EB 55%)', text: '#333',    label: 'Cinza/Branca' },
+  cinza:            { bg: '#888888',                                            text: '#fff',    label: 'Cinza' },
+  'cinza-preta':    { bg: 'linear-gradient(to right,#888888 55%,#111827 55%)', text: '#fff',    label: 'Cinza/Preta' },
   // ── Infantil — amarela ────────────────────────────────────────────────────
   'amarela-branca': { bg: 'linear-gradient(to right,#EAB308 55%,#E5E7EB 55%)', text: '#333',    label: 'Amarela/Branca' },
   amarela:          { bg: '#EAB308',                                            text: '#1a1a1a', label: 'Amarela' },
