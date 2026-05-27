@@ -25,6 +25,7 @@ import MinhaEvolucao from './pages/aluno/MinhaEvolucao';
 import MeuFinanceiro from './pages/aluno/MeuFinanceiro';
 import Conteudo from './pages/aluno/Conteudo';
 import Mensagens from './pages/aluno/Mensagens';
+import MeuCheckin from './pages/aluno/MeuCheckin';
 import PerfilPage from './pages/PerfilPage';
 import ModulosPage from './pages/admin/ModulosPage';
 import { ModulosProvider, useModulos } from './lib/useModulos';
@@ -47,6 +48,7 @@ const PAGE_ROLES: Record<string, UserRole[]> = {
   matricula:     ['superadmin','admin'],
   modulos:       ['superadmin'],
   portal:        ['aluno'],
+  'meu-checkin': ['aluno'],
   'minhas-aulas':['aluno'],
   evolucao:      ['aluno'],
   'meu-financeiro':['aluno'],
@@ -219,6 +221,7 @@ function AppContent() {
     if (user.role === 'aluno') {
       switch (safePage) {
         case 'portal':          return <PortalAluno onNavigate={handleNavigate}/>;
+        case 'meu-checkin':     return <MeuCheckin />;
         case 'minhas-aulas':    return <MinhasAulas />;
         case 'evolucao':        return <MinhaEvolucao />;
         case 'meu-financeiro':  return <MeuFinanceiro />;

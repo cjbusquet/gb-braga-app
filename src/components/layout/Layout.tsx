@@ -29,6 +29,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon:'🧩',label:'Módulos',     id:'modulos',       roles:['superadmin'] },
   // Aluno
   { icon:'⌂', label:'Portal',      id:'portal',        roles:['aluno'] },
+  { icon:'✓', label:'Check-in',    id:'meu-checkin',   roles:['aluno'] },
   { icon:'▤', label:'Aulas',       id:'minhas-aulas',  roles:['aluno'] },
   { icon:'◈', label:'Evolução',    id:'evolucao',      roles:['aluno'] },
   { icon:'€', label:'Financeiro',  id:'meu-financeiro',roles:['aluno'] },
@@ -38,7 +39,7 @@ const NAV_ITEMS: NavItem[] = [
 
 // Bottom nav items per role (max 4 + "Mais")
 const BOTTOM_NAV: Record<string, string[]> = {
-  aluno:       ['portal','minhas-aulas','evolucao','meu-financeiro'],
+  aluno:       ['portal','meu-checkin','minhas-aulas','evolucao'],
   admin:       ['dashboard','alunos','financeiro','config'],
   atendimento: ['dashboard','alunos','checkin','comunicacao'],
   professor:   ['dashboard','alunos','checkin','graduacao'],

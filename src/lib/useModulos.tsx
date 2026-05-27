@@ -36,6 +36,7 @@ export const MODULE_CATALOGUE: ModuleDef[] = [
   { id: 'matricula',     label: 'Matrícula Online', icon: '🌐', desc: 'Fluxo de matrícula via link público',      category: 'staff' },
   { id: 'numerario',     label: 'Numerário',        icon: '💵', desc: 'Pedidos e aprovação de caixa',             category: 'staff' },
   // ── Aluno ──────────────────────────────────────────────────────────────────
+  { id: 'meu-checkin',   label: 'Check-in',         icon: '✓',  desc: 'Auto check-in do aluno nas aulas',        category: 'aluno' },
   { id: 'minhas-aulas',  label: 'Minhas Aulas',     icon: '▤',  desc: 'Histórico de presenças do aluno',         category: 'aluno' },
   { id: 'evolucao',      label: 'Evolução',         icon: '◈',  desc: 'Progresso, faixa e graduações',            category: 'aluno' },
   { id: 'meu-financeiro',label: 'Financeiro',       icon: '€',  desc: 'Pagamentos e mensalidades do aluno',       category: 'aluno' },
