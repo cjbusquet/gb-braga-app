@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useAuth } from '../../lib/auth';
 import { GB, roleThemes } from '../../lib/gbBrand';
 import { GBLogoFull } from '../GBLogo';
+import { useModulos } from '../../lib/useModulos';
 import type { UserRole } from '../../types';
 
 interface NavItem {
@@ -25,6 +26,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon:'⚙', label:'Config.',     id:'config',        roles:['superadmin','admin'] },
   { icon:'🌐',label:'Matr. Online',id:'matricula',     roles:['superadmin','admin'] },
   { icon:'💵',label:'Numerário',   id:'numerario',     roles:['superadmin'] },
+  { icon:'🧩',label:'Módulos',     id:'modulos',       roles:['superadmin'] },
   // Aluno
   { icon:'⌂', label:'Portal',      id:'portal',        roles:['aluno'] },
   { icon:'▤', label:'Aulas',       id:'minhas-aulas',  roles:['aluno'] },
@@ -51,6 +53,7 @@ interface LayoutProps {
 
 export default function Layout({ currentPage, onNavigate, children }: LayoutProps) {
   const { user, logout } = useAuth();
+  const { isActive } = useModulos();
   const [collapsed,   setCollapsed]   = useState(false);
   const [mobileOpen,  setMobileOpen]  = useState(false);
   const [isMobile,    setIsMobile]    = useState(false);
@@ -70,7 +73,9 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
   if (!user) return null;
 
   const rt          = roleThemes[user.role] || roleThemes.aluno;
-  const visibleNav  = NAV_ITEMS.filter(n => n.roles.includes(user.role as UserRole));
+  const visibleNav  = NAV_ITEMS.filter(n =>
+    n.roles.includes(user.role as UserRole) && isActive(n.id)
+  );
   const isCollapsed = collapsed && !isMobile;
   const sidebarW    = isCollapsed ? 64 : 240;
 

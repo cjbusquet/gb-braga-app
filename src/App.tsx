@@ -26,6 +26,8 @@ import MeuFinanceiro from './pages/aluno/MeuFinanceiro';
 import Conteudo from './pages/aluno/Conteudo';
 import Mensagens from './pages/aluno/Mensagens';
 import PerfilPage from './pages/PerfilPage';
+import ModulosPage from './pages/admin/ModulosPage';
+import { ModulosProvider, useModulos } from './lib/useModulos';
 
 // ─── Role-based page access control ──────────────────────────────────────────
 const PAGE_ROLES: Record<string, UserRole[]> = {
@@ -43,6 +45,7 @@ const PAGE_ROLES: Record<string, UserRole[]> = {
   config:        ['superadmin','admin'],
   numerario:     ['superadmin'],
   matricula:     ['superadmin','admin'],
+  modulos:       ['superadmin'],
   portal:        ['aluno'],
   'minhas-aulas':['aluno'],
   evolucao:      ['aluno'],
@@ -56,6 +59,11 @@ function canAccess(role: UserRole, page: string): boolean {
   const allowed = PAGE_ROLES[page];
   if (!allowed) return false;
   return allowed.includes(role);
+}
+
+function canAccessModule(page: string, isActive: (id: string) => boolean): boolean {
+  // Pages without a corresponding module (core pages) are always accessible
+  return isActive(page);
 }
 
 // ─── Password Setup Screen (staff invite flow) ────────────────────────────────
@@ -127,6 +135,7 @@ function SetPasswordScreen() {
 
 function AppContent() {
   const { user, refreshProfile, pendingPasswordSetup } = useAuth();
+  const { isActive } = useModulos();
   const [currentPage, setCurrentPage] = useState('');
   const [registering, setRegistering] = useState(false);
 
@@ -185,9 +194,10 @@ function AppContent() {
   const defaultPage = user.role === 'aluno' ? 'portal' : 'dashboard';
   const page = currentPage || defaultPage;
 
-  // Security: if user tries to access a page they don't have permission for,
-  // redirect to their default page silently
-  const safePage = canAccess(user.role, page) ? page : defaultPage;
+  // Security: redirect if user lacks role access OR module is disabled
+  const safePage = (canAccess(user.role, page) && canAccessModule(page, isActive))
+    ? page
+    : defaultPage;
 
   const handleNavigate = (p: string) => {
     if (canAccess(user.role, p)) {
@@ -250,6 +260,7 @@ function AppContent() {
       case 'config':       return <ConfigPage />;
       case 'numerario':    return <PendentesNumerario />;
       case 'matricula':    return <FluxoMatricula embedded />;
+      case 'modulos':      return <ModulosPage />;
       case 'perfil':       return <PerfilPage />;
       default:             return <Dashboard />;
     }
@@ -263,5 +274,11 @@ function AppContent() {
 }
 
 export default function App() {
-  return <AuthProvider><AppContent /></AuthProvider>;
+  return (
+    <AuthProvider>
+      <ModulosProvider>
+        <AppContent />
+      </ModulosProvider>
+    </AuthProvider>
+  );
 }
