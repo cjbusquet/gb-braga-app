@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useAlunos } from '../../lib/useData';
-import { mockMensagens } from '../../data/mockData';
+import { useAlunos, useMensagens, db } from '../../lib/useData';
 import { GB } from '../../lib/gbBrand';
 import { supabase, isConfigured } from '../../lib/supabaseClient';
+import { useAuth } from '../../lib/auth';
 
 type Canal = 'whatsapp' | 'sms' | 'email' | 'push';
 
@@ -40,7 +40,9 @@ function TabBar({ tabs, active, onSelect }: { tabs: { id: string; label: string;
 }
 
 export default function ComunicacaoPage() {
+  const { user } = useAuth();
   const { data: alunos } = useAlunos();
+  const { data: mensagensDB, refetch: refreshMensagens } = useMensagens(200);
   const [tab, setTab] = useState<'enviar' | 'historico' | 'templates' | 'automatizacoes'>('enviar');
   const [canal, setCanal] = useState<Canal>('whatsapp');
   const [dest, setDest] = useState('all');
@@ -91,6 +93,26 @@ export default function ComunicacaoPage() {
         setSent(true);
         setSendResult({ sent: data.sent, total: data.total });
         if (data.errors?.length) setSendErr(`${data.errors.length} erro(s): ${data.errors[0]}`);
+
+        // Guardar no histórico de mensagens
+        const destLabel = dest === 'all' ? 'Todos os alunos ativos'
+          : dest === 'inadimplentes' ? 'Inadimplentes'
+          : dest === 'aniversariantes' ? 'Aniversariantes do mês'
+          : dest === 'faixa_branca' ? 'Faixa Branca'
+          : dest === 'kids' ? 'Kids'
+          : alunos.find(a => a.id === dest)?.nome || dest;
+        try {
+          await db.enviarMensagem({
+            paraId:    dest,
+            paraNome:  destLabel,
+            canal:     'email',
+            assunto:   assunto || null,
+            corpo:     msg,
+            remetente: user?.nome || user?.email || 'Staff',
+          });
+          refreshMensagens();
+        } catch { /* não bloquear o fluxo se falhar o registo */ }
+
         setMsg(''); setAssunto('');
         setTimeout(() => { setSent(false); setSendResult(null); setSendErr(''); }, 6000);
       }
@@ -106,7 +128,8 @@ export default function ComunicacaoPage() {
     setTab('enviar');
   };
 
-  const totalPorCanal = (c: Canal) => mockMensagens.filter(m => m.canal === c).length;
+  const mensagens = mensagensDB ?? [];
+  const totalPorCanal = (c: Canal) => mensagens.filter((m: any) => m.canal === c).length;
 
   return (
     <div>
@@ -338,18 +361,28 @@ export default function ComunicacaoPage() {
               </tr>
             </thead>
             <tbody>
-              {mockMensagens.map(m => {
-                const c = CANAL[m.canal];
+              {mensagens.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+                    Nenhuma mensagem enviada ainda.
+                  </td>
+                </tr>
+              ) : mensagens.map((m: any) => {
+                const c = CANAL[m.canal as Canal] || CANAL.email;
+                const data = m.enviado_em || m.created_at;
                 return (
                   <tr key={m.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '10px 14px' }}>
                       <span style={{ background: c.bg, color: c.accent, fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 6 }}>{c.icon} {c.label}</span>
                     </td>
-                    <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{m.paraNome}</td>
+                    <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{m.para_nome}</td>
                     <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-secondary)', maxWidth: 280 }}>
+                      {m.assunto && <div style={{ fontWeight: 600, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.assunto}</div>}
                       <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.corpo}</div>
                     </td>
-                    <td style={{ padding: '10px 14px', fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{new Date(m.dataEnvio).toLocaleDateString('pt-PT')}</td>
+                    <td style={{ padding: '10px 14px', fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
+                      {data ? new Date(data).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}
+                    </td>
                     <td style={{ padding: '10px 14px' }}>
                       <span style={{ background: m.status === 'enviado' ? 'rgba(34,197,94,0.1)' : m.status === 'erro' ? 'rgba(200,16,46,0.1)' : 'var(--bg-elevated)', color: m.status === 'enviado' ? '#22C55E' : m.status === 'erro' ? GB.red : 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, padding: '2px 8px', borderRadius: 99 }}>
                         {m.status}

@@ -134,6 +134,22 @@ export function useContratos() {
   );
 }
 
+// ── MENSAGENS ─────────────────────────────────────────────────
+export function useMensagens(limit = 100) {
+  return useQuery(
+    `mensagens:${limit}`,
+    async () => {
+      const res = await supabase
+        .from('mensagens')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      return { data: res.data ?? null, error: res.error };
+    },
+    []
+  );
+}
+
 // ── KPIs ──────────────────────────────────────────────────────
 export function useKPIs() {
   const [data, setData]       = useState(mock.mockKPIs);
