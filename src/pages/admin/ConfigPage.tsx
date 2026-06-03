@@ -926,8 +926,234 @@ function EquipaSection() {
 
 // ─── Main ConfigPage ──────────────────────────────────────────────────────────
 export default function ConfigPage() {
+  return <ConfigPageInner />;
+}
+
+// ─── Academia + GPS Fence Section ────────────────────────────────────────────
+function AcademiaSection() {
+  const { data: cfg, setData: setCfg, loading, saving, saved, save } =
+    useConfig<Record<string, string>>('academia', {});
+
+  const [locating, setLocating]   = useState(false);
+  const [locErr,   setLocErr]     = useState('');
+  const [testDist, setTestDist]   = useState<number | null>(null);
+  const [testing,  setTesting]    = useState(false);
+
+  const INP: React.CSSProperties = {
+    width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-sm)', padding: '9px 11px', color: 'var(--text-primary)',
+    fontSize: 12.5, fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box',
+  };
+  const LBL: React.CSSProperties = {
+    display: 'block', color: 'var(--text-muted)', fontSize: 10, fontWeight: 700,
+    letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 4,
+  };
+
+  const captureLocation = () => {
+    if (!navigator.geolocation) { setLocErr('Geolocalização não suportada.'); return; }
+    setLocating(true); setLocErr('');
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setCfg(p => ({
+          ...p,
+          'GPS Latitude':  pos.coords.latitude.toFixed(7),
+          'GPS Longitude': pos.coords.longitude.toFixed(7),
+          'GPS Precisão':  `${Math.round(pos.coords.accuracy)}m`,
+        }));
+        setLocating(false);
+      },
+      err => { setLocErr(`Erro GPS: ${err.message}`); setLocating(false); },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  };
+
+  const testMyPosition = () => {
+    if (!navigator.geolocation) return;
+    const lat = parseFloat(cfg['GPS Latitude'] ?? '');
+    const lng = parseFloat(cfg['GPS Longitude'] ?? '');
+    if (isNaN(lat) || isNaN(lng)) { setLocErr('Define primeiro o ponto de referência.'); return; }
+    setTesting(true); setLocErr('');
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const d = haversineM(lat, lng, pos.coords.latitude, pos.coords.longitude);
+        setTestDist(Math.round(d));
+        setTesting(false);
+      },
+      err => { setLocErr(`Erro GPS: ${err.message}`); setTesting(false); },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  };
+
+  const radius   = parseInt(cfg['GPS Raio (m)'] ?? '100');
+  const hasPoint = !isNaN(parseFloat(cfg['GPS Latitude'] ?? '')) && !isNaN(parseFloat(cfg['GPS Longitude'] ?? ''));
+
+  if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 24 }}>A carregar...</div>;
+
+  return (
+    <div style={{ maxWidth: 560 }}>
+      {/* Dados básicos */}
+      <Card>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 14, borderBottom: '1px solid var(--border-subtle)' }}>
+          <div style={{ width: 40, height: 40, background: '#1A1A1A', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🏫</div>
+          <div style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 700 }}>Academia</div>
+        </div>
+        {[
+          { label: 'Nome da academia', placeholder: 'Gracie Barra Braga' },
+          { label: 'Morada', placeholder: 'Rua..., 4700 Braga' },
+          { label: 'Telefone', placeholder: '+351 927 773 854' },
+          { label: 'Email', placeholder: 'atendimento@gbbraga.com' },
+          { label: 'NIF', placeholder: '512345678' },
+        ].map(f => (
+          <Field key={f.label} label={f.label}>
+            <Input
+              value={cfg[f.label] || ''}
+              onChange={v => setCfg(p => ({ ...p, [f.label]: v }))}
+              placeholder={f.placeholder}
+            />
+          </Field>
+        ))}
+        <SaveBar onSave={() => save()} saved={saved} saving={saving} />
+      </Card>
+
+      {/* GPS Fence */}
+      <Card style={{ marginTop: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 14, borderBottom: '1px solid var(--border-subtle)' }}>
+          <div style={{ width: 40, height: 40, background: '#064E3B', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📍</div>
+          <div>
+            <div style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 700 }}>GPS Fence — Check-in</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Ponto de referência para validar presenças</div>
+          </div>
+        </div>
+
+        {/* Capture button */}
+        <button
+          onClick={captureLocation}
+          disabled={locating}
+          style={{
+            width: '100%', padding: '12px', marginBottom: 16,
+            background: locating ? '#aaa' : '#16A34A',
+            border: 'none', borderRadius: 'var(--radius-sm)',
+            color: '#fff', fontSize: 13, fontWeight: 700,
+            cursor: locating ? 'not-allowed' : 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}
+        >
+          {locating ? '⟳ A obter localização...' : '📍 Usar localização actual como referência'}
+        </button>
+
+        {/* Coords */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+          <div>
+            <label style={LBL}>Latitude</label>
+            <input
+              value={cfg['GPS Latitude'] || ''}
+              onChange={e => setCfg(p => ({ ...p, 'GPS Latitude': e.target.value }))}
+              placeholder="41.5503700"
+              style={INP}
+            />
+          </div>
+          <div>
+            <label style={LBL}>Longitude</label>
+            <input
+              value={cfg['GPS Longitude'] || ''}
+              onChange={e => setCfg(p => ({ ...p, 'GPS Longitude': e.target.value }))}
+              placeholder="-8.4200000"
+              style={INP}
+            />
+          </div>
+        </div>
+
+        {/* Radius */}
+        <div style={{ marginBottom: 14 }}>
+          <label style={LBL}>Raio do fence (metros)</label>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {[50, 100, 150, 200, 300].map(r => (
+              <button key={r} onClick={() => setCfg(p => ({ ...p, 'GPS Raio (m)': String(r) }))}
+                style={{
+                  padding: '7px 14px', borderRadius: 'var(--radius-sm)',
+                  border: `1.5px solid ${radius === r ? '#16A34A' : 'var(--border)'}`,
+                  background: radius === r ? 'rgba(22,163,74,0.1)' : 'var(--bg-elevated)',
+                  color: radius === r ? '#16A34A' : 'var(--text-secondary)',
+                  fontSize: 12.5, fontWeight: radius === r ? 700 : 400, cursor: 'pointer',
+                }}>
+                {r}m
+              </button>
+            ))}
+            <input
+              type="number" min="10" max="2000"
+              value={cfg['GPS Raio (m)'] || '100'}
+              onChange={e => setCfg(p => ({ ...p, 'GPS Raio (m)': e.target.value }))}
+              placeholder="100"
+              style={{ ...INP, width: 70 }}
+            />
+          </div>
+        </div>
+
+        {/* Status + Test */}
+        {hasPoint && (
+          <div style={{
+            background: 'rgba(22,163,74,0.06)', border: '1px solid rgba(22,163,74,0.2)',
+            borderRadius: 'var(--radius-sm)', padding: '10px 14px', marginBottom: 14,
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10,
+          }}>
+            <div>
+              <div style={{ color: '#16A34A', fontSize: 12, fontWeight: 700 }}>✓ Ponto definido</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2 }}>
+                {cfg['GPS Latitude']}, {cfg['GPS Longitude']} · Raio: {radius}m
+                {cfg['GPS Precisão'] && ` · Precisão: ±${cfg['GPS Precisão']}`}
+              </div>
+            </div>
+            <button
+              onClick={testMyPosition}
+              disabled={testing}
+              style={{
+                background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-sm)', padding: '7px 12px',
+                color: 'var(--text-secondary)', fontSize: 11.5, fontWeight: 600,
+                cursor: testing ? 'not-allowed' : 'pointer', flexShrink: 0,
+              }}>
+              {testing ? '⟳' : '🧪 Testar'}
+            </button>
+          </div>
+        )}
+
+        {/* Test result */}
+        {testDist !== null && (
+          <div style={{
+            background: testDist <= radius ? 'rgba(22,163,74,0.08)' : 'rgba(200,16,46,0.07)',
+            border: `1px solid ${testDist <= radius ? 'rgba(22,163,74,0.3)' : 'rgba(200,16,46,0.2)'}`,
+            borderRadius: 'var(--radius-sm)', padding: '10px 14px', marginBottom: 14,
+            color: testDist <= radius ? '#16A34A' : GB.red, fontSize: 12.5, fontWeight: 700,
+          }}>
+            {testDist <= radius
+              ? `✓ Dentro do fence — ${testDist}m do ponto (raio: ${radius}m)`
+              : `✕ Fora do fence — ${testDist}m do ponto (raio: ${radius}m)`}
+          </div>
+        )}
+
+        {locErr && <div style={{ color: GB.red, fontSize: 11.5, fontWeight: 600, marginBottom: 10 }}>⚠ {locErr}</div>}
+
+        <SaveBar onSave={() => save()} saved={saved} saving={saving} />
+      </Card>
+    </div>
+  );
+}
+
+// Haversine distance in metres
+function haversineM(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// ─── Main ConfigPage component ────────────────────────────────────────────────
+function ConfigPageInner() {
   const { user } = useAuth();
   const { isMobile } = useMobile();
+
   const isSuperAdmin = user?.role === 'superadmin';
   const isAdmin      = user?.role === 'admin';
   const visibleSections = SECTIONS.filter(s => !s.superadminOnly || isSuperAdmin || isAdmin);
@@ -946,13 +1172,7 @@ export default function ConfigPage() {
         { label: 'Email remetente', placeholder: 'noreply@graciebarra.pt' },
         { label: 'Password', placeholder: '••••••••', type: 'password' },
       ]}/>;
-      case 'academia':   return <SimpleSection secao="academia" title="Academia" icon="🏫" bg="#1A1A1A" fields={[
-        { label: 'Nome da academia', placeholder: 'Gracie Barra Braga' },
-        { label: 'Morada', placeholder: 'Rua..., 4700 Braga' },
-        { label: 'Telefone', placeholder: '+351 927 773 854' },
-        { label: 'Email', placeholder: 'atendimento@gbbraga.com' },
-        { label: 'NIF', placeholder: '512345678' },
-      ]}/>;
+      case 'academia':   return <AcademiaSection />;
       case 'compliance': return <SimpleSection secao="compliance" title="IPDJ / RGPD" icon="📋" bg="#2D1B69" fields={[
         { label: 'Número alvará IPDJ', placeholder: 'AL-XXXXX' },
         { label: 'DPO (Responsável RGPD)', placeholder: 'Nome do responsável' },

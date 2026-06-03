@@ -2,6 +2,17 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../lib/auth';
 import { useAlunos, useTurmas, usePresencas, db } from '../../lib/useData';
 import { GB } from '../../lib/gbBrand';
+import { supabase, isConfigured } from '../../lib/supabaseClient';
+
+// Haversine distance in metres
+function haversineM(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const hoje = () => new Date().toISOString().split('T')[0];
@@ -51,11 +62,51 @@ export default function MeuCheckin() {
   const [err,       setErr]       = useState('');
   const [hora,      setHora]      = useState(horaAtual());
 
+  // GPS fence state
+  const [fence,     setFence]     = useState<{ lat: number; lng: number; raio: number } | null>(null);
+  const [gpsStatus, setGpsStatus] = useState<'idle' | 'checking' | 'inside' | 'outside' | 'error'>('idle');
+  const [gpsDist,   setGpsDist]   = useState<number | null>(null);
+  const [userPos,   setUserPos]   = useState<GeolocationCoordinates | null>(null);
+
   // Relógio ao vivo
   useEffect(() => {
     const iv = setInterval(() => setHora(horaAtual()), 10000);
     return () => clearInterval(iv);
   }, []);
+
+  // Load GPS fence config from DB
+  useEffect(() => {
+    if (!isConfigured) return;
+    supabase
+      .from('configuracoes')
+      .select('dados')
+      .eq('secao', 'academia')
+      .maybeSingle()
+      .then(({ data }) => {
+        const d = data?.dados as Record<string, string> | undefined;
+        if (!d) return;
+        const lat  = parseFloat(d['GPS Latitude']  ?? '');
+        const lng  = parseFloat(d['GPS Longitude'] ?? '');
+        const raio = parseInt(d['GPS Raio (m)']   ?? '100');
+        if (!isNaN(lat) && !isNaN(lng)) setFence({ lat, lng, raio: isNaN(raio) ? 100 : raio });
+      });
+  }, []);
+
+  // Check user's GPS position when fence is loaded
+  useEffect(() => {
+    if (!fence || !navigator.geolocation) return;
+    setGpsStatus('checking');
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setUserPos(pos.coords);
+        const dist = Math.round(haversineM(fence.lat, fence.lng, pos.coords.latitude, pos.coords.longitude));
+        setGpsDist(dist);
+        setGpsStatus(dist <= fence.raio ? 'inside' : 'outside');
+      },
+      () => setGpsStatus('error'),
+      { enableHighAccuracy: true, timeout: 12000 }
+    );
+  }, [fence]);
 
   // Pré-selecionar turma se só há uma hoje
   useEffect(() => {
@@ -73,6 +124,9 @@ export default function MeuCheckin() {
         turmaId:   turma?.id   || null,
         turmaNome: turma?.nome || null,
         metodo:    'app',
+        gpsLat:    userPos?.latitude  ?? null,
+        gpsLng:    userPos?.longitude ?? null,
+        gpsDist:   gpsDist ?? null,
       });
       setDone(true);
     } catch (e: any) {
@@ -232,6 +286,49 @@ export default function MeuCheckin() {
               </div>
             )}
           </div>
+
+          {/* GPS Fence indicator */}
+          {fence && (
+            <div style={{
+              marginBottom: 14, padding: '10px 14px', borderRadius: 'var(--radius-sm)',
+              background: gpsStatus === 'inside'  ? 'rgba(22,163,74,0.07)'
+                        : gpsStatus === 'outside' ? 'rgba(200,16,46,0.06)'
+                        : gpsStatus === 'checking' ? 'var(--bg-elevated)'
+                        : 'var(--bg-elevated)',
+              border: `1px solid ${
+                gpsStatus === 'inside'  ? 'rgba(22,163,74,0.25)'
+              : gpsStatus === 'outside' ? 'rgba(200,16,46,0.2)'
+              : 'var(--border)'}`,
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+              <span style={{ fontSize: 18, flexShrink: 0 }}>
+                {gpsStatus === 'inside'   ? '✅'
+               : gpsStatus === 'outside'  ? '📍'
+               : gpsStatus === 'checking' ? '⟳'
+               : gpsStatus === 'error'    ? '⚠️'
+               : '📡'}
+              </span>
+              <div>
+                <div style={{
+                  fontSize: 12.5, fontWeight: 700,
+                  color: gpsStatus === 'inside'  ? '#16A34A'
+                       : gpsStatus === 'outside' ? GB.red
+                       : 'var(--text-secondary)',
+                }}>
+                  {gpsStatus === 'inside'   ? `Dentro da academia (${gpsDist}m)`
+                 : gpsStatus === 'outside'  ? `Fora da academia — ${gpsDist}m (máx. ${fence.raio}m)`
+                 : gpsStatus === 'checking' ? 'A verificar localização...'
+                 : gpsStatus === 'error'    ? 'Não foi possível obter localização'
+                 : 'GPS fence activo'}
+                </div>
+                {gpsStatus === 'outside' && (
+                  <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2 }}>
+                    Podes fazer check-in mas a tua localização será registada.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {err && (
             <div style={{ color: GB.red, fontSize: 12, fontWeight: 600, marginBottom: 12 }}>⚠ {err}</div>
