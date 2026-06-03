@@ -547,10 +547,12 @@ const STAFF_FAIXAS = [
 function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => void }) {
   const [open, setOpen]     = useState(false);
   const [d, setD]           = useState(member);
-  const [saving, setSaving] = useState(false);
-  const [saved,  setSaved]  = useState(false);
-  const [err,    setErr]    = useState('');
-  const { isMobile }        = useMobile();
+  const [saving,   setSaving]   = useState(false);
+  const [saved,    setSaved]    = useState(false);
+  const [err,      setErr]      = useState('');
+  const [resetting, setResetting] = useState(false);
+  const [resetDone, setResetDone] = useState(false);
+  const { isMobile }             = useMobile();
 
   const INP: React.CSSProperties = {
     width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
@@ -561,6 +563,17 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
   const LBL: React.CSSProperties = {
     display: 'block', color: 'var(--text-muted)', fontSize: 10, fontWeight: 700,
     letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 4,
+  };
+
+  const sendPasswordReset = async () => {
+    setResetting(true); setErr('');
+    const { error } = await supabase.auth.resetPasswordForEmail(d.email, {
+      redirectTo: window.location.origin,
+    });
+    setResetting(false);
+    if (error) { setErr(`Reset: ${error.message}`); return; }
+    setResetDone(true);
+    setTimeout(() => setResetDone(false), 4000);
   };
 
   const saveStaff = async () => {
@@ -681,7 +694,26 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
           </div>
 
           {err && <div style={{ color: GB.red, fontSize: 11.5, marginTop: 8, fontWeight: 600 }}>⚠ {err}</div>}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, gap: 10, flexWrap: 'wrap' }}>
+            {/* Reset password */}
+            <button
+              onClick={sendPasswordReset}
+              disabled={resetting || resetDone}
+              style={{
+                background: resetDone ? 'rgba(34,197,94,0.1)' : 'var(--bg-elevated)',
+                border: `1px solid ${resetDone ? '#22C55E' : 'var(--border)'}`,
+                borderRadius: 'var(--radius-sm)', padding: '8px 14px',
+                color: resetDone ? '#16A34A' : 'var(--text-secondary)',
+                fontSize: 12, fontWeight: 600,
+                cursor: (resetting || resetDone) ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              <span>{resetDone ? '✓' : '🔑'}</span>
+              {resetting ? 'A enviar...' : resetDone ? 'Email enviado!' : 'Enviar reset de password'}
+            </button>
+
+            {/* Save */}
             <button onClick={saveStaff} disabled={saving}
               style={{ background: saved ? '#22C55E' : saving ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '8px 20px', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
               {saving ? '⟳ A guardar...' : saved ? '✓ Guardado' : '💾 Guardar'}
