@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useAlunos, useMensagens, db } from '../../lib/useData';
+import type React from 'react';
+import { useAlunos, useMensagens, useTemplates, db } from '../../lib/useData';
 import { GB } from '../../lib/gbBrand';
 import { supabase, isConfigured } from '../../lib/supabaseClient';
 import { useAuth } from '../../lib/auth';
@@ -39,10 +40,154 @@ function TabBar({ tabs, active, onSelect }: { tabs: { id: string; label: string;
   );
 }
 
+// ─── Templates CRUD component ──────────────────────────────────────────────
+const INP: React.CSSProperties = {
+  width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-sm)', padding: '9px 12px', color: 'var(--text-primary)',
+  fontSize: 13, fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box',
+};
+
+function TemplatesTab({ templates, onUse, onRefresh }: {
+  templates: any[];
+  onUse: (t: any) => void;
+  onRefresh: () => void;
+}) {
+  const [showForm, setShowForm] = useState(false);
+  const [nome,    setNome]    = useState('');
+  const [canal,   setCanal]   = useState<Canal>('email');
+  const [assunto, setAssunto] = useState('');
+  const [corpo,   setCorpo]   = useState('');
+  const [saving,  setSaving]  = useState(false);
+  const [err,     setErr]     = useState('');
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const handleCreate = async () => {
+    if (!nome.trim() || !corpo.trim()) return setErr('Nome e corpo são obrigatórios.');
+    setErr(''); setSaving(true);
+    try {
+      await db.criarTemplate({ nome, canal, assunto, corpo });
+      setNome(''); setAssunto(''); setCorpo(''); setCanal('email');
+      setShowForm(false);
+      onRefresh();
+    } catch (e: any) {
+      setErr(e.message || 'Erro ao guardar template.');
+    }
+    setSaving(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Apagar este template?')) return;
+    setDeleting(id);
+    try {
+      await db.apagarTemplate(id);
+      onRefresh();
+    } catch {/* ignore */}
+    setDeleting(null);
+  };
+
+  return (
+    <div>
+      {/* Header + novo botão */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{templates.length} template{templates.length !== 1 ? 's' : ''}</div>
+        <button
+          onClick={() => { setShowForm(s => !s); setErr(''); }}
+          style={{ background: showForm ? 'var(--bg-elevated)' : GB.red, border: showForm ? '1px solid var(--border)' : 'none', borderRadius: 'var(--radius-sm)', padding: '8px 16px', color: showForm ? 'var(--text-secondary)' : '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>
+          {showForm ? '✕ Cancelar' : '+ Novo Template'}
+        </button>
+      </div>
+
+      {/* Formulário de criação */}
+      {showForm && (
+        <Card style={{ padding: 20, marginBottom: 16 }}>
+          <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Novo Template</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+            <div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 5 }}>Nome</div>
+              <input value={nome} onChange={e => setNome(e.target.value)} placeholder="ex: Lembrete de pagamento" style={INP} />
+            </div>
+            <div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 5 }}>Canal</div>
+              <select value={canal} onChange={e => setCanal(e.target.value as Canal)}
+                style={{ ...INP, cursor: 'pointer' }}>
+                {(Object.entries(CANAL) as [Canal, typeof CANAL[Canal]][]).map(([id, c]) => (
+                  <option key={id} value={id}>{c.icon} {c.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {canal === 'email' && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 5 }}>Assunto</div>
+              <input value={assunto} onChange={e => setAssunto(e.target.value)} placeholder="Assunto do email" style={INP} />
+            </div>
+          )}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 5 }}>
+              Corpo da mensagem
+            </div>
+            <textarea
+              value={corpo} onChange={e => setCorpo(e.target.value)} rows={4}
+              placeholder={'Variáveis: {nome} {valor} {vencimento} {faixa} {link}'}
+              style={{ ...INP, resize: 'vertical' as const }}
+            />
+            <div style={{ color: 'var(--text-muted)', fontSize: 10.5, marginTop: 4 }}>
+              Variáveis disponíveis: <code>{'{nome}'}</code> <code>{'{valor}'}</code> <code>{'{vencimento}'}</code> <code>{'{faixa}'}</code> <code>{'{link}'}</code>
+            </div>
+          </div>
+          {err && <div style={{ color: GB.red, fontSize: 11.5, fontWeight: 600, marginBottom: 10 }}>⚠ {err}</div>}
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button onClick={handleCreate} disabled={saving}
+              style={{ background: saving ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 22px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
+              {saving ? '⟳ A guardar...' : '💾 Guardar Template'}
+            </button>
+          </div>
+        </Card>
+      )}
+
+      {/* Lista de templates */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {templates.length === 0 ? (
+          <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: '24px', textAlign: 'center' }}>
+            Nenhum template criado ainda.
+          </div>
+        ) : templates.map((t: any) => {
+          const c = CANAL[t.canal as Canal] || CANAL.email;
+          return (
+            <Card key={t.id} style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                  <span style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}>{t.nome}</span>
+                  <span style={{ background: c.bg, color: c.accent, fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 99, flexShrink: 0 }}>{c.icon} {c.label}</span>
+                </div>
+                {t.assunto && <div style={{ color: 'var(--text-secondary)', fontSize: 11.5, fontWeight: 600, marginBottom: 3 }}>{t.assunto}</div>}
+                <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: 0, lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{t.corpo}</p>
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                <button onClick={() => onUse(t)}
+                  style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '7px 13px', color: 'var(--text-primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' as const }}>
+                  Usar →
+                </button>
+                <button
+                  onClick={() => handleDelete(t.id)}
+                  disabled={deleting === t.id}
+                  style={{ background: 'rgba(200,16,46,0.07)', border: '1px solid rgba(200,16,46,0.2)', borderRadius: 'var(--radius-sm)', padding: '7px 10px', color: GB.red, fontSize: 13, cursor: deleting === t.id ? 'not-allowed' : 'pointer' }}>
+                  {deleting === t.id ? '⟳' : '🗑'}
+                </button>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function ComunicacaoPage() {
   const { user } = useAuth();
   const { data: alunos } = useAlunos();
   const { data: mensagensDB, refetch: refreshMensagens } = useMensagens(200);
+  const { data: templatesDB, refetch: refreshTemplates } = useTemplates();
   const [tab, setTab] = useState<'enviar' | 'historico' | 'templates' | 'automatizacoes'>('enviar');
   const [canal, setCanal] = useState<Canal>('whatsapp');
   const [dest, setDest] = useState('all');
@@ -291,25 +436,16 @@ export default function ComunicacaoPage() {
 
       {/* ── TEMPLATES ── */}
       {tab === 'templates' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {TEMPLATES.map(t => {
-            const c = CANAL[t.canal];
-            return (
-              <Card key={t.id} style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-                    <span style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}>{t.nome}</span>
-                    <span style={{ background: c.bg, color: c.accent, fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 99 }}>{c.icon} {c.label}</span>
-                  </div>
-                  <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: 0, lineHeight: 1.5, fontStyle: 'italic' }}>{t.corpo}</p>
-                </div>
-                <button onClick={() => applyTemplate(t)} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 14px', color: 'var(--text-primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' as const }}>
-                  Usar →
-                </button>
-              </Card>
-            );
-          })}
-        </div>
+        <TemplatesTab
+          templates={templatesDB ?? []}
+          onUse={(t: any) => {
+            setCanal(t.canal as Canal);
+            setAssunto(t.assunto || '');
+            setMsg(t.corpo);
+            setTab('enviar');
+          }}
+          onRefresh={refreshTemplates}
+        />
       )}
 
       {/* ── AUTOMAÇÕES ── */}

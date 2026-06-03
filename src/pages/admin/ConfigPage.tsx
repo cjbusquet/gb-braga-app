@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type React from 'react';
-import { GB } from '../../lib/gbBrand';
+import { GB, beltConfig } from '../../lib/gbBrand';
 import { defaultTocConfig } from '../../data/mockData';
 import { supabase, isConfigured } from '../../lib/supabaseClient';
 import { useAuth } from '../../lib/auth';
@@ -517,14 +517,39 @@ type StaffMember = {
   telefone: string;
   nif: string;
   morada: string;
+  faixa: string;
+  ativo: boolean;
 };
 
+// Ordered list of belts for the staff faixa selector (adult + kids)
+const STAFF_FAIXAS = [
+  { value: '', label: 'Sem faixa definida' },
+  { value: 'branca',         label: 'Branca' },
+  { value: 'cinza-branca',   label: 'Cinza/Branca' },
+  { value: 'cinza',          label: 'Cinza' },
+  { value: 'cinza-preta',    label: 'Cinza/Preta' },
+  { value: 'amarela-branca', label: 'Amarela/Branca' },
+  { value: 'amarela',        label: 'Amarela' },
+  { value: 'amarela-preta',  label: 'Amarela/Preta' },
+  { value: 'laranja-branca', label: 'Laranja/Branca' },
+  { value: 'laranja',        label: 'Laranja' },
+  { value: 'laranja-preta',  label: 'Laranja/Preta' },
+  { value: 'verde-branca',   label: 'Verde/Branca' },
+  { value: 'verde',          label: 'Verde' },
+  { value: 'verde-preta',    label: 'Verde/Preta' },
+  { value: 'azul',           label: 'Azul' },
+  { value: 'roxa',           label: 'Roxa' },
+  { value: 'marrom',         label: 'Marrom' },
+  { value: 'preta',          label: 'Preta' },
+  { value: 'vermelha',       label: 'Vermelha' },
+];
+
 function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => void }) {
-  const [open, setOpen]   = useState(false);
-  const [d, setD]         = useState(member);
+  const [open, setOpen]     = useState(false);
+  const [d, setD]           = useState(member);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved]   = useState(false);
-  const [err, setErr]       = useState('');
+  const [saved,  setSaved]  = useState(false);
+  const [err,    setErr]    = useState('');
   const { isMobile }        = useMobile();
 
   const INP: React.CSSProperties = {
@@ -533,11 +558,23 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
     fontSize: 12.5, fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box',
   };
 
+  const LBL: React.CSSProperties = {
+    display: 'block', color: 'var(--text-muted)', fontSize: 10, fontWeight: 700,
+    letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 4,
+  };
+
   const saveStaff = async () => {
     setSaving(true); setErr('');
     const { error } = await supabase
       .from('profiles')
-      .update({ nome: d.nome, telefone: d.telefone || null, nif: d.nif || null, morada: d.morada || null })
+      .update({
+        nome:     d.nome,
+        telefone: d.telefone || null,
+        nif:      d.nif      || null,
+        morada:   d.morada   || null,
+        faixa:    d.faixa    || null,
+        ativo:    d.ativo,
+      })
       .eq('id', d.id);
     setSaving(false);
     if (error) { setErr(error.message); return; }
@@ -546,21 +583,44 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
     onSaved();
   };
 
-  const badge = ROLE_BADGE[d.role] ?? ROLE_BADGE['atendimento'];
+  const badge     = ROLE_BADGE[d.role] ?? ROLE_BADGE['atendimento'];
+  const faixaCfg  = beltConfig[d.faixa] ?? null;
 
   return (
-    <div style={{ background: 'var(--bg-card)', border: `1px solid ${open ? GB.red : 'var(--border)'}`, borderRadius: 'var(--radius-lg)', overflow: 'hidden', transition: 'border-color 0.15s' }}>
+    <div style={{
+      background: 'var(--bg-card)',
+      border: `1px solid ${open ? GB.red : d.ativo ? 'var(--border)' : 'var(--border-subtle)'}`,
+      borderRadius: 'var(--radius-lg)', overflow: 'hidden', transition: 'border-color 0.15s',
+      opacity: d.ativo ? 1 : 0.65,
+    }}>
       {/* Header row */}
       <button onClick={() => setOpen(o => !o)}
         style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
-        <div style={{ width: 38, height: 38, borderRadius: '50%', background: `${badge.bg}`, border: `2px solid ${badge.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
+        {/* Avatar */}
+        <div style={{ width: 38, height: 38, borderRadius: '50%', background: badge.bg, border: `2px solid ${badge.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
           {d.role === 'professor' ? '🥋' : d.role === 'admin' ? '⚙️' : d.role === 'superadmin' ? '👑' : '📞'}
         </div>
+
+        {/* Info */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ color: 'var(--text-primary)', fontSize: 13.5, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.nome}</div>
-          <div style={{ color: 'var(--text-muted)', fontSize: 11.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.email}</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: 11, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.email}</span>
+            {faixaCfg && (
+              <span style={{ background: faixaCfg.bg, color: faixaCfg.text, fontSize: 9.5, fontWeight: 700, padding: '1px 6px', borderRadius: 99, flexShrink: 0, border: d.faixa === 'branca' ? '1px solid #ccc' : 'none' }}>
+                🥋 {faixaCfg.label}
+              </span>
+            )}
+          </div>
         </div>
-        <span style={{ background: badge.bg, color: badge.color, fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 99, flexShrink: 0 }}>{badge.label}</span>
+
+        {/* Badges */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end', flexShrink: 0 }}>
+          <span style={{ background: badge.bg, color: badge.color, fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 99 }}>{badge.label}</span>
+          <span style={{ background: d.ativo ? 'rgba(34,197,94,0.12)' : 'rgba(107,114,128,0.12)', color: d.ativo ? '#16A34A' : '#6B7280', fontSize: 9.5, fontWeight: 700, padding: '1px 6px', borderRadius: 99 }}>
+            {d.ativo ? 'Ativo' : 'Inativo'}
+          </span>
+        </div>
         <span style={{ color: 'var(--text-muted)', fontSize: 14, marginLeft: 4 }}>{open ? '▲' : '▼'}</span>
       </button>
 
@@ -568,27 +628,58 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
       {open && (
         <div style={{ padding: '0 18px 18px', borderTop: '1px solid var(--border-subtle)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10, marginTop: 14 }}>
+
             <div>
-              <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 4 }}>Nome completo</label>
+              <label style={LBL}>Nome completo</label>
               <input value={d.nome} onChange={e => setD(p => ({ ...p, nome: e.target.value }))} style={INP} />
             </div>
             <div>
-              <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 4 }}>Email</label>
+              <label style={LBL}>Email</label>
               <input value={d.email} readOnly style={{ ...INP, opacity: 0.55, cursor: 'not-allowed' }} title="O email não pode ser alterado aqui" />
             </div>
             <div>
-              <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 4 }}>Telefone</label>
+              <label style={LBL}>Telefone</label>
               <input value={d.telefone} onChange={e => setD(p => ({ ...p, telefone: e.target.value }))} placeholder="+351 9xx xxx xxx" style={INP} />
             </div>
             <div>
-              <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 4 }}>NIF</label>
+              <label style={LBL}>NIF</label>
               <input value={d.nif} onChange={e => setD(p => ({ ...p, nif: e.target.value }))} placeholder="123456789" style={INP} />
             </div>
+
+            {/* Faixa */}
+            <div>
+              <label style={LBL}>Faixa</label>
+              <select value={d.faixa} onChange={e => setD(p => ({ ...p, faixa: e.target.value }))}
+                style={{ ...INP, cursor: 'pointer' }}>
+                {STAFF_FAIXAS.map(f => (
+                  <option key={f.value} value={f.value}>{f.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Status ativo/inativo */}
+            <div>
+              <label style={LBL}>Estado</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {[{ v: true, l: '✓ Ativo', bg: '#16A34A' }, { v: false, l: '✕ Inativo', bg: '#6B7280' }].map(opt => (
+                  <button key={String(opt.v)} onClick={() => setD(p => ({ ...p, ativo: opt.v }))}
+                    style={{
+                      flex: 1, padding: '8px', border: `1.5px solid ${d.ativo === opt.v ? opt.bg : 'var(--border)'}`,
+                      borderRadius: 'var(--radius-sm)', background: d.ativo === opt.v ? `${opt.bg}18` : 'var(--bg-elevated)',
+                      color: d.ativo === opt.v ? opt.bg : 'var(--text-muted)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                    }}>
+                    {opt.l}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 4 }}>Morada</label>
+              <label style={LBL}>Morada</label>
               <input value={d.morada} onChange={e => setD(p => ({ ...p, morada: e.target.value }))} placeholder="Rua..., 4700 Braga" style={INP} />
             </div>
           </div>
+
           {err && <div style={{ color: GB.red, fontSize: 11.5, marginTop: 8, fontWeight: 600 }}>⚠ {err}</div>}
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
             <button onClick={saveStaff} disabled={saving}
@@ -615,7 +706,7 @@ function EquipaSection() {
     if (!isConfigured) { setLoadingList(false); return; }
     const { data } = await supabase
       .from('profiles')
-      .select('id, nome, email, role, telefone, nif, morada')
+      .select('id, nome, email, role, telefone, nif, morada, faixa, ativo')
       .in('role', ['superadmin', 'admin', 'professor', 'atendimento'])
       .order('role')
       .order('nome');
@@ -627,6 +718,8 @@ function EquipaSection() {
       telefone: r.telefone ?? '',
       nif: r.nif ?? '',
       morada: r.morada ?? '',
+      faixa: r.faixa ?? '',
+      ativo: r.ativo !== false,
     })));
     setLoadingList(false);
   };

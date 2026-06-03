@@ -134,6 +134,21 @@ export function useContratos() {
   );
 }
 
+// ── TEMPLATES DE MENSAGEM ─────────────────────────────────────
+export function useTemplates() {
+  return useQuery(
+    'templates_mensagem',
+    async () => {
+      const res = await supabase
+        .from('templates_mensagem')
+        .select('*')
+        .order('created_at', { ascending: true });
+      return { data: res.data ?? null, error: res.error };
+    },
+    []
+  );
+}
+
 // ── MENSAGENS ─────────────────────────────────────────────────
 export function useMensagens(limit = 100) {
   return useQuery(
@@ -353,6 +368,26 @@ export const db = {
     }).select().single();
     if (error) throw error;
     return data;
+  },
+
+  criarTemplate: async (dados: { nome: string; canal: string; assunto?: string; corpo: string }) => {
+    if (!isConfigured) return null;
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data, error } = await supabase.from('templates_mensagem').insert({
+      nome:       dados.nome.trim(),
+      canal:      dados.canal,
+      assunto:    dados.assunto?.trim() || null,
+      corpo:      dados.corpo.trim(),
+      created_by: user?.id || null,
+    }).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  apagarTemplate: async (id: string) => {
+    if (!isConfigured) return;
+    const { error } = await supabase.from('templates_mensagem').delete().eq('id', id);
+    if (error) throw error;
   },
 
   enviarMensagem: async (dados: any) => {
