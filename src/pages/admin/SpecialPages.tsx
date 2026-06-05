@@ -38,11 +38,7 @@ function ExportBtn({ label, icon, onClick, color = 'var(--gb-red)' }: { label: s
 
 // ─── SUPER ADMIN ──────────────────────────────────────────────────────────────
 const ACADEMIAS = [
-  { id: 'brg', nome: 'GB Braga',    cidade: 'Braga',    alunos: 127, receita: 11210, crescimento: +12, freq: 81, inadimp: 3,  status: 'ativa' },
-  { id: 'prt', nome: 'GB Porto',    cidade: 'Porto',    alunos: 253, receita: 22340, crescimento: +8,  freq: 78, inadimp: 7,  status: 'ativa' },
-  { id: 'lsb', nome: 'GB Lisboa',   cidade: 'Lisboa',   alunos: 318, receita: 28100, crescimento: +15, freq: 83, inadimp: 9,  status: 'ativa' },
-  { id: 'cmb', nome: 'GB Coimbra',  cidade: 'Coimbra',  alunos: 89,  receita: 7860,  crescimento: -2,  freq: 74, inadimp: 4,  status: 'ativa' },
-  { id: 'fml', nome: 'GB Famalicão',cidade: 'Famalicão',alunos: 64,  receita: 5640,  crescimento: +22, freq: 88, inadimp: 1,  status: 'nova'  },
+  { id: 'brg', nome: 'GB Braga', cidade: 'Braga', alunos: 127, receita: 11210, crescimento: +12, freq: 81, inadimp: 3, status: 'ativa' },
 ];
 
 const REDE_12M = [
