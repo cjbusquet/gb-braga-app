@@ -246,9 +246,10 @@ export default function MeuCheckin() {
                     style={{
                       display: 'flex', alignItems: 'center', gap: 12,
                       padding: '11px 14px',
-                      background: turmaId === t.id ? 'rgba(200,16,46,0.06)' : 'var(--bg-elevated)',
-                      border: `1.5px solid ${turmaId === t.id ? GB.red : 'var(--border)'}`,
+                      background: turmaId === t.id ? `${(t as any).cor || GB.red}18` : 'var(--bg-elevated)',
+                      border: `1.5px solid ${turmaId === t.id ? ((t as any).cor || GB.red) : 'var(--border)'}`,
                       borderRadius: 8, cursor: 'pointer',
+                      borderLeft: `4px solid ${(t as any).cor || 'var(--border)'}`,
                     }}
                   >
                     <input

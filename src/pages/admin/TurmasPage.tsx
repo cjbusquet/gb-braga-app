@@ -180,18 +180,19 @@ export default function TurmasPage() {
           const inscritos = alunos.filter((a: any) => a.turmaId === turma.id).length || turma.inscritos || 0;
           const pct = Math.round((inscritos / (turma.capacidade || 20)) * 100);
           return (
-            <div key={turma.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:20, cursor:'pointer', transition:'all 0.15s', boxShadow:'var(--shadow-xs)' }}
+            <div key={turma.id}
+              style={{ background:'var(--bg-card)', border:`2px solid ${turma.cor || 'var(--border)'}`, borderRadius:'var(--radius-lg)', padding:20, cursor:'pointer', transition:'all 0.15s', boxShadow:'var(--shadow-xs)', borderTop: `4px solid ${turma.cor || 'var(--border)'}` }}
               onClick={() => setSelected(turma)}>
-              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:10 }}>
-                <div style={{ color:'var(--text-primary)', fontSize:14, fontWeight:700 }}>{turma.nome}</div>
-                <span style={{ background: turma.tipo==='gi'?'rgba(59,130,246,0.1)':turma.tipo==='kids'?'rgba(234,179,8,0.1)':'rgba(124,58,237,0.1)', color: turma.tipo==='gi'?'#3B82F6':turma.tipo==='kids'?'#EAB308':'#7C3AED', fontSize:10.5, fontWeight:700, padding:'2px 8px', borderRadius:99 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8, gap:8 }}>
+                <div style={{ color:'var(--text-primary)', fontSize:13.5, fontWeight:700, lineHeight:1.3 }}>{turma.nome}</div>
+                <span style={{ background: turma.cor ? `${turma.cor}22` : 'var(--bg-elevated)', color: turma.cor || '#3B82F6', fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:99, flexShrink:0, border:`1px solid ${turma.cor || 'var(--border)'}44` }}>
                   {turma.tipo?.toUpperCase()}
                 </span>
               </div>
               <div style={{ color:'var(--text-muted)', fontSize:12, marginBottom:6 }}>
                 🕐 {turma.horario} &nbsp;·&nbsp; {Array.isArray(turma.diaSemana) ? turma.diaSemana.slice(0,3).join(', ') : turma.diaSemana}
               </div>
-              {turma.professorNome && <div style={{ color:'var(--text-muted)', fontSize:12, marginBottom:10 }}>👤 {turma.professorNome}</div>}
+              {turma.sala && <div style={{ color:'var(--text-muted)', fontSize:11.5, marginBottom:6 }}>📍 {turma.sala}</div>}
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
                 <span style={{ color:'var(--text-muted)', fontSize:11 }}>{inscritos}/{turma.capacidade} alunos</span>
                 <span style={{ color: pct>=90?GB.red:'var(--text-muted)', fontSize:11, fontWeight: pct>=90?700:400 }}>{pct}%</span>

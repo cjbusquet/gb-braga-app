@@ -548,5 +548,6 @@ export function mapTurma(r: any) {
     inscritos:     r.inscritos ?? 0,
     nivel:         r.nivel || 'all',
     tipo:          r.tipo  || 'gi',
+    cor:           r.cor   || null,
   };
 }
