@@ -130,7 +130,7 @@ function NovaAcademiaModal({ onClose, onAdd }: { onClose: () => void; onAdd: (a:
   );
 }
 
-export function SuperAdminDashboard() {
+export function SuperAdminDashboard({ onNavigate }: { onNavigate?: (page: string) => void }) {
   useKPIs();
   useAlunos();
   usePagamentos();
@@ -243,7 +243,10 @@ export function SuperAdminDashboard() {
                   </span>
                 </td>
                 <td style={{ padding:'12px 14px' }}>
-                  <button style={{ background:'var(--gb-red)', border:'none', borderRadius:5, padding:'4px 10px', color:'#fff', fontSize:11, fontWeight:700, cursor:'pointer' }}>Gerir →</button>
+                  <button
+                    onClick={() => onNavigate ? onNavigate(a.id === 'brg' ? 'alunos' : 'dashboard') : undefined}
+                    style={{ background:'var(--gb-red)', border:'none', borderRadius:5, padding:'4px 10px', color:'#fff', fontSize:11, fontWeight:700, cursor:'pointer' }}
+                  >Gerir →</button>
                 </td>
               </tr>
             ))}

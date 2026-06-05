@@ -244,7 +244,7 @@ function AppContent() {
 
     // Superadmin dashboard
     if (user.role === 'superadmin' && safePage === 'dashboard') {
-      return <SuperAdminDashboard />;
+      return <SuperAdminDashboard onNavigate={handleNavigate} />;
     }
 
     // Admin + Superadmin + Atendimento routes
