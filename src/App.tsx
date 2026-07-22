@@ -2,10 +2,6 @@ import { useState, useEffect } from 'react';
 import type React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './lib/auth';
-
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1, staleTime: 5 * 60 * 1000 } },
-});
 import type { UserRole } from './types';
 import LoginPage from './pages/LoginPage';
 import Layout from './components/layout/Layout';
@@ -35,6 +31,10 @@ import PerfilPage from './pages/PerfilPage';
 import ModulosPage from './pages/admin/ModulosPage';
 import ProfessoresPage from './pages/admin/ProfessoresPage';
 import { ModulosProvider, useModulos } from './lib/useModulos';
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: 1, staleTime: 5 * 60 * 1000 } },
+});
 
 // ─── Role-based page access control ──────────────────────────────────────────
 const PAGE_ROLES: Record<string, UserRole[]> = {
