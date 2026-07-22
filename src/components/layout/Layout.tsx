@@ -5,36 +5,47 @@ import { GB, roleThemes } from '../../lib/gbBrand';
 import { GBLogoFull } from '../GBLogo';
 import { useModulos } from '../../lib/useModulos';
 import type { UserRole } from '../../types';
+import {
+  Squares2X2Icon, UsersIcon, CalendarDaysIcon, QrCodeIcon,
+  BanknotesIcon, TrophyIcon, EnvelopeIcon, ChatBubbleLeftRightIcon,
+  DocumentTextIcon, ChartBarIcon, LinkIcon, Cog6ToothIcon,
+  GlobeAltIcon, CurrencyEuroIcon, PuzzlePieceIcon,
+  HomeIcon, PlayCircleIcon, ArrowRightOnRectangleIcon,
+  ChevronLeftIcon, ChevronRightIcon, AcademicCapIcon,
+} from '@heroicons/react/24/outline';
+
+type HeroIcon = React.ComponentType<React.SVGProps<SVGSVGElement>>;
 
 interface NavItem {
-  icon: string; label: string; id: string;
+  Icon: HeroIcon; label: string; id: string;
   roles: UserRole[]; badge?: number;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { icon:'⊞', label:'Dashboard',   id:'dashboard',     roles:['superadmin','admin','atendimento','professor'] },
-  { icon:'◎', label:'Alunos',      id:'alunos',        roles:['superadmin','admin','atendimento','professor'] },
-  { icon:'▤', label:'Turmas',      id:'turmas',        roles:['superadmin','admin','atendimento','professor'] },
-  { icon:'✓', label:'Check-in',    id:'checkin',       roles:['superadmin','admin','atendimento','professor'] },
-  { icon:'€', label:'Financeiro',  id:'financeiro',    roles:['superadmin','admin'] },
-  { icon:'◈', label:'Graduação',   id:'graduacao',     roles:['superadmin','admin','professor'] },
-  { icon:'✉', label:'Comunicação', id:'comunicacao',   roles:['superadmin','admin','atendimento'] },
-  { icon:'💬',label:'Chat',        id:'chat',          roles:['superadmin','admin','atendimento'] },
-  { icon:'◻', label:'Contratos',   id:'contratos',     roles:['superadmin','admin'] },
-  { icon:'↗', label:'Relatórios',  id:'relatorios',    roles:['superadmin','admin'] },
-  { icon:'⛓', label:'Integrações', id:'integracoes',   roles:['superadmin','admin'] },
-  { icon:'⚙', label:'Config.',     id:'config',        roles:['superadmin','admin'] },
-  { icon:'🌐',label:'Matr. Online',id:'matricula',     roles:['superadmin','admin'] },
-  { icon:'💵',label:'Numerário',   id:'numerario',     roles:['superadmin'] },
-  { icon:'🧩',label:'Módulos',     id:'modulos',       roles:['superadmin'] },
+  { Icon: Squares2X2Icon,          label:'Dashboard',   id:'dashboard',     roles:['superadmin','admin','atendimento','professor'] },
+  { Icon: UsersIcon,               label:'Alunos',      id:'alunos',        roles:['superadmin','admin','atendimento','professor'] },
+  { Icon: CalendarDaysIcon,        label:'Turmas',      id:'turmas',        roles:['superadmin','admin','atendimento','professor'] },
+  { Icon: QrCodeIcon,              label:'Check-in',    id:'checkin',       roles:['superadmin','admin','atendimento','professor'] },
+  { Icon: BanknotesIcon,           label:'Financeiro',  id:'financeiro',    roles:['superadmin','admin'] },
+  { Icon: TrophyIcon,              label:'Graduação',   id:'graduacao',     roles:['superadmin','admin','professor'] },
+  { Icon: EnvelopeIcon,            label:'Comunicação', id:'comunicacao',   roles:['superadmin','admin','atendimento'] },
+  { Icon: ChatBubbleLeftRightIcon, label:'Chat',        id:'chat',          roles:['superadmin','admin','atendimento'] },
+  { Icon: DocumentTextIcon,        label:'Contratos',   id:'contratos',     roles:['superadmin','admin'] },
+  { Icon: ChartBarIcon,            label:'Relatórios',  id:'relatorios',    roles:['superadmin','admin'] },
+  { Icon: LinkIcon,                label:'Integrações', id:'integracoes',   roles:['superadmin','admin'] },
+  { Icon: Cog6ToothIcon,           label:'Config.',     id:'config',        roles:['superadmin','admin'] },
+  { Icon: GlobeAltIcon,            label:'Matr. Online',id:'matricula',     roles:['superadmin','admin'] },
+  { Icon: AcademicCapIcon,          label:'Professores', id:'professores',   roles:['superadmin'] },
+  { Icon: CurrencyEuroIcon,        label:'Numerário',   id:'numerario',     roles:['superadmin'] },
+  { Icon: PuzzlePieceIcon,         label:'Módulos',     id:'modulos',       roles:['superadmin'] },
   // Aluno
-  { icon:'⌂', label:'Portal',      id:'portal',        roles:['aluno'] },
-  { icon:'✓', label:'Check-in',    id:'meu-checkin',   roles:['aluno'] },
-  { icon:'▤', label:'Aulas',       id:'minhas-aulas',  roles:['aluno'] },
-  { icon:'◈', label:'Evolução',    id:'evolucao',      roles:['aluno'] },
-  { icon:'€', label:'Financeiro',  id:'meu-financeiro',roles:['aluno'] },
-  { icon:'▷', label:'Conteúdo',    id:'conteudo',      roles:['aluno'] },
-  { icon:'✉', label:'Mensagens',   id:'mensagens',     roles:['aluno'], badge:1 },
+  { Icon: HomeIcon,                label:'Portal',      id:'portal',        roles:['aluno'] },
+  { Icon: QrCodeIcon,              label:'Check-in',    id:'meu-checkin',   roles:['aluno'] },
+  { Icon: CalendarDaysIcon,        label:'Aulas',       id:'minhas-aulas',  roles:['aluno'] },
+  { Icon: TrophyIcon,              label:'Evolução',    id:'evolucao',      roles:['aluno'] },
+  { Icon: CurrencyEuroIcon,        label:'Financeiro',  id:'meu-financeiro',roles:['aluno'] },
+  { Icon: PlayCircleIcon,          label:'Conteúdo',    id:'conteudo',      roles:['aluno'] },
+  { Icon: EnvelopeIcon,            label:'Mensagens',   id:'mensagens',     roles:['aluno'], badge:1 },
 ];
 
 // Bottom nav items per role (max 4 + "Mais")
@@ -104,7 +115,7 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
           borderLeft: active ? `3px solid ${rt.accent}` : '3px solid transparent',
           transition: 'all 0.15s', position: 'relative',
         }}>
-        <span style={{ fontSize: 15, flexShrink: 0 }}>{item.icon}</span>
+        <item.Icon style={{ width: 18, height: 18, flexShrink: 0, color: active ? rt.accent : 'var(--text-secondary)' }} />
         {!isCollapsed && (
           <span style={{ color: active ? rt.accent : 'var(--text-secondary)', fontSize: 13, fontWeight: active ? 700 : 400, flex: 1, textAlign: 'left' }}>
             {item.label}
@@ -139,8 +150,14 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
     }}>
       {/* Logo */}
       <div style={{ padding: isCollapsed ? '16px 8px' : '16px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: isCollapsed ? 'center' : 'space-between', borderBottom: '1px solid var(--border)' }}>
-        {!isCollapsed && <GBLogoFull size={44}/>}
-        {isCollapsed && <span style={{ fontSize: 20 }}>🥋</span>}
+        {!isCollapsed && (
+          <button onClick={() => handleNav(user.role === 'aluno' ? 'portal' : 'dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
+            <GBLogoFull size={44}/>
+          </button>
+        )}
+        {isCollapsed && (
+          <button onClick={() => handleNav(user.role === 'aluno' ? 'portal' : 'dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20 }}>🥋</button>
+        )}
         {isMobile && (
           <button onClick={() => setMobileOpen(false)} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--text-muted)', padding: 6, minHeight: 44 }}>✕</button>
         )}
@@ -157,13 +174,13 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
             <div style={{
               width: 36, height: 36, borderRadius: '50%',
               background: user.avatar ? 'transparent' : rt.accent,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              position: 'relative',
               color: '#fff', fontSize: 14, fontWeight: 700, flexShrink: 0,
               overflow: 'hidden', border: `2px solid ${rt.accent}`,
             }}>
               {user.avatar
-                ? <img src={user.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : (user.nome?.charAt(0) || '?')
+                ? <img src={user.avatar} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{user.nome?.charAt(0) || '?'}</span>
               }
             </div>
             <div style={{ overflow: 'hidden', flex: 1 }}>
@@ -184,7 +201,10 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
       <div style={{ padding: 8, borderTop: '1px solid var(--border)', paddingBottom: isMobile ? 'calc(8px + env(safe-area-inset-bottom))' : 8 }}>
         {!isMobile && (
           <button onClick={() => setCollapsed(c => !c)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 14px', background: 'none', border: 'none', borderRadius: 8, cursor: 'pointer', color: 'var(--text-muted)', fontSize: 12 }}>
-            <span style={{ fontSize: 14, transform: isCollapsed ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>←</span>
+            {isCollapsed
+              ? <ChevronRightIcon style={{ width: 16, height: 16 }} />
+              : <ChevronLeftIcon  style={{ width: 16, height: 16 }} />
+            }
             {!isCollapsed && 'Colapsar'}
           </button>
         )}
@@ -203,7 +223,7 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
           }}
           title={isCollapsed ? 'Terminar sessão' : undefined}
         >
-          <span style={{ fontSize: 15, flexShrink: 0 }}>⎋</span>
+          <ArrowRightOnRectangleIcon style={{ width: 18, height: 18, flexShrink: 0 }} />
           {!isCollapsed && 'Terminar sessão'}
         </button>
       </div>
@@ -228,7 +248,7 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
             borderTop: `2px solid ${active ? rt.accent : 'transparent'}`,
             transition: 'all 0.15s', minHeight: 56, position: 'relative',
           }}>
-            <span style={{ fontSize: 18, lineHeight: 1 }}>{item.icon}</span>
+            <item.Icon style={{ width: 22, height: 22, color: active ? rt.accent : 'var(--text-muted)' }} />
             <span style={{ fontSize: 9.5, fontWeight: active ? 700 : 400, color: active ? rt.accent : 'var(--text-muted)', letterSpacing: '0.2px' }}>
               {item.label}
             </span>
@@ -246,7 +266,7 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
         gap: 3, padding: '8px 4px 10px', background: 'none', border: 'none', cursor: 'pointer',
         borderTop: '2px solid transparent', minHeight: 56,
       }}>
-        <span style={{ fontSize: 18, lineHeight: 1 }}>⋯</span>
+        <Squares2X2Icon style={{ width: 22, height: 22, color: 'var(--text-muted)' }} />
         <span style={{ fontSize: 9.5, fontWeight: 400, color: 'var(--text-muted)' }}>Mais</span>
       </button>
     </div>
@@ -294,7 +314,9 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
             minHeight: 56,
             boxShadow: 'var(--shadow-xs)',
           }}>
-            <GBLogoFull size={36}/>
+            <button onClick={() => handleNav(user.role === 'aluno' ? 'portal' : 'dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
+              <GBLogoFull size={36}/>
+            </button>
             <div style={{ color: 'var(--text-muted)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               {visibleNav.find(n => n.id === currentPage)?.label || ''}
             </div>
@@ -302,17 +324,17 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
               onClick={() => handleNav('perfil')}
               title="Ver perfil"
               style={{
-                width: 38, height: 38, borderRadius: '50%',
+                width: 38, height: 38, minWidth: 38, minHeight: 38, borderRadius: '50%',
                 background: user.avatar ? 'transparent' : rt.accent,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                position: 'relative',
                 color: '#fff', fontSize: 14, fontWeight: 700,
-                overflow: 'hidden', cursor: 'pointer',
+                overflow: 'hidden', cursor: 'pointer', flexShrink: 0,
                 border: `2px solid ${rt.accent}`,
               }}
             >
               {user.avatar
-                ? <img src={user.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : (user.nome?.charAt(0) || '?')
+                ? <img src={user.avatar} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{user.nome?.charAt(0) || '?'}</span>
               }
             </div>
           </div>
@@ -333,13 +355,13 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
               <div style={{
                 width: 34, height: 34, borderRadius: '50%',
                 background: user.avatar ? 'transparent' : rt.accent,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                position: 'relative',
                 color: '#fff', fontSize: 13, fontWeight: 700,
-                overflow: 'hidden', border: `2px solid ${rt.accent}`,
+                overflow: 'hidden', border: `2px solid ${rt.accent}`, flexShrink: 0,
               }}>
                 {user.avatar
-                  ? <img src={user.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : (user.nome?.charAt(0) || '?')
+                  ? <img src={user.avatar} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{user.nome?.charAt(0) || '?'}</span>
                 }
               </div>
             </div>
@@ -352,11 +374,11 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
           flex: isMobile ? undefined : 1,
           overflowY: isMobile ? undefined : 'auto',
           overflowX: 'hidden',
-          padding: isMobile ? '16px 14px' : '24px 28px',
+          padding: isMobile ? '16px 14px' : '28px 32px',
           // Mobile: push content below fixed top bar + leave room for fixed bottom nav
           paddingTop: isMobile
             ? 'calc(56px + env(safe-area-inset-top) + 16px)'
-            : undefined,
+            : '28px',
           paddingBottom: isMobile
             ? 'calc(72px + env(safe-area-inset-bottom) + 16px)'
             : undefined,

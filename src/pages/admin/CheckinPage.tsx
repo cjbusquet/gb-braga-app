@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { usePresencas, useAlunos, useTurmas, db } from '../../lib/useData';
 import { GB } from '../../lib/gbBrand';
+import { Ico, ArrowDownTrayIcon, MapPinIcon, CheckIcon, PlusIcon } from '../../lib/icons';
 
 const ACADEMIA_LAT = 41.5484, ACADEMIA_LNG = -8.4259;
 
@@ -75,11 +76,11 @@ export default function CheckinPage() {
           <h1 style={{ color:'var(--text-primary)', fontSize:20, fontWeight:800, fontFamily:'var(--font-display)', textTransform:'uppercase' }}>Check-in</h1>
         </div>
         <div style={{ display:'flex', gap:8 }}>
-          <button onClick={exportCSV} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)', padding:'9px 14px', color:'var(--text-secondary)', fontSize:12.5, cursor:'pointer' }}>
-            📊 Export CSV
+          <button onClick={exportCSV} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)', padding:'9px 14px', color:'var(--text-secondary)', fontSize:12.5, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+            <Ico icon={ArrowDownTrayIcon} sm /> Export CSV
           </button>
           <button onClick={() => setKioskMode(true)} style={{ background:GB.red, border:'none', borderRadius:'var(--radius-sm)', padding:'10px 18px', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', boxShadow:'var(--shadow-red)' }}>
-            ⬛ Kiosk
+            Kiosk
           </button>
         </div>
       </div>
@@ -121,20 +122,20 @@ export default function CheckinPage() {
         <div style={{ maxWidth:500 }}>
           <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:24, marginBottom:16 }}>
             <div style={{ textAlign:'center', marginBottom:20 }}>
-              <div style={{ width:80, height:80, borderRadius:'50%', border:`3px solid ${gpsColor}`, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px', fontSize:28 }}>
-                📍
+              <div style={{ width:80, height:80, borderRadius:'50%', border:`3px solid ${gpsColor}`, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px', color:gpsColor }}>
+                <Ico icon={MapPinIcon} lg />
               </div>
               <div style={{ color:gpsColor, fontSize:14, fontWeight:700 }}>{gpsLabel}</div>
               {gpsDist !== null && <div style={{ color:'var(--text-muted)', fontSize:12, marginTop:4 }}>{gpsDist}m da academia</div>}
             </div>
             <div style={{ display:'flex', gap:8, justifyContent:'center', marginBottom:16 }}>
               <button onClick={checkGPS} disabled={gpsStatus==='checking'}
-                style={{ background:GB.red, border:'none', borderRadius:'var(--radius-sm)', padding:'10px 20px', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
-                📍 Verificar GPS
+                style={{ background:GB.red, border:'none', borderRadius:'var(--radius-sm)', padding:'10px 20px', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                <Ico icon={MapPinIcon} sm /> Verificar GPS
               </button>
               <button onClick={demoGPS}
                 style={{ background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)', padding:'10px 16px', color:'var(--text-secondary)', fontSize:12.5, cursor:'pointer' }}>
-                🧪 Demo
+                Demo
               </button>
             </div>
             <div style={{ marginBottom:12 }}>
@@ -144,8 +145,8 @@ export default function CheckinPage() {
             </div>
             <button onClick={() => gpsStatus==='inside' && doCheckin('me','Utilizador Actual')}
               disabled={gpsStatus !== 'inside'}
-              style={{ width:'100%', background:gpsStatus==='inside'?GB.red:'#aaa', border:'none', borderRadius:'var(--radius-sm)', padding:'11px', color:'#fff', fontSize:13, fontWeight:700, cursor:gpsStatus==='inside'?'pointer':'not-allowed' }}>
-              ✓ Check-in Pessoal
+              style={{ width:'100%', background:gpsStatus==='inside'?GB.red:'#aaa', border:'none', borderRadius:'var(--radius-sm)', padding:'11px', color:'#fff', fontSize:13, fontWeight:700, cursor:gpsStatus==='inside'?'pointer':'not-allowed', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+              <Ico icon={CheckIcon} sm /> Check-in Pessoal
             </button>
           </div>
         </div>
@@ -168,7 +169,7 @@ export default function CheckinPage() {
                   disabled={jaFez}
                   style={{ background:jaFez?'rgba(34,197,94,0.08)':'var(--bg-card)', border:`1px solid ${jaFez?'rgba(34,197,94,0.3)':'var(--border)'}`, borderRadius:'var(--radius-sm)', padding:'12px 14px', cursor:jaFez?'default':'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', textAlign:'left' }}>
                   <span style={{ color:'var(--text-primary)', fontSize:13 }}>{a.nome}</span>
-                  {jaFez ? <span style={{ color:'#22C55E', fontSize:16 }}>✓</span> : <span style={{ color:'var(--text-muted)', fontSize:20 }}>+</span>}
+                  {jaFez ? <Ico icon={CheckIcon} style={{ color:'#22C55E', width:16, height:16, flexShrink:0 }} /> : <Ico icon={PlusIcon} style={{ color:'var(--text-muted)', width:18, height:18, flexShrink:0 }} />}
                 </button>
               );
             })}

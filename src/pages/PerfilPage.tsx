@@ -189,16 +189,17 @@ function AvatarSection({ avatarUrl, onUploaded }: {
         <div style={{
           width: 88, height: 88, borderRadius: '50%',
           background: preview ? 'transparent' : rt.accent,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'relative',
           overflow: 'hidden',
           border: `3px solid ${rt.accent}`,
           boxShadow: hover ? `0 0 0 4px ${rt.accent}33` : 'none',
           transition: 'box-shadow 0.2s',
+          flexShrink: 0,
         }}>
           {preview ? (
-            <img src={preview} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src={preview} alt="Avatar" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
           ) : (
-            <span style={{ color: '#fff', fontSize: 28, fontWeight: 700 }}>{initials}</span>
+            <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 28, fontWeight: 700 }}>{initials}</span>
           )}
         </div>
 
@@ -217,11 +218,11 @@ function AvatarSection({ avatarUrl, onUploaded }: {
         </div>
       </div>
 
-      <div>
-        <div style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 700, marginBottom: 4 }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 700, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {user?.nome}
         </div>
-        <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 10 }}>
+        <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {user?.email}
         </div>
         <button

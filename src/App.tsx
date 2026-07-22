@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import type React from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './lib/auth';
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: 1, staleTime: 5 * 60 * 1000 } },
+});
 import type { UserRole } from './types';
 import LoginPage from './pages/LoginPage';
 import Layout from './components/layout/Layout';
@@ -28,6 +33,7 @@ import Mensagens from './pages/aluno/Mensagens';
 import MeuCheckin from './pages/aluno/MeuCheckin';
 import PerfilPage from './pages/PerfilPage';
 import ModulosPage from './pages/admin/ModulosPage';
+import ProfessoresPage from './pages/admin/ProfessoresPage';
 import { ModulosProvider, useModulos } from './lib/useModulos';
 
 // ─── Role-based page access control ──────────────────────────────────────────
@@ -45,6 +51,7 @@ const PAGE_ROLES: Record<string, UserRole[]> = {
   integracoes:   ['superadmin','admin'],
   config:        ['superadmin','admin'],
   numerario:     ['superadmin'],
+  professores:   ['superadmin'],
   matricula:     ['superadmin','admin'],
   modulos:       ['superadmin'],
   portal:        ['aluno'],
@@ -232,13 +239,16 @@ function AppContent() {
       }
     }
 
-    // Professor routes — dedicated view for their pages
+    // Professor routes
     if (user.role === 'professor') {
       switch (safePage) {
-        case 'checkin':   return <CheckinPage />;
-        case 'graduacao': return <GraduacaoPage />;
-        case 'perfil':    return <PerfilPage />;
-        default:          return <ProfessorView />;
+        case 'dashboard':  return <ProfessorView />;
+        case 'alunos':     return <AlunosPage />;
+        case 'turmas':     return <TurmasPage />;
+        case 'checkin':    return <CheckinPage />;
+        case 'graduacao':  return <GraduacaoPage />;
+        case 'perfil':     return <PerfilPage />;
+        default:           return <ProfessorView />;
       }
     }
 
@@ -262,6 +272,7 @@ function AppContent() {
       case 'integracoes':  return <IntegracoesPage />;
       case 'config':       return <ConfigPage />;
       case 'numerario':    return <PendentesNumerario />;
+      case 'professores':  return <ProfessoresPage />;
       case 'matricula':    return <FluxoMatricula embedded />;
       case 'modulos':      return <ModulosPage />;
       case 'perfil':       return <PerfilPage />;
@@ -278,10 +289,12 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ModulosProvider>
-        <AppContent />
-      </ModulosProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <ModulosProvider>
+          <AppContent />
+        </ModulosProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }

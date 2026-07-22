@@ -4,6 +4,7 @@ import { useTurmas, useAlunos, db } from '../../lib/useData';
 import { GB } from '../../lib/gbBrand';
 import { useMobile } from '../../lib/useMobile';
 import type { Turma } from '../../types';
+import { Ico, XMarkIcon, ArrowLeftIcon, PlusIcon } from '../../lib/icons';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const DIAS_LABEL: Record<string, string> = {
@@ -52,7 +53,7 @@ function NovaTurmaModal({ onClose, onSave }: { onClose: ()=>void; onSave: ()=>vo
       <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:28, maxWidth:560, width:'100%', maxHeight:'90vh', overflowY:'auto', boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
           <div style={{ color:'var(--text-primary)', fontSize:16, fontWeight:700 }}>Nova Turma</div>
-          <button onClick={onClose} style={{ background:'none', border:'none', fontSize:20, cursor:'pointer', color:'var(--text-muted)' }}>✕</button>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', alignItems:'center', justifyContent:'center' }}><Ico icon={XMarkIcon} /></button>
         </div>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 }}>
           <div style={{ gridColumn:'1/-1' }}>
@@ -96,7 +97,7 @@ function TurmaDetail({ turma, onBack }: { turma: any; onBack: ()=>void }) {
   return (
     <div>
       <button onClick={onBack} style={{ background:'none', border:'none', color:'var(--text-muted)', fontSize:13, cursor:'pointer', marginBottom:16, display:'flex', alignItems:'center', gap:6 }}>
-        ← Voltar ao calendário
+        <Ico icon={ArrowLeftIcon} sm /> Voltar ao calendário
       </button>
       <div style={{ background:'var(--bg-card)', border:`1px solid var(--border)`, borderRadius:'var(--radius-lg)', borderTop:`4px solid ${cor}`, padding:24, marginBottom:16 }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:12 }}>
@@ -370,8 +371,8 @@ export default function TurmasPage() {
               </button>
             ))}
           </div>
-          <button onClick={() => setShowNova(true)} style={{ background:GB.red, border:'none', borderRadius:'var(--radius-sm)', padding:'10px 18px', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', boxShadow:'var(--shadow-red)' }}>
-            + Nova Turma
+          <button onClick={() => setShowNova(true)} style={{ background:GB.red, border:'none', borderRadius:'var(--radius-sm)', padding:'10px 18px', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', boxShadow:'var(--shadow-red)', display:'flex', alignItems:'center', gap:6 }}>
+            <Ico icon={PlusIcon} sm /> Nova Turma
           </button>
         </div>
       </div>

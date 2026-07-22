@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { useTurmas, useAlunos, usePresencas, useGraduacoes } from '../../lib/useData';
+import { useTurmas, useAlunos, usePresencas, useGraduacoes, useProfessorCheckins, db } from '../../lib/useData';
 import { useAuth } from '../../lib/auth';
 import { beltConfig } from '../../lib/gbBrand';
+import { useMobile } from '../../lib/useMobile';
 import type { Belt } from '../../types';
 
 function Card({ children, style = {} }: { children: React.ReactNode; style?: React.CSSProperties }) {
@@ -17,15 +18,42 @@ export default function ProfessorView() {
   const { data: presencas } = usePresencas();
   const { data: graduacoes } = useGraduacoes();
   const { user } = useAuth();
-  const [tab, setTab] = useState<'overview'|'classes'|'students'|'attendance'|'graduation'>('overview');
+  const { data: meuCheckins, refetch: refetchCheckins } = useProfessorCheckins(user?.id);
+  const [tab, setTab] = useState<'overview'|'classes'|'students'|'attendance'|'graduation'|'darAula'>('overview');
+  const [checkinLoading, setCheckinLoading] = useState<string | null>(null);
 
+  const { isMobile } = useMobile();
   const nome = user?.nome || 'Professor';
   const allAlunos = alunos.filter(a => a.status === 'ativo');
   const allPresencas = presencas;
   const candidatosGraduacao = allAlunos.filter(a => a.frequencia >= 70);
 
+  const hoje = new Date().toISOString().split('T')[0];
+  const checkinAtivo = meuCheckins.find(c => c.status === 'ativa');
+
+  const handleCheckin = async (turmaId: string, turmaNome: string) => {
+    setCheckinLoading(turmaId);
+    try {
+      await db.registarProfessorCheckin({ professorId: user?.id || '', professorNome: user?.nome || '', turmaId, turmaNome });
+      refetchCheckins();
+    } finally {
+      setCheckinLoading(null);
+    }
+  };
+
+  const handleConcluir = async (id: string) => {
+    setCheckinLoading(id);
+    try {
+      await db.concluirCheckinProfessor(id);
+      refetchCheckins();
+    } finally {
+      setCheckinLoading(null);
+    }
+  };
+
   const TABS = [
     { id: 'overview',    icon: '⊞', label: 'Visão Geral' },
+    { id: 'darAula',     icon: '▶', label: 'Dar Aula'     },
     { id: 'classes',     icon: '▤', label: 'Turmas'       },
     { id: 'students',    icon: '◎', label: 'Alunos'       },
     { id: 'attendance',  icon: '✓', label: 'Presenças'    },
@@ -35,7 +63,7 @@ export default function ProfessorView() {
   return (
     <div>
       {/* Profile header — no financial data */}
-      <div style={{ background: 'linear-gradient(135deg, rgba(200,16,46,0.06) 0%, transparent 60%)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '22px 24px', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: 'var(--shadow-xs)' }}>
+      <div style={{ background: 'linear-gradient(135deg, rgba(200,16,46,0.06) 0%, transparent 60%)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: isMobile ? '16px 18px' : '22px 24px', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: 'var(--shadow-xs)', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <div style={{ color: 'var(--text-muted)', fontSize: 10.5, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 4 }}>Painel do Professor</div>
           <h1 style={{ color: 'var(--text-primary)', fontSize: 22, fontWeight: 800, fontFamily: 'var(--font-display)', textTransform: 'uppercase' as const, margin: 0 }}>
@@ -46,7 +74,7 @@ export default function ProfessorView() {
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(200,16,46,0.1)', border: '2px solid rgba(200,16,46,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 800, color: 'var(--gb-red)', fontFamily: 'var(--font-display)' }}>
+          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(200,16,46,0.1)', border: '2px solid rgba(200,16,46,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 800, color: 'var(--gb-red)', fontFamily: 'var(--font-display)', flexShrink: 0 }}>
             {nome.charAt(0)}
           </div>
           <div>
@@ -58,19 +86,104 @@ export default function ProfessorView() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 2, marginBottom: 18, borderBottom: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', gap: 2, marginBottom: 18, borderBottom: '1px solid var(--border)', overflowX: 'auto', scrollbarWidth: 'none' }}>
         {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id as typeof tab)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: '9px 14px', fontSize: 13, color: tab === t.id ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: tab === t.id ? 700 : 400, borderBottom: `2px solid ${tab === t.id ? 'var(--gb-red)' : 'transparent'}`, marginBottom: -1 }}>
+          <button key={t.id} onClick={() => setTab(t.id as typeof tab)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: isMobile ? '9px 10px' : '9px 14px', fontSize: isMobile ? 12 : 13, color: tab === t.id ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: tab === t.id ? 700 : 400, borderBottom: `2px solid ${tab === t.id ? 'var(--gb-red)' : 'transparent'}`, marginBottom: -1, whiteSpace: 'nowrap', flexShrink: 0 }}>
             {t.icon} {t.label}
           </button>
         ))}
       </div>
 
+      {/* ── DAR AULA (check-in do professor) ── */}
+      {tab === 'darAula' && (
+        <div>
+          {checkinAtivo && (
+            <div style={{ background: 'rgba(22,163,74,0.08)', border: '1.5px solid rgba(22,163,74,0.3)', borderRadius: 'var(--radius-md)', padding: '14px 18px', marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#16A34A', display: 'inline-block', flexShrink: 0 }}/>
+                <div>
+                  <div style={{ color: '#16A34A', fontSize: 13, fontWeight: 700 }}>Aula em curso: {checkinAtivo.turmaNome}</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 11.5, marginTop: 1 }}>Início: {checkinAtivo.horaInicio} · {checkinAtivo.data}</div>
+                </div>
+              </div>
+              <button
+                onClick={() => handleConcluir(checkinAtivo.id)}
+                disabled={checkinLoading === checkinAtivo.id}
+                style={{ background: '#16A34A', color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: checkinLoading === checkinAtivo.id ? 0.6 : 1 }}
+              >
+                {checkinLoading === checkinAtivo.id ? 'A concluir...' : 'Concluir aula'}
+              </button>
+            </div>
+          )}
+
+          <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 12 }}>Minhas Turmas — Hoje</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 12, marginBottom: 24 }}>
+            {turmas.map(t => {
+              const jaFezCheckin = meuCheckins.some(c => c.turmaId === t.id && c.data === hoje);
+              const estaAtiva = checkinAtivo?.turmaId === t.id;
+              return (
+                <Card key={t.id} style={{ padding: 18, borderTop: estaAtiva ? '3px solid #16A34A' : jaFezCheckin ? '3px solid #6B7280' : '3px solid var(--gb-red)' }}>
+                  <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 700, marginBottom: 3 }}>{t.nome}</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 11.5, marginBottom: 10 }}>{t.horario} · {t.diaSemana.join(', ')}</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 11, marginBottom: 14 }}>📍 {t.sala} · {t.inscritos} alunos</div>
+                  {estaAtiva ? (
+                    <span style={{ background: 'rgba(22,163,74,0.08)', color: '#16A34A', fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 99, display: 'inline-block' }}>● Em curso</span>
+                  ) : jaFezCheckin ? (
+                    <span style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 99, display: 'inline-block' }}>✓ Concluída hoje</span>
+                  ) : (
+                    <button
+                      onClick={() => handleCheckin(t.id, t.nome)}
+                      disabled={!!checkinLoading || !!checkinAtivo}
+                      style={{ background: 'var(--gb-red)', color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '7px 14px', fontSize: 12, fontWeight: 700, cursor: (checkinLoading || checkinAtivo) ? 'not-allowed' : 'pointer', opacity: (checkinLoading || checkinAtivo) ? 0.5 : 1, width: '100%' }}
+                    >
+                      {checkinLoading === t.id ? 'A registar...' : 'Iniciar aula'}
+                    </button>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+
+          <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 12 }}>Histórico de Check-ins</div>
+          <Card>
+            {meuCheckins.length === 0 ? (
+              <div style={{ padding: '24px', textAlign: 'center' as const, color: 'var(--text-muted)', fontSize: 13 }}>Nenhum check-in registado ainda.</div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)' }}>
+                    {['Turma','Data','Início','Fim','Estado'].map(h => (
+                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10.5, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {meuCheckins.map(c => (
+                    <tr key={c.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                      <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{c.turmaNome}</td>
+                      <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{c.data}</td>
+                      <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{c.horaInicio}</td>
+                      <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{c.horaFim || '—'}</td>
+                      <td style={{ padding: '10px 14px' }}>
+                        {c.status === 'ativa'
+                          ? <span style={{ background: 'rgba(22,163,74,0.08)', color: '#16A34A', fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>● Ativa</span>
+                          : <span style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, padding: '2px 8px', borderRadius: 99 }}>Concluída</span>
+                        }
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </Card>
+        </div>
+      )}
+
       {/* ── OVERVIEW — NO FINANCIAL DATA ── */}
       {tab === 'overview' && (
         <div>
           {/* KPIs — only non-financial */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 18 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: 12, marginBottom: 18 }}>
             {[
               { label: 'Minhas Turmas',     value: turmas.length,           accent: 'var(--gb-red)' },
               { label: 'Alunos Ativos',     value: allAlunos.length,            accent: '#2563EB' },
@@ -84,7 +197,7 @@ export default function ProfessorView() {
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 16 }}>
             {/* Weekly schedule */}
             <Card style={{ padding: 20 }}>
               <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 14 }}>Horário Semanal</div>
@@ -135,7 +248,7 @@ export default function ProfessorView() {
               <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const }}>Últimas Presenças</div>
               <span style={{ background: 'rgba(22,163,74,0.08)', color: '#16A34A', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>● AO VIVO</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: 8 }}>
               {allPresencas.slice(0, 9).map(p => (
                 <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)' }}>
                   <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(22,163,74,0.1)', border: '1px solid rgba(22,163,74,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#16A34A', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>✓</div>

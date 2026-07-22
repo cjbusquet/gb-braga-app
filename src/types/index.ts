@@ -171,6 +171,18 @@ export interface Contrato {
   dataAssinatura?: string;
 }
 
+export interface ProfessorCheckin {
+  id: string;
+  professorId: string;
+  professorNome: string;
+  turmaId: string;
+  turmaNome: string;
+  data: string;        // YYYY-MM-DD
+  horaInicio: string;  // HH:MM
+  horaFim?: string;    // HH:MM
+  status: 'ativa' | 'concluida';
+}
+
 // TOConline integration fields
 export interface TocDocumento {
   id: string;

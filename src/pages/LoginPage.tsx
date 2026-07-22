@@ -5,6 +5,7 @@ import { GB, roleThemes } from '../lib/gbBrand';
 import { GBLogoFull } from '../components/GBLogo';
 import { supabase, isConfigured } from '../lib/supabaseClient';
 import type { UserRole } from '../types';
+import { Ico, KeyIcon, ClipboardDocumentIcon, PencilIcon, CreditCardIcon, CheckCircleIcon, IdentificationIcon } from '../lib/icons';
 
 const DEMO_ROLES: { role: UserRole; email: string; label?: string }[] = [
   { role: 'superadmin',  email: 'superadmin@gbbraga.com' },
@@ -113,7 +114,10 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
             {(['login', 'register'] as const).map(t => (
               <button key={t} onClick={() => { setTab(t); setErr(''); }}
                 style={{ flex: 1, padding: '9px 0', border: 'none', borderRadius: tab === t ? 'calc(var(--radius-md) - 2px)' : 0, background: tab === t ? '#fff' : 'transparent', color: tab === t ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: tab === t ? 700 : 400, fontSize: 13.5, cursor: 'pointer', fontFamily: 'var(--font-ui)', boxShadow: tab === t ? 'var(--shadow-xs)' : 'none', transition: 'all 0.15s' }}>
-                {t === 'login' ? '🔑 Entrar' : '📋 Inscrever-me'}
+                {t === 'login'
+                  ? <><Ico icon={KeyIcon} sm /> Entrar</>
+                  : <><Ico icon={ClipboardDocumentIcon} sm /> Inscrever-me</>
+                }
               </button>
             ))}
           </div>
@@ -247,9 +251,16 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
 
               {/* Steps preview */}
               <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 28, flexWrap: 'wrap' }}>
-                {[['📋','Ficha'],['✍️','Contrato'],['💳','Pagamento'],['✅','Ativo']].map(([icon,label]) => (
+                {([
+                  [IdentificationIcon,'Ficha'],
+                  [PencilIcon,'Contrato'],
+                  [CreditCardIcon,'Pagamento'],
+                  [CheckCircleIcon,'Ativo'],
+                ] as const).map(([Icon,label]) => (
                   <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(200,16,46,0.08)', border: '1.5px solid rgba(200,16,46,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{icon}</div>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(200,16,46,0.08)', border: '1.5px solid rgba(200,16,46,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Icon style={{ width: 20, height: 20, color: 'rgba(200,16,46,0.7)' }} />
+                    </div>
                     <span style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600 }}>{label}</span>
                   </div>
                 ))}

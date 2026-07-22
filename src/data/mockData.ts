@@ -1,4 +1,4 @@
-import type { Aluno, Professor, Turma, Pagamento, Presenca, Mensagem, Graduacao, Plano, KPIs, Contrato, User, TocDocumento, TocConfig } from '../types';
+import type { Aluno, Professor, Turma, Pagamento, Presenca, Mensagem, Graduacao, Plano, KPIs, Contrato, User, TocDocumento, TocConfig, ProfessorCheckin } from '../types';
 
 // ─── DADOS REAIS — Gracie Barra Braga ────────────────────────────────────────
 // Fonte: gbbraga.com | Morada: Rua Nova Santa Cruz 11, 4710-409 Braga
@@ -208,6 +208,18 @@ export const mockPagamentos: Pagamento[] = [
   { id: 'pg8', alunoId: 'a8', alunoNome: 'Carla Nunes',    valor: 62,  vencimento: '2025-03-05',                         status: 'vencido',                    plano: 'Jiu-Jitsu Adulto Plus' },
 ];
 
+
+export const mockProfessorCheckins: ProfessorCheckin[] = [
+  { id:'pc1', professorId:'p1', professorNome:'Carlos Silva',   turmaId:'t1', turmaNome:'JJ Adultos — Noite 1', data:'2025-05-05', horaInicio:'18:00', horaFim:'19:28', status:'concluida' },
+  { id:'pc2', professorId:'p1', professorNome:'Carlos Silva',   turmaId:'t2', turmaNome:'JJ Adultos — Noite 2', data:'2025-05-05', horaInicio:'19:30', horaFim:'20:55', status:'concluida' },
+  { id:'pc3', professorId:'p2', professorNome:'João Santos',    turmaId:'t5', turmaNome:'Kids Jiu-Jitsu',       data:'2025-05-05', horaInicio:'18:00', horaFim:'19:02', status:'concluida' },
+  { id:'pc4', professorId:'p2', professorNome:'João Santos',    turmaId:'t4', turmaNome:'No-Gi / Wrestling',    data:'2025-05-05', horaInicio:'20:00', horaFim:'21:28', status:'concluida' },
+  { id:'pc5', professorId:'p3', professorNome:'Fernanda Rocha', turmaId:'t6', turmaNome:'Open Mat — Sábado',   data:'2025-05-03', horaInicio:'10:02', horaFim:'12:25', status:'concluida' },
+  { id:'pc6', professorId:'p1', professorNome:'Carlos Silva',   turmaId:'t1', turmaNome:'JJ Adultos — Noite 1', data:'2025-05-07', horaInicio:'18:01', horaFim:'19:30', status:'concluida' },
+  { id:'pc7', professorId:'p1', professorNome:'Carlos Silva',   turmaId:'t2', turmaNome:'JJ Adultos — Noite 2', data:'2025-05-07', horaInicio:'19:31', horaFim:'21:00', status:'concluida' },
+  { id:'pc8', professorId:'p2', professorNome:'João Santos',    turmaId:'t5', turmaNome:'Kids Jiu-Jitsu',       data:'2025-05-07', horaInicio:'18:00', horaFim:'18:58', status:'concluida' },
+  { id:'pc9', professorId:'p2', professorNome:'João Santos',    turmaId:'t4', turmaNome:'No-Gi / Wrestling',    data:'2025-05-07', horaInicio:'20:02', status:'concluida', horaFim:'21:35' },
+];
 
 export const mockPresencas: Presenca[] = [
   { id: 'pr1', alunoId: 'a1', alunoNome: 'Lucas Oliveira', turmaId: 't1', turmaNome: 'Jiu-Jitsu Adultos — Noite 1', data: '2025-05-05', hora: '18:05', tipo: 'checkin', metodo: 'qrcode' },

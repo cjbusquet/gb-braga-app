@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { usePagamentos, usePlanos, useAlunos, db } from '../../lib/useData';
 import { GB } from '../../lib/gbBrand';
 import { useMobile } from '../../lib/useMobile';
+import { Ico, ChatBubbleLeftRightIcon, DocumentTextIcon, ArrowUpTrayIcon } from '../../lib/icons';
 
 type Tab = 'cobranças' | 'planos' | 'toconline';
 
@@ -118,15 +119,15 @@ export default function FinanceiroPage() {
                               </button>
                             )}
                             {p.status !== 'pago' && (
-                              <button onClick={() => alert(`💬 Lembrete enviado para ${p.alunoNome}!`)}
-                                style={{ background:'rgba(37,211,102,0.1)', border:'1px solid rgba(37,211,102,0.2)', borderRadius:5, padding:'4px 10px', color:'#25D366', fontSize:11, fontWeight:600, cursor:'pointer' }}>
-                                💬 Lembrete
+                              <button onClick={() => alert(`Lembrete enviado para ${p.alunoNome}!`)}
+                                style={{ background:'rgba(37,211,102,0.1)', border:'1px solid rgba(37,211,102,0.2)', borderRadius:5, padding:'4px 10px', color:'#25D366', fontSize:11, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
+                                <Ico icon={ChatBubbleLeftRightIcon} sm /> Lembrete
                               </button>
                             )}
                             {p.status === 'pago' && (
-                              <button onClick={() => alert(`📄 Recibo gerado para ${p.alunoNome} · €${p.valor}`)}
-                                style={{ background:'rgba(99,91,255,0.08)', border:'1px solid rgba(99,91,255,0.2)', borderRadius:5, padding:'4px 10px', color:'#635BFF', fontSize:11, fontWeight:600, cursor:'pointer' }}>
-                                📄 Recibo
+                              <button onClick={() => alert(`Recibo gerado para ${p.alunoNome} · €${p.valor}`)}
+                                style={{ background:'rgba(99,91,255,0.08)', border:'1px solid rgba(99,91,255,0.2)', borderRadius:5, padding:'4px 10px', color:'#635BFF', fontSize:11, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
+                                <Ico icon={DocumentTextIcon} sm /> Recibo
                               </button>
                             )}
                           </div>
@@ -182,8 +183,8 @@ export default function FinanceiroPage() {
                 <div style={{ color:'var(--text-muted)', fontSize:11 }}>XML para entrega à AT</div>
               </div>
               <button onClick={() => alert('SAF-T XML gerado!\nFicheiro: SAF-T_GBBraga.xml')}
-                style={{ background:'#635BFF', border:'none', borderRadius:6, padding:'8px 14px', color:'#fff', fontSize:12, fontWeight:700, cursor:'pointer' }}>
-                📤 Exportar SAF-T
+                style={{ background:'#635BFF', border:'none', borderRadius:6, padding:'8px 14px', color:'#fff', fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                <Ico icon={ArrowUpTrayIcon} sm /> Exportar SAF-T
               </button>
             </div>
             <div style={{ color:'var(--text-muted)', fontSize:12, lineHeight:1.7 }}>

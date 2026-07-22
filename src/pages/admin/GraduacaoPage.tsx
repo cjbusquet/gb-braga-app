@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useAlunos, useGraduacoes, db } from '../../lib/useData';
 import { GB, beltConfig } from '../../lib/gbBrand';
+import { Ico, TrophyIcon, ChatBubbleLeftRightIcon } from '../../lib/icons';
 
 // Progressão completa GB: branca → faixas infantis → azul → adulto
 const FAIXAS = [
@@ -23,8 +24,11 @@ function proxFaixaGrau(faixa: string, grau: number): { faixa: string; grau: numb
 function BeltBadge({ faixa, grau }: { faixa: string; grau: number }) {
   const cfg = beltConfig[faixa] || { bg: '#888', text: '#fff', label: faixa };
   return (
-    <span style={{ background: cfg.bg, color: cfg.text, fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 99, display: 'inline-flex', alignItems: 'center', gap: 4, border: faixa === 'branca' ? '1px solid #ccc' : 'none' }}>
-      {cfg.label} {grau > 0 ? `· G${grau}` : ''}
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+      <span style={{ background: cfg.bg, color: cfg.text, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 99, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 104, boxSizing: 'border-box', border: faixa === 'branca' ? '1px solid #ccc' : 'none', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+        {cfg.label}
+      </span>
+      {grau > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)' }}>G{grau}</span>}
     </span>
   );
 }
@@ -130,8 +134,8 @@ export default function GraduacaoPage() {
               </div>
             </div>
             <button onClick={() => alert(`WhatsApp enviado para ${candidatos.length} alunos!`)}
-              style={{ background: '#25D366', border: 'none', borderRadius: 7, padding: '8px 14px', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-              💬 Notificar todos
+              style={{ background: '#25D366', border: 'none', borderRadius: 7, padding: '8px 14px', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Ico icon={ChatBubbleLeftRightIcon} sm /> Notificar todos
             </button>
           </div>
 
@@ -158,8 +162,8 @@ export default function GraduacaoPage() {
                   </div>
                 </div>
                 <button onClick={() => { setAlunoSel(aluno.id); setNovaFaixa(prox.faixa); setNovoGrau(prox.grau); setTab('registar'); }}
-                  style={{ background: GB.red, border: 'none', borderRadius: 7, padding: '8px 14px', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: 'var(--shadow-red)', flexShrink: 0 }}>
-                  🎖️ Registar
+                  style={{ background: GB.red, border: 'none', borderRadius: 7, padding: '8px 14px', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: 'var(--shadow-red)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Ico icon={TrophyIcon} sm /> Registar
                 </button>
               </div>
             );
@@ -208,7 +212,7 @@ export default function GraduacaoPage() {
 
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, cursor: 'pointer' }}>
               <input type="checkbox" checked={notificar} onChange={() => setNotificar(n => !n)} style={{ accentColor: '#25D366', width: 15, height: 15 }}/>
-              <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>💬 Notificar aluno via WhatsApp</span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Ico icon={ChatBubbleLeftRightIcon} sm /> Notificar aluno via WhatsApp</span>
             </label>
 
             {success && (
@@ -219,7 +223,7 @@ export default function GraduacaoPage() {
 
             <button onClick={handleRegistar} disabled={!alunoSel || saving || success}
               style={{ width: '100%', background: success ? '#22C55E' : !alunoSel || saving ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '12px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: !alunoSel || saving ? 'not-allowed' : 'pointer', boxShadow: success || !alunoSel ? 'none' : 'var(--shadow-red)' }}>
-              {success ? '✓ Graduação registada!' : saving ? 'A guardar...' : '🎖️ Confirmar Graduação — OSS!'}
+              {success ? '✓ Graduação registada!' : saving ? 'A guardar...' : 'Confirmar Graduação — OSS! 🥋'}
             </button>
           </div>
         </div>
