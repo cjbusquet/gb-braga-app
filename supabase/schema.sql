@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS alunos (
   email                  TEXT NOT NULL UNIQUE,
   telefone               TEXT,
   whatsapp               TEXT,
-  data_nascimento        DATE,
+  data_nascimento        DATE NOT NULL,
   nif                    TEXT,
   morada                 TEXT,
   cod_postal             TEXT,
