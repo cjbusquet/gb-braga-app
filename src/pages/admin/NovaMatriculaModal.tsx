@@ -249,14 +249,14 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
               </div>
               <div style={{ fontSize: 11.5, color: '#92400E', marginTop: 3 }}>
                 {idade! >= 12
-                  ? 'Pode fazer check-in de forma autónoma. Responsável é opcional mas recomendado.'
-                  : 'Tem menos de 12 anos — é necessário um responsável para fazer check-in.'}
+                  ? 'Pode fazer check-in de forma autónoma. É obrigatório registar um responsável.'
+                  : 'Tem menos de 12 anos — é obrigatório registar um responsável para check-in.'}
               </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div style={{ gridColumn: '1/-1' }}>
-                <label style={lbl}>Nome do responsável {idade! < 12 ? '*' : ''}</label>
+                <label style={lbl}>Nome do responsável *</label>
                 <input value={respNome} onChange={e => setRespNome(e.target.value)} placeholder="Nome completo" style={inp} />
               </div>
               <div>
@@ -297,8 +297,8 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
               </button>
               <button
                 onClick={() => setStep(4)}
-                disabled={idade! < 12 && !respNome.trim()}
-                style={{ background: (idade! < 12 && !respNome.trim()) ? '#ccc' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 24px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: (idade! < 12 && !respNome.trim()) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                disabled={!respNome.trim()}
+                style={{ background: !respNome.trim() ? '#ccc' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 24px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: !respNome.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
                 Seguinte <Ico icon={ArrowRightIcon} sm />
               </button>
             </div>

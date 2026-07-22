@@ -54,10 +54,12 @@ function EditAlunoModal({ aluno, onClose }: { aluno: any; onClose: () => void })
   const [saving, setSaving]       = useState(false);
   const [saved, setSaved]         = useState(false);
 
+  const { data: vinculos } = useResponsaveis(aluno.id);
   const idade = calcularIdade(dataNasc);
+  const precisaResp = eMenor(dataNasc) && vinculos.length === 0;
 
   const handleSave = async () => {
-    if (!dataNasc) return;
+    if (!dataNasc || precisaResp) return;
     setSaving(true);
     try {
       await db.atualizarAluno(aluno.id, { nome, email, telefone, nif, dataNascimento: dataNasc });
@@ -116,11 +118,20 @@ function EditAlunoModal({ aluno, onClose }: { aluno: any; onClose: () => void })
           </div>
         </div>
 
+        {precisaResp && (
+          <div style={{ marginTop: 14, background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.3)', borderRadius: 8, padding: '10px 14px' }}>
+            <div style={{ fontSize: 12, color: '#D97706', fontWeight: 600 }}>Encarregado de Educação obrigatório</div>
+            <div style={{ fontSize: 11.5, color: '#92400E', marginTop: 3 }}>
+              Este aluno é menor de 18 anos. Fecha esta janela e adiciona um responsável no perfil do aluno antes de guardar.
+            </div>
+          </div>
+        )}
+
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
           <button onClick={onClose} style={{ flex: 1, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>
             Cancelar
           </button>
-          <button onClick={handleSave} disabled={saving || saved || !dataNasc} style={{ flex: 2, background: saved ? '#22C55E' : (saving || !dataNasc) ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '10px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: (saving || !dataNasc) ? 'not-allowed' : 'pointer' }}>
+          <button onClick={handleSave} disabled={saving || saved || !dataNasc || precisaResp} style={{ flex: 2, background: saved ? '#22C55E' : (saving || !dataNasc || precisaResp) ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '10px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: (saving || !dataNasc || precisaResp) ? 'not-allowed' : 'pointer' }}>
             {saved ? '✓ Guardado!' : saving ? 'A guardar...' : '💾 Guardar'}
           </button>
         </div>
