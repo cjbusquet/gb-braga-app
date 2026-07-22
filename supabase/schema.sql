@@ -376,15 +376,32 @@ CREATE OR REPLACE FUNCTION calcular_frequencia(p_aluno_id UUID, p_meses INT DEFA
 RETURNS INT AS $$
 DECLARE total_aulas INT; aulas_aluno INT;
 BEGIN
+  -- Total unique class days offered (any student checked in)
   SELECT COUNT(DISTINCT data) INTO total_aulas FROM presencas
   WHERE created_at >= NOW() - (p_meses || ' months')::INTERVAL AND tipo = 'checkin';
-  SELECT COUNT(*) INTO aulas_aluno FROM presencas
+  -- Student's unique days present (multiple check-ins same day count as 1)
+  SELECT COUNT(DISTINCT data) INTO aulas_aluno FROM presencas
   WHERE aluno_id = p_aluno_id AND tipo = 'checkin'
   AND created_at >= NOW() - (p_meses || ' months')::INTERVAL;
   IF total_aulas = 0 THEN RETURN 0; END IF;
   RETURN LEAST(100, ROUND((aulas_aluno::NUMERIC / total_aulas) * 100));
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Auto-update alunos.frequencia after every check-in
+CREATE OR REPLACE FUNCTION atualizar_frequencia_aluno()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE alunos SET frequencia = calcular_frequencia(NEW.aluno_id) WHERE id = NEW.aluno_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_atualizar_frequencia ON presencas;
+CREATE TRIGGER trg_atualizar_frequencia
+  AFTER INSERT ON presencas
+  FOR EACH ROW
+  EXECUTE FUNCTION atualizar_frequencia_aluno();
 
 -- ── ENROLLMENT SELF-REGISTRATION POLICIES ────────────────────
 -- Allow newly registered aluno (role = 'aluno') to write their

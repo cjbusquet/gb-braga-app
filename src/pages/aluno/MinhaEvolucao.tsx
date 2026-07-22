@@ -20,6 +20,7 @@ export default function MinhaEvolucao() {
   const aluno = alunos.find(a => a.email === user?.email) || alunos[0];
   const historico = graduacoes.filter(g => g.alunoId === aluno.id);
   const minhasPresencas = presencas.filter(p => p.alunoId === aluno.id);
+  const diasTreino = new Set(minhasPresencas.map(p => p.data)).size;
   const beltIdx = BELT_PATH.indexOf(aluno.faixa);
   const bc = beltConfig[aluno.faixa];
 
@@ -77,7 +78,7 @@ export default function MinhaEvolucao() {
           <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 16 }}>Estatísticas</div>
           {[
             { label: 'Membro desde', value: aluno.dataMatricula },
-            { label: 'Total de aulas', value: `${minhasPresencas.length + 124}` },
+            { label: 'Dias de treino', value: `${diasTreino}` },
             { label: 'Frequência atual', value: `${aluno.frequencia}%` },
             { label: 'Graduações', value: historico.length + 1 },
             { label: 'Faixa', value: bc?.label },

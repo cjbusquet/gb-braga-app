@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { useContratos } from '../../lib/useData';
+import { exportContratoPDF } from '../../lib/reportExport';
 import { GB } from '../../lib/gbBrand';
 
 export default function ContratosPage() {
@@ -13,6 +14,18 @@ export default function ContratosPage() {
     ativo:     { color:'#16A34A', bg:'rgba(34,197,94,0.1)',  label:'Ativo' },
     cancelado: { color:GB.red,    bg:'rgba(200,16,46,0.08)', label:'Cancelado' },
     expirado:  { color:'#6B7280', bg:'rgba(107,114,128,0.1)',label:'Expirado' },
+  };
+
+  const baixarPDF = (c: any) => {
+    exportContratoPDF({
+      alunoNome:      c.alunoNome,
+      alunoNif:       c.alunoNif || '',
+      plano:          c.plano,
+      valor:          c.valor,
+      dataAssinatura: c.dataAssinatura ? c.dataAssinatura.slice(0, 10) : c.dataInicio || '',
+      dataInicio:     c.dataInicio || '',
+      assinaturaImg:  c.assinaturaImg || null,
+    });
   };
 
   return (
@@ -45,7 +58,7 @@ export default function ContratosPage() {
           <table style={{ width:'100%', borderCollapse:'collapse' }}>
             <thead>
               <tr style={{ borderBottom:'1px solid var(--border-subtle)' }}>
-                {['Aluno','Plano','Início','Válido até','Valor','Estado','Assinado'].map(h => (
+                {['Aluno','Plano','Início','Válido até','Valor','Estado','Assinado',''].map(h => (
                   <th key={h} style={{ padding:'11px 14px', textAlign:'left', fontSize:10.5, fontWeight:600, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>{h}</th>
                 ))}
               </tr>
@@ -64,6 +77,15 @@ export default function ContratosPage() {
                       <span style={{ background:st.bg, color:st.color, fontSize:10.5, fontWeight:700, padding:'2px 8px', borderRadius:99 }}>{st.label}</span>
                     </td>
                     <td style={{ padding:'11px 14px', fontSize:13, color: c.assinado?'#16A34A':'var(--text-muted)' }}>{c.assinado?'✓ Sim':'—'}</td>
+                    <td style={{ padding:'11px 14px' }}>
+                      {c.assinado && (
+                        <button onClick={() => baixarPDF(c)}
+                          title="Descarregar contrato assinado em PDF"
+                          style={{ background:'none', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)', padding:'5px 11px', color:'var(--text-secondary)', fontSize:11.5, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:5, whiteSpace:'nowrap' }}>
+                          ⬇ PDF
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 );
               })}

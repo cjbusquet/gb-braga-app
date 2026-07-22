@@ -10,7 +10,7 @@ function useQuery<T>(
   supabaseQuery: () => Promise<{ data: T[] | null; error: unknown }>,
   fallback: T[]
 ) {
-  const [data, setData]       = useState<T[]>(fallback);
+  const [data, setData]       = useState<T[]>(isConfigured ? [] : fallback);
   const [loading, setLoading] = useState(isConfigured);
   const [error, setError]     = useState<string | null>(null);
 
@@ -67,6 +67,34 @@ export function useTurmas() {
   );
 }
 
+// ── PROFESSORES ───────────────────────────────────────────────
+export function useProfessores() {
+  return useQuery(
+    'professores',
+    async () => {
+      const res = await supabase.from('professores').select('*').order('nome');
+      return { data: res.data?.map(mapProfessor) ?? null, error: res.error };
+    },
+    mock.mockProfessores
+  );
+}
+
+// ── PROFESSOR CHECKINS ────────────────────────────────────────
+export function useProfessorCheckins(professorId?: string) {
+  return useQuery(
+    `professor_checkins:${professorId ?? ''}`,
+    async () => {
+      let q = supabase.from('professor_checkins').select('*').order('data', { ascending: false }).order('hora_inicio', { ascending: false });
+      if (professorId) q = q.eq('professor_id', professorId);
+      const res = await q;
+      return { data: res.data?.map(mapProfessorCheckin) ?? null, error: res.error };
+    },
+    professorId
+      ? mock.mockProfessorCheckins.filter(c => c.professorId === professorId)
+      : mock.mockProfessorCheckins
+  );
+}
+
 // ── PAGAMENTOS ────────────────────────────────────────────────
 export function usePagamentos(alunoId?: string) {
   return useQuery(
@@ -110,6 +138,41 @@ export function useGraduacoes(alunoId?: string) {
       return { data: res.data?.map(mapGraduacao) ?? null, error: res.error };
     },
     alunoId ? mock.mockGraduacoes.filter(g => g.alunoId === alunoId) : mock.mockGraduacoes
+  );
+}
+
+// ── RESPONSÁVEIS (por aluno menor) ───────────────────────────
+export function useResponsaveis(alunoId?: string) {
+  return useQuery(
+    `responsaveis:${alunoId ?? ''}`,
+    async () => {
+      if (!alunoId) return { data: [] as any[], error: null };
+      const res = await supabase
+        .from('aluno_responsaveis')
+        .select('id, tipo_relacao, pode_checkin, e_titular_financeiro, created_at, responsaveis(id, nome, email, telefone, nif, aluno_id)')
+        .eq('aluno_id', alunoId)
+        .order('created_at');
+      return { data: res.data?.map(mapVinculo) ?? null, error: res.error };
+    },
+    []
+  );
+}
+
+// ── FAMÍLIA (por aluno) ───────────────────────────────────────
+export function useFamiliaAluno(alunoId?: string) {
+  return useQuery(
+    `familia_aluno:${alunoId ?? ''}`,
+    async () => {
+      if (!alunoId) return { data: [] as any[], error: null };
+      const res = await supabase
+        .from('familia_membros')
+        .select('tipo, ativo, familias(id, nome, plano_familia, valor_total, familia_membros(tipo, ativo, alunos(id, nome, data_nascimento, faixa, status)))')
+        .eq('aluno_id', alunoId)
+        .eq('ativo', true)
+        .maybeSingle();
+      return { data: res.data ? [res.data] : [], error: res.error };
+    },
+    []
   );
 }
 
@@ -255,7 +318,8 @@ export const db = {
     if (campos.nif)       map.nif       = campos.nif;
     if (campos.status)    map.status    = campos.status;
     if (campos.faixa)     map.faixa     = campos.faixa;
-    if (campos.grau !== undefined) map.grau = campos.grau;
+    if (campos.grau !== undefined)          map.grau            = campos.grau;
+    if (campos.dataNascimento !== undefined) map.data_nascimento = campos.dataNascimento || null;
     const { data, error } = await supabase.from('alunos').update(map).eq('id', id).select().single();
     if (error) throw error;
     return data;
@@ -440,6 +504,64 @@ export const db = {
       .update({ status: 'rejeitado', nota_admin: nota })
       .eq('id', id);
   },
+
+  criarResponsavel: async (dados: any) => {
+    if (!isConfigured) return null;
+    const { data, error } = await supabase.from('responsaveis').insert({
+      nome:     dados.nome,
+      email:    dados.email    || null,
+      telefone: dados.telefone || null,
+      nif:      dados.nif      || null,
+      aluno_id: dados.alunoId  || null,
+    }).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  vincularResponsavel: async (alunoId: string, responsavelId: string, opcoes: any) => {
+    if (!isConfigured) return null;
+    const { data, error } = await supabase.from('aluno_responsaveis').insert({
+      aluno_id:             alunoId,
+      responsavel_id:       responsavelId,
+      tipo_relacao:         opcoes.tipoRelacao        || 'outro',
+      pode_checkin:         opcoes.podeCheckin         ?? true,
+      e_titular_financeiro: opcoes.eTitularFinanceiro  ?? false,
+    }).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  desvincularResponsavel: async (vinculoId: string) => {
+    if (!isConfigured) return;
+    const { error } = await supabase.from('aluno_responsaveis').delete().eq('id', vinculoId);
+    if (error) throw error;
+  },
+
+  registarProfessorCheckin: async (dados: { professorId: string; professorNome: string; turmaId: string; turmaNome: string }) => {
+    if (!isConfigured) return null;
+    const now = new Date();
+    const { data, error } = await supabase.from('professor_checkins').insert({
+      professor_id:   dados.professorId,
+      professor_nome: dados.professorNome,
+      turma_id:       dados.turmaId,
+      turma_nome:     dados.turmaNome,
+      data:           now.toISOString().split('T')[0],
+      hora_inicio:    now.toTimeString().slice(0, 5),
+      status:         'ativa',
+    }).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  concluirCheckinProfessor: async (id: string) => {
+    if (!isConfigured) return null;
+    const now = new Date();
+    const { data, error } = await supabase.from('professor_checkins')
+      .update({ hora_fim: now.toTimeString().slice(0, 5), status: 'concluida' })
+      .eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  },
 };
 
 // ── MAPPERS: Supabase snake_case → App camelCase ──────────────
@@ -524,6 +646,7 @@ export function mapContrato(r: any) {
     id:             r.id,
     alunoId:        r.aluno_id   || r.alunoId,
     alunoNome:      r.aluno_nome || r.alunoNome,
+    alunoNif:       r.aluno_nif  || r.alunoNif  || '',
     plano:          r.plano_nome || r.plano || '',
     valor:          r.valor,
     dataInicio:     r.data_inicio || r.dataInicio || '',
@@ -531,6 +654,59 @@ export function mapContrato(r: any) {
     status:         r.status || 'ativo',
     assinado:       r.assinado || false,
     dataAssinatura: r.data_assinatura || '',
+    assinaturaImg:  r.assinatura_img  || null,
+    aceitaImagem:   r.aceita_imagem   ?? false,
+    aceitaRGPD:     r.aceita_rgpd     ?? false,
+  };
+}
+
+export function mapVinculo(r: any) {
+  if (!r) return r;
+  const resp = r.responsaveis as any;
+  return {
+    id:                 r.id,
+    tipoRelacao:        r.tipo_relacao,
+    podeCheckin:        r.pode_checkin,
+    eTitularFinanceiro: r.e_titular_financeiro,
+    responsavel: {
+      id:       resp?.id       || '',
+      nome:     resp?.nome     || '',
+      email:    resp?.email    || '',
+      telefone: resp?.telefone || '',
+      nif:      resp?.nif      || '',
+      alunoId:  resp?.aluno_id || null,
+    },
+  };
+}
+
+export function mapProfessor(r: any) {
+  if (!r) return r;
+  return {
+    id:           r.id,
+    nome:         r.nome,
+    email:        r.email,
+    telefone:     r.telefone || '',
+    faixa:        r.faixa || 'preta',
+    grau:         r.grau ?? 0,
+    turmas:       r.turmas || [],
+    dataAdmissao: r.data_admissao || r.dataAdmissao || '',
+    status:       r.status || 'ativo',
+    foto:         r.foto || undefined,
+  };
+}
+
+export function mapProfessorCheckin(r: any) {
+  if (!r) return r;
+  return {
+    id:            r.id,
+    professorId:   r.professor_id   || r.professorId,
+    professorNome: r.professor_nome || r.professorNome,
+    turmaId:       r.turma_id       || r.turmaId,
+    turmaNome:     r.turma_nome     || r.turmaNome,
+    data:          r.data,
+    horaInicio:    r.hora_inicio    || r.horaInicio,
+    horaFim:       r.hora_fim       || r.horaFim,
+    status:        r.status || 'concluida',
   };
 }
 

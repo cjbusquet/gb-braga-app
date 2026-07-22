@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../../lib/supabaseClient';
+import { db } from '../../lib/useData';
 
 interface PedidoNumerario {
   id: string;
@@ -12,26 +14,72 @@ interface PedidoNumerario {
   notaAdmin?: string;
 }
 
-const MOCK_PEDIDOS: PedidoNumerario[] = [
-  { id: 'pn1', nomeAluno: 'Rui Barbosa', email: 'rui@email.pt', telefone: '+351 912 345 678', plano: 'Jiu-Jitsu Adulto Plus', valor: 62, dataPedido: '2025-05-12', status: 'pendente' },
-  { id: 'pn2', nomeAluno: 'Ana Sousa', email: 'ana@email.pt', telefone: '+351 965 432 109', plano: 'Jiu-Jitsu Kids Plus', valor: 53, dataPedido: '2025-05-10', status: 'pendente' },
-  { id: 'pn3', nomeAluno: 'Jorge Lima', email: 'jorge@email.pt', telefone: '+351 933 221 100', plano: 'Família 2 membros', valor: 115, dataPedido: '2025-05-08', status: 'aprovado', notaAdmin: 'Situação económica confirmada' },
-];
+function mapPedido(r: any): PedidoNumerario {
+  return {
+    id:         r.id,
+    nomeAluno:  r.nome_aluno ?? '',
+    email:      r.email ?? '',
+    telefone:   r.telefone ?? '',
+    plano:      r.plano_nome ?? '',
+    valor:      r.valor ?? 0,
+    dataPedido: r.created_at ? r.created_at.slice(0, 10) : '',
+    status:     r.status ?? 'pendente',
+    notaAdmin:  r.nota_admin ?? undefined,
+  };
+}
 
 export default function PendentesNumerario() {
-  const [pedidos, setPedidos] = useState(MOCK_PEDIDOS);
+  const [pedidos, setPedidos] = useState<PedidoNumerario[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
   const [modalId, setModalId] = useState<string | null>(null);
   const [nota, setNota] = useState('');
+  const [saving, setSaving] = useState(false);
   const [filtro, setFiltro] = useState<'todos' | 'pendente' | 'aprovado' | 'rejeitado'>('pendente');
 
-  const aprovar = (id: string) => {
-    setPedidos(p => p.map(x => x.id === id ? { ...x, status: 'aprovado', notaAdmin: nota || 'Aprovado pelo superadmin' } : x));
-    setModalId(null); setNota('');
+  const carregar = useCallback(async () => {
+    setLoading(true);
+    setErro(null);
+    const { data, error } = await supabase
+      .from('pedidos_numerario')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) {
+      setErro(error.message);
+    } else {
+      setPedidos((data ?? []).map(mapPedido));
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { carregar(); }, [carregar]);
+
+  const aprovar = async (id: string) => {
+    setSaving(true);
+    try {
+      await db.aprovarNumerario(id, nota || 'Aprovado pelo admin');
+      await carregar();
+      setModalId(null);
+      setNota('');
+    } catch (e: any) {
+      setErro(e.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const rejeitar = (id: string) => {
-    setPedidos(p => p.map(x => x.id === id ? { ...x, status: 'rejeitado', notaAdmin: nota || 'Rejeitado' } : x));
-    setModalId(null); setNota('');
+  const rejeitar = async (id: string) => {
+    setSaving(true);
+    try {
+      await db.rejeitarNumerario(id, nota || 'Rejeitado');
+      await carregar();
+      setModalId(null);
+      setNota('');
+    } catch (e: any) {
+      setErro(e.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const pedidoModal = pedidos.find(p => p.id === modalId);
@@ -78,11 +126,13 @@ export default function PendentesNumerario() {
             </div>
 
             <div style={{ display:'flex', gap:10 }}>
-              <button onClick={() => rejeitar(pedidoModal.id)} style={{ flex:1, background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)', padding:'11px', color:'var(--gb-red)', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+              <button onClick={() => rejeitar(pedidoModal.id)} disabled={saving}
+                style={{ flex:1, background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)', padding:'11px', color:'var(--gb-red)', fontSize:13, fontWeight:700, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1 }}>
                 ✕ Rejeitar
               </button>
-              <button onClick={() => aprovar(pedidoModal.id)} style={{ flex:2, background:'var(--gb-red)', border:'none', borderRadius:'var(--radius-sm)', padding:'11px', color:'#fff', fontSize:14, fontWeight:800, fontFamily:'var(--font-display)', cursor:'pointer', boxShadow:'var(--shadow-red)' }}>
-                ✓ Aprovar excepção
+              <button onClick={() => aprovar(pedidoModal.id)} disabled={saving}
+                style={{ flex:2, background:'var(--gb-red)', border:'none', borderRadius:'var(--radius-sm)', padding:'11px', color:'#fff', fontSize:14, fontWeight:800, fontFamily:'var(--font-display)', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1, boxShadow:'var(--shadow-red)' }}>
+                {saving ? 'A processar…' : '✓ Aprovar excepção'}
               </button>
             </div>
           </div>
@@ -98,7 +148,16 @@ export default function PendentesNumerario() {
             {pendentes > 0 && <span style={{ background:'var(--gb-red)', color:'#fff', fontSize:12, fontWeight:700, padding:'2px 9px', borderRadius:99 }}>{pendentes} pendente{pendentes!==1?'s':''}</span>}
           </h1>
         </div>
+        <button onClick={carregar} style={{ background:'none', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)', padding:'6px 14px', color:'var(--text-muted)', fontSize:12, cursor:'pointer' }}>
+          ↻ Atualizar
+        </button>
       </div>
+
+      {erro && (
+        <div style={{ background:'rgba(200,16,46,0.06)', border:'1px solid var(--gb-red-border)', borderRadius:'var(--radius-sm)', padding:'10px 14px', marginBottom:16, fontSize:12.5, color:'var(--gb-red)' }}>
+          Erro: {erro}
+        </div>
+      )}
 
       {/* Filter */}
       <div style={{ display:'flex', gap:6, marginBottom:18 }}>
@@ -113,7 +172,9 @@ export default function PendentesNumerario() {
       </div>
 
       {/* Cards */}
-      {filtrados.length === 0 ? (
+      {loading ? (
+        <div style={{ textAlign:'center', padding:'40px 20px', color:'var(--text-muted)', fontSize:14 }}>A carregar…</div>
+      ) : filtrados.length === 0 ? (
         <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'40px 20px', textAlign:'center' }}>
           <div style={{ fontSize:32, marginBottom:10, opacity:0.3 }}>💵</div>
           <div style={{ color:'var(--text-muted)', fontSize:14 }}>Sem pedidos {filtro !== 'todos' ? filtro + 's' : ''}</div>

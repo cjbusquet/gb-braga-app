@@ -1,24 +1,26 @@
 import { useState } from 'react';
-import { useAlunos, usePagamentos, usePresencas } from '../../lib/useData';
+import { useAlunos, usePagamentos, usePresencas, useContratos } from '../../lib/useData';
+import { exportContratoPDF } from '../../lib/reportExport';
 import { useAuth } from '../../lib/auth';
 import { GB, beltConfig } from '../../lib/gbBrand';
 import { useMobile } from '../../lib/useMobile';
 import type { Belt } from '../../types';
+import { Ico, XMarkIcon, EnvelopeIcon, ArrowDownTrayIcon, ExclamationTriangleIcon, ChevronRightIcon } from '../../lib/icons';
 
 const BELT_PATH: Belt[] = ['branca','cinza','amarela','laranja','verde','azul','roxa','marrom','preta'];
 
 function NavCard({ icon, label, desc, accent, onClick }: { icon: string; label: string; desc: string; accent: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '18px 20px', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14, position: 'relative', overflow: 'hidden' }}
+    <button onClick={onClick} style={{ width: '100%', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '14px 16px', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, position: 'relative', overflow: 'hidden', boxSizing: 'border-box' }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = accent + '60'; e.currentTarget.style.background = 'var(--bg-elevated)'; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-card)'; }}>
       <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 3, background: accent, borderRadius: '4px 0 0 4px' }}/>
-      <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-sm)', background: accent + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{icon}</div>
-      <div>
-        <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{label}</div>
-        <div style={{ color: 'var(--text-muted)', fontSize: 11.5 }}>{desc}</div>
+      <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-sm)', background: accent + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{icon}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, marginBottom: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
+        <div style={{ color: 'var(--text-muted)', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{desc}</div>
       </div>
-      <div style={{ marginLeft: 'auto', color: 'var(--text-muted)', fontSize: 14 }}>→</div>
+      <ChevronRightIcon style={{ width: 14, height: 14, color: 'var(--text-muted)', flexShrink: 0 }} />
     </button>
   );
 }
@@ -27,12 +29,20 @@ export default function PortalAluno({ onNavigate }: { onNavigate?: (page: string
   const { data: alunos } = useAlunos();
   const { data: pagamentos } = usePagamentos();
   const { data: presencas } = usePresencas();
+  const { data: contratos } = useContratos();
   const [showEditPerfil, setShowEditPerfil] = useState(false);
   const [showContrato, setShowContrato] = useState(false);
   const { user } = useAuth();
   const { isMobile } = useMobile();
   const aluno = alunos.find(a => a.email === user?.email) || alunos[0];
+  const meuContrato = contratos.find((c: any) => c.alunoId === aluno?.id);
   const minhasPresencas = presencas.filter(p => p.alunoId === aluno.id);
+  const hoje = new Date();
+  const diasTreinoMes = new Set(
+    minhasPresencas
+      .filter(p => { const d = new Date(p.data); return d.getMonth() === hoje.getMonth() && d.getFullYear() === hoje.getFullYear(); })
+      .map(p => p.data)
+  ).size;
   const proximoPagamento = pagamentos.find(p => p.status === 'pendente' || p.status === 'vencido');
 
   const bc = beltConfig[aluno.faixa];
@@ -47,7 +57,7 @@ export default function PortalAluno({ onNavigate }: { onNavigate?: (page: string
           <div onClick={e=>e.stopPropagation()} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:28, maxWidth:500, width:'100%', boxShadow:'0 20px 60px rgba(0,0,0,0.2)' }}>
             <div style={{ display:'flex', justifyContent:'space-between', marginBottom:20 }}>
               <div style={{ color:'var(--text-primary)', fontSize:15, fontWeight:800 }}>Editar Dados Pessoais</div>
-              <button onClick={()=>setShowEditPerfil(false)} style={{ background:'none', border:'none', fontSize:18, cursor:'pointer', color:'var(--text-muted)' }}>✕</button>
+              <button onClick={()=>setShowEditPerfil(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', alignItems:'center', justifyContent:'center' }}><Ico icon={XMarkIcon} /></button>
             </div>
             {[['Nome completo',aluno.nome],['Email',aluno.email],['Telefone',aluno.telefone],['WhatsApp',aluno.whatsapp||'']].map(([k,v])=>(
               <div key={k} style={{ marginBottom:12 }}>
@@ -69,7 +79,7 @@ export default function PortalAluno({ onNavigate }: { onNavigate?: (page: string
           <div onClick={e=>e.stopPropagation()} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:28, maxWidth:560, width:'100%', boxShadow:'0 20px 60px rgba(0,0,0,0.2)', maxHeight:'85vh', overflowY:'auto' }}>
             <div style={{ display:'flex', justifyContent:'space-between', marginBottom:20 }}>
               <div style={{ color:'var(--text-primary)', fontSize:15, fontWeight:800 }}>Contrato de Adesão</div>
-              <button onClick={()=>setShowContrato(false)} style={{ background:'none', border:'none', fontSize:18, cursor:'pointer', color:'var(--text-muted)' }}>✕</button>
+              <button onClick={()=>setShowContrato(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', alignItems:'center', justifyContent:'center' }}><Ico icon={XMarkIcon} /></button>
             </div>
             <div style={{ background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:10, padding:'16px 20px', fontSize:13, color:'var(--text-secondary)', lineHeight:1.8, marginBottom:18 }}>
               <p><strong>Tribo Laurada Lda.</strong> (NIF 518948471) · Gracie Barra Braga<br/>
@@ -83,15 +93,23 @@ export default function PortalAluno({ onNavigate }: { onNavigate?: (page: string
               </ul>
               <p style={{ color:'var(--text-muted)', fontSize:11.5 }}>Contrato em vigor desde {aluno.dataMatricula}.</p>
             </div>
-            <div style={{ display:'flex', gap:10 }}>
-              <button onClick={()=>{ alert('📄 Contrato enviado para ' + aluno.email); setShowContrato(false); }} style={{ flex:1, background:'var(--gb-red)', border:'none', borderRadius:'var(--radius-sm)', padding:'10px', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
-                📧 Enviar por email
+            <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+              <button onClick={()=>{
+                exportContratoPDF({
+                  alunoNome:      meuContrato?.alunoNome || aluno.nome,
+                  alunoNif:       meuContrato?.alunoNif  || '',
+                  plano:          meuContrato?.plano      || aluno.plano || '',
+                  valor:          meuContrato?.valor      ?? 0,
+                  dataAssinatura: (meuContrato?.dataAssinatura || aluno.dataMatricula || '').slice(0,10),
+                  dataInicio:     meuContrato?.dataInicio || aluno.dataMatricula || '',
+                  assinaturaImg:  meuContrato?.assinaturaImg || null,
+                });
+                setShowContrato(false);
+              }} style={{ flex:'1 1 140px', background:'var(--gb-red)', border:'none', borderRadius:'var(--radius-sm)', padding:'10px', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                <Ico icon={ArrowDownTrayIcon} sm /> Descarregar PDF
               </button>
-              <button onClick={()=>{ alert('📥 Download iniciado: contrato_' + aluno.nome.replace(' ','_') + '.pdf'); }} style={{ flex:1, background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)', padding:'10px', color:'var(--text-secondary)', fontSize:13, cursor:'pointer' }}>
-                📥 Download PDF
-              </button>
-              <button onClick={()=>{ if(window.confirm('Cancelar subscrição?\n\nA tua conta ficará inativa no fim do período pago. Tens a certeza?')) { alert('Pedido de cancelamento registado. Entraremos em contacto.'); setShowContrato(false); }}} style={{ flex:1, background:'rgba(200,16,46,0.08)', border:'1px solid rgba(200,16,46,0.2)', borderRadius:'var(--radius-sm)', padding:'10px', color:'var(--gb-red)', fontSize:12, fontWeight:600, cursor:'pointer' }}>
-                ⚠️ Cancelar subscrição
+              <button onClick={()=>{ if(window.confirm('Cancelar subscrição?\n\nA tua conta ficará inativa no fim do período pago. Tens a certeza?')) { alert('Pedido de cancelamento registado. Entraremos em contacto.'); setShowContrato(false); }}} style={{ flex:'1 1 140px', background:'rgba(200,16,46,0.08)', border:'1px solid rgba(200,16,46,0.2)', borderRadius:'var(--radius-sm)', padding:'10px', color:'var(--gb-red)', fontSize:12, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                <Ico icon={ExclamationTriangleIcon} sm /> Cancelar subscrição
               </button>
             </div>
           </div>
@@ -139,7 +157,7 @@ export default function PortalAluno({ onNavigate }: { onNavigate?: (page: string
       {/* Stats row */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? 8 : 12, marginBottom: 16 }}>
         {[
-          { label: 'Aulas este mês', value: minhasPresencas.length, accent: GB.red },
+          { label: 'Dias este mês', value: diasTreinoMes, accent: GB.red },
           { label: 'Frequência',     value: `${aluno.frequencia}%`, accent: aluno.frequencia >= 80 ? '#22C55E' : '#F59E0B' },
           { label: 'Grau na faixa',  value: `${aluno.grau}/4`, accent: '#A78BFA' },
           { label: 'Dias de treino', value: '842', accent: '#3B82F6' },
@@ -170,7 +188,7 @@ export default function PortalAluno({ onNavigate }: { onNavigate?: (page: string
       )}
 
       {/* Navigation cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: isMobile ? 8 : 10, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: isMobile ? 6 : 10, marginBottom: 16 }}>
         <NavCard icon="📅" label="Minhas Aulas"   desc="Horários e presenças"   accent="#3B82F6" onClick={() => onNavigate?.('minhas-aulas')}/>
         <NavCard icon="🎖️" label="Minha Evolução" desc="Faixa e graduações"     accent="#A78BFA" onClick={() => onNavigate?.('evolucao')}/>
         <NavCard icon="💳" label="Financeiro"     desc="Pagamentos e faturas"   accent="#22C55E" onClick={() => onNavigate?.('meu-financeiro')}/>
@@ -178,7 +196,33 @@ export default function PortalAluno({ onNavigate }: { onNavigate?: (page: string
         <NavCard icon="💬" label="Mensagens"      desc="Comunicação"           accent="#F59E0B"  onClick={() => onNavigate?.('mensagens')}/>
         <NavCard icon="🏆" label="Graduação"      desc="Próxima cerimónia"     accent="#EAB308"  onClick={() => onNavigate?.('evolucao')}/>
         <NavCard icon="⚙️" label="Minha Conta"    desc="Editar dados pessoais"  accent="#6B7280"  onClick={() => setShowEditPerfil(true)}/>
-        <NavCard icon="📄" label="Meu Contrato"   desc="Ver e descarregar"      accent="#7C3AED"  onClick={() => setShowContrato(true)}/>
+        <NavCard icon="📄" label="Meu Contrato"   desc="Ver contrato completo"  accent="#7C3AED"  onClick={() => setShowContrato(true)}/>
+      </div>
+
+      {/* Contract download strip */}
+      <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'14px 18px', marginBottom:16, display:'flex', alignItems:'center', gap:14 }}>
+        <div style={{ width:36, height:36, borderRadius:'var(--radius-sm)', background:'rgba(124,58,237,0.12)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0 }}>📄</div>
+        <div style={{ flex:1 }}>
+          <div style={{ color:'var(--text-primary)', fontSize:13, fontWeight:600 }}>Contrato de Adesão</div>
+          <div style={{ color:'var(--text-muted)', fontSize:11.5 }}>
+            {meuContrato ? `Assinado em ${meuContrato.dataAssinatura?.slice(0,10) || aluno.dataMatricula}` : `Em vigor desde ${aluno.dataMatricula}`}
+          </div>
+        </div>
+        <button
+          onClick={() => {
+            exportContratoPDF({
+              alunoNome:      meuContrato?.alunoNome || aluno.nome,
+              alunoNif:       meuContrato?.alunoNif  || '',
+              plano:          meuContrato?.plano      || aluno.plano || '',
+              valor:          meuContrato?.valor      ?? 0,
+              dataAssinatura: (meuContrato?.dataAssinatura || aluno.dataMatricula || '').slice(0,10),
+              dataInicio:     meuContrato?.dataInicio || aluno.dataMatricula || '',
+              assinaturaImg:  meuContrato?.assinaturaImg || null,
+            });
+          }}
+          style={{ flexShrink:0, background:'var(--gb-red)', border:'none', borderRadius:'var(--radius-sm)', padding:'9px 16px', color:'#fff', fontSize:12.5, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, boxShadow:'var(--shadow-red)', whiteSpace:'nowrap' }}>
+          ⬇ Descarregar PDF
+        </button>
       </div>
 
       {/* Recent activity */}
