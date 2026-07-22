@@ -194,7 +194,6 @@ export default function PortalAluno({ onNavigate }: { onNavigate?: (page: string
         <NavCard icon="💳" label="Financeiro"     desc="Pagamentos e faturas"   accent="#22C55E" onClick={() => onNavigate?.('meu-financeiro')}/>
         <NavCard icon="🎥" label="Conteúdo"       desc="Técnicas e vídeos"     accent={GB.red}   onClick={() => onNavigate?.('conteudo')}/>
         <NavCard icon="💬" label="Mensagens"      desc="Comunicação"           accent="#F59E0B"  onClick={() => onNavigate?.('mensagens')}/>
-        <NavCard icon="🏆" label="Graduação"      desc="Próxima cerimónia"     accent="#EAB308"  onClick={() => onNavigate?.('evolucao')}/>
         <NavCard icon="⚙️" label="Minha Conta"    desc="Editar dados pessoais"  accent="#6B7280"  onClick={() => setShowEditPerfil(true)}/>
         <NavCard icon="📄" label="Meu Contrato"   desc="Ver contrato completo"  accent="#7C3AED"  onClick={() => setShowContrato(true)}/>
       </div>
