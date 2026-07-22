@@ -1,7 +1,7 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
-import { VitePWA } from 'vite-plugin-pwa'
+import { VitePWA } from 'vite-plugin-pwa';
+import { defineConfig } from 'vite';
+import path from 'path';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [
@@ -107,4 +107,8 @@ export default defineConfig({
     target: 'es2020',
     sourcemap: false,
   },
-})
+
+  server: {
+    allowedHosts: ['kim-dorsispinal-ugly.ngrok-free.dev'],
+  },
+});

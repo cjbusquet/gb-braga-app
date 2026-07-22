@@ -1,12 +1,22 @@
+import {
+  CheckCircleIcon as CheckCircleSolidIcon,
+  ExclamationCircleIcon as ExclamationCircleSolidIcon,
+  StarIcon as StarSolidIcon,
+  XCircleIcon as XCircleSolidIcon,
+} from '@heroicons/react/24/solid';
+
 /**
  * Re-exports de Heroicons com tamanhos standard para uso nas páginas.
  * Tamanho botão: 14×14 (sm) | 16×16 (md) | 18×18 (lg)
  */
 import type { SVGProps } from 'react';
+
 export type HeroIcon = React.ComponentType<SVGProps<SVGSVGElement>>;
 
 export {
   PencilIcon,
+  VideoCameraIcon,
+  DocumentIcon,
   TrashIcon,
   CheckIcon,
   XMarkIcon,
@@ -77,14 +87,12 @@ export {
   SignalIcon,
 } from '@heroicons/react/24/outline';
 
-import {
-  CheckCircleIcon as CheckCircleSolidIcon,
-  XCircleIcon as XCircleSolidIcon,
-  ExclamationCircleIcon as ExclamationCircleSolidIcon,
-  StarIcon as StarSolidIcon,
-} from '@heroicons/react/24/solid';
-
-export { CheckCircleSolidIcon, XCircleSolidIcon, ExclamationCircleSolidIcon, StarSolidIcon };
+export {
+  CheckCircleSolidIcon,
+  XCircleSolidIcon,
+  ExclamationCircleSolidIcon,
+  StarSolidIcon,
+};
 
 /** Wrapper para ícone inline em botão. Uso: <Ico icon={PencilIcon} sm /> */
 interface IcoProps extends SVGProps<SVGSVGElement> {
@@ -94,5 +102,10 @@ interface IcoProps extends SVGProps<SVGSVGElement> {
 }
 export function Ico({ icon: Icon, sm, lg, style, ...rest }: IcoProps) {
   const size = sm ? 13 : lg ? 18 : 15;
-  return <Icon style={{ width: size, height: size, flexShrink: 0, ...style }} {...rest} />;
+  return (
+    <Icon
+      style={{ width: size, height: size, flexShrink: 0, ...style }}
+      {...rest}
+    />
+  );
 }
