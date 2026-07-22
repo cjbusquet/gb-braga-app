@@ -35,7 +35,18 @@ export default function MinhaEvolucao() {
   const diasTreino = new Set(minhasPresencas.map(p => p.data)).size;
 
   const idade = calcularIdade(aluno.dataNascimento);
-  const isKids = idade !== null && idade < 16;
+
+  const KIDS_BELTS = new Set([
+    'cinza-branca','cinza','cinza-preta',
+    'amarela-branca','amarela','amarela-preta',
+    'laranja-branca','laranja','laranja-preta',
+    'verde-branca','verde','verde-preta',
+  ]);
+  const ADULT_ONLY_BELTS = new Set(['azul','roxa','marrom','preta']);
+
+  const isKidsByBelt  = KIDS_BELTS.has(aluno.faixa as string);
+  const isAdultByBelt = ADULT_ONLY_BELTS.has(aluno.faixa as string);
+  const isKids = isKidsByBelt || (idade !== null && idade < 16 && !isAdultByBelt);
   const beltPath = isKids ? BELT_PATH_KIDS : BELT_PATH_ADULT;
 
   const beltIdx = beltPath.indexOf(aluno.faixa as Belt);
