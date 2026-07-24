@@ -287,7 +287,7 @@ export default function ComunicacaoPage() {
       {/* Canal stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
         {(Object.entries(CANAL) as [Canal, typeof CANAL[Canal]][]).map(([id, c]) => (
-          <div key={id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '12px 14px', borderTop: `2px solid ${c.accent}`, cursor: 'pointer' }} onClick={() => { setCanal(id); setTab('enviar'); }}>
+          <div key={id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '12px 14px', cursor: 'pointer' }} onClick={() => { setCanal(id); setTab('enviar'); }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <span style={{ fontSize: 20 }}>{c.icon}</span>
               <span style={{ color: c.accent, fontSize: 20, fontWeight: 700 }}>{totalPorCanal(id)}</span>

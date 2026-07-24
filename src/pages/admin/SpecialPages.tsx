@@ -12,7 +12,7 @@ function Card({ children, style = {} }: { children: React.ReactNode; style?: Rea
 
 function Stat({ label, value, sub, accent = 'var(--gb-red)', delta }: { label: string; value: string|number; sub?: string; accent?: string; delta?: string }) {
   return (
-    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '16px 18px', borderTop: `3px solid ${accent}` }}>
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '16px 18px' }}>
       <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 6 }}>{label}</div>
       <div style={{ color: 'var(--text-primary)', fontSize: 26, fontWeight: 800, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
       {sub && <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 4 }}>{sub}</div>}
@@ -311,7 +311,7 @@ export function RelatoriosPage() {
       {/* KPI strip */}
       <div style={{ display:'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(3,1fr) repeat(3,1fr)', gap:10, marginBottom:20 }}>
         {kpiRows.map(k => (
-          <div key={k.label} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-md)', padding:'12px 14px', borderTop:`3px solid ${k.ok ? '#16A34A' : '#D97706'}` }}>
+          <div key={k.label} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-md)', padding:'12px 14px' }}>
             <div style={{ color:'var(--text-muted)', fontSize:9.5, marginBottom:4, lineHeight:1.3 }}>{k.label}</div>
             <div style={{ color:'var(--text-primary)', fontSize:20, fontWeight:800 }}>{k.value}</div>
             <div style={{ color:'var(--text-muted)', fontSize:9.5, marginTop:2 }}>{k.target}</div>

@@ -3,6 +3,8 @@ import type React from 'react';
 import { useAuth } from '../lib/auth';
 import { supabase, isConfigured } from '../lib/supabaseClient';
 import { GB, roleThemes } from '../lib/gbBrand';
+import { AcademicCapIcon, ArrowPathIcon, CameraIcon, CheckCircleIcon, ExclamationTriangleIcon, Ico, IdentificationIcon, KeyIcon, PhotoIcon, UserIcon } from '../lib/icons';
+import type { HeroIcon } from '../lib/icons';
 import type { Belt } from '../types';
 
 // ─── Belt metadata (derived from gbBrand beltConfig) ─────────────────────────
@@ -47,7 +49,7 @@ const INP: React.CSSProperties = {
   boxSizing: 'border-box',
 };
 
-function SectionCard({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
+function SectionCard({ title, icon, children }: { title: string; icon: HeroIcon; children: React.ReactNode }) {
   return (
     <div style={{
       background: 'var(--bg-card)',
@@ -61,7 +63,7 @@ function SectionCard({ title, icon, children }: { title: string; icon: string; c
         borderBottom: '1px solid var(--border)',
         display: 'flex', alignItems: 'center', gap: 10,
       }}>
-        <span style={{ fontSize: 16 }}>{icon}</span>
+        <Ico icon={icon} />
         <span style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 700 }}>{title}</span>
       </div>
       <div style={{ padding: '20px' }}>
@@ -99,7 +101,7 @@ function SaveBtn({ saving, saved, disabled, onClick, label = 'Guardar' }: {
           transition: 'background 0.2s',
         }}
       >
-        {saving ? '⟳ A guardar...' : saved ? '✓ Guardado!' : label}
+        {saving ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Ico icon={ArrowPathIcon} sm />A guardar...</span> : saved ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Ico icon={CheckCircleIcon} sm />Guardado!</span> : label}
       </button>
     </div>
   );
@@ -213,7 +215,7 @@ function AvatarSection({ avatarUrl, onUploaded }: {
           pointerEvents: 'none',
         }}>
           <span style={{ fontSize: uploading ? 16 : 20, color: '#fff' }}>
-            {uploading ? '⟳' : '📷'}
+            <Ico icon={uploading ? ArrowPathIcon : CameraIcon} style={{ width: uploading ? 16 : 20, height: uploading ? 16 : 20 }} />
           </span>
         </div>
       </div>
@@ -237,7 +239,7 @@ function AvatarSection({ avatarUrl, onUploaded }: {
         >
           {uploading ? 'A enviar...' : 'Alterar foto'}
         </button>
-        {err && <div style={{ color: GB.red, fontSize: 11.5, marginTop: 6, fontWeight: 600 }}>⚠ {err}</div>}
+        {err && <div style={{ color: GB.red, fontSize: 11.5, marginTop: 6, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Ico icon={ExclamationTriangleIcon} sm />{err}</div>}
       </div>
 
       <input
@@ -300,7 +302,7 @@ function DadosPessoaisSection() {
           <input value={telefone} onChange={e => setTelefone(e.target.value)} style={INP} placeholder="+351 9xx xxx xxx" />
         </div>
       </div>
-      {err && <div style={{ color: GB.red, fontSize: 11.5, marginTop: 10, fontWeight: 600 }}>⚠ {err}</div>}
+      {err && <div style={{ color: GB.red, fontSize: 11.5, marginTop: 10, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Ico icon={ExclamationTriangleIcon} sm />{err}</div>}
       <SaveBtn saving={saving} saved={saved} onClick={save} />
     </>
   );
@@ -350,7 +352,7 @@ function PasswordSection() {
           />
         </div>
       </div>
-      {err && <div style={{ color: GB.red, fontSize: 11.5, marginTop: 10, fontWeight: 600 }}>⚠ {err}</div>}
+      {err && <div style={{ color: GB.red, fontSize: 11.5, marginTop: 10, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Ico icon={ExclamationTriangleIcon} sm />{err}</div>}
       <SaveBtn saving={saving} saved={saved} onClick={save} label="Alterar Password" />
     </>
   );
@@ -412,7 +414,7 @@ function AlunoSection() {
           padding: '6px 14px', borderRadius: 6, fontWeight: 700, fontSize: 13,
           border: info.faixa === 'branca' ? '1px solid var(--border)' : 'none',
         }}>
-          🥋 {belt.label}
+          <Ico icon={AcademicCapIcon} sm /> {belt.label}
         </div>
       </div>
 
@@ -499,7 +501,7 @@ export default function PerfilPage() {
       </div>
 
       {/* Avatar */}
-      <SectionCard title="Foto de perfil" icon="🖼️">
+      <SectionCard title="Foto de perfil" icon={PhotoIcon}>
         <AvatarSection
           avatarUrl={avatarUrl}
           onUploaded={(url) => {
@@ -510,18 +512,18 @@ export default function PerfilPage() {
       </SectionCard>
 
       {/* Dados pessoais */}
-      <SectionCard title="Dados pessoais" icon="👤">
+      <SectionCard title="Dados pessoais" icon={UserIcon}>
         <DadosPessoaisSection />
       </SectionCard>
 
       {/* Password */}
-      <SectionCard title="Alterar password" icon="🔒">
+      <SectionCard title="Alterar password" icon={KeyIcon}>
         <PasswordSection />
       </SectionCard>
 
       {/* Aluno-only: plano + faixa */}
       {user.role === 'aluno' && (
-        <SectionCard title="A minha matrícula" icon="🥋">
+        <SectionCard title="A minha matrícula" icon={IdentificationIcon}>
           <AlunoSection />
         </SectionCard>
       )}

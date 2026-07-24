@@ -2,17 +2,19 @@ import {
   ArrowDownTrayIcon,
   CalendarIcon,
   ChatBubbleLeftRightIcon,
+  CheckIcon,
   ChevronRightIcon,
   Cog6ToothIcon,
   CurrencyEuroIcon,
   DocumentIcon,
+  ArrowDownTrayIcon as SaveIcon,
   ExclamationTriangleIcon,
   Ico,
   TrophyIcon,
   VideoCameraIcon,
   XMarkIcon,
 } from '../../lib/icons';
-import { ComponentType, SVGProps } from 'react';
+import type { ComponentType, SVGProps } from 'react';
 import { GB, beltConfig } from '../../lib/gbBrand';
 import {
   useAlunos,
@@ -303,7 +305,7 @@ export default function PortalAluno({
                   cursor: 'pointer',
                 }}
               >
-                💾 Guardar
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Ico icon={SaveIcon} sm />Guardar</span>
               </button>
             </div>
           </div>
@@ -885,7 +887,7 @@ export default function PortalAluno({
                   flexShrink: 0,
                 }}
               >
-                ✓
+                <Ico icon={CheckIcon} sm />
               </div>
               <div style={{ flex: 1 }}>
                 <div

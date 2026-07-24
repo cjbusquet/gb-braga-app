@@ -348,7 +348,7 @@ export default function MinhaEvolucao() {
             { label: 'Graduações', value: historico.length + 1 },
             { label: 'Grau atual', value: `${aluno.grau}° de 4` },
           ]
-            .filter(Boolean)
+            .filter((s): s is NonNullable<typeof s> => Boolean(s))
             .map((s) => (
               <div
                 key={s.label}

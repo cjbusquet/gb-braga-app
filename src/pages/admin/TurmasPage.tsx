@@ -99,7 +99,7 @@ function TurmaDetail({ turma, onBack }: { turma: any; onBack: ()=>void }) {
       <button onClick={onBack} style={{ background:'none', border:'none', color:'var(--text-muted)', fontSize:13, cursor:'pointer', marginBottom:16, display:'flex', alignItems:'center', gap:6 }}>
         <Ico icon={ArrowLeftIcon} sm /> Voltar ao calendário
       </button>
-      <div style={{ background:'var(--bg-card)', border:`1px solid var(--border)`, borderRadius:'var(--radius-lg)', borderTop:`4px solid ${cor}`, padding:24, marginBottom:16 }}>
+      <div style={{ background:'var(--bg-card)', border:`1px solid var(--border)`, borderRadius:'var(--radius-lg)', padding:24, marginBottom:16 }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:12 }}>
           <div>
             <h2 style={{ color:'var(--text-primary)', fontSize:18, fontWeight:700, marginBottom:6 }}>{turma.nome}</h2>
@@ -183,7 +183,6 @@ function CalendarView({ turmas, onSelect, filtroTipo }: {
         style={{
           background: `${cor}18`,
           border: `1.5px solid ${cor}`,
-          borderLeft: `4px solid ${cor}`,
           borderRadius: 5,
           padding: '5px 7px',
           cursor: 'pointer',
@@ -407,7 +406,7 @@ export default function TurmasPage() {
             const cor = turma.cor || GB.red;
             return (
               <div key={turma.id} onClick={() => setSelected(turma)}
-                style={{ background:'var(--bg-card)', border:`1px solid var(--border)`, borderTop:`4px solid ${cor}`, borderRadius:'var(--radius-lg)', padding:18, cursor:'pointer', transition:'box-shadow 0.15s' }}
+                style={{ background:'var(--bg-card)', border:`1px solid var(--border)`, borderRadius:'var(--radius-lg)', padding:18, cursor:'pointer', transition:'box-shadow 0.15s' }}
                 onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 4px 16px ${cor}33`)}
                 onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}>
                 <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8, gap:8 }}>

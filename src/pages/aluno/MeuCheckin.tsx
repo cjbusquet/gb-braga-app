@@ -3,6 +3,7 @@ import { isConfigured, supabase } from '../../lib/supabaseClient';
 import { useEffect, useState } from 'react';
 
 import { GB } from '../../lib/gbBrand';
+import { ArrowPathIcon, CheckCircleSolidIcon, ExclamationTriangleIcon, Ico, MapPinIcon, SignalIcon } from '../../lib/icons';
 import { useAuth } from '../../lib/auth';
 
 // Haversine distance in metres
@@ -298,7 +299,7 @@ export default function MeuCheckin() {
               marginBottom: 6,
             }}
           >
-            ✓ Já fizeste check-in hoje
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Ico icon={CheckCircleSolidIcon} sm />Já fizeste check-in hoje</span>
           </div>
           {presencasHoje.map((p, i) => (
             <div
@@ -322,7 +323,7 @@ export default function MeuCheckin() {
             textAlign: 'center',
           }}
         >
-          <div style={{ fontSize: 52, marginBottom: 12 }}>✅</div>
+          <div style={{ marginBottom: 12, color: '#16A34A' }}><Ico icon={CheckCircleSolidIcon} style={{ width: 52, height: 52 }} /></div>
           <div
             style={{
               color: 'var(--text-primary)',
@@ -412,7 +413,6 @@ export default function MeuCheckin() {
                       border: `1.5px solid ${turmaId === t.id ? t.cor || GB.red : 'var(--border)'}`,
                       borderRadius: 8,
                       cursor: 'pointer',
-                      borderLeft: `1px solid var(--border)`,
                     }}
                   >
                     <input
@@ -508,17 +508,10 @@ export default function MeuCheckin() {
                 gap: 10,
               }}
             >
-              <span style={{ fontSize: 18, flexShrink: 0 }}>
-                {gpsStatus === 'inside'
-                  ? '✅'
-                  : gpsStatus === 'outside'
-                    ? '📍'
-                    : gpsStatus === 'checking'
-                      ? '⟳'
-                      : gpsStatus === 'error'
-                        ? '⚠️'
-                        : '📡'}
-              </span>
+              <Ico
+                icon={gpsStatus === 'inside' ? CheckCircleSolidIcon : gpsStatus === 'outside' ? MapPinIcon : gpsStatus === 'checking' ? ArrowPathIcon : gpsStatus === 'error' ? ExclamationTriangleIcon : SignalIcon}
+                style={{ width: 18, height: 18, flexShrink: 0 }}
+              />
               <div>
                 <div
                   style={{
@@ -565,7 +558,7 @@ export default function MeuCheckin() {
                 marginBottom: 12,
               }}
             >
-              ⚠ {err}
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Ico icon={ExclamationTriangleIcon} sm />{err}</span>
             </div>
           )}
 

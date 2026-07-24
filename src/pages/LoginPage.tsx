@@ -5,7 +5,7 @@ import { GB, roleThemes } from '../lib/gbBrand';
 import { GBLogoFull } from '../components/GBLogo';
 import { supabase, isConfigured } from '../lib/supabaseClient';
 import type { UserRole } from '../types';
-import { Ico, KeyIcon, ClipboardDocumentIcon, PencilIcon, CreditCardIcon, CheckCircleIcon, IdentificationIcon } from '../lib/icons';
+import { Ico, KeyIcon, ClipboardDocumentIcon, PencilIcon, CreditCardIcon, CheckCircleIcon, IdentificationIcon, AcademicCapIcon, ArrowLeftIcon, ArrowPathIcon, ChatBubbleLeftRightIcon, EnvelopeIcon } from '../lib/icons';
 
 const DEMO_ROLES: { role: UserRole; email: string; label?: string }[] = [
   { role: 'superadmin',  email: 'superadmin@gbbraga.com' },
@@ -133,13 +133,13 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
 
                   {resetSent ? (
                     <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 'var(--radius-sm)', padding: '16px 18px', textAlign: 'center' }}>
-                      <div style={{ fontSize: 32, marginBottom: 10 }}>📧</div>
+                      <div style={{ color: '#16A34A', marginBottom: 10 }}><Ico icon={EnvelopeIcon} style={{ width: 32, height: 32 }} /></div>
                       <div style={{ color: '#16A34A', fontWeight: 700, fontSize: 14, marginBottom: 6 }}>Email enviado!</div>
                       <div style={{ color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.6 }}>
                         Verifica a tua caixa de entrada em <strong>{email}</strong>.<br/>O link expira em 24h.
                       </div>
                       <button onClick={() => { setForgot(false); setResetSent(false); }} style={{ marginTop: 16, background: 'transparent', border: `1px solid var(--border)`, borderRadius: 'var(--radius-sm)', padding: '8px 20px', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>
-                        ← Voltar ao login
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Ico icon={ArrowLeftIcon} sm />Voltar ao login</span>
                       </button>
                     </div>
                   ) : (
@@ -152,11 +152,11 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
                       {resetErr && <p style={{ color: GB.red, fontSize: 13, marginBottom: 12, fontWeight: 500 }}>{resetErr}</p>}
                       <button type="submit" disabled={resetLoading}
                         style={{ width: '100%', background: resetLoading ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', color: '#fff', fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-display)', letterSpacing: '1px', textTransform: 'uppercase', cursor: resetLoading ? 'not-allowed' : 'pointer', boxShadow: resetLoading ? 'none' : 'var(--shadow-red)', minHeight: 48 }}>
-                        {resetLoading ? 'A enviar...' : '📧 Enviar link de recuperação'}
+                        {resetLoading ? 'A enviar...' : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Ico icon={EnvelopeIcon} sm />Enviar link de recuperação</span>}
                       </button>
                       <button type="button" onClick={() => { setForgot(false); setResetErr(''); }}
                         style={{ width: '100%', marginTop: 10, background: 'transparent', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '11px', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>
-                        ← Voltar ao login
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Ico icon={ArrowLeftIcon} sm />Voltar ao login</span>
                       </button>
                     </form>
                   )}
@@ -212,7 +212,7 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
                             <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 500 }}>{(r as any).label || rt.label}</div>
                             <div style={{ color: 'var(--text-muted)', fontSize: 10.5 }}>{r.email}</div>
                           </div>
-                          {isAct && <span style={{ color: GB.red, fontSize: 11 }}>⟳</span>}
+                          {isAct && <Ico icon={ArrowPathIcon} sm style={{ color: GB.red }} />}
                         </button>
                       );
                     })}
@@ -240,7 +240,7 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
                 ))}
               </div>
 
-              <div style={{ fontSize: 52, marginBottom: 12 }}>🥋</div>
+              <div style={{ color: GB.red, marginBottom: 12 }}><Ico icon={AcademicCapIcon} style={{ width: 52, height: 52 }} /></div>
               <h1 style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>
                 Junta-te à GB Braga
               </h1>
@@ -268,12 +268,12 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
 
               <button onClick={onRegister}
                 style={{ width: '100%', background: GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '15px', color: '#fff', fontSize: 15, fontWeight: 800, fontFamily: 'var(--font-display)', letterSpacing: '1px', textTransform: 'uppercase', cursor: 'pointer', boxShadow: 'var(--shadow-red)', minHeight: 52, marginBottom: 12 }}>
-                🥋 Começar Matrícula
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}><Ico icon={AcademicCapIcon} />Começar Matrícula</span>
               </button>
 
               <p style={{ color: 'var(--text-muted)', fontSize: 12, lineHeight: 1.6 }}>
                 Primeira aula gratuita · Sem compromisso inicial<br/>
-                <a href="https://wa.me/351927773854" style={{ color: '#25D366', fontWeight: 700 }}>💬 Falar com a receção</a>
+                <a href="https://wa.me/351927773854" style={{ color: '#25D366', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Ico icon={ChatBubbleLeftRightIcon} sm />Falar com a receção</a>
               </p>
             </div>
           )}

@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { GB } from '../../lib/gbBrand';
+import { BellIcon, ChatBubbleLeftRightIcon, CreditCardIcon, DocumentArrowDownIcon, EnvelopeIcon, Ico, PhoneIcon } from '../../lib/icons';
 import PortalPageHeader from './PortalPageHeader';
 
 const CANAL_CONFIG = {
-  whatsapp: { icon: '💬', label: 'WhatsApp', accent: '#25D366' },
-  sms:      { icon: '📱', label: 'SMS',      accent: '#3B82F6' },
-  email:    { icon: '📧', label: 'Email',    accent: '#7C3AED' },
-  push:     { icon: '🔔', label: 'Push',     accent: '#F59E0B' },
+  whatsapp: { icon: ChatBubbleLeftRightIcon, label: 'WhatsApp', accent: '#25D366' },
+  sms:      { icon: PhoneIcon,               label: 'SMS',      accent: '#3B82F6' },
+  email:    { icon: EnvelopeIcon,            label: 'Email',    accent: '#7C3AED' },
+  push:     { icon: BellIcon,                label: 'Push',     accent: '#F59E0B' },
 };
 
 const MOCK_INBOX = [
@@ -70,7 +71,6 @@ export default function Mensagens() {
                 <div key={msg.id} onClick={() => setSelected(msg)} style={{
                   padding: '12px 14px', borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer',
                   background: isSelected ? 'rgba(200,16,46,0.04)' : 'transparent',
-                  borderLeft: `3px solid ${isSelected ? GB.red : 'transparent'}`,
                 }}
                   onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--bg-elevated)'; }}
                   onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
@@ -88,7 +88,7 @@ export default function Mensagens() {
                     {msg.assunto}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ background: 'rgba(0,0,0,0.05)', color: cc?.accent || 'var(--text-muted)', fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 4 }}>{cc?.icon} {cc?.label}</span>
+                    <span style={{ background: 'rgba(0,0,0,0.05)', color: cc?.accent || 'var(--text-muted)', fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 4 }}>{cc && <Ico icon={cc.icon} sm />}{cc?.label}</span>
                     <span style={{ background: tc.bg, color: tc.color, fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 4 }}>{msg.tipo}</span>
                   </div>
                 </div>
@@ -106,7 +106,7 @@ export default function Mensagens() {
               <div style={{ display: 'flex', gap: 6 }}>
                 {(() => {
                   const cc = CANAL_CONFIG[selected.canal as keyof typeof CANAL_CONFIG];
-                  return <span style={{ background: 'var(--bg-elevated)', color: cc?.accent, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 6, whiteSpace: 'nowrap' as const }}>{cc?.icon} {cc?.label}</span>;
+                  return <span style={{ background: 'var(--bg-elevated)', color: cc?.accent, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 6, whiteSpace: 'nowrap' as const, display: 'inline-flex', alignItems: 'center', gap: 5 }}>{cc && <Ico icon={cc.icon} sm />}{cc?.label}</span>;
                 })()}
               </div>
             </div>
@@ -131,10 +131,10 @@ export default function Mensagens() {
             {selected.tipo === 'financeiro' && (
               <div style={{ marginTop: 24, display: 'flex', gap: 10 }}>
                 <button style={{ background: '#635BFF', border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 18px', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                  💳 Pagar agora
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Ico icon={CreditCardIcon} sm />Pagar agora</span>
                 </button>
                 <button style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '9px 18px', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>
-                  📥 Ver fatura PDF
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Ico icon={DocumentArrowDownIcon} sm />Ver fatura PDF</span>
                 </button>
               </div>
             )}

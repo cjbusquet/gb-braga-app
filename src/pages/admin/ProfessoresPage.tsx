@@ -60,7 +60,7 @@ export default function ProfessoresPage() {
           { label: 'Em Curso',    value: ativos.length,             accent: '#16A34A' },
           { label: 'Total Check-ins', value: todosCheckins.length, accent: '#7C3AED' },
         ].map(s => (
-          <div key={s.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '14px 16px', borderTop: `3px solid ${s.accent}`, boxShadow: 'var(--shadow-xs)' }}>
+          <div key={s.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '14px 16px', boxShadow: 'var(--shadow-xs)' }}>
             <div style={{ color: 'var(--text-muted)', fontSize: 10.5, marginBottom: 4 }}>{s.label}</div>
             <div style={{ color: 'var(--text-primary)', fontSize: 26, fontWeight: 800 }}>{s.value}</div>
           </div>

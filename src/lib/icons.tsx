@@ -48,6 +48,7 @@ export {
   ArrowDownTrayIcon,
   ArrowUpTrayIcon,
   PaperAirplaneIcon,
+  PhotoIcon,
   ChatBubbleLeftRightIcon,
   BanknotesIcon,
   CurrencyEuroIcon,

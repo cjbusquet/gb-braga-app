@@ -2,6 +2,7 @@ import { usePagamentos, useAlunos } from '../../lib/useData';
 import { mockTocDocumentos } from '../../data/mockData';
 import { useAuth } from '../../lib/auth';
 import { GB } from '../../lib/gbBrand';
+import { CreditCardIcon, ExclamationTriangleIcon, Ico } from '../../lib/icons';
 import PortalPageHeader from './PortalPageHeader';
 
 export default function MeuFinanceiro() {
@@ -24,13 +25,13 @@ export default function MeuFinanceiro() {
         <div style={{ background: proximo.status === 'vencido' ? 'rgba(200,16,46,0.08)' : 'rgba(245,158,11,0.08)', border: `1px solid ${proximo.status === 'vencido' ? GB.red + '30' : 'rgba(245,158,11,0.3)'}`, borderRadius: 'var(--radius-lg)', padding: 20, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div style={{ color: proximo.status === 'vencido' ? GB.red : '#F59E0B', fontSize: 12, fontWeight: 700, marginBottom: 4 }}>
-              {proximo.status === 'vencido' ? '⚠️ Pagamento em atraso' : '💳 Próximo pagamento'}
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Ico icon={proximo.status === 'vencido' ? ExclamationTriangleIcon : CreditCardIcon} sm />{proximo.status === 'vencido' ? 'Pagamento em atraso' : 'Próximo pagamento'}</span>
             </div>
             <div style={{ color: 'var(--text-primary)', fontSize: 26, fontWeight: 800, fontFamily: 'var(--font-mono)' }}>€{proximo.valor.toFixed(2)}</div>
             <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 3 }}>{proximo.plano} · Vence: {proximo.vencimento}</div>
           </div>
           <button style={{ background: '#635BFF', border: 'none', borderRadius: 'var(--radius-md)', padding: '12px 22px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 0 16px rgba(99,91,255,0.3)' }}>
-            💳 Pagar agora
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Ico icon={CreditCardIcon} sm />Pagar agora</span>
           </button>
         </div>
       )}

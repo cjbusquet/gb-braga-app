@@ -1,4 +1,4 @@
-import { CheckIcon, Ico } from '@/lib/icons';
+import { CheckIcon, Ico, MapPinIcon } from '@/lib/icons';
 import { useAlunos, usePresencas, useTurmas } from '../../lib/useData';
 
 import { GB } from '../../lib/gbBrand';
@@ -261,7 +261,7 @@ export default function MinhasAulas() {
                   fontSize: 11,
                 }}
               >
-                📍 {t.sala}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Ico icon={MapPinIcon} sm />{t.sala}</span>
               </div>
             </div>
           ))}

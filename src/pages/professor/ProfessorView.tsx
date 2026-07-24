@@ -122,7 +122,7 @@ export default function ProfessorView() {
               const jaFezCheckin = meuCheckins.some(c => c.turmaId === t.id && c.data === hoje);
               const estaAtiva = checkinAtivo?.turmaId === t.id;
               return (
-                <Card key={t.id} style={{ padding: 18, borderTop: estaAtiva ? '3px solid #16A34A' : jaFezCheckin ? '3px solid #6B7280' : '3px solid var(--gb-red)' }}>
+                <Card key={t.id} style={{ padding: 18 }}>
                   <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 700, marginBottom: 3 }}>{t.nome}</div>
                   <div style={{ color: 'var(--text-muted)', fontSize: 11.5, marginBottom: 10 }}>{t.horario} · {t.diaSemana.join(', ')}</div>
                   <div style={{ color: 'var(--text-muted)', fontSize: 11, marginBottom: 14 }}>📍 {t.sala} · {t.inscritos} alunos</div>
@@ -190,7 +190,7 @@ export default function ProfessorView() {
               { label: 'Check-ins (mês)',   value: allPresencas.length,         accent: '#16A34A' },
               { label: 'Candidatos Grad.', value: candidatosGraduacao.length,  accent: '#7C3AED' },
             ].map(s => (
-              <div key={s.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '14px 16px', borderTop: `3px solid ${s.accent}`, boxShadow: 'var(--shadow-xs)' }}>
+              <div key={s.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '14px 16px', boxShadow: 'var(--shadow-xs)' }}>
                 <div style={{ color: 'var(--text-muted)', fontSize: 10.5, marginBottom: 4 }}>{s.label}</div>
                 <div style={{ color: 'var(--text-primary)', fontSize: 26, fontWeight: 800 }}>{s.value}</div>
               </div>
@@ -269,7 +269,7 @@ export default function ProfessorView() {
           {turmas.map(t => {
             const ocupacao = Math.round((t.inscritos / t.capacidade) * 100);
             return (
-              <Card key={t.id} style={{ padding: 20, borderTop: '3px solid var(--gb-red)' }}>
+              <Card key={t.id} style={{ padding: 20 }}>
                 <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{t.nome}</div>
                 <div style={{ color: 'var(--text-muted)', fontSize: 11.5, marginBottom: 14 }}>📍 {t.sala}</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
@@ -366,7 +366,7 @@ export default function ProfessorView() {
               { label: 'Média por aula',    value: Math.round(allPresencas.length / 5) || 12, accent: '#2563EB' },
               { label: 'Taxa de presença',  value: '78%', accent: '#16A34A' },
             ].map(s => (
-              <div key={s.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '14px 16px', borderTop: `3px solid ${s.accent}`, boxShadow: 'var(--shadow-xs)' }}>
+              <div key={s.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '14px 16px', boxShadow: 'var(--shadow-xs)' }}>
                 <div style={{ color: 'var(--text-muted)', fontSize: 10.5, marginBottom: 4 }}>{s.label}</div>
                 <div style={{ color: 'var(--text-primary)', fontSize: 24, fontWeight: 800 }}>{s.value}</div>
               </div>

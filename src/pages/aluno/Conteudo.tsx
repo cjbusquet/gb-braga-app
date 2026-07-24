@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { GB, beltConfig } from '../../lib/gbBrand';
+import { Ico, MagnifyingGlassIcon } from '../../lib/icons';
 import PortalPageHeader from './PortalPageHeader';
 
 const VIDEOS = [
@@ -32,8 +33,12 @@ export default function Conteudo() {
 
       {/* Filters */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' as const }}>
-        <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="🔍 Pesquisar técnica..."
-          style={{ flex: 1, minWidth: 200, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 12px', color: 'var(--text-primary)', fontSize: 13 }}/>
+        <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
+        <Ico icon={MagnifyingGlassIcon} style={{ position: 'absolute', left: 11, top: 10, color: 'var(--text-muted)' }} />
+        <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Pesquisar técnica..."
+          aria-label="Pesquisar técnica"
+          style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 12px 8px 32px', color: 'var(--text-primary)', fontSize: 13 }}/>
+        </div>
         {['todos','branca','azul','roxa','marrom','preta'].map(n => (
           <button key={n} onClick={() => setFilterNivel(n)} style={{ background: filterNivel === n ? GB.red : 'var(--bg-card)', border: `1px solid ${filterNivel === n ? GB.red : 'var(--border)'}`, borderRadius: 'var(--radius-sm)', padding: '7px 12px', color: filterNivel === n ? '#fff' : 'var(--text-secondary)', fontSize: 12, fontWeight: filterNivel === n ? 600 : 400, textTransform: 'capitalize' as const, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
             {n !== 'todos' && <div style={{ width: 10, height: 4, background: beltConfig[n]?.bg || '#888', borderRadius: 1, border: n === 'branca' ? '1px solid #555' : 'none' }}/>}
