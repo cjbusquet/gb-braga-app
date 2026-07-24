@@ -101,6 +101,7 @@ function NavCard({
         <div
           style={{
             color: 'rgb(0,0,0,0.85)',
+            fontWeight: 500,
             fontSize: 13,
             marginBottom: 1,
             overflow: 'hidden',

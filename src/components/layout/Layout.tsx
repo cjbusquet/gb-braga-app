@@ -146,20 +146,6 @@ const NAV_ITEMS: NavItem[] = [
     id: 'minhas-aulas',
     roles: ['aluno'],
   },
-  {
-    Icon: CurrencyEuroIcon,
-    label: 'Financeiro',
-    id: 'meu-financeiro',
-    roles: ['aluno'],
-  },
-  { Icon: PlayCircleIcon, label: 'Conteúdo', id: 'conteudo', roles: ['aluno'] },
-  {
-    Icon: EnvelopeIcon,
-    label: 'Mensagens',
-    id: 'mensagens',
-    roles: ['aluno'],
-    badge: 1,
-  },
 ];
 
 // Bottom nav items per role (max 4 + "Mais")
@@ -625,33 +611,6 @@ export default function Layout({
           </button>
         );
       })}
-      {/* "Mais" button */}
-      <button
-        onClick={() => setMobileOpen(true)}
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 3,
-          padding: '8px 4px 10px',
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          borderTop: '2px solid transparent',
-          minHeight: 56,
-        }}
-      >
-        <Squares2X2Icon
-          style={{ width: 22, height: 22, color: 'var(--text-muted)' }}
-        />
-        <span
-          style={{ fontSize: 9.5, fontWeight: 400, color: 'var(--text-muted)' }}
-        >
-          Mais
-        </span>
-      </button>
     </div>
   );
 

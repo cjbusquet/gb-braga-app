@@ -2,6 +2,7 @@ import { usePagamentos, useAlunos } from '../../lib/useData';
 import { mockTocDocumentos } from '../../data/mockData';
 import { useAuth } from '../../lib/auth';
 import { GB } from '../../lib/gbBrand';
+import PortalPageHeader from './PortalPageHeader';
 
 export default function MeuFinanceiro() {
   const { data: pagamentos } = usePagamentos();
@@ -14,10 +15,10 @@ export default function MeuFinanceiro() {
 
   return (
     <div>
-      <div style={{ marginBottom: 18 }}>
-        <div style={{ color: 'var(--text-muted)', fontSize: 10.5, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 3 }}>Aluno</div>
-        <h1 style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 700 }}>Meu Financeiro</h1>
-      </div>
+      <PortalPageHeader
+        title="Meu Financeiro"
+        description="Consulta pagamentos, faturas e os próximos vencimentos."
+      />
 
       {proximo && (
         <div style={{ background: proximo.status === 'vencido' ? 'rgba(200,16,46,0.08)' : 'rgba(245,158,11,0.08)', border: `1px solid ${proximo.status === 'vencido' ? GB.red + '30' : 'rgba(245,158,11,0.3)'}`, borderRadius: 'var(--radius-lg)', padding: 20, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

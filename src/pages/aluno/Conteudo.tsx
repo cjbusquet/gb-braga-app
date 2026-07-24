@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { GB, beltConfig } from '../../lib/gbBrand';
+import PortalPageHeader from './PortalPageHeader';
 
 const VIDEOS = [
   { id: 1, titulo: 'Fundamentos da Guarda Fechada', nivel: 'branca', duracao: '45min', prof: 'João Santos', desc: 'Posição básica, saídas e controlo de distância.' },
@@ -24,10 +25,10 @@ export default function Conteudo() {
 
   return (
     <div>
-      <div style={{ marginBottom: 18 }}>
-        <div style={{ color: 'var(--text-muted)', fontSize: 10.5, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 3 }}>Aluno</div>
-        <h1 style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 700 }}>Conteúdo Técnico</h1>
-      </div>
+      <PortalPageHeader
+        title="Conteúdo Técnico"
+        description="Explora técnicas e conteúdos para complementar o teu treino."
+      />
 
       {/* Filters */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' as const }}>

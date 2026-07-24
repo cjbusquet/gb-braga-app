@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { GB } from '../../lib/gbBrand';
+import PortalPageHeader from './PortalPageHeader';
 
 const CANAL_CONFIG = {
   whatsapp: { icon: '💬', label: 'WhatsApp', accent: '#25D366' },
@@ -33,13 +34,17 @@ export default function Mensagens() {
 
   return (
     <div>
-      <div style={{ marginBottom: 18 }}>
-        <div style={{ color: 'var(--text-muted)', fontSize: 10.5, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 3 }}>Aluno</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <h1 style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 700 }}>Mensagens</h1>
-          {unread > 0 && <span style={{ background: GB.red, color: '#fff', fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>{unread} novas</span>}
-        </div>
-      </div>
+      <PortalPageHeader
+        title="Mensagens"
+        description="Consulta as comunicações da Gracie Barra Braga."
+        trailing={
+          unread > 0 ? (
+            <span style={{ background: GB.red, color: '#fff', fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>
+              {unread} novas
+            </span>
+          ) : undefined
+        }
+      />
 
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16, height: 'calc(100vh - 160px)' }}>
         {/* Inbox list */}
