@@ -7,9 +7,9 @@ import {
   Cog6ToothIcon,
   CurrencyEuroIcon,
   DocumentIcon,
-  ArrowDownTrayIcon as SaveIcon,
   ExclamationTriangleIcon,
   Ico,
+  ArrowDownTrayIcon as SaveIcon,
   TrophyIcon,
   VideoCameraIcon,
   XMarkIcon,
@@ -65,12 +65,11 @@ function NavCard({
         background: 'var(--bg-card)',
         border: '1px solid var(--border)',
         borderRadius: 'var(--radius-lg)',
-        padding: '14px 16px',
         textAlign: 'left',
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 20,
         position: 'relative',
         overflow: 'hidden',
         boxSizing: 'border-box',
@@ -86,9 +85,9 @@ function NavCard({
     >
       <div
         style={{
-          width: 52,
-          height: 52,
-          borderRadius: 'var(--radius-sm)',
+          width: 100,
+          height: 100,
+          borderRadius: '0',
           background: accent + '18',
           display: 'flex',
           alignItems: 'center',
@@ -97,14 +96,14 @@ function NavCard({
           flexShrink: 0,
         }}
       >
-        <Icon style={{ width: 22, height: 22, color: accent }} />
+        <Icon style={{ width: 36, height: 36, color: accent }} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
             color: 'rgb(0,0,0,0.85)',
             fontWeight: 500,
-            fontSize: 13,
+            fontSize: 14,
             marginBottom: 1,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -117,7 +116,7 @@ function NavCard({
           style={{
             color: 'rgb(0,0,0,0.5)',
             fontWeight: 500,
-            fontSize: 11,
+            fontSize: 12,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
@@ -128,8 +127,9 @@ function NavCard({
       </div>
       <ChevronRightIcon
         style={{
-          width: 14,
-          height: 14,
+          width: 28,
+          height: 28,
+          marginRight: 12,
           color: 'var(--text-muted)',
           flexShrink: 0,
         }}
@@ -305,7 +305,16 @@ export default function PortalAluno({
                   cursor: 'pointer',
                 }}
               >
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Ico icon={SaveIcon} sm />Guardar</span>
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <Ico icon={SaveIcon} sm />
+                  Guardar
+                </span>
               </button>
             </div>
           </div>
@@ -485,7 +494,6 @@ export default function PortalAluno({
       <div
         style={{
           background: `linear-gradient(135deg, #0D0508 0%, ${bc?.bg || '#888'} 100%)`,
-          border: '1px solid rgba(200,16,46,0.2)',
           borderRadius: 'var(--radius-lg)',
           padding: '24px 28px',
           marginBottom: 16,
@@ -566,7 +574,10 @@ export default function PortalAluno({
                   height: 11,
                   background: bc?.bg || '#888',
                   borderRadius: 3,
-                  border: aluno.faixa === 'branca' ? '1px solid #555' : 'none',
+                  border:
+                    aluno.faixa === 'branca' || aluno.faixa === 'preta'
+                      ? '1px solid #555'
+                      : 'none',
                   flexShrink: 0,
                 }}
               />

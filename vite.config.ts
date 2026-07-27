@@ -110,5 +110,10 @@ export default defineConfig({
 
   server: {
     allowedHosts: ['kim-dorsispinal-ugly.ngrok-free.dev'],
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+      },
+    },
   },
 });
