@@ -30,6 +30,7 @@ import PerfilPage from './pages/PerfilPage';
 import ModulosPage from './pages/admin/ModulosPage';
 import ProfessoresPage from './pages/admin/ProfessoresPage';
 import { ModulosProvider, useModulos } from './lib/useModulos';
+import { Ico, CheckCircleIcon, KeyIcon } from './lib/icons';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 5 * 60 * 1000 } },
@@ -99,7 +100,7 @@ function SetPasswordScreen() {
   if (done) return (
     <div className="flex justify-center items-center py-8 px-4 min-h-screen bg-base">
       <div className="p-8 w-full max-w-[400px] text-center rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.08)] bg-white">
-        <div className="mb-4 text-5xl">✅</div>
+        <div className="mb-4 text-green-500"><Ico icon={CheckCircleIcon} style={{ width: 48, height: 48 }} /></div>
         <h2 className="mb-2 font-display text-lg font-extrabold uppercase text-primary">Password definida!</h2>
         <p className="mb-6 text-sm text-secondary">A tua conta está pronta. Bem-vindo à equipa Gracie Barra Braga.</p>
         <button
@@ -116,7 +117,9 @@ function SetPasswordScreen() {
     <div className="flex justify-center items-center py-8 px-4 min-h-screen bg-base">
       <div className="p-6 w-full max-w-[420px] rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.08)] sm:p-10 bg-white">
         <div className="flex gap-3 items-center mb-6">
-          <div className="flex justify-center items-center w-11 h-11 text-xl rounded-xl shrink-0 bg-gb-red">🔑</div>
+          <div className="flex justify-center items-center w-11 h-11 text-white rounded-xl shrink-0 bg-gb-red">
+            <Ico icon={KeyIcon} style={{ width: 20, height: 20 }} />
+          </div>
           <div className="min-w-0">
             <div className="font-display text-base font-black uppercase text-primary">Define a tua password</div>
             <div className="text-xs text-muted">Gracie Barra Braga — Acesso de equipa</div>
@@ -214,6 +217,13 @@ function AppContent() {
     return <LoginPage onRegister={() => setRegistering(true)} />;
   }
 
+  // Only alunos need to complete enrollment; staff go straight to the dashboard.
+  // Rendered here (before <Layout>) so this full-screen flow never gets
+  // wrapped by the internal Sidebar/Layout — it's not "in the app" yet.
+  if (user.role === 'aluno' && !user.matriculaCompleta) {
+    return <FluxoMatricula onConcludo={refreshProfile} />;
+  }
+
   const defaultPage = user.role === 'aluno' ? 'portal' : 'dashboard';
   const page = currentPage || defaultPage;
 
@@ -231,14 +241,6 @@ function AppContent() {
   };
 
   const renderPage = () => {
-    // Only alunos need to complete enrollment
-    // Staff (superadmin/admin/professor/atendimento) go straight to dashboard
-    const isStaff = ['superadmin','admin','professor','atendimento'].includes(user.role);
-    if (!isStaff && !user.matriculaCompleta) {
-      // onConcludo refreshes the profile so matriculaCompleta becomes true
-      // and this block is no longer entered on the next render.
-      return <FluxoMatricula onConcludo={refreshProfile} />;
-    }
     if (user.role === 'aluno') {
       switch (safePage) {
         case 'portal':          return <PortalAluno onNavigate={handleNavigate}/>;

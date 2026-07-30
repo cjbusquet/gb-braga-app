@@ -9,6 +9,7 @@ import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 import Badge from '../components/common/Badge';
 import { Ico, KeyIcon, ClipboardDocumentIcon, PencilIcon, CreditCardIcon, CheckCircleIcon, IdentificationIcon, AcademicCapIcon, ArrowLeftIcon, ArrowPathIcon, ChatBubbleLeftRightIcon, EnvelopeIcon } from '../lib/icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 const DEMO_ROLES: { role: UserRole; email: string; label?: string }[] = [
   { role: 'superadmin',  email: 'superadmin@gbbraga.com' },
@@ -269,7 +270,7 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
                 ] as const).map(([Icon,label]) => (
                   <div key={label} className="flex flex-col gap-1 items-center">
                     <div className="flex justify-center items-center w-10 h-10 rounded-full border-[1.5px] border-gb-red/20 bg-gb-red/8">
-                      <Icon className="w-5 h-5 text-gb-red/70" />
+                      <FontAwesomeIcon icon={Icon} className="w-5 h-5 text-gb-red/70" />
                     </div>
                     <span className="text-[10.5px] font-semibold text-muted">{label}</span>
                   </div>

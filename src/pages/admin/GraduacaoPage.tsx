@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useAlunos, useGraduacoes, db } from '../../lib/useData';
 import { beltConfig } from '../../lib/gbBrand';
-import { Ico, TrophyIcon, ChatBubbleLeftRightIcon } from '../../lib/icons';
+import { Ico, TrophyIcon, ChatBubbleLeftRightIcon, BoltIcon, MartialArtsIcon, MedalIcon, CheckIcon } from '../../lib/icons';
 import PageHeader from '../../components/common/PageHeader';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -128,7 +129,7 @@ export default function GraduacaoPage() {
         <div>
           <div className="flex flex-col gap-3 justify-between items-start py-3 px-4 mb-4 rounded-[10px] border border-amber-500/20 bg-amber-500/[0.07] sm:flex-row sm:items-center">
             <div className="flex gap-2.5 items-center">
-              <span className="text-lg">⚡</span>
+              <Ico icon={BoltIcon} lg className="text-amber-500" />
               <div>
                 <div className="text-[13px] font-bold text-amber-500">{candidatos.length} alunos elegíveis</div>
                 <div className="text-xs text-muted">Frequência ≥ 70%</div>
@@ -142,7 +143,7 @@ export default function GraduacaoPage() {
 
           {candidatos.length === 0 ? (
             <div className="p-10 text-center text-muted">
-              <div className="mb-2 text-3xl">🥋</div>
+              <FontAwesomeIcon icon={MartialArtsIcon} className="mb-2 w-7 h-7" />
               <div>Nenhum candidato com frequência ≥ 70%</div>
               <div className="mt-1 text-xs">Adiciona presenças para os alunos aparecerem aqui</div>
             </div>
@@ -219,8 +220,8 @@ export default function GraduacaoPage() {
             </label>
 
             {success && (
-              <div className="py-2.5 px-3.5 mb-3.5 text-[13px] font-semibold text-green-600 rounded-lg border border-green-500/30 bg-green-500/10">
-                ✓ Graduação registada! OSS! 🥋
+              <div className="flex gap-1.5 items-center py-2.5 px-3.5 mb-3.5 text-[13px] font-semibold text-green-600 rounded-lg border border-green-500/30 bg-green-500/10">
+                <Ico icon={CheckIcon} sm />Graduação registada! OSS! <Ico icon={MartialArtsIcon} sm />
               </div>
             )}
 
@@ -230,7 +231,7 @@ export default function GraduacaoPage() {
               className={success ? '!bg-green-500 !shadow-none' : undefined}
               onClick={handleRegistar}
             >
-              {success ? '✓ Graduação registada!' : saving ? 'A guardar...' : 'Confirmar Graduação — OSS! 🥋'}
+              {success ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Graduação registada!</span> : saving ? 'A guardar...' : <span className="inline-flex gap-1.5 items-center">Confirmar Graduação — OSS! <Ico icon={MartialArtsIcon} sm /></span>}
             </Button>
           </Card>
         </div>
@@ -241,7 +242,7 @@ export default function GraduacaoPage() {
         <div>
           {graduacoes.length === 0 ? (
             <div className="p-10 text-center text-muted">
-              <div className="mb-2 text-3xl">🎖️</div>
+              <FontAwesomeIcon icon={MedalIcon} className="mb-2 w-7 h-7" />
               <div>Sem graduações registadas</div>
             </div>
           ) : graduacoes.map((g: any) => (

@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react';
 import { useTurmas, useAlunos, db } from '../../lib/useData';
 import { GB } from '../../lib/gbBrand';
 import { useMobile } from '../../lib/useMobile';
-import { Ico, ArrowLeftIcon, PlusIcon } from '../../lib/icons';
+import { Ico, type HeroIcon, ArrowLeftIcon, PlusIcon, CheckIcon, ClockIcon, MapPinIcon, CalendarIcon, Bars3Icon } from '../../lib/icons';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
 import PageHeader from '../../components/common/PageHeader';
@@ -87,7 +87,7 @@ function NovaTurmaModal({ onClose, onSave }: { onClose: ()=>void; onSave: ()=>vo
           disabled={!nome || !horario || saving} loading={saving}
           onClick={handleSave}
         >
-          {saved ? '✓ Turma criada!' : saving ? 'A guardar...' : '+ Criar Turma'}
+          {saved ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Turma criada!</span> : saving ? 'A guardar...' : '+ Criar Turma'}
         </Button>
       </div>
     </Modal>
@@ -116,8 +116,8 @@ function TurmaDetail({ turma, onBack }: { turma: any; onBack: ()=>void }) {
               >
                 {turma.tipo?.toUpperCase()}
               </span>
-              <span className="text-sm text-muted">🕐 {turma.horario}</span>
-              {turma.sala && <span className="text-sm text-muted">📍 {turma.sala}</span>}
+              <span className="inline-flex gap-1.5 items-center text-sm text-muted"><Ico icon={ClockIcon} sm />{turma.horario}</span>
+              {turma.sala && <span className="inline-flex gap-1.5 items-center text-sm text-muted"><Ico icon={MapPinIcon} sm />{turma.sala}</span>}
             </div>
             <div className="mt-1.5 text-xs text-muted">
               {Array.isArray(turma.diaSemana)
@@ -346,14 +346,14 @@ export default function TurmasPage() {
         actions={<>
           {/* View toggle */}
           <div className="flex overflow-hidden rounded-sm border border-border bg-elevated">
-            {([['calendar','📅'],['list','☰']] as [string, string][]).map(([v, icon]) => (
+            {([['calendar', CalendarIcon],['list', Bars3Icon]] as [string, HeroIcon][]).map(([v, icon]) => (
               <button key={v} onClick={() => setView(v as any)}
                 className={[
                   'py-2 px-3.5 min-h-11 sm:min-h-0 text-sm border-none cursor-pointer transition-colors duration-200',
                   'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-inset',
                   view===v ? 'text-white bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark' : 'bg-transparent text-muted hover:bg-border-subtle active:bg-border-subtle',
                 ].join(' ')}>
-                {icon}
+                <Ico icon={icon} sm />
               </button>
             ))}
           </div>
@@ -409,13 +409,13 @@ export default function TurmasPage() {
                     {turma.tipo?.toUpperCase()}
                   </span>
                 </div>
-                <div className="mb-1 text-[11.5px] text-muted">
-                  🕐 {turma.horario} &nbsp;·&nbsp;
+                <div className="inline-flex gap-1.5 items-center mb-1 text-[11.5px] text-muted">
+                  <Ico icon={ClockIcon} sm />{turma.horario} &nbsp;·&nbsp;
                   {Array.isArray(turma.diaSemana)
                     ? turma.diaSemana.map((d: string) => DIAS_LABEL[d] || d).join(' ')
                     : turma.diaSemana}
                 </div>
-                {turma.sala && <div className="mb-2 text-xs text-muted">📍 {turma.sala}</div>}
+                {turma.sala && <div className="inline-flex gap-1.5 items-center mb-2 text-xs text-muted"><Ico icon={MapPinIcon} sm />{turma.sala}</div>}
                 <div className="flex justify-between mb-1.5 text-xs text-muted">
                   <span>{inscritos}/{turma.capacidade} alunos</span>
                   <span className={pct >= 90 ? 'font-bold text-gb-red' : 'font-normal'}>{pct}%</span>

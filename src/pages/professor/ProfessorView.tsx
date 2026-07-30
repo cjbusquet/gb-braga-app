@@ -5,6 +5,7 @@ import { beltConfig } from '../../lib/gbBrand';
 import type { Belt } from '../../types';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
+import { Ico, type HeroIcon, Squares2X2Icon, PlayCircleIcon, CalendarDaysIcon, UsersIcon, CheckIcon, MedalIcon, MartialArtsIcon, CircleIcon, MapPinIcon, ArrowRightIcon } from '../../lib/icons';
 
 const DAYS_ABR = ['Seg','Ter','Qua','Qui','Sex','Sáb'];
 const DAYS_FULL = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
@@ -50,13 +51,13 @@ export default function ProfessorView() {
     }
   };
 
-  const TABS = [
-    { id: 'overview',    icon: '⊞', label: 'Visão Geral' },
-    { id: 'darAula',     icon: '▶', label: 'Dar Aula'     },
-    { id: 'classes',     icon: '▤', label: 'Turmas'       },
-    { id: 'students',    icon: '◎', label: 'Alunos'       },
-    { id: 'attendance',  icon: '✓', label: 'Presenças'    },
-    { id: 'graduation',  icon: '◈', label: 'Graduação'    },
+  const TABS: { id: string; icon: HeroIcon; label: string }[] = [
+    { id: 'overview',    icon: Squares2X2Icon,  label: 'Visão Geral' },
+    { id: 'darAula',     icon: PlayCircleIcon,  label: 'Dar Aula'     },
+    { id: 'classes',     icon: CalendarDaysIcon,label: 'Turmas'       },
+    { id: 'students',    icon: UsersIcon,       label: 'Alunos'       },
+    { id: 'attendance',  icon: CheckIcon,       label: 'Presenças'    },
+    { id: 'graduation',  icon: MedalIcon,       label: 'Graduação'    },
   ];
 
   return (
@@ -71,8 +72,8 @@ export default function ProfessorView() {
           <h1 className="m-0 font-display text-[22px] font-extrabold uppercase text-primary">
             Bem-vindo, {nome.split(' ')[0]}!
           </h1>
-          <p className="m-0 mt-1 text-[13px] text-muted">
-            Gracie Barra Braga · {allAlunos.length} alunos · {turmas.length} turmas · OSS! 🥋
+          <p className="inline-flex gap-1.5 items-center m-0 mt-1 text-[13px] text-muted">
+            Gracie Barra Braga · {allAlunos.length} alunos · {turmas.length} turmas · OSS! <Ico icon={MartialArtsIcon} sm />
           </p>
         </div>
         <div className="flex gap-3 items-center">
@@ -82,7 +83,7 @@ export default function ProfessorView() {
           <div>
             <div className="text-sm font-bold text-primary">{nome}</div>
             <div className="mt-px text-[11px] text-muted">Faixa Preta · Gracie Barra</div>
-            <div className="mt-px text-[11px] font-semibold text-green-600">● Ativo</div>
+            <div className="inline-flex gap-1 items-center mt-px text-[11px] font-semibold text-green-600"><Ico icon={CircleIcon} className="w-2 h-2" />Ativo</div>
           </div>
         </div>
       </div>
@@ -96,7 +97,7 @@ export default function ProfessorView() {
               'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-inset',
               tab === t.id ? 'font-bold border-gb-red text-primary' : 'font-normal border-transparent text-muted hover:text-primary active:text-primary',
             ].join(' ')}>
-            {t.icon} {t.label}
+            <Ico icon={t.icon} sm /> {t.label}
           </button>
         ))}
       </div>
@@ -136,11 +137,11 @@ export default function ProfessorView() {
                 <Card key={t.id} padding="lg">
                   <div className="mb-1 text-[13px] font-bold text-primary">{t.nome}</div>
                   <div className="mb-2.5 text-[11.5px] text-muted">{t.horario} · {t.diaSemana.join(', ')}</div>
-                  <div className="mb-3.5 text-[11px] text-muted">📍 {t.sala} · {t.inscritos} alunos</div>
+                  <div className="inline-flex gap-1.5 items-center mb-3.5 text-[11px] text-muted"><Ico icon={MapPinIcon} sm />{t.sala} · {t.inscritos} alunos</div>
                   {estaAtiva ? (
-                    <Badge color="success">● Em curso</Badge>
+                    <Badge color="success"><Ico icon={CircleIcon} className="w-2 h-2" />Em curso</Badge>
                   ) : jaFezCheckin ? (
-                    <Badge color="neutral">✓ Concluída hoje</Badge>
+                    <Badge color="neutral"><Ico icon={CheckIcon} sm />Concluída hoje</Badge>
                   ) : (
                     <button
                       onClick={() => handleCheckin(t.id, t.nome)}
@@ -182,7 +183,7 @@ export default function ProfessorView() {
                       <td className={[TD_CLASS, 'font-mono text-xs text-muted'].join(' ')}>{c.horaFim || '—'}</td>
                       <td className={TD_CLASS}>
                         {c.status === 'ativa'
-                          ? <Badge color="success">● Ativa</Badge>
+                          ? <Badge color="success"><Ico icon={CircleIcon} className="w-2 h-2" />Ativa</Badge>
                           : <Badge color="neutral">Concluída</Badge>}
                       </td>
                     </tr>
@@ -262,12 +263,12 @@ export default function ProfessorView() {
           <Card padding="lg">
             <div className="flex justify-between items-center mb-3.5">
               <div className="text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Últimas Presenças</div>
-              <Badge color="success">● AO VIVO</Badge>
+              <Badge color="success"><Ico icon={CircleIcon} className="w-2 h-2" />AO VIVO</Badge>
             </div>
             <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
               {allPresencas.slice(0, 9).map(p => (
                 <div key={p.id} className="flex gap-2 items-center py-2 px-2.5 rounded-sm bg-elevated">
-                  <div className="flex justify-center items-center w-6 h-6 text-[10px] font-bold text-green-600 rounded-full border shrink-0 border-green-600/20 bg-green-600/10">✓</div>
+                  <div className="flex justify-center items-center w-6 h-6 text-[10px] font-bold text-green-600 rounded-full border shrink-0 border-green-600/20 bg-green-600/10"><Ico icon={CheckIcon} className="w-3 h-3" /></div>
                   <div className="flex-1 min-w-0">
                     <div className="overflow-hidden text-xs font-medium whitespace-nowrap text-ellipsis text-primary">{p.alunoNome}</div>
                     <div className="text-[10.5px] text-muted">{p.hora}</div>
@@ -287,7 +288,7 @@ export default function ProfessorView() {
             return (
               <Card key={t.id} padding="lg">
                 <div className="mb-1 text-sm font-bold text-primary">{t.nome}</div>
-                <div className="mb-3.5 text-[11.5px] text-muted">📍 {t.sala}</div>
+                <div className="inline-flex gap-1.5 items-center mb-3.5 text-[11.5px] text-muted"><Ico icon={MapPinIcon} sm />{t.sala}</div>
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   <div className="py-2 px-2.5 rounded-sm bg-elevated">
                     <div className="mb-0.5 text-[9.5px] text-muted">HORÁRIO</div>
@@ -360,7 +361,7 @@ export default function ProfessorView() {
                     </td>
                     <td className={TD_CLASS}>
                       {podeGraduar
-                        ? <Badge color="brand">✓ Elegível</Badge>
+                        ? <Badge color="brand"><Ico icon={CheckIcon} sm />Elegível</Badge>
                         : <span className="text-[11px] text-muted">—</span>}
                     </td>
                   </tr>
@@ -420,7 +421,7 @@ export default function ProfessorView() {
       {tab === 'graduation' && (
         <div>
           <div className="flex gap-2.5 items-center py-3 px-4 mb-4 rounded-md border border-violet-600/20 bg-violet-600/[0.06]">
-            <span className="text-lg">🎖️</span>
+            <span className="text-violet-600"><Ico icon={MedalIcon} lg /></span>
             <div>
               <div className="text-[13px] font-bold text-violet-600">Próxima Cerimónia de Graduação</div>
               <div className="text-xs text-muted">{candidatosGraduacao.length} alunos elegíveis (frequência ≥ 70%)</div>
@@ -448,7 +449,7 @@ export default function ProfessorView() {
                       <div className="mx-auto w-7 h-2 rounded-sm" style={{ background: bc?.bg || '#888', border: a.faixa === 'branca' ? '1px solid var(--border-strong)' : 'none' }}/>
                       <div className="mt-1 text-[10px] capitalize text-muted">{bc?.label} G{a.grau}</div>
                     </div>
-                    <span className="text-sm text-muted">→</span>
+                    <span className="text-sm text-muted"><Ico icon={ArrowRightIcon} sm /></span>
                     <div className="flex-1 text-center">
                       <div className="mb-1 text-[9px] tracking-[1px] text-green-600 uppercase">PRÓXIMA</div>
                       <div className="mx-auto w-7 h-2 rounded-sm" style={{ background: nextBc?.bg || '#888', border: nextFaixa === 'branca' ? '1px solid var(--border-strong)' : 'none' }}/>

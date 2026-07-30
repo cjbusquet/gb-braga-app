@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useModulos, MODULE_CATALOGUE, CORE_MODULE_IDS } from '../../lib/useModulos';
 import type { ModuleDef } from '../../lib/useModulos';
 import Toggle from '../../components/common/Toggle';
+import { Ico, InformationCircleIcon, BriefcaseIcon, MartialArtsIcon } from '../../lib/icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 // ─── Module card ──────────────────────────────────────────────────────────────
 function ModuleRow({ mod }: { mod: ModuleDef }) {
@@ -32,7 +34,7 @@ function ModuleRow({ mod }: { mod: ModuleDef }) {
           active ? 'grayscale-0 border-gb-red/20 bg-gb-red/8' : 'grayscale border-border bg-base',
         ].join(' ')}
       >
-        {mod.icon}
+        <FontAwesomeIcon icon={mod.icon} className="w-4 h-4" />
       </div>
 
       {/* Info */}
@@ -91,7 +93,7 @@ export default function ModulosPage() {
 
       {/* Info banner */}
       <div className="flex gap-2.5 items-start py-2.5 px-3.5 mb-6 rounded-sm border border-gb-red/15 bg-gb-red/5">
-        <span className="text-base shrink-0">ℹ️</span>
+        <span className="shrink-0 text-gb-red"><Ico icon={InformationCircleIcon} /></span>
         <div className="text-xs leading-[1.5] text-secondary">
           As alterações aplicam-se <strong>imediatamente</strong> a todas as sessões abertas.
           Módulos marcados como <strong>Base</strong> não podem ser desativados.
@@ -107,7 +109,7 @@ export default function ModulosPage() {
           {/* Staff modules */}
           <div className="mb-7">
             <div className="flex gap-2 items-center mb-2.5 text-[10.5px] font-bold tracking-[1px] uppercase text-muted">
-              <span>👨‍💼</span> Módulos de Staff
+              <Ico icon={BriefcaseIcon} sm /> Módulos de Staff
             </div>
             <div className="flex flex-col gap-1.5">
               {staffMods.map(m => <ModuleRow key={m.id} mod={m} />)}
@@ -117,7 +119,7 @@ export default function ModulosPage() {
           {/* Aluno modules */}
           <div className="mb-7">
             <div className="flex gap-2 items-center mb-2.5 text-[10.5px] font-bold tracking-[1px] uppercase text-muted">
-              <span>🥋</span> Módulos de Aluno
+              <Ico icon={MartialArtsIcon} sm /> Módulos de Aluno
             </div>
             <div className="flex flex-col gap-1.5">
               {alunoMods.map(m => <ModuleRow key={m.id} mod={m} />)}

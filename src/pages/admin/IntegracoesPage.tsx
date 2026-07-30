@@ -1,6 +1,22 @@
 import { useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import PageHeader from '../../components/common/PageHeader';
 import Card from '../../components/common/Card';
+import {
+  Ico,
+  type HeroIcon,
+  CreditCardIcon,
+  BoltIcon,
+  DesktopIcon,
+  ReceiptPercentIcon,
+  EnvelopeIcon,
+  CheckIcon,
+  ChatBubbleLeftRightIcon,
+  ClipboardDocumentIcon,
+  ArrowPathIcon,
+  Cog6ToothIcon,
+  ArrowDownTrayIcon,
+} from '../../lib/icons';
 
 type WebhookStatus = 'ok' | 'warn' | 'error' | 'idle';
 type LogLevel = 'success' | 'info' | 'error' | 'warn';
@@ -38,16 +54,16 @@ const STRIPE_ENDPOINTS: WebhookEndpoint[] = [
   { id: 'whe3', url: 'https://gbbraga.com/api/webhooks/toconline/fatura',    events: ['payment_intent.succeeded'], status: 'ok', lastFired: '18:34:14', successRate: '97.2%' },
 ];
 
-const TOC_FLOW_STEPS = [
-  { icon: '💳', label: 'Stripe Checkout', desc: 'Aluno paga com cartão' },
+const TOC_FLOW_STEPS: { icon: HeroIcon | '→'; label: string; desc: string }[] = [
+  { icon: CreditCardIcon, label: 'Stripe Checkout', desc: 'Aluno paga com cartão' },
   { icon: '→',  label: '', desc: '' },
-  { icon: '⚡', label: 'Webhook Stripe', desc: 'payment_intent.succeeded' },
+  { icon: BoltIcon, label: 'Webhook Stripe', desc: 'payment_intent.succeeded' },
   { icon: '→',  label: '', desc: '' },
-  { icon: '🖥',  label: 'Servidor GB', desc: 'gbbraga.com/api/webhooks' },
+  { icon: DesktopIcon,  label: 'Servidor GB', desc: 'gbbraga.com/api/webhooks' },
   { icon: '→',  label: '', desc: '' },
-  { icon: '🧾', label: 'TOConline API', desc: 'POST /commercial_sales_documents' },
+  { icon: ReceiptPercentIcon, label: 'TOConline API', desc: 'POST /commercial_sales_documents' },
   { icon: '→',  label: '', desc: '' },
-  { icon: '📧', label: 'Email + PDF', desc: 'Fatura enviada ao aluno' },
+  { icon: EnvelopeIcon, label: 'Email + PDF', desc: 'Fatura enviada ao aluno' },
 ];
 
 const STATUS_COLOR: Record<WebhookStatus, string> = { ok: '#16A34A', warn: '#D97706', error: '#C8102E', idle: '#9896A4' };
@@ -116,11 +132,11 @@ export default function IntegracoesPage() {
     setTestingToc(false);
   };
 
-  const TABS = [
-    { id: 'fluxo',    label: 'Fluxo de Pagamento', icon: '⚡' },
-    { id: 'stripe',   label: 'Stripe',              icon: '💳' },
-    { id: 'toconline',label: 'TOConline',            icon: '🧾' },
-    { id: 'logs',     label: 'Webhook Logs',        icon: '📋' },
+  const TABS: { id: string; label: string; icon: HeroIcon }[] = [
+    { id: 'fluxo',    label: 'Fluxo de Pagamento', icon: BoltIcon },
+    { id: 'stripe',   label: 'Stripe',              icon: CreditCardIcon },
+    { id: 'toconline',label: 'TOConline',            icon: ReceiptPercentIcon },
+    { id: 'logs',     label: 'Webhook Logs',        icon: ClipboardDocumentIcon },
   ];
 
   return (
@@ -154,7 +170,7 @@ export default function IntegracoesPage() {
               'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
               tab === t.id ? 'font-bold border-gb-red text-primary' : 'font-normal border-transparent text-muted hover:text-primary active:text-primary',
             ].join(' ')}>
-            <span>{t.icon}</span>{t.label}
+            <FontAwesomeIcon icon={t.icon} className="w-3.5 h-3.5" />{t.label}
           </button>
         ))}
       </div>
@@ -169,7 +185,7 @@ export default function IntegracoesPage() {
                 if (s.icon === '→') return <div key={i} className="text-lg font-bold text-gb-red">→</div>;
                 return (
                   <div key={i} className="py-3.5 px-[18px] text-center rounded-md border min-w-[110px] border-border bg-elevated">
-                    <div className="mb-1.5 text-[28px]">{s.icon}</div>
+                    <FontAwesomeIcon icon={s.icon as HeroIcon} className="mb-1.5 w-7 h-7 text-gb-red" />
                     <div className="mb-1 text-xs font-bold text-primary">{s.label}</div>
                     <div className="text-[10.5px] leading-[1.4] text-muted">{s.desc}</div>
                   </div>
@@ -179,13 +195,13 @@ export default function IntegracoesPage() {
           </Card>
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             {[
-              { titulo: 'Pagamento confirmado',      icon: '✓', desc: 'Stripe recebe o pagamento e emite payment_intent.succeeded', color: '#16A34A' },
-              { titulo: 'Webhook disparado',          icon: '⚡', desc: 'Servidor GB recebe o evento e valida a assinatura (whsec_)', color: '#2563EB' },
-              { titulo: 'Fatura emitida (FR)',        icon: '🧾', desc: 'TOConline cria o documento fiscal e comunica à AT automaticamente', color: '#635BFF' },
-              { titulo: 'Notificação ao aluno',      icon: '💬', desc: 'Email com PDF da fatura + WhatsApp de confirmação de pagamento', color: '#25D366' },
+              { titulo: 'Pagamento confirmado',      icon: CheckIcon, desc: 'Stripe recebe o pagamento e emite payment_intent.succeeded', color: '#16A34A' },
+              { titulo: 'Webhook disparado',          icon: BoltIcon, desc: 'Servidor GB recebe o evento e valida a assinatura (whsec_)', color: '#2563EB' },
+              { titulo: 'Fatura emitida (FR)',        icon: ReceiptPercentIcon, desc: 'TOConline cria o documento fiscal e comunica à AT automaticamente', color: '#635BFF' },
+              { titulo: 'Notificação ao aluno',      icon: ChatBubbleLeftRightIcon, desc: 'Email com PDF da fatura + WhatsApp de confirmação de pagamento', color: '#25D366' },
             ].map(c => (
               <div key={c.titulo} className="flex gap-3 py-4 px-[18px] rounded-md border shadow-xs border-border bg-card">
-                <div className="flex justify-center items-center w-9 h-9 text-lg rounded-sm shrink-0" style={{ background: c.color + '14' }}>{c.icon}</div>
+                <div className="flex justify-center items-center w-9 h-9 rounded-sm shrink-0" style={{ background: c.color + '14' }}><FontAwesomeIcon icon={c.icon} className="w-4 h-4" style={{ color: c.color }} /></div>
                 <div>
                   <div className="mb-1 text-[13px] font-bold text-primary">{c.titulo}</div>
                   <div className="text-xs leading-[1.5] text-muted">{c.desc}</div>
@@ -226,7 +242,11 @@ export default function IntegracoesPage() {
                 'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
                 testingStripe ? 'bg-elevated' : stripeStatus === 'ok' ? 'bg-green-600 hover:bg-green-700 active:bg-green-700' : 'bg-[#635BFF] hover:bg-[#524ae0] active:bg-[#524ae0]',
               ].join(' ')}>
-              {testingStripe ? '⟳ A testar...' : stripeStatus === 'ok' ? '✓ Ligação OK' : '⚡ Testar Ligação'}
+              {testingStripe
+                ? <span className="inline-flex gap-1.5 items-center"><Ico icon={ArrowPathIcon} sm />A testar...</span>
+                : stripeStatus === 'ok'
+                ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Ligação OK</span>
+                : <span className="inline-flex gap-1.5 items-center"><Ico icon={BoltIcon} sm />Testar Ligação</span>}
             </button>
           </Card>
 
@@ -264,7 +284,7 @@ export default function IntegracoesPage() {
               <StatusDot status="warn"/>
             </div>
             <div className="py-2.5 px-3 mb-4 rounded-sm border border-amber-600/20 bg-amber-600/[0.06]">
-              <div className="mb-0.5 text-[11.5px] font-bold text-amber-700">⚡ Modo Simulação Ativo</div>
+              <div className="inline-flex gap-1.5 items-center mb-0.5 text-[11.5px] font-bold text-amber-700"><Ico icon={BoltIcon} sm />Modo Simulação Ativo</div>
               <div className="text-[11px] text-muted">Faturas não são comunicadas à AT. Ativa o modo produção nas Configurações.</div>
             </div>
             {[
@@ -286,10 +306,14 @@ export default function IntegracoesPage() {
                   'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
                   testingToc ? 'bg-elevated text-secondary' : tocStatus === 'ok' ? 'text-white bg-green-600 hover:bg-green-700 active:bg-green-700' : 'bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle',
                 ].join(' ')}>
-                {testingToc ? '⟳ A testar...' : tocStatus === 'ok' ? '✓ OK' : 'Testar'}
+                {testingToc
+                  ? <span className="inline-flex gap-1.5 items-center"><Ico icon={ArrowPathIcon} sm />A testar...</span>
+                  : tocStatus === 'ok'
+                  ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />OK</span>
+                  : 'Testar'}
               </button>
               <button className="flex-[2] py-2.5 min-h-11 sm:min-h-0 text-xs font-bold text-white rounded-sm border-none cursor-pointer transition-colors duration-200 bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
-                ⚙ Configurar → Config.
+                <span className="inline-flex gap-1.5 items-center"><Ico icon={Cog6ToothIcon} sm />Configurar → Config.</span>
               </button>
             </div>
           </Card>
@@ -323,8 +347,8 @@ export default function IntegracoesPage() {
           <div className="flex flex-wrap gap-2 justify-between items-center mb-3">
             <div className="text-xs text-muted">Últimos 24h · {MOCK_LOGS.length} eventos</div>
             <div className="flex gap-2">
-              <button className="py-1.5 px-3 min-h-11 sm:min-h-0 text-[11.5px] rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">⟳ Refresh</button>
-              <button className="py-1.5 px-3 min-h-11 sm:min-h-0 text-[11.5px] rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">📥 Exportar</button>
+              <button className="flex gap-1.5 items-center py-1.5 px-3 min-h-11 sm:min-h-0 text-[11.5px] rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"><Ico icon={ArrowPathIcon} sm />Refresh</button>
+              <button className="flex gap-1.5 items-center py-1.5 px-3 min-h-11 sm:min-h-0 text-[11.5px] rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"><Ico icon={ArrowDownTrayIcon} sm />Exportar</button>
             </div>
           </div>
           <div className="overflow-hidden rounded-lg border shadow-xs border-border bg-card">

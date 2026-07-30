@@ -1,13 +1,29 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { useKPIs, useAlunos, usePagamentos } from '../../lib/useData';
 import { revenueHistory } from '../../data/mockData';
 import { exportRelatorioFinanceiro, exportRelatorioAlunos, exportCSV } from '../../services/pdf';
 import Card from '../../components/common/Card';
 import PageHeader from '../../components/common/PageHeader';
+import {
+  Ico,
+  XMarkIcon,
+  ExclamationTriangleIcon,
+  StarIcon,
+  MartialArtsIcon,
+  CheckIcon,
+  MoneyBagIcon,
+  UsersIcon,
+  ChartBarIcon,
+  ArrowPathIcon,
+  DocumentTextIcon,
+  ReceiptPercentIcon,
+  type HeroIcon,
+} from '../../lib/icons';
 
 // ─── Shared atoms ─────────────────────────────────────────────────────────────
-function Stat({ label, value, sub, accent = 'var(--gb-red)', delta }: { label: string; value: string|number; sub?: string; accent?: string; delta?: string }) {
+function Stat({ label, value, sub, accent = 'var(--gb-red)', delta }: { label: string; value: string|number|ReactNode; sub?: string; accent?: string; delta?: string }) {
   return (
     <div className="py-4 px-[18px] rounded-md border border-border bg-card">
       <div className="mb-1.5 text-[10.5px] font-semibold tracking-[0.8px] uppercase text-muted">{label}</div>
@@ -22,14 +38,14 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return <div className="mb-3.5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">{children}</div>;
 }
 
-function ExportBtn({ label, icon, onClick, color = 'var(--gb-red)' }: { label: string; icon: string; onClick: () => void; color?: string }) {
+function ExportBtn({ label, icon, onClick, color = 'var(--gb-red)' }: { label: string; icon: HeroIcon; onClick: () => void; color?: string }) {
   return (
     <button onClick={onClick}
       className="flex gap-2 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] font-medium rounded-sm border cursor-pointer transition-all duration-200 border-border bg-elevated text-primary outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 active:bg-border-subtle"
       onMouseEnter={e => { e.currentTarget.style.borderColor = color; e.currentTarget.style.color = color; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
     >
-      <span>{icon}</span>{label}
+      <Ico icon={icon} sm />{label}
     </button>
   );
 }
@@ -73,7 +89,7 @@ function NovaAcademiaModal({ onClose, onAdd }: { onClose: () => void; onAdd: (a:
             <div className="mb-1 text-[10px] font-bold tracking-[1px] uppercase text-muted">Rede Gracie Barra Portugal</div>
             <h2 className="m-0 text-base font-extrabold text-primary">+ Nova Academia</h2>
           </div>
-          <button type="button" onClick={onClose} className="p-1 min-h-11 min-w-11 text-xl leading-none bg-none border-none cursor-pointer transition-colors duration-200 text-muted hover:text-primary active:text-primary outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">✕</button>
+          <button type="button" onClick={onClose} className="flex justify-center items-center p-1 min-h-11 min-w-11 leading-none bg-none border-none cursor-pointer transition-colors duration-200 text-muted hover:text-primary active:text-primary outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"><Ico icon={XMarkIcon} /></button>
         </div>
 
         <form onSubmit={submit}>
@@ -88,7 +104,7 @@ function NovaAcademiaModal({ onClose, onAdd }: { onClose: () => void; onAdd: (a:
               className={['box-border w-full py-2.5 px-3.5 min-h-11 sm:min-h-0 text-[15px] rounded-sm border outline-none transition-all duration-200 bg-elevated text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25', err ? 'border-gb-red' : 'border-border'].join(' ')}
               autoFocus
             />
-            {err && <div className="mt-1 text-xs text-gb-red">⚠ {err}</div>}
+            {err && <div className="flex gap-1 items-center mt-1 text-xs text-gb-red"><Ico icon={ExclamationTriangleIcon} sm />{err}</div>}
             <div className="mt-1.5 text-[11.5px] text-muted">
               A academia será registada como <strong className="text-secondary">GB {cidade.trim() || '…'}</strong>
             </div>
@@ -132,7 +148,7 @@ export function SuperAdminDashboard({ onNavigate }: { onNavigate?: (page: string
         <Stat label="Receita Mensal" value={`€${totalReceita.toLocaleString()}`} accent="#16A34A"        delta="↑ +11% vs ant."/>
         <Stat label="Inadimplentes" value={totalInadimp}                        accent="#D97706"        sub="toda a rede"/>
         <Stat label="Freq. Média"   value="81%"                                 accent="#2563EB"/>
-        <Stat label="NPS Rede"      value="4.8★"                                accent="#7C3AED"        sub="últimos 30 dias"/>
+        <Stat label="NPS Rede"      value={<span className="flex gap-1 items-center">4.8<Ico icon={StarIcon} sm /></span>} accent="#7C3AED"        sub="últimos 30 dias"/>
       </div>
 
       <div className="grid grid-cols-1 gap-4 mb-4 lg:grid-cols-[1.8fr_1fr]">
@@ -192,7 +208,7 @@ export function SuperAdminDashboard({ onNavigate }: { onNavigate?: (page: string
               <tr key={a.id} className="cursor-pointer border-b border-border-subtle hover:bg-elevated">
                 <td className="py-3 px-3.5">
                   <div className="flex gap-2 items-center">
-                    <div className="flex justify-center items-center w-[30px] h-[30px] text-sm rounded-[7px] bg-gb-red">🥋</div>
+                    <div className="flex justify-center items-center w-[30px] h-[30px] rounded-[7px] bg-gb-red"><Ico icon={MartialArtsIcon} sm className="text-white" /></div>
                     <span className="text-[13px] font-bold text-primary">{a.nome}</span>
                   </div>
                 </td>
@@ -262,11 +278,11 @@ export function RelatoriosPage() {
     { label:'Receita vs Prevista',value:`${Math.round((kpis.receitaMensal/kpis.receitaPrevista)*100)}%`, target:'≥ 95%', ok: kpis.receitaMensal >= kpis.receitaPrevista*0.9 },
   ];
 
-  const TABS: {id: RTab; label: string; icon: string}[] = [
-    {id:'financeiro',label:'Financeiro',  icon:'💰'},
-    {id:'alunos',    label:'Alunos',      icon:'👥'},
-    {id:'frequencia',label:'Frequência',  icon:'📊'},
-    {id:'retencao',  label:'Retenção',    icon:'🔄'},
+  const TABS: {id: RTab; label: string; icon: HeroIcon}[] = [
+    {id:'financeiro',label:'Financeiro',  icon:MoneyBagIcon},
+    {id:'alunos',    label:'Alunos',      icon:UsersIcon},
+    {id:'frequencia',label:'Frequência',  icon:ChartBarIcon},
+    {id:'retencao',  label:'Retenção',    icon:ArrowPathIcon},
   ];
 
   const BELT_BG: Record<string,string> = { branca:'#E8E7FF', cinza:'#6B7280', amarela:'#EAB308', laranja:'#EA580C', verde:'#16A34A', azul:'#1D4ED8', roxa:'#7C3AED', marrom:'#7C4A35', preta:'#111' };
@@ -299,7 +315,7 @@ export function RelatoriosPage() {
             <div className="mb-1 text-[9.5px] leading-[1.3] text-muted">{k.label}</div>
             <div className="text-xl font-extrabold text-primary">{k.value}</div>
             <div className="mt-0.5 text-[9.5px] text-muted">{k.target}</div>
-            <div className={['mt-1 text-[10px] font-bold', k.ok ? 'text-green-600' : 'text-amber-600'].join(' ')}>{k.ok ? '✓ OK' : '⚠ Atenção'}</div>
+            <div className={['flex gap-1 items-center mt-1 text-[10px] font-bold', k.ok ? 'text-green-600' : 'text-amber-600'].join(' ')}>{k.ok ? <><Ico icon={CheckIcon} sm />OK</> : <><Ico icon={ExclamationTriangleIcon} sm />Atenção</>}</div>
           </div>
         ))}
       </div>
@@ -313,7 +329,7 @@ export function RelatoriosPage() {
               'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
               tab===t.id ? 'font-bold border-gb-red text-primary' : 'font-normal border-transparent text-muted hover:text-primary active:text-primary',
             ].join(' ')}>
-            {t.icon} {t.label}
+            <Ico icon={t.icon} sm /> {t.label}
           </button>
         ))}
       </div>
@@ -322,13 +338,13 @@ export function RelatoriosPage() {
         <div>
           {/* Export actions */}
           <div className="flex gap-2 mb-4">
-            <ExportBtn icon="📄" label={exporting==='pdf-fin' ? '⟳ A gerar PDF...' : 'Exportar PDF'} onClick={() => doExport('pdf-fin', () => exportRelatorioFinanceiro(pagamentos as any))} color="var(--gb-red)"/>
-            <ExportBtn icon="📊" label={exporting==='csv-fin' ? '⟳ A gerar CSV...' : 'Exportar CSV'} onClick={() => doExport('csv-fin', () => exportCSV(
+            <ExportBtn icon={DocumentTextIcon} label={exporting==='pdf-fin' ? '⟳ A gerar PDF...' : 'Exportar PDF'} onClick={() => doExport('pdf-fin', () => exportRelatorioFinanceiro(pagamentos as any))} color="var(--gb-red)"/>
+            <ExportBtn icon={ChartBarIcon} label={exporting==='csv-fin' ? '⟳ A gerar CSV...' : 'Exportar CSV'} onClick={() => doExport('csv-fin', () => exportCSV(
               ['Aluno','Plano','Valor','Vencimento','Estado'],
               pagamentos.map(p => [p.alunoNome, p.plano, `€${p.valor}`, p.vencimento, p.status]),
               'GB_Pagamentos'
             ))} color="#16A34A"/>
-            <ExportBtn icon="🧾" label="SAF-T TOConline" onClick={() => alert('SAF-T gerado via TOConline API')} color="#635BFF"/>
+            <ExportBtn icon={ReceiptPercentIcon} label="SAF-T TOConline" onClick={() => alert('SAF-T gerado via TOConline API')} color="#635BFF"/>
           </div>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
             <Card padding="none" className="py-5 px-[22px]">
@@ -380,8 +396,8 @@ export function RelatoriosPage() {
       {tab === 'alunos' && (
         <div>
           <div className="flex gap-2 mb-4">
-            <ExportBtn icon="📄" label={exporting==='pdf-alu' ? '⟳ A gerar...' : 'Exportar PDF'} onClick={() => doExport('pdf-alu', () => exportRelatorioAlunos(alunos as any))} color="var(--gb-red)"/>
-            <ExportBtn icon="📊" label={exporting==='csv-alu' ? '⟳ A gerar...' : 'Exportar CSV'} onClick={() => doExport('csv-alu', () => exportCSV(
+            <ExportBtn icon={DocumentTextIcon} label={exporting==='pdf-alu' ? '⟳ A gerar...' : 'Exportar PDF'} onClick={() => doExport('pdf-alu', () => exportRelatorioAlunos(alunos as any))} color="var(--gb-red)"/>
+            <ExportBtn icon={ChartBarIcon} label={exporting==='csv-alu' ? '⟳ A gerar...' : 'Exportar CSV'} onClick={() => doExport('csv-alu', () => exportCSV(
               ['Nome','Faixa','Grau','Plano','Frequência','Status','Matrícula'],
               alunos.map(a => [a.nome, a.faixa, a.grau, a.plano, `${a.frequencia}%`, a.status, a.dataMatricula]),
               'GB_Alunos'
@@ -438,7 +454,7 @@ export function RelatoriosPage() {
           <Card padding="none" className="py-5 px-[22px]">
             <div className="flex justify-between items-center mb-3.5">
               <SectionLabel>Frequência por Aluno</SectionLabel>
-              <ExportBtn icon="📊" label="CSV" onClick={() => exportCSV(['Nome','Frequência','Status'],alunos.map(a=>[a.nome,`${a.frequencia}%`,a.status]),'GB_Frequencia')} color="#16A34A"/>
+              <ExportBtn icon={ChartBarIcon} label="CSV" onClick={() => exportCSV(['Nome','Frequência','Status'],alunos.map(a=>[a.nome,`${a.frequencia}%`,a.status]),'GB_Frequencia')} color="#16A34A"/>
             </div>
             {alunos.filter(a => a.status==='ativo').sort((a,b) => b.frequencia-a.frequencia).map(a => (
               <div key={a.id} className="flex gap-2.5 items-center mb-2">
@@ -504,16 +520,16 @@ export function RelatoriosPage() {
             <SectionLabel>Exportar Relatórios</SectionLabel>
             <div className="flex flex-col gap-2">
               {[
-                { label:'Relatório Financeiro — PDF',        icon:'📄', fn: () => exportRelatorioFinanceiro(pagamentos as any) },
-                { label:'Relatório de Alunos — PDF',         icon:'📄', fn: () => exportRelatorioAlunos(alunos as any) },
-                { label:'Pagamentos — CSV (Excel)',           icon:'📊', fn: () => exportCSV(['Aluno','Valor','Estado','Data'],pagamentos.map(p=>[p.alunoNome,p.valor,p.status,p.vencimento]),'Pagamentos') },
-                { label:'Alunos — CSV (Excel)',               icon:'📊', fn: () => exportCSV(['Nome','Faixa','Plano','Freq'],alunos.map(a=>[a.nome,a.faixa,a.plano,a.frequencia]),'Alunos') },
-                { label:'SAF-T PT — TOConline',               icon:'🧾', fn: () => alert('SAF-T exportado via TOConline') },
+                { label:'Relatório Financeiro — PDF',        icon:DocumentTextIcon, fn: () => exportRelatorioFinanceiro(pagamentos as any) },
+                { label:'Relatório de Alunos — PDF',         icon:DocumentTextIcon, fn: () => exportRelatorioAlunos(alunos as any) },
+                { label:'Pagamentos — CSV (Excel)',           icon:ChartBarIcon, fn: () => exportCSV(['Aluno','Valor','Estado','Data'],pagamentos.map(p=>[p.alunoNome,p.valor,p.status,p.vencimento]),'Pagamentos') },
+                { label:'Alunos — CSV (Excel)',               icon:ChartBarIcon, fn: () => exportCSV(['Nome','Faixa','Plano','Freq'],alunos.map(a=>[a.nome,a.faixa,a.plano,a.frequencia]),'Alunos') },
+                { label:'SAF-T PT — TOConline',               icon:ReceiptPercentIcon, fn: () => alert('SAF-T exportado via TOConline') },
               ].map(r => (
                 <button key={r.label} onClick={() => doExport(r.label, r.fn)}
                   className="flex gap-2.5 items-center py-2.5 px-3.5 min-h-11 text-[13px] font-medium text-left rounded-sm border cursor-pointer transition-all duration-200 border-border bg-elevated text-primary hover:border-gb-red hover:text-gb-red active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
                 >
-                  <span className="text-base">{r.icon}</span>
+                  <Ico icon={r.icon} />
                   <span>{exporting===r.label ? '⟳ A gerar...' : r.label}</span>
                   <span className="ml-auto text-xs text-muted">↓</span>
                 </button>

@@ -19,7 +19,10 @@ import {
   Squares2X2Icon,
   TrophyIcon,
   UsersIcon,
-} from '@heroicons/react/24/outline';
+  XMarkIcon,
+  type HeroIcon,
+} from '../../lib/icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { roleThemes } from '../../lib/gbBrand';
 import { useEffect, useState } from 'react';
 
@@ -28,8 +31,6 @@ import type { ReactNode } from 'react';
 import type { UserRole } from '../../types';
 import { useAuth } from '../../lib/auth';
 import { useModulos } from '../../lib/useModulos';
-
-type HeroIcon = React.ComponentType<React.SVGProps<SVGSVGElement>>;
 
 interface NavItem {
   Icon: HeroIcon;
@@ -249,7 +250,8 @@ export default function Layout({
             : 'transparent',
         }}
       >
-        <item.Icon
+        <FontAwesomeIcon
+          icon={item.Icon}
           className="w-[18px] h-[18px] shrink-0"
           style={{ color: active ? 'var(--text-primary)' : 'var(--text-secondary)' }}
         />
@@ -309,17 +311,17 @@ export default function Layout({
             onClick={() =>
               handleNav(user.role === 'aluno' ? 'portal' : 'dashboard')
             }
-            className={['text-xl bg-none border-none rounded-md cursor-pointer transition-transform duration-200 active:scale-95', FOCUS_RING].join(' ')}
+            className={['flex p-0 bg-none border-none rounded-md cursor-pointer transition-transform duration-200 active:scale-95', FOCUS_RING].join(' ')}
           >
-            🥋
+            <GBLogoFull size={28} />
           </button>
         )}
         {isMobile && (
           <button
             onClick={() => setMobileOpen(false)}
-            className={['flex justify-center items-center p-1.5 min-h-11 min-w-11 text-[22px] bg-none border-none rounded-lg cursor-pointer transition-colors duration-200 text-muted hover:text-primary hover:bg-elevated active:bg-elevated', FOCUS_RING].join(' ')}
+            className={['flex justify-center items-center p-1.5 min-h-11 min-w-11 bg-none border-none rounded-lg cursor-pointer transition-colors duration-200 text-muted hover:text-primary hover:bg-elevated active:bg-elevated', FOCUS_RING].join(' ')}
           >
-            ✕
+            <FontAwesomeIcon icon={XMarkIcon} className="w-[18px] h-[18px]" />
           </button>
         )}
       </div>
@@ -367,9 +369,9 @@ export default function Layout({
             className={['flex gap-2 items-center py-2 px-3.5 min-h-11 w-full text-xs bg-none border-none rounded-lg cursor-pointer transition-colors duration-200 text-muted hover:text-primary hover:bg-elevated active:bg-elevated', FOCUS_RING].join(' ')}
           >
             {isCollapsed ? (
-              <ChevronRightIcon className="w-4 h-4" />
+              <FontAwesomeIcon icon={ChevronRightIcon} className="w-4 h-4" />
             ) : (
-              <ChevronLeftIcon className="w-4 h-4" />
+              <FontAwesomeIcon icon={ChevronLeftIcon} className="w-4 h-4" />
             )}
             {!isCollapsed && 'Colapsar'}
           </button>
@@ -383,7 +385,7 @@ export default function Layout({
             isCollapsed ? 'justify-center gap-0 py-2.5 px-0' : 'gap-2.5 justify-start py-2.5 px-3.5',
           ].join(' ')}
         >
-          <ArrowRightOnRectangleIcon className="w-[18px] h-[18px] shrink-0" />
+          <FontAwesomeIcon icon={ArrowRightOnRectangleIcon} className="w-[18px] h-[18px] shrink-0" />
           {!isCollapsed && 'Terminar sessão'}
         </button>
       </div>
@@ -402,7 +404,8 @@ export default function Layout({
             className={['flex relative flex-col flex-1 gap-0.5 justify-center items-center py-2 px-1 pb-2.5 min-h-14 bg-none border-none transition-all duration-200 cursor-pointer active:bg-elevated', 'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-inset'].join(' ')}
             style={{ borderTop: `2px solid ${active ? rt.accent : 'transparent'}` }}
           >
-            <item.Icon
+            <FontAwesomeIcon
+              icon={item.Icon}
               className="w-[22px] h-[22px]"
               style={{ color: active ? rt.accent : 'var(--text-muted)' }}
             />

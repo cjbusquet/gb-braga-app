@@ -4,6 +4,7 @@ import {
   ChatBubbleLeftRightIcon,
   CheckIcon,
   ChevronRightIcon,
+  ClockIcon,
   Cog6ToothIcon,
   CurrencyEuroIcon,
   DocumentIcon,
@@ -13,8 +14,9 @@ import {
   TrophyIcon,
   VideoCameraIcon,
   XMarkIcon,
+  type HeroIcon,
 } from '../../lib/icons';
-import type { ComponentType, SVGProps } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { GB, beltConfig } from '../../lib/gbBrand';
 import {
   useAlunos,
@@ -24,13 +26,10 @@ import {
 } from '../../lib/useData';
 
 import type { Belt } from '../../types';
-import { ClockIcon } from '@heroicons/react/24/solid';
 import { exportContratoPDF } from '../../services/pdf';
 import { useAuth } from '../../lib/auth';
 import { useState } from 'react';
 import Card from '../../components/common/Card';
-
-type HeroIconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
 const BELT_PATH: Belt[] = [
   'branca',
@@ -51,7 +50,7 @@ function NavCard({
   accent,
   onClick,
 }: {
-  Icon: HeroIconComponent;
+  Icon: HeroIcon;
   label: string;
   desc: string;
   accent: string;
@@ -74,7 +73,7 @@ function NavCard({
         className="flex justify-center items-center w-[100px] h-[100px] text-lg shrink-0"
         style={{ background: accent + '18' }}
       >
-        <Icon className="w-9 h-9" style={{ color: accent }} />
+        <FontAwesomeIcon icon={Icon} className="w-9 h-9" style={{ color: accent }} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="overflow-hidden mb-px text-sm font-medium whitespace-nowrap text-ellipsis text-black/85">
@@ -84,7 +83,7 @@ function NavCard({
           {desc}
         </div>
       </div>
-      <ChevronRightIcon className="mr-3 w-7 h-7 shrink-0 text-muted" />
+      <FontAwesomeIcon icon={ChevronRightIcon} className="mr-3 w-7 h-7 shrink-0 text-muted" />
     </button>
   );
 }

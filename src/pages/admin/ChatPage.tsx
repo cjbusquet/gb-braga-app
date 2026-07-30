@@ -1,10 +1,20 @@
 import { useState, useRef, useEffect } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useAlunos } from '../../lib/useData';
 import { beltConfig } from '../../lib/gbBrand';
 import { useMobile } from '../../lib/useMobile';
 import type { Aluno } from '../../types';
 import PageHeader from '../../components/common/PageHeader';
 import Badge from '../../components/common/Badge';
+import {
+  Ico,
+  CommentIcon,
+  DeviceMobileIcon,
+  MagnifyingGlassIcon,
+  CheckIcon,
+  BoltIcon,
+  type HeroIcon,
+} from '../../lib/icons';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ChatMsg {
@@ -147,10 +157,10 @@ export default function ChatPage() {
     a.status === 'ativo' && a.nome.toLowerCase().includes(busca.toLowerCase())
   );
 
-  const CANAL_CONFIG = {
-    interno: { icon: '💬', label: 'Chat interno', color: 'var(--gb-red)' },
-    whatsapp: { icon: '📱', label: 'WhatsApp', color: '#25D366' },
-    sms:      { icon: '📟', label: 'SMS', color: '#3B82F6' },
+  const CANAL_CONFIG: Record<'interno' | 'whatsapp' | 'sms', { icon: HeroIcon; label: string; color: string }> = {
+    interno: { icon: CommentIcon, label: 'Chat interno', color: 'var(--gb-red)' },
+    whatsapp: { icon: DeviceMobileIcon, label: 'WhatsApp', color: '#25D366' },
+    sms:      { icon: DeviceMobileIcon, label: 'SMS', color: '#3B82F6' },
   };
 
   // ── shared height ─────────────────────────────────────────────────────────────
@@ -164,8 +174,11 @@ export default function ChatPage() {
   const contactList = (
     <div className={['flex overflow-hidden flex-col rounded-lg border shadow-sm border-border bg-card', isMobile ? '' : 'h-full'].join(' ')}>
       <div className="py-3 px-3.5 border-b border-border">
-        <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="🔍 Pesquisar aluno..."
-          className="py-2 px-2.5 w-full min-h-11 sm:min-h-0 text-sm rounded-sm border outline-none transition-all duration-200 border-border bg-elevated text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25"/>
+        <div className="relative">
+          <Ico icon={MagnifyingGlassIcon} sm className="absolute top-1/2 left-2.5 text-muted -translate-y-1/2 pointer-events-none" />
+          <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Pesquisar aluno..."
+            className="py-2 pr-2.5 pl-8 w-full min-h-11 sm:min-h-0 text-sm rounded-sm border outline-none transition-all duration-200 border-border bg-elevated text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25"/>
+        </div>
       </div>
       <div className="overflow-y-auto flex-1">
         {alunosFiltrados.map(a => {
@@ -251,7 +264,7 @@ export default function ChatPage() {
                     'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
                     isMobile ? 'py-1.5 px-2.5' : 'py-1.5 px-3',
                   ].join(' ')}>
-                  {isMobile ? '📱' : '📱 WhatsApp'}
+                  {isMobile ? <Ico icon={DeviceMobileIcon} sm /> : <><Ico icon={DeviceMobileIcon} sm /> WhatsApp</>}
                 </a>
               )}
               {!isMobile && (
@@ -266,7 +279,7 @@ export default function ChatPage() {
           <div className={['flex overflow-y-auto flex-col flex-1 gap-2', isMobile ? 'py-3 px-3.5' : 'py-4 px-[18px]'].join(' ')}>
             {conversa.msgs.length === 0 ? (
               <div className="flex flex-col flex-1 justify-center items-center p-10 text-muted">
-                <div className="mb-3 text-4xl opacity-30">💬</div>
+                <FontAwesomeIcon icon={CommentIcon} className="mb-3 w-9 h-9 opacity-30" />
                 <div className="text-sm">Inicia a conversa com {aluno.nome.split(' ')[0]}</div>
                 <div className="mt-1 text-xs">Usa um template ou escreve uma mensagem</div>
               </div>
@@ -288,8 +301,13 @@ export default function ChatPage() {
                       </div>
                       <div className={['flex gap-1.5 items-center mt-1', isAdmin ? 'justify-end' : 'justify-start'].join(' ')}>
                         <span className="font-mono text-[10px] text-muted">{msg.hora}</span>
-                        {msg.canal !== 'interno' && <span className="text-[10px] font-semibold" style={{ color: cCfg.color }}>{cCfg.icon}</span>}
-                        {isAdmin && <span className={['text-[11px]', msg.lida ? 'text-[#25D366]' : 'text-muted'].join(' ')}>✓✓</span>}
+                        {msg.canal !== 'interno' && <Ico icon={cCfg.icon} sm style={{ color: cCfg.color }} />}
+                        {isAdmin && (
+                          <span className={['flex items-center', msg.lida ? 'text-[#25D366]' : 'text-muted'].join(' ')}>
+                            <Ico icon={CheckIcon} sm />
+                            <Ico icon={CheckIcon} sm className="-ml-1.5" />
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -334,7 +352,7 @@ export default function ChatPage() {
                   ].join(' ')}
                   style={canal === id ? { background: cfg.color + '15', borderColor: cfg.color, color: cfg.color } : undefined}
                 >
-                  {cfg.icon}{!isMobile && ` ${cfg.label}`}
+                  <Ico icon={cfg.icon} sm />{!isMobile && ` ${cfg.label}`}
                 </button>
               ))}
               <div className="flex-1"/>
@@ -344,8 +362,9 @@ export default function ChatPage() {
                   'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
                   isMobile ? 'text-[15px]' : 'text-[11.5px]',
                   showTemplates ? 'border-gb-red text-gb-red bg-gb-red/8 hover:bg-gb-red/15 active:bg-gb-red/15' : 'border-border bg-elevated text-muted hover:bg-border-subtle active:bg-border-subtle',
+                  'inline-flex gap-1 items-center',
                 ].join(' ')}>
-                {isMobile ? '⚡' : '⚡ Templates'}
+                {isMobile ? <Ico icon={BoltIcon} sm /> : <><Ico icon={BoltIcon} sm /> Templates</>}
               </button>
             </div>
             {/* Textarea + send */}
@@ -370,7 +389,7 @@ export default function ChatPage() {
         </>
       ) : (
         <div className="flex flex-col flex-1 gap-2.5 justify-center items-center text-muted">
-          <div className="text-4xl opacity-25">💬</div>
+          <FontAwesomeIcon icon={CommentIcon} className="w-9 h-9 opacity-25" />
           <div className="text-[13px]">Seleciona um aluno para iniciar</div>
         </div>
       )}

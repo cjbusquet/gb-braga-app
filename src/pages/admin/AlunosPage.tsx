@@ -4,7 +4,8 @@ import { useResponsaveis, db } from '../../lib/useData';
 import { useAlunosQuery, useInvalidateAlunos } from '../../lib/queries';
 import { beltConfig } from '../../lib/gbBrand';
 import NovaMatriculaModal from './NovaMatriculaModal';
-import { Ico, PencilIcon, CheckCircleIcon, XCircleIcon, ArrowLeftIcon, PlusIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, AdjustmentsHorizontalIcon } from '../../lib/icons';
+import { Ico, PencilIcon, CheckCircleIcon, XCircleIcon, ArrowLeftIcon, PlusIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, AdjustmentsHorizontalIcon, CheckIcon, SaveIcon, CircleIcon, BanIcon } from '../../lib/icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
 import PageHeader from '../../components/common/PageHeader';
@@ -127,7 +128,9 @@ function EditAlunoModal({ aluno, onClose }: { aluno: any; onClose: () => void })
           disabled={saving || saved || !dataNasc || precisaResp}
           onClick={handleSave}
         >
-          {saved ? '✓ Guardado!' : saving ? 'A guardar...' : '💾 Guardar'}
+          {saved
+            ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Guardado!</span>
+            : saving ? 'A guardar...' : <span className="inline-flex gap-1.5 items-center"><Ico icon={SaveIcon} sm />Guardar</span>}
         </Button>
       </div>
     </Modal>
@@ -322,7 +325,7 @@ function ResponsaveisSection({ aluno }: { aluno: any }) {
                 'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
                 saving || !form.nome.trim() ? 'bg-neutral-400' : 'cursor-pointer bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark',
               ].join(' ')}>
-              {saving ? 'A guardar...' : '✓ Guardar Responsável'}
+              {saving ? 'A guardar...' : <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Guardar Responsável</span>}
             </button>
           </div>
         </div>
@@ -507,7 +510,11 @@ export default function AlunosPage() {
           <div className="flex justify-between items-center py-2">
             <span className="text-[12.5px] text-muted">Status</span>
             <Badge color={statusBadgeColor(selected.status)}>
-              {selected.status === 'ativo' ? '● Ativo' : selected.status === 'suspenso' ? '⛔ Suspenso' : '○ Inativo'}
+              {selected.status === 'ativo'
+                ? <><Ico icon={CircleIcon} sm className="text-green-500" />Ativo</>
+                : selected.status === 'suspenso'
+                  ? <><Ico icon={BanIcon} sm />Suspenso</>
+                  : <><Ico icon={CircleIcon} sm className="text-neutral-400" />Inativo</>}
             </Badge>
           </div>
 
@@ -635,7 +642,7 @@ export default function AlunosPage() {
                       {(beltConfig[a.faixa]?.label) || a.faixa}
                     </span>
                     <Badge color={statusBadgeColor(a.status)}>{a.status}</Badge>
-                    <ChevronRightIcon className="w-4 h-4 text-muted" />
+                    <FontAwesomeIcon icon={ChevronRightIcon} className="w-4 h-4 text-muted" />
                   </div>
                 </button>
               );
@@ -651,7 +658,7 @@ export default function AlunosPage() {
                   'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
                   safePage === 1 ? 'text-muted opacity-50' : 'cursor-pointer text-primary opacity-100 hover:bg-elevated active:bg-elevated',
                 ].join(' ')}>
-                <ChevronLeftIcon className="w-[15px] h-[15px]" /> Anterior
+                <FontAwesomeIcon icon={ChevronLeftIcon} className="w-[15px] h-[15px]" /> Anterior
               </button>
 
               <div className="flex gap-1">
@@ -681,7 +688,7 @@ export default function AlunosPage() {
                   'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
                   safePage === totalPages ? 'text-muted opacity-50' : 'cursor-pointer text-primary opacity-100 hover:bg-elevated active:bg-elevated',
                 ].join(' ')}>
-                Próximo <ChevronRightIcon className="w-[15px] h-[15px]" />
+                Próximo <FontAwesomeIcon icon={ChevronRightIcon} className="w-[15px] h-[15px]" />
               </button>
             </div>
           )}

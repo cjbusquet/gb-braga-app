@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheckDouble } from '@fortawesome/free-solid-svg-icons';
 import { useAlunos, useMensagens, useTemplates, db } from '../../lib/useData';
 import { isConfigured } from '../../lib/supabaseClient';
 import { useAuth } from '../../lib/auth';
@@ -6,17 +8,37 @@ import { sendEmail } from '../../services/api/edgeFunctions';
 import Card from '../../components/common/Card';
 import PageHeader from '../../components/common/PageHeader';
 import Badge from '../../components/common/Badge';
+import {
+  Ico,
+  type HeroIcon,
+  ChatBubbleLeftRightIcon,
+  DeviceMobileIcon,
+  EnvelopeIcon,
+  BellIcon,
+  PencilIcon,
+  BoltIcon,
+  ClipboardDocumentIcon,
+  XMarkIcon,
+  PlusIcon,
+  ExclamationTriangleIcon,
+  ArrowPathIcon,
+  SaveIcon,
+  TrashIcon,
+  CheckIcon,
+  CalendarIcon,
+  MartialArtsIcon,
+} from '../../lib/icons';
 
 type Canal = 'whatsapp' | 'sms' | 'email' | 'push';
 
-const CANAL: Record<Canal, { icon: string; label: string; accent: string; bg: string }> = {
-  whatsapp: { icon: '💬', label: 'WhatsApp', accent: '#25D366', bg: 'rgba(37,211,102,0.1)' },
-  sms:      { icon: '📱', label: 'SMS',       accent: '#3B82F6', bg: 'rgba(59,130,246,0.1)' },
-  email:    { icon: '📧', label: 'Email',     accent: '#A78BFA', bg: 'rgba(167,139,250,0.1)' },
-  push:     { icon: '🔔', label: 'Push',      accent: '#F59E0B', bg: 'rgba(245,158,11,0.1)' },
+const CANAL: Record<Canal, { icon: HeroIcon; label: string; accent: string; bg: string }> = {
+  whatsapp: { icon: ChatBubbleLeftRightIcon, label: 'WhatsApp', accent: '#25D366', bg: 'rgba(37,211,102,0.1)' },
+  sms:      { icon: DeviceMobileIcon,        label: 'SMS',       accent: '#3B82F6', bg: 'rgba(59,130,246,0.1)' },
+  email:    { icon: EnvelopeIcon,            label: 'Email',     accent: '#A78BFA', bg: 'rgba(167,139,250,0.1)' },
+  push:     { icon: BellIcon,                label: 'Push',      accent: '#F59E0B', bg: 'rgba(245,158,11,0.1)' },
 };
 
-function TabBar({ tabs, active, onSelect }: { tabs: { id: string; label: string; icon: string }[]; active: string; onSelect: (id: string) => void }) {
+function TabBar({ tabs, active, onSelect }: { tabs: { id: string; label: string; icon: HeroIcon }[]; active: string; onSelect: (id: string) => void }) {
   return (
     <div className="flex overflow-x-auto gap-0.5 mb-4 border-b border-border">
       {tabs.map(t => (
@@ -26,7 +48,7 @@ function TabBar({ tabs, active, onSelect }: { tabs: { id: string; label: string;
             'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
             active === t.id ? 'font-semibold border-gb-red text-primary' : 'font-normal border-transparent text-muted hover:text-primary active:text-primary',
           ].join(' ')}>
-          <span className="text-sm">{t.icon}</span>{t.label}
+          <FontAwesomeIcon icon={t.icon} className="w-3.5 h-3.5" />{t.label}
         </button>
       ))}
     </div>
@@ -86,7 +108,9 @@ function TemplatesTab({ templates, onUse, onRefresh }: {
             'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
             showForm ? 'border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle' : 'text-white border-none bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark',
           ].join(' ')}>
-          {showForm ? '✕ Cancelar' : '+ Novo Template'}
+          {showForm
+            ? <span className="inline-flex gap-1.5 items-center"><Ico icon={XMarkIcon} sm />Cancelar</span>
+            : <span className="inline-flex gap-1.5 items-center"><Ico icon={PlusIcon} sm />Novo Template</span>}
         </button>
       </div>
 
@@ -104,7 +128,7 @@ function TemplatesTab({ templates, onUse, onRefresh }: {
               <select value={canal} onChange={e => setCanal(e.target.value as Canal)}
                 className={[FIELD_CLASS, 'cursor-pointer'].join(' ')}>
                 {(Object.entries(CANAL) as [Canal, typeof CANAL[Canal]][]).map(([id, c]) => (
-                  <option key={id} value={id}>{c.icon} {c.label}</option>
+                  <option key={id} value={id}>{c.label}</option>
                 ))}
               </select>
             </div>
@@ -128,7 +152,7 @@ function TemplatesTab({ templates, onUse, onRefresh }: {
               Variáveis disponíveis: <code>{'{nome}'}</code> <code>{'{valor}'}</code> <code>{'{vencimento}'}</code> <code>{'{faixa}'}</code> <code>{'{link}'}</code>
             </div>
           </div>
-          {err && <div className="mb-2.5 text-[11.5px] font-semibold text-gb-red">⚠ {err}</div>}
+          {err && <div className="inline-flex gap-1.5 items-center mb-2.5 text-[11.5px] font-semibold text-gb-red"><Ico icon={ExclamationTriangleIcon} sm />{err}</div>}
           <div className="flex justify-end">
             <button onClick={handleCreate} disabled={saving}
               className={[
@@ -136,7 +160,9 @@ function TemplatesTab({ templates, onUse, onRefresh }: {
                 'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
                 saving ? 'bg-neutral-400' : 'cursor-pointer bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark',
               ].join(' ')}>
-              {saving ? '⟳ A guardar...' : '💾 Guardar Template'}
+              {saving
+                ? <span className="inline-flex gap-1.5 items-center"><Ico icon={ArrowPathIcon} sm />A guardar...</span>
+                : <span className="inline-flex gap-1.5 items-center"><Ico icon={SaveIcon} sm />Guardar Template</span>}
             </button>
           </div>
         </Card>
@@ -155,7 +181,7 @@ function TemplatesTab({ templates, onUse, onRefresh }: {
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap gap-2 items-center mb-1">
                   <span className="text-[13px] font-semibold text-primary">{t.nome}</span>
-                  <span className="py-0.5 px-1.5 text-[10.5px] font-bold rounded-full shrink-0" style={{ background: c.bg, color: c.accent }}>{c.icon} {c.label}</span>
+                  <span className="inline-flex gap-1 items-center py-0.5 px-1.5 text-[10.5px] font-bold rounded-full shrink-0" style={{ background: c.bg, color: c.accent }}><FontAwesomeIcon icon={c.icon} className="w-2.5 h-2.5" />{c.label}</span>
                 </div>
                 {t.assunto && <div className="mb-1 text-[11.5px] font-semibold text-secondary">{t.assunto}</div>}
                 <p className="overflow-hidden m-0 text-xs leading-[1.5] whitespace-nowrap text-ellipsis text-muted">{t.corpo}</p>
@@ -173,7 +199,7 @@ function TemplatesTab({ templates, onUse, onRefresh }: {
                     'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
                     deleting === t.id ? 'cursor-not-allowed' : 'cursor-pointer',
                   ].join(' ')}>
-                  {deleting === t.id ? '⟳' : '🗑'}
+                  {deleting === t.id ? <Ico icon={ArrowPathIcon} sm /> : <Ico icon={TrashIcon} sm />}
                 </button>
               </div>
             </Card>
@@ -267,7 +293,7 @@ export default function ComunicacaoPage() {
             className="py-3 px-3.5 text-left rounded-md border cursor-pointer transition-colors duration-200 border-border bg-card hover:bg-elevated active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
             onClick={() => { setCanal(id); setTab('enviar'); }}>
             <div className="flex justify-between items-start">
-              <span className="text-xl">{c.icon}</span>
+              <FontAwesomeIcon icon={c.icon} className="w-5 h-5" style={{ color: c.accent }} />
               <span className="text-xl font-bold" style={{ color: c.accent }}>{totalPorCanal(id)}</span>
             </div>
             <div className="mt-1.5 text-xs font-semibold text-primary">{c.label}</div>
@@ -280,10 +306,10 @@ export default function ComunicacaoPage() {
         active={tab}
         onSelect={s => setTab(s as typeof tab)}
         tabs={[
-          { id: 'enviar', label: 'Nova Mensagem', icon: '✉' },
-          { id: 'templates', label: 'Templates', icon: '📝' },
-          { id: 'automatizacoes', label: 'Automações', icon: '⚡' },
-          { id: 'historico', label: 'Histórico', icon: '📋' },
+          { id: 'enviar', label: 'Nova Mensagem', icon: EnvelopeIcon },
+          { id: 'templates', label: 'Templates', icon: PencilIcon },
+          { id: 'automatizacoes', label: 'Automações', icon: BoltIcon },
+          { id: 'historico', label: 'Histórico', icon: ClipboardDocumentIcon },
         ]}
       />
 
@@ -300,7 +326,7 @@ export default function ComunicacaoPage() {
                   className="flex flex-col gap-1 items-center py-2 px-1 min-h-11 rounded-sm border-2 cursor-pointer transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
                   style={{ background: canal === id ? c.bg : 'var(--bg-elevated)', borderColor: canal === id ? c.accent : 'var(--border)' }}
                 >
-                  <span className="text-lg">{c.icon}</span>
+                  <FontAwesomeIcon icon={c.icon} className="w-[18px] h-[18px]" style={{ color: canal === id ? c.accent : 'var(--text-muted)' }} />
                   <span className="text-[10.5px]" style={{ color: canal === id ? c.accent : 'var(--text-muted)', fontWeight: canal === id ? 700 : 400 }}>{c.label}</span>
                 </button>
               ))}
@@ -309,12 +335,12 @@ export default function ComunicacaoPage() {
             {/* Destinatário */}
             <label className={FIELD_LABEL_CLASS}>Destinatário</label>
             <select value={dest} onChange={e => setDest(e.target.value)} className={[FIELD_CLASS, 'cursor-pointer mb-3.5'].join(' ')}>
-              <option value="all">📢 Todos os alunos ativos ({alunos.filter(a => a.status === 'ativo').length})</option>
-              <option value="inadimplentes">⚠️ Inadimplentes</option>
-              <option value="aniversariantes">🎂 Aniversariantes do mês</option>
-              <option value="faixa_branca">⬜ Faixa Branca</option>
-              <option value="kids">⭐ Kids</option>
-              {alunos.map(a => <option key={a.id} value={a.id}>👤 {a.nome}</option>)}
+              <option value="all">Todos os alunos ativos ({alunos.filter(a => a.status === 'ativo').length})</option>
+              <option value="inadimplentes">Inadimplentes</option>
+              <option value="aniversariantes">Aniversariantes do mês</option>
+              <option value="faixa_branca">Faixa Branca</option>
+              <option value="kids">Kids</option>
+              {alunos.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
             </select>
 
             {/* Assunto (email only) */}
@@ -337,18 +363,18 @@ export default function ComunicacaoPage() {
             </div>
 
             {sent && (
-              <div className="py-2.5 px-3.5 mb-3.5 text-xs font-semibold text-green-500 rounded-sm border border-green-500/25 bg-green-500/[0.08]">
-                ✓ {sendResult ? `${sendResult.sent} de ${sendResult.total} email(s) enviado(s)!` : 'Mensagem enviada com sucesso!'}
+              <div className="inline-flex gap-1.5 items-center py-2.5 px-3.5 mb-3.5 text-xs font-semibold text-green-500 rounded-sm border border-green-500/25 bg-green-500/[0.08]">
+                <Ico icon={CheckIcon} sm />{sendResult ? `${sendResult.sent} de ${sendResult.total} email(s) enviado(s)!` : 'Mensagem enviada com sucesso!'}
               </div>
             )}
             {sendErr && (
-              <div className="py-2.5 px-3.5 mb-3.5 text-xs font-semibold rounded-sm border border-gb-red/20 text-gb-red bg-gb-red/[0.06]">
-                ⚠ {sendErr}
+              <div className="inline-flex gap-1.5 items-center py-2.5 px-3.5 mb-3.5 text-xs font-semibold rounded-sm border border-gb-red/20 text-gb-red bg-gb-red/[0.06]">
+                <Ico icon={ExclamationTriangleIcon} sm />{sendErr}
               </div>
             )}
 
             <div className="flex gap-2 items-center py-2 px-3 mb-2.5 rounded-sm bg-elevated">
-              <span className="text-xs text-muted">📅 Agendar:</span>
+              <span className="inline-flex gap-1 items-center text-xs text-muted"><Ico icon={CalendarIcon} sm />Agendar:</span>
               <input type="datetime-local" className="flex-1 font-mono text-xs bg-none border-none cursor-pointer text-primary"/>
               <span className="text-[10.5px] text-muted">ou enviar agora ↓</span>
             </div>
@@ -361,7 +387,9 @@ export default function ComunicacaoPage() {
               ].join(' ')}
               style={{ background: sending ? undefined : CANAL[canal].accent }}
             >
-              {sending ? '⟳ A enviar...' : `${CANAL[canal].icon} Enviar via ${CANAL[canal].label}`}
+              {sending
+                ? <span className="inline-flex gap-1.5 items-center"><Ico icon={ArrowPathIcon} sm />A enviar...</span>
+                : <span className="inline-flex gap-1.5 items-center"><FontAwesomeIcon icon={CANAL[canal].icon} className="w-3.5 h-3.5" />{`Enviar via ${CANAL[canal].label}`}</span>}
             </button>
           </Card>
 
@@ -374,7 +402,7 @@ export default function ComunicacaoPage() {
                 <div className="p-3.5 min-h-[100px] rounded-[10px] bg-[#111B21]">
                   <div className="py-2.5 px-3 max-w-[85%] rounded-[8px_8px_8px_0] shadow-[0_1px_3px_rgba(0,0,0,0.3)] bg-[#1F2C34]">
                     <p className="m-0 text-[13px] leading-[1.5] text-[#E9EDF0]">{msg || 'A mensagem aparecerá aqui...'}</p>
-                    <p className="mt-1 mb-0 text-[10px] text-right text-[#8696A0]">14:32 ✓✓</p>
+                    <p className="flex gap-1 justify-end items-center mt-1 mb-0 text-[10px] text-[#8696A0]">14:32 <FontAwesomeIcon icon={faCheckDouble} className="w-2.5 h-2.5" /></p>
                   </div>
                 </div>
               )}
@@ -397,7 +425,7 @@ export default function ComunicacaoPage() {
               {canal === 'push' && (
                 <div className="p-3.5 rounded-2xl border border-[#2C2C2E] bg-[#1C1C1E]">
                   <div className="flex gap-2.5 items-start">
-                    <div className="flex justify-center items-center w-10 h-10 text-xl rounded-[10px] shrink-0 bg-gb-red">🥋</div>
+                    <div className="flex justify-center items-center w-10 h-10 rounded-[10px] shrink-0 bg-gb-red"><FontAwesomeIcon icon={MartialArtsIcon} className="w-5 h-5 text-white" /></div>
                     <div>
                       <p className="my-0 mb-0.5 text-xs font-bold text-white">Gracie Barra Braga</p>
                       <p className="m-0 text-xs leading-[1.4] text-[#ADADAD]">{msg || 'Notificação push...'}</p>
@@ -412,7 +440,7 @@ export default function ComunicacaoPage() {
               <div className="mb-3 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Estimativa de entrega</div>
               {(Object.entries(CANAL) as [Canal, typeof CANAL[Canal]][]).map(([id, c]) => (
                 <div key={id} className="flex justify-between py-1.5 border-b border-border-subtle">
-                  <span className="text-xs text-secondary">{c.icon} {c.label}</span>
+                  <span className="inline-flex gap-1 items-center text-xs text-secondary"><FontAwesomeIcon icon={c.icon} className="w-3 h-3" />{c.label}</span>
                   <span className="text-[11px]" style={{ color: id === canal ? c.accent : 'var(--text-muted)', fontWeight: id === canal ? 700 : 400 }}>
                     {id === 'whatsapp' ? '~30s' : id === 'sms' ? '~1min' : id === 'email' ? '~2min' : '~5s'}
                   </span>
@@ -453,7 +481,7 @@ export default function ComunicacaoPage() {
               <Card key={i} padding="lg">
                 <div className="flex justify-between items-start mb-2.5">
                   <div className="flex gap-2 items-center">
-                    <span className="text-lg">{c.icon}</span>
+                    <FontAwesomeIcon icon={c.icon} className="w-[18px] h-[18px]" style={{ color: c.accent }} />
                     <div>
                       <div className="text-[13px] font-semibold text-primary">{a.titulo}</div>
                       <div className="mt-px text-[10.5px] text-muted">{a.trigger}</div>
@@ -501,7 +529,7 @@ export default function ComunicacaoPage() {
                 return (
                   <tr key={m.id} className="border-b border-border-subtle">
                     <td className="py-2.5 px-3.5">
-                      <span className="py-0.5 px-2 text-[11px] font-semibold rounded" style={{ background: c.bg, color: c.accent }}>{c.icon} {c.label}</span>
+                      <span className="inline-flex gap-1 items-center py-0.5 px-2 text-[11px] font-semibold rounded" style={{ background: c.bg, color: c.accent }}><FontAwesomeIcon icon={c.icon} className="w-2.5 h-2.5" />{c.label}</span>
                     </td>
                     <td className="py-2.5 px-3.5 text-[13px] font-semibold text-primary">{m.para_nome}</td>
                     <td className="py-2.5 px-3.5 text-xs text-secondary max-w-[280px]">

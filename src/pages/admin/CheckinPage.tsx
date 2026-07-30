@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { usePresencas, useAlunos, useTurmas, db } from '../../lib/useData';
-import { Ico, ArrowDownTrayIcon, MapPinIcon, CheckIcon, PlusIcon } from '../../lib/icons';
+import { Ico, type HeroIcon, ArrowDownTrayIcon, MapPinIcon, CheckIcon, PlusIcon, XMarkIcon, CircleIcon } from '../../lib/icons';
 import PageHeader from '../../components/common/PageHeader';
 
 const ACADEMIA_LAT = 41.5484, ACADEMIA_LNG = -8.4259;
@@ -65,7 +65,8 @@ export default function CheckinPage() {
   const todayCheckins = checkIns.filter(p => p.data === new Date().toISOString().split('T')[0]);
 
   const gpsColor = { idle:'var(--text-muted)', checking:'#F59E0B', inside:'#22C55E', outside:'var(--gb-red)', denied:'#9CA3AF' }[gpsStatus];
-  const gpsLabel = { idle:'Verificar GPS', checking:'A verificar...', inside:'✓ Dentro do perímetro', outside:`✗ Fora (${gpsDist}m)`, denied:'GPS negado' }[gpsStatus];
+  const gpsLabel = { idle:'Verificar GPS', checking:'A verificar...', inside:'Dentro do perímetro', outside:`Fora (${gpsDist}m)`, denied:'GPS negado' }[gpsStatus];
+  const gpsLabelIcon: HeroIcon | null = { idle: null, checking: null, inside: CheckIcon, outside: XMarkIcon, denied: null }[gpsStatus];
 
   return (
     <div>
@@ -84,14 +85,14 @@ export default function CheckinPage() {
 
       {/* Tabs */}
       <div className="flex overflow-x-auto gap-1 mb-5 border-b border-border">
-        {([['live','● Live'],['gps','GPS Fence'],['manual','Manual']] as const).map(([id,label]) => (
+        {([['live','Live'],['gps','GPS Fence'],['manual','Manual']] as const).map(([id,label]) => (
           <button key={id} onClick={() => setTab(id)}
             className={[
-              'py-2 px-4 -mb-px min-h-11 sm:min-h-0 text-[13px] bg-none border-none border-b-2 cursor-pointer whitespace-nowrap transition-colors duration-200',
+              'flex gap-1 items-center py-2 px-4 -mb-px min-h-11 sm:min-h-0 text-[13px] bg-none border-none border-b-2 cursor-pointer whitespace-nowrap transition-colors duration-200',
               'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
               tab === id ? 'font-bold border-gb-red text-gb-red' : 'font-normal border-transparent text-muted hover:text-secondary active:text-secondary',
             ].join(' ')}>
-            {label}
+            {id === 'live' && <Ico icon={CircleIcon} className="w-2 h-2 text-green-500" />}{label}
           </button>
         ))}
       </div>
@@ -129,7 +130,7 @@ export default function CheckinPage() {
               >
                 <Ico icon={MapPinIcon} lg />
               </div>
-              <div className="text-sm font-bold" style={{ color: gpsColor }}>{gpsLabel}</div>
+              <div className="inline-flex gap-1.5 items-center text-sm font-bold" style={{ color: gpsColor }}>{gpsLabelIcon && <Ico icon={gpsLabelIcon} sm />}{gpsLabel}</div>
               {gpsDist !== null && <div className="mt-1 text-xs text-muted">{gpsDist}m da academia</div>}
             </div>
             <div className="flex flex-wrap gap-2 justify-center mb-4">

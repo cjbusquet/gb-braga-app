@@ -2,6 +2,7 @@
 import { useKPIs, useAlunos, usePagamentos, usePresencas, useTurmas } from '../../lib/useData';
 import { GB } from '../../lib/gbBrand';
 import Card from '../../components/common/Card';
+import { Ico, CheckIcon } from '../../lib/icons';
 
 function KpiCard({ label, value, sub, color = GB.red }: any) {
   return (
@@ -75,7 +76,7 @@ export default function Dashboard() {
             Pagamentos em Atraso
           </div>
           {vencidos.slice(0,6).length === 0 ? (
-            <div className="p-5 text-xs text-center text-green-500">✓ Sem pagamentos em atraso</div>
+            <div className="flex gap-1.5 justify-center items-center p-5 text-xs text-center text-green-500"><Ico icon={CheckIcon} sm />Sem pagamentos em atraso</div>
           ) : vencidos.slice(0,6).map((p: any) => (
             <div key={p.id} className="flex justify-between py-1.5 border-b border-border-subtle">
               <div>

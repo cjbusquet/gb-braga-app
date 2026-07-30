@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { faHourglassHalf } from '@fortawesome/free-solid-svg-icons';
 import {
   useAprovarNumerario,
   usePedidosNumerarioQuery,
@@ -8,11 +9,12 @@ import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
 import Badge, { type BadgeColor } from '../../components/common/Badge';
 import PageHeader from '../../components/common/PageHeader';
+import { Ico, type HeroIcon, CheckIcon, XMarkIcon, ExclamationTriangleIcon, ArrowPathIcon, MoneyBagIcon, PencilIcon } from '../../lib/icons';
 
-const STATUS_CFG: Record<string, { color: BadgeColor; label: string }> = {
-  pendente:  { color: 'warning', label: '⏳ Pendente' },
-  aprovado:  { color: 'success', label: '✓ Aprovado' },
-  rejeitado: { color: 'danger',  label: '✕ Rejeitado' },
+const STATUS_CFG: Record<string, { color: BadgeColor; icon: HeroIcon; label: string }> = {
+  pendente:  { color: 'warning', icon: faHourglassHalf, label: 'Pendente' },
+  aprovado:  { color: 'success', icon: CheckIcon, label: 'Aprovado' },
+  rejeitado: { color: 'danger',  icon: XMarkIcon, label: 'Rejeitado' },
 };
 
 export default function PendentesNumerario() {
@@ -73,8 +75,9 @@ export default function PendentesNumerario() {
             ))}
           </div>
 
-          <div className="p-2.5 px-3.5 mb-4 text-[12.5px] rounded-sm border border-amber-600/25 text-amber-800 bg-amber-600/[0.06]">
-            ⚠️ O aluno solicitou pagamento em <strong>numerário</strong> em vez de débito automático. Confirme se a excepção é justificada.
+          <div className="flex gap-1.5 items-start p-2.5 px-3.5 mb-4 text-[12.5px] rounded-sm border border-amber-600/25 text-amber-800 bg-amber-600/[0.06]">
+            <Ico icon={ExclamationTriangleIcon} sm className="shrink-0 mt-0.5" />
+            <span>O aluno solicitou pagamento em <strong>numerário</strong> em vez de débito automático. Confirme se a excepção é justificada.</span>
           </div>
 
           <div className="mb-[18px]">
@@ -86,14 +89,14 @@ export default function PendentesNumerario() {
           <div className="flex gap-2.5">
             <button onClick={() => rejeitar(pedidoModal.id)} disabled={saving}
               className={[
-                'flex-1 py-2.5 min-h-11 sm:min-h-0 text-[13px] font-bold rounded-sm border border-border bg-elevated text-gb-red',
+                'flex-1 flex gap-1.5 justify-center items-center py-2.5 min-h-11 sm:min-h-0 text-[13px] font-bold rounded-sm border border-border bg-elevated text-gb-red',
                 'transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
                 saving ? 'cursor-default opacity-60' : 'cursor-pointer hover:bg-red-50 active:bg-red-100',
               ].join(' ')}>
-              ✕ Rejeitar
+              <Ico icon={XMarkIcon} sm /> Rejeitar
             </button>
             <Button variant="primary" className="flex-[2]" loading={saving} onClick={() => aprovar(pedidoModal.id)}>
-              {saving ? 'A processar…' : '✓ Aprovar excepção'}
+              {saving ? 'A processar…' : <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Aprovar excepção</span>}
             </Button>
           </div>
         </Modal>
@@ -104,8 +107,8 @@ export default function PendentesNumerario() {
         eyebrow="Super Admin"
         title={<>Pedidos Numerário{pendentes > 0 && <Badge color="brand">{pendentes} pendente{pendentes!==1?'s':''}</Badge>}</>}
         actions={
-          <button onClick={() => refetch()} className="py-1.5 px-3.5 min-h-11 sm:min-h-0 text-xs bg-none rounded-sm border cursor-pointer border-border text-muted transition-colors duration-200 hover:bg-elevated active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
-            ↻ Atualizar
+          <button onClick={() => refetch()} className="flex gap-1.5 items-center py-1.5 px-3.5 min-h-11 sm:min-h-0 text-xs bg-none rounded-sm border cursor-pointer border-border text-muted transition-colors duration-200 hover:bg-elevated active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+            <Ico icon={ArrowPathIcon} sm /> Atualizar
           </button>
         }
       />
@@ -140,7 +143,7 @@ export default function PendentesNumerario() {
         <div className="p-5 py-10 text-sm text-center text-muted">A carregar…</div>
       ) : filtrados.length === 0 ? (
         <div className="p-5 py-10 text-center rounded-lg border border-border bg-card">
-          <div className="mb-2.5 text-3xl opacity-30">💵</div>
+          <div className="mb-2.5 opacity-30"><Ico icon={MoneyBagIcon} style={{ width: 32, height: 32 }} className="mx-auto" /></div>
           <div className="text-sm text-muted">Sem pedidos {filtro !== 'todos' ? filtro + 's' : ''}</div>
         </div>
       ) : (
@@ -156,10 +159,10 @@ export default function PendentesNumerario() {
                 <div className="flex-1">
                   <div className="flex gap-2.5 items-center mb-1">
                     <span className="text-sm font-bold text-primary">{ped.nomeAluno}</span>
-                    <Badge color={st.color}>{st.label}</Badge>
+                    <Badge color={st.color}><Ico icon={st.icon} sm />{st.label}</Badge>
                   </div>
                   <div className="text-xs text-muted">{ped.plano} · €{ped.valor}/mês · {ped.email}</div>
-                  {ped.notaAdmin && <div className="mt-1 text-[11px] italic text-secondary">📝 {ped.notaAdmin}</div>}
+                  {ped.notaAdmin && <div className="flex gap-1.5 items-center mt-1 text-[11px] italic text-secondary"><Ico icon={PencilIcon} sm />{ped.notaAdmin}</div>}
                 </div>
                 <div className="text-right shrink-0">
                   <div className="mb-1.5 font-mono text-[11px] text-muted">{ped.dataPedido}</div>

@@ -10,12 +10,27 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { supabase, isConfigured } from './supabaseClient';
+import {
+  CheckIcon,
+  CalendarDaysIcon,
+  BanknotesIcon,
+  TrophyIcon,
+  EnvelopeIcon,
+  ChatBubbleLeftRightIcon,
+  DocumentTextIcon,
+  ChartBarIcon,
+  LinkIcon,
+  GlobeAltIcon,
+  CurrencyEuroIcon,
+  PlayCircleIcon,
+  type HeroIcon,
+} from './icons';
 
 // ─── Module catalogue ─────────────────────────────────────────────────────────
 export interface ModuleDef {
   id: string;
   label: string;
-  icon: string;
+  icon: HeroIcon;
   desc: string;
   category: 'staff' | 'aluno';
   /** Core modules cannot be disabled */
@@ -24,24 +39,24 @@ export interface ModuleDef {
 
 export const MODULE_CATALOGUE: ModuleDef[] = [
   // ── Staff ──────────────────────────────────────────────────────────────────
-  { id: 'checkin',       label: 'Check-in',        icon: '✓',  desc: 'Registo de presenças nas aulas',           category: 'staff' },
-  { id: 'turmas',        label: 'Turmas',           icon: '▤',  desc: 'Gestão de turmas e horários',              category: 'staff' },
-  { id: 'financeiro',    label: 'Financeiro',       icon: '€',  desc: 'Pagamentos, mensalidades e recibos',       category: 'staff' },
-  { id: 'graduacao',     label: 'Graduação',        icon: '◈',  desc: 'Promoções de faixa e histórico',           category: 'staff' },
-  { id: 'comunicacao',   label: 'Comunicação',      icon: '✉',  desc: 'Envio de mensagens para alunos',           category: 'staff' },
-  { id: 'chat',          label: 'Chat',             icon: '💬', desc: 'Chat interno da equipa',                   category: 'staff' },
-  { id: 'contratos',     label: 'Contratos',        icon: '◻',  desc: 'Gestão de contratos de matrícula',         category: 'staff' },
-  { id: 'relatorios',    label: 'Relatórios',       icon: '↗',  desc: 'Relatórios e análises de negócio',         category: 'staff' },
-  { id: 'integracoes',   label: 'Integrações',      icon: '⛓',  desc: 'TOConline, Stripe, WhatsApp Business',     category: 'staff' },
-  { id: 'matricula',     label: 'Matrícula Online', icon: '🌐', desc: 'Fluxo de matrícula via link público',      category: 'staff' },
-  { id: 'numerario',     label: 'Numerário',        icon: '💵', desc: 'Pedidos e aprovação de caixa',             category: 'staff' },
+  { id: 'checkin',       label: 'Check-in',        icon: CheckIcon,               desc: 'Registo de presenças nas aulas',           category: 'staff' },
+  { id: 'turmas',        label: 'Turmas',           icon: CalendarDaysIcon,        desc: 'Gestão de turmas e horários',              category: 'staff' },
+  { id: 'financeiro',    label: 'Financeiro',       icon: BanknotesIcon,           desc: 'Pagamentos, mensalidades e recibos',       category: 'staff' },
+  { id: 'graduacao',     label: 'Graduação',        icon: TrophyIcon,              desc: 'Promoções de faixa e histórico',           category: 'staff' },
+  { id: 'comunicacao',   label: 'Comunicação',      icon: EnvelopeIcon,            desc: 'Envio de mensagens para alunos',           category: 'staff' },
+  { id: 'chat',          label: 'Chat',             icon: ChatBubbleLeftRightIcon, desc: 'Chat interno da equipa',                   category: 'staff' },
+  { id: 'contratos',     label: 'Contratos',        icon: DocumentTextIcon,        desc: 'Gestão de contratos de matrícula',         category: 'staff' },
+  { id: 'relatorios',    label: 'Relatórios',       icon: ChartBarIcon,            desc: 'Relatórios e análises de negócio',         category: 'staff' },
+  { id: 'integracoes',   label: 'Integrações',      icon: LinkIcon,                desc: 'TOConline, Stripe, WhatsApp Business',     category: 'staff' },
+  { id: 'matricula',     label: 'Matrícula Online', icon: GlobeAltIcon,            desc: 'Fluxo de matrícula via link público',      category: 'staff' },
+  { id: 'numerario',     label: 'Numerário',        icon: CurrencyEuroIcon,        desc: 'Pedidos e aprovação de caixa',             category: 'staff' },
   // ── Aluno ──────────────────────────────────────────────────────────────────
-  { id: 'meu-checkin',   label: 'Check-in',         icon: '✓',  desc: 'Auto check-in do aluno nas aulas',        category: 'aluno' },
-  { id: 'minhas-aulas',  label: 'Minhas Aulas',     icon: '▤',  desc: 'Histórico de presenças do aluno',         category: 'aluno' },
-  { id: 'evolucao',      label: 'Evolução',         icon: '◈',  desc: 'Progresso, faixa e graduações',            category: 'aluno' },
-  { id: 'meu-financeiro',label: 'Financeiro',       icon: '€',  desc: 'Pagamentos e mensalidades do aluno',       category: 'aluno' },
-  { id: 'conteudo',      label: 'Conteúdo',         icon: '▷',  desc: 'Vídeos e material de treino',              category: 'aluno' },
-  { id: 'mensagens',     label: 'Mensagens',        icon: '✉',  desc: 'Mensagens recebidas da academia',          category: 'aluno' },
+  { id: 'meu-checkin',   label: 'Check-in',         icon: CheckIcon,               desc: 'Auto check-in do aluno nas aulas',        category: 'aluno' },
+  { id: 'minhas-aulas',  label: 'Minhas Aulas',     icon: CalendarDaysIcon,        desc: 'Histórico de presenças do aluno',         category: 'aluno' },
+  { id: 'evolucao',      label: 'Evolução',         icon: TrophyIcon,              desc: 'Progresso, faixa e graduações',            category: 'aluno' },
+  { id: 'meu-financeiro',label: 'Financeiro',       icon: BanknotesIcon,           desc: 'Pagamentos e mensalidades do aluno',       category: 'aluno' },
+  { id: 'conteudo',      label: 'Conteúdo',         icon: PlayCircleIcon,          desc: 'Vídeos e material de treino',              category: 'aluno' },
+  { id: 'mensagens',     label: 'Mensagens',        icon: EnvelopeIcon,            desc: 'Mensagens recebidas da academia',          category: 'aluno' },
 ];
 
 // Core modules that can never be disabled

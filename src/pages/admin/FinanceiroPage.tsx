@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
+import { faArrowUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 import { usePagamentos, usePlanos, useAlunos, db } from '../../lib/useData';
-import { Ico, ChatBubbleLeftRightIcon, DocumentTextIcon, ArrowUpTrayIcon } from '../../lib/icons';
+import { Ico, ChatBubbleLeftRightIcon, DocumentTextIcon, ArrowUpTrayIcon, CheckIcon, ArrowRightIcon } from '../../lib/icons';
 import Card from '../../components/common/Card';
 import Badge, { type BadgeColor } from '../../components/common/Badge';
 import PageHeader from '../../components/common/PageHeader';
@@ -120,7 +121,7 @@ export default function FinanceiroPage() {
                             {p.status !== 'pago' && (
                               <button onClick={() => marcarPago(p.id)} disabled={saving===p.id}
                                 className="py-1 px-2.5 text-[11px] font-semibold text-green-600 whitespace-nowrap rounded border cursor-pointer border-green-500/30 bg-green-500/10 transition-colors duration-200 hover:bg-green-500/20 active:bg-green-500/25 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60">
-                                {saving===p.id ? '...' : '✓ Pago'}
+                                {saving===p.id ? '...' : <span className="inline-flex gap-1 items-center"><Ico icon={CheckIcon} sm />Pago</span>}
                               </button>
                             )}
                             {p.status !== 'pago' && (
@@ -161,8 +162,8 @@ export default function FinanceiroPage() {
                 <div className="mb-3 text-[11px] text-muted">{count} alunos activos</div>
                 <div className="flex gap-1.5">
                   <a href="https://dashboard.stripe.com/products" target="_blank" rel="noreferrer"
-                    className="flex flex-1 justify-center items-center py-1.5 min-h-11 sm:min-h-0 text-[11px] font-semibold text-[#635BFF] no-underline rounded border border-[#635BFF]/20 bg-[#635BFF]/[0.08] transition-colors duration-200 hover:bg-[#635BFF]/20 active:bg-[#635BFF]/25 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
-                    ↗ Stripe
+                    className="flex flex-1 gap-1.5 justify-center items-center py-1.5 min-h-11 sm:min-h-0 text-[11px] font-semibold text-[#635BFF] no-underline rounded border border-[#635BFF]/20 bg-[#635BFF]/[0.08] transition-colors duration-200 hover:bg-[#635BFF]/20 active:bg-[#635BFF]/25 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+                    <Ico icon={faArrowUpRightFromSquare} sm /> Stripe
                   </a>
                 </div>
               </Card>
@@ -192,8 +193,8 @@ export default function FinanceiroPage() {
                 <Ico icon={ArrowUpTrayIcon} sm /> Exportar SAF-T
               </button>
             </div>
-            <div className="text-xs leading-[1.7] text-muted">
-              Para configurar o TOConline: <strong>Config. → TOConline</strong> → inserir Client ID e Secret.
+            <div className="inline-flex flex-wrap gap-1.5 items-center text-xs leading-[1.7] text-muted">
+              Para configurar o TOConline: <strong className="inline-flex gap-1.5 items-center">Config. <Ico icon={ArrowRightIcon} sm />TOConline</strong> <Ico icon={ArrowRightIcon} sm />inserir Client ID e Secret.
             </div>
           </Card>
         </div>

@@ -1,10 +1,30 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faHourglassHalf } from '@fortawesome/free-solid-svg-icons';
 import { usePlanos, db } from '../../lib/useData';
 import { useAuth } from '../../lib/auth';
 import { useUpdateProfile } from '../../hooks/useProfile';
 import { GBLogoFull } from '../../components/GBLogo';
 import type { Plano } from '../../types';
+import {
+  Ico,
+  type HeroIcon,
+  MartialArtsIcon,
+  StarIcon,
+  UsersIcon,
+  TrophyIcon,
+  CheckIcon,
+  UserIcon,
+  ExclamationTriangleIcon,
+  CreditCardIcon,
+  ClipboardDocumentIcon,
+  KeyIcon,
+  SignatureIcon,
+  MoneyBagIcon,
+  InboxIcon,
+  ChatBubbleLeftRightIcon,
+} from '../../lib/icons';
 
 type Step = 'ficha' | 'contrato' | 'pagamento' | 'pendente' | 'completo';
 
@@ -27,7 +47,7 @@ interface ContratoData {
 }
 
 const FAIXAS = ['Branca','Cinza e Branca','Cinza','Cinza e Preta','Amarela e Branca','Amarela','Amarela e Preta','Laranja e Branca','Laranja','Laranja e Preta','Verde e Branca','Verde','Verde e Preta','Azul','Roxa','Marrom','Preta'];
-const CATEGORIAS = [{id:'adulto',label:'Adulto',icon:'🥋'},{id:'kids',label:'Kids',icon:'⭐'},{id:'familia',label:'Família',icon:'👨‍👩‍👧'},{id:'fundador',label:'Sócio Fundador',icon:'🏆'}];
+const CATEGORIAS: { id: string; label: string; icon: HeroIcon }[] = [{id:'adulto',label:'Adulto',icon:MartialArtsIcon},{id:'kids',label:'Kids',icon:StarIcon},{id:'familia',label:'Família',icon:UsersIcon},{id:'fundador',label:'Sócio Fundador',icon:TrophyIcon}];
 
 const INP_CLASS = 'block box-border w-full py-2.5 px-3.5 min-h-11 sm:min-h-0 font-inherit text-sm rounded-lg border-[1.5px] outline-none transition-all duration-200 border-border bg-white text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25';
 const BTN_CLASS = 'py-3.5 px-8 min-h-11 sm:min-h-0 font-display text-[15px] font-extrabold text-white rounded-[10px] border-none shadow-[0_4px_14px_rgba(200,16,46,0.3)] cursor-pointer bg-gb-red transition-all duration-200 hover:bg-gb-red-dark active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2';
@@ -47,7 +67,7 @@ function StepBar({ step, isStaff = false }: { step: Step; isStaff?: boolean }) {
         <div key={s.id} className={['flex items-center', i<steps.length-1 ? 'flex-1' : 'flex-none'].join(' ')}>
           <div className="flex flex-col gap-1 items-center">
             <div className={['flex justify-center items-center w-[30px] h-[30px] text-xs font-bold rounded-full', i<=idx ? 'text-white bg-gb-red' : 'text-muted bg-border'].join(' ')}>
-              {i<idx?'✓':i+1}
+              {i<idx?<FontAwesomeIcon icon={CheckIcon} className="w-3 h-3" />:i+1}
             </div>
             <span className={['text-[10.5px] whitespace-nowrap', i===idx ? 'font-bold text-primary' : i<idx ? 'font-normal text-gb-red' : 'font-normal text-muted'].join(' ')}>{s.label}</span>
           </div>
@@ -134,7 +154,7 @@ function FichaInscricao({ onNext, registerMode = false, isStaff = false, planos 
         <strong className="text-gb-red">Atenção:</strong> As fichas têm que ser preenchidas uma por aluno.
       </p>
 
-      <div className={SEC_CLASS}>🥋 Identificação do Aluno</div>
+      <div className={SEC_CLASS}><span className="inline-flex gap-1.5 items-center"><Ico icon={MartialArtsIcon} sm />Identificação do Aluno</span></div>
       <p className="mb-3.5 text-[11px] text-muted">Todos os campos marcados com * são obrigatórios</p>
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
         {field('nomeAluno','Nome do Aluno')}
@@ -162,7 +182,7 @@ function FichaInscricao({ onNext, registerMode = false, isStaff = false, planos 
       </div>
 
       <div className="flex justify-between items-center pb-2 mb-3.5 border-b-2 border-border">
-        <span className="text-[15px] font-bold text-primary">👤 Encarregado de Educação</span>
+        <span className="inline-flex gap-1.5 items-center text-[15px] font-bold text-primary"><Ico icon={UserIcon} sm />Encarregado de Educação</span>
         {isMinor && (
           <span className="py-1 px-2.5 text-[10px] font-extrabold tracking-[0.6px] text-white uppercase rounded-md bg-gb-red">
             Obrigatório
@@ -173,7 +193,7 @@ function FichaInscricao({ onNext, registerMode = false, isStaff = false, planos 
       {isMinor ? (
         /* Minor: locked notice — cannot uncheck */
         <div className="flex gap-2.5 items-center py-2.5 px-3.5 mb-3.5 rounded-lg border-[1.5px] border-gb-red/25 bg-gb-red/[0.06]">
-          <span className="text-base">⚠️</span>
+          <FontAwesomeIcon icon={ExclamationTriangleIcon} className="w-4 h-4 text-gb-red" />
           <span className="text-[13px] font-semibold text-gb-red">
             O aluno tem menos de 18 anos — dados do Encarregado de Educação são obrigatórios.
           </span>
@@ -196,7 +216,7 @@ function FichaInscricao({ onNext, registerMode = false, isStaff = false, planos 
         </div>
       )}
 
-      <div className={SEC_CLASS}>💳 Encarregado do Pagamento da Mensalidade</div>
+      <div className={SEC_CLASS}><span className="inline-flex gap-1.5 items-center"><Ico icon={CreditCardIcon} sm />Encarregado do Pagamento da Mensalidade</span></div>
       {(['aluno','ee','outro'] as const).map(val => {
         const labels = { aluno:'O aluno', ee:'O encarregado de educação', outro:'Nenhum dos mencionados (outro)' };
         return (
@@ -225,7 +245,7 @@ function FichaInscricao({ onNext, registerMode = false, isStaff = false, planos 
       {/* ── Plano (staff enrollment only) ── */}
       {isStaff && planos.length > 0 && (
         <>
-          <div className={[SEC_CLASS, 'mt-2'].join(' ')}>📋 Plano de Adesão</div>
+          <div className={[SEC_CLASS, 'mt-2'].join(' ')}><span className="inline-flex gap-1.5 items-center"><Ico icon={ClipboardDocumentIcon} sm />Plano de Adesão</span></div>
           <div className="flex flex-wrap gap-2 mb-3.5">
             {CATEGORIAS.map(c => (
               <button key={c.id} onClick={()=>setCatStaff(c.id)}
@@ -234,7 +254,7 @@ function FichaInscricao({ onNext, registerMode = false, isStaff = false, planos 
                   'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
                   catStaff===c.id ? 'font-bold text-gb-red border-gb-red bg-gb-red/8' : 'font-normal text-secondary border-border bg-base hover:bg-elevated active:bg-elevated',
                 ].join(' ')}>
-                {c.icon} {c.label}
+                <FontAwesomeIcon icon={c.icon} className="w-3.5 h-3.5" /> {c.label}
               </button>
             ))}
           </div>
@@ -268,7 +288,7 @@ function FichaInscricao({ onNext, registerMode = false, isStaff = false, planos 
       {/* ── Password section (only in registerMode) ── */}
       {registerMode && (
         <>
-          <div className={[SEC_CLASS, 'mt-2'].join(' ')}>🔑 Criar Acesso à Plataforma</div>
+          <div className={[SEC_CLASS, 'mt-2'].join(' ')}><span className="inline-flex gap-1.5 items-center"><Ico icon={KeyIcon} sm />Criar Acesso à Plataforma</span></div>
           <p className="mb-3.5 text-xs leading-[1.6] text-muted">
             Define a password que vais usar para entrar no portal do aluno.
           </p>
@@ -361,7 +381,7 @@ function ContratoAssinatura({ ficha, onNext, onBack }: { ficha:FichaData; onNext
         {chk('aceitaContrato','O contrato de adesão foi lido e estou de acordo.')}
       </div>
 
-      <div className={SEC_CLASS}>✍️ Assine aqui com o mouse ou dedo</div>
+      <div className={SEC_CLASS}><span className="inline-flex gap-1.5 items-center"><Ico icon={SignatureIcon} sm />Assine aqui com o mouse ou dedo</span></div>
       <div className="overflow-hidden relative rounded-xl border-[1.5px] border-border bg-[#FAFAF9]">
         <canvas ref={canvasRef} width={640} height={160} className="block w-full cursor-crosshair [touch-action:none]"
           onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end}
@@ -403,7 +423,7 @@ function EscolhaPagamento({ ficha, onNext, onBack }: { ficha:FichaData; onNext:(
 
   return (
     <div className={CARD_CLASS}>
-      <div className={SEC_CLASS}>📋 Escolha o Plano</div>
+      <div className={SEC_CLASS}><span className="inline-flex gap-1.5 items-center"><Ico icon={ClipboardDocumentIcon} sm />Escolha o Plano</span></div>
       <div className="flex flex-wrap gap-2 mb-[18px]">
         {CATEGORIAS.map(c=>(
           <button key={c.id} onClick={()=>{ setCat(c.id); setPlanoId(''); }}
@@ -412,7 +432,7 @@ function EscolhaPagamento({ ficha, onNext, onBack }: { ficha:FichaData; onNext:(
               'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
               cat===c.id ? 'font-bold text-gb-red border-gb-red bg-gb-red/8' : 'font-normal text-secondary border-border bg-base hover:bg-elevated active:bg-elevated',
             ].join(' ')}>
-            {c.icon} {c.label}
+            <FontAwesomeIcon icon={c.icon} className="w-3.5 h-3.5" /> {c.label}
           </button>
         ))}
       </div>
@@ -436,14 +456,14 @@ function EscolhaPagamento({ ficha, onNext, onBack }: { ficha:FichaData; onNext:(
         ))}
       </div>
 
-      <div className={SEC_CLASS}>💳 Forma de Pagamento</div>
+      <div className={SEC_CLASS}><span className="inline-flex gap-1.5 items-center"><Ico icon={CreditCardIcon} sm />Forma de Pagamento</span></div>
       <label className={[
         'flex gap-3 items-start py-3.5 px-[18px] mb-2.5 rounded-xl border-2 cursor-pointer transition-colors duration-200',
         metodo==='stripe' ? 'border-gb-red bg-gb-red/[0.04]' : 'border-border bg-base hover:bg-elevated',
       ].join(' ')}>
         <input type="radio" name="met" checked={metodo==='stripe'} onChange={()=>setMetodo('stripe')} className="mt-0.5 outline-none accent-gb-red focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"/>
         <div>
-          <div className="mb-1 text-sm font-bold text-primary">💳 Débito Automático — Stripe</div>
+          <div className="inline-flex gap-1.5 items-center mb-1 text-sm font-bold text-primary"><Ico icon={CreditCardIcon} sm />Débito Automático — Stripe</div>
           <div className="text-[12.5px] leading-[1.5] text-muted">Cartão de débito ou crédito. Cobrança automática no dia 5 de cada mês. Cancelamento a qualquer momento. 100% seguro.</div>
         </div>
       </label>
@@ -453,7 +473,7 @@ function EscolhaPagamento({ ficha, onNext, onBack }: { ficha:FichaData; onNext:(
       ].join(' ')}>
         <input type="radio" name="met" checked={metodo==='numerario'} onChange={()=>setMetodo('numerario')} className="mt-0.5 outline-none accent-amber-600 focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2"/>
         <div>
-          <div className="mb-1 text-sm font-bold text-primary">💵 Numerário (dinheiro)</div>
+          <div className="inline-flex gap-1.5 items-center mb-1 text-sm font-bold text-primary"><Ico icon={MoneyBagIcon} sm />Numerário (dinheiro)</div>
           <div className="text-[12.5px] leading-[1.5] text-muted">
             Pagamento em dinheiro na receção até ao dia 5 de cada mês.
             <span className="font-bold text-amber-600"> Requer aprovação do Super Administrador.</span>
@@ -487,7 +507,9 @@ function EscolhaPagamento({ ficha, onNext, onBack }: { ficha:FichaData; onNext:(
             ['--tw-ring-color' as string]: metodo==='numerario' ? '#D97706' : '#C8102E',
           }}
           onClick={()=>{ if(planoId) onNext(planoId,metodo); }}>
-          {metodo==='stripe'?'💳 Concluir com Stripe':'📋 Submeter — aguardar aprovação'}
+          {metodo==='stripe'
+            ?<span className="inline-flex gap-1.5 items-center"><Ico icon={CreditCardIcon} sm />Concluir com Stripe</span>
+            :<span className="inline-flex gap-1.5 items-center"><Ico icon={ClipboardDocumentIcon} sm />Submeter — aguardar aprovação</span>}
         </button>
       </div>
     </div>
@@ -618,7 +640,7 @@ function Pendente({ ficha, contrato, plano, registerMode, onVoltar }: {
 
   return (
     <div className={[CARD_CLASS, 'py-8 px-7 text-center'].join(' ')}>
-      <div className="mb-4 text-5xl">⏳</div>
+      <FontAwesomeIcon icon={faHourglassHalf} className="mb-4 w-12 h-12 text-amber-600" />
       <h2 className="mb-2.5 font-display text-xl font-extrabold text-amber-600 uppercase">Inscrição Pendente de Aprovação</h2>
       <p className="mx-auto mb-[22px] max-w-[480px] text-[13.5px] leading-[1.7] text-secondary">
         A tua inscrição foi registada com <strong>pagamento em numerário</strong>. Um administrador irá rever e aprovar o pedido. Receberás um contacto em <strong>{ficha.email}</strong> quando a conta estiver ativa.
@@ -633,12 +655,12 @@ function Pendente({ ficha, contrato, plano, registerMode, onVoltar }: {
       )}
       {registerMode && acctStatus === 'confirm_email' && (
         <div className="p-3 px-4 mx-auto mb-[18px] max-w-[440px] text-[13px] leading-[1.6] text-amber-800 rounded-xl border border-amber-300 bg-amber-50">
-          📬 <strong>Verifica o teu email</strong> — enviámos um link de confirmação para <strong>{ficha.email}</strong> para ativares a conta.
+          <span className="inline-flex gap-1.5 items-center"><Ico icon={InboxIcon} sm /><strong>Verifica o teu email</strong> — enviámos um link de confirmação para <strong>{ficha.email}</strong> para ativares a conta.</span>
         </div>
       )}
       {registerMode && acctStatus === 'error' && (
         <div className="p-3 px-4 mx-auto mb-[18px] max-w-[440px] text-[13px] rounded-xl border border-gb-red/20 text-gb-red bg-gb-red/5">
-          ⚠️ {acctErr}
+          <span className="inline-flex gap-1.5 items-center"><Ico icon={ExclamationTriangleIcon} sm />{acctErr}</span>
         </div>
       )}
 
@@ -653,14 +675,14 @@ function Pendente({ ficha, contrato, plano, registerMode, onVoltar }: {
       </div>
 
       <div className="mb-[22px] text-[12.5px] text-muted">
-        <a href="https://wa.me/351927773854" className="inline-flex items-center font-bold text-[#25D366] transition-colors duration-200 hover:underline outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 rounded-sm">💬 +351 927 773 854</a>
+        <a href="https://wa.me/351927773854" className="inline-flex gap-1.5 items-center font-bold text-[#25D366] transition-colors duration-200 hover:underline outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 rounded-sm"><Ico icon={ChatBubbleLeftRightIcon} sm />+351 927 773 854</a>
         {' · '}
         <a href="mailto:atendimento@gbbraga.com" className="inline-flex items-center text-gb-red transition-colors duration-200 hover:underline outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 rounded-sm">atendimento@gbbraga.com</a>
       </div>
 
       {contratoErr && (
         <div className="p-3 px-4 mx-auto mb-4 max-w-[440px] text-left rounded-xl border border-gb-red/25 bg-gb-red/5">
-          <div className="mb-1 text-xs font-bold text-gb-red">⚠️ Erro ao guardar contrato</div>
+          <div className="inline-flex gap-1.5 items-center mb-1 text-xs font-bold text-gb-red"><Ico icon={ExclamationTriangleIcon} sm />Erro ao guardar contrato</div>
           <div className="text-xs text-gb-red">{contratoErr}</div>
         </div>
       )}
@@ -818,14 +840,14 @@ function Completo({ ficha, contrato, plano, isStaff, registerMode, onConcludo }:
   if (acctStatus === 'confirm_email') {
     return (
       <div className={[CARD_CLASS, 'py-8 px-7 text-center'].join(' ')}>
-        <div className="mb-4 text-[52px]">📬</div>
+        <FontAwesomeIcon icon={InboxIcon} className="mb-4 w-[52px] h-[52px] text-gb-red" />
         <h2 className="mb-2.5 font-display text-xl font-extrabold text-primary uppercase">Confirma o teu email</h2>
         <p className="mx-auto mb-4 max-w-[460px] text-[13.5px] leading-[1.7] text-secondary">
           Enviámos um email de confirmação para <strong>{ficha.email}</strong>.<br/>
           Clica no link para activar a conta e depois volta aqui para entrar.
         </p>
         <div className="mt-3 text-[12.5px] text-muted">
-          <a href="https://wa.me/351927773854" className="inline-flex items-center font-bold text-[#25D366] transition-colors duration-200 hover:underline outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 rounded-sm">💬 Suporte WhatsApp</a>
+          <a href="https://wa.me/351927773854" className="inline-flex gap-1.5 items-center font-bold text-[#25D366] transition-colors duration-200 hover:underline outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 rounded-sm"><Ico icon={ChatBubbleLeftRightIcon} sm />Suporte WhatsApp</a>
         </div>
       </div>
     );
@@ -834,7 +856,7 @@ function Completo({ ficha, contrato, plano, isStaff, registerMode, onConcludo }:
   if (acctStatus === 'error') {
     return (
       <div className={[CARD_CLASS, 'py-8 px-7 text-center'].join(' ')}>
-        <div className="mb-4 text-5xl">⚠️</div>
+        <FontAwesomeIcon icon={ExclamationTriangleIcon} className="mb-4 w-12 h-12 text-gb-red" />
         <h2 className="mb-2.5 font-display text-lg font-extrabold text-gb-red">Erro ao criar conta</h2>
         <p className="text-[13.5px] leading-[1.7] text-secondary">{acctErr}</p>
         <a href="mailto:atendimento@gbbraga.com" className="inline-block mt-3.5 text-[13px] text-gb-red transition-colors duration-200 hover:underline outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 rounded-sm">atendimento@gbbraga.com</a>
@@ -844,13 +866,13 @@ function Completo({ ficha, contrato, plano, isStaff, registerMode, onConcludo }:
 
   return (
     <div className={[CARD_CLASS, 'py-8 px-7 text-center'].join(' ')}>
-      <div className="flex justify-center items-center mx-auto mb-4 w-[68px] h-[68px] text-3xl rounded-full border-[3px] border-green-600/30 bg-green-600/10">✓</div>
-      <h2 className="mb-2.5 font-display text-xl font-extrabold text-green-600 uppercase">Bem-vindo à família GB! 🥋</h2>
+      <div className="flex justify-center items-center mx-auto mb-4 w-[68px] h-[68px] rounded-full border-[3px] border-green-600/30 bg-green-600/10"><FontAwesomeIcon icon={CheckIcon} className="w-7 h-7 text-green-600" /></div>
+      <h2 className="mb-2.5 font-display text-xl font-extrabold text-green-600 uppercase"><span className="inline-flex gap-2 justify-center items-center">Bem-vindo à família GB! <Ico icon={MartialArtsIcon} /></span></h2>
       <p className="mx-auto mb-[22px] max-w-[480px] text-[13.5px] leading-[1.7] text-secondary">
         {isStaff
-          ? <>Ficha e contrato concluídos, <strong>{ficha.nomeAluno.split(' ')[0]}</strong>! O perfil está activo. OSS! 🥋</>
+          ? <><span className="inline-flex gap-1.5 items-center">Ficha e contrato concluídos, <strong>{ficha.nomeAluno.split(' ')[0]}</strong>! O perfil está activo. OSS! <Ico icon={MartialArtsIcon} sm /></span></>
           : registerMode
-          ? <>Matrícula concluída, <strong>{ficha.nomeAluno.split(' ')[0]}</strong>! A tua conta foi criada. Já podes entrar no portal do aluno. OSS! 🥋</>
+          ? <><span className="inline-flex gap-1.5 items-center">Matrícula concluída, <strong>{ficha.nomeAluno.split(' ')[0]}</strong>! A tua conta foi criada. Já podes entrar no portal do aluno. OSS! <Ico icon={MartialArtsIcon} sm /></span></>
           : <>Inscrição concluída, <strong>{ficha.nomeAluno.split(' ')[0]}</strong>! O débito automático Stripe está ativo. OSS!</>
         }
       </p>
@@ -870,7 +892,7 @@ function Completo({ ficha, contrato, plano, isStaff, registerMode, onConcludo }:
       )}
       {contratoErr && (
         <div className="p-3 px-4 mx-auto mt-4 max-w-[480px] text-left rounded-xl border border-gb-red/25 bg-gb-red/5">
-          <div className="mb-1 text-xs font-bold text-gb-red">⚠️ Erro ao guardar contrato</div>
+          <div className="inline-flex gap-1.5 items-center mb-1 text-xs font-bold text-gb-red"><Ico icon={ExclamationTriangleIcon} sm />Erro ao guardar contrato</div>
           <div className="text-xs text-gb-red">{contratoErr}</div>
           <div className="mt-1.5 text-[11px] text-muted">O aluno foi criado mas o contrato não foi guardado. Contacte o administrador.</div>
         </div>
@@ -914,7 +936,9 @@ export default function FluxoMatricula({ embedded = false, registerMode = false,
       )}
       <div className="flex justify-between items-center mb-5">
         <h1 className={['m-0 font-display font-black text-primary uppercase', embedded ? 'text-lg' : 'text-[22px]'].join(' ')}>
-          {embedded ? '📋 Nova Matrícula de Aluno' : registerMode ? 'Matrícula' : 'Nova Matrícula'}
+          {embedded
+            ? <span className="inline-flex gap-2 items-center"><Ico icon={ClipboardDocumentIcon} /> Nova Matrícula de Aluno</span>
+            : registerMode ? 'Matrícula' : 'Nova Matrícula'}
         </h1>
         {registerMode && onVoltar && step === 'ficha' && (
           <button onClick={onVoltar} className="py-1.5 px-3.5 min-h-11 sm:min-h-0 font-inherit text-[13px] bg-none rounded-lg border cursor-pointer border-border text-muted transition-colors duration-200 hover:bg-elevated hover:text-primary active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">

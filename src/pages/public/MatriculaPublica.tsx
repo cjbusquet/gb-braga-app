@@ -1,24 +1,41 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { GBLogoFull } from '../../components/GBLogo';
 import { usePlanos } from '../../lib/useData';
+import {
+  Ico,
+  MartialArtsIcon,
+  AcademicCapIcon,
+  CalendarDaysIcon,
+  UsersIcon,
+  DumbbellIcon,
+  TrophyIcon,
+  StarIcon,
+  PhoneIcon,
+  CommentIcon,
+  LockClosedIcon,
+  CheckIcon,
+  ArrowPathIcon,
+  type HeroIcon,
+} from '../../lib/icons';
 
 type Step = 'intro' | 'categoria' | 'plano' | 'dados' | 'sucesso';
 
 const BENEFITS = [
-  { icon: '🥋', text: 'Metodologia Gracie Barra — certificada em todo o mundo' },
-  { icon: '👨‍🏫', text: 'Professores certificados com faixa preta' },
-  { icon: '📅', text: 'Seg–Sex: 07h–22h · Sáb: 09h30–12h30' },
-  { icon: '👨‍👩‍👧', text: 'Programa Kids disponível' },
-  { icon: '💪', text: 'Gi, No-Gi, Wrestling e Kids' },
-  { icon: '🏆', text: 'Competições regionais e nacionais' },
+  { icon: MartialArtsIcon, text: 'Metodologia Gracie Barra — certificada em todo o mundo' },
+  { icon: AcademicCapIcon, text: 'Professores certificados com faixa preta' },
+  { icon: CalendarDaysIcon, text: 'Seg–Sex: 07h–22h · Sáb: 09h30–12h30' },
+  { icon: UsersIcon, text: 'Programa Kids disponível' },
+  { icon: DumbbellIcon, text: 'Gi, No-Gi, Wrestling e Kids' },
+  { icon: TrophyIcon, text: 'Competições regionais e nacionais' },
 ];
 
 const CATEGORIAS = [
-  { id: 'adulto',   icon: '🥋', label: 'Adulto',          desc: 'A partir de 14 anos',                  color: '#C8102E' },
-  { id: 'kids',     icon: '⭐', label: 'Kids',             desc: 'Crianças até 13 anos',                 color: '#D97706' },
-  { id: 'familia',  icon: '👨‍👩‍👧', label: 'Família',          desc: '2, 3 ou 4 membros da família',         color: '#2563EB' },
-  { id: 'fundador', icon: '🏆', label: 'Sócio Fundador',  desc: 'Preço especial para membros fundadores',color: '#7C3AED' },
+  { id: 'adulto',   icon: MartialArtsIcon, label: 'Adulto',          desc: 'A partir de 14 anos',                  color: '#C8102E' },
+  { id: 'kids',     icon: StarIcon, label: 'Kids',             desc: 'Crianças até 13 anos',                 color: '#D97706' },
+  { id: 'familia',  icon: UsersIcon, label: 'Família',          desc: '2, 3 ou 4 membros da família',         color: '#2563EB' },
+  { id: 'fundador', icon: TrophyIcon, label: 'Sócio Fundador',  desc: 'Preço especial para membros fundadores',color: '#7C3AED' },
 ];
 
 const TESTIMONIALS = [
@@ -75,11 +92,11 @@ export default function MatriculaPublica() {
           <GBLogoFull size={48}/>
         </a>
         <div className="flex gap-2 shrink-0">
-          <a href="tel:+351927773854" className="inline-flex items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[13px] font-medium no-underline rounded-lg border transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-card active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
-            <span aria-hidden="true">📞</span>
+          <a href="tel:+351927773854" className="inline-flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[13px] font-medium no-underline rounded-lg border transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-card active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+            <Ico icon={PhoneIcon} sm />
             <span className="hidden sm:inline">&nbsp;+351 927 773 854</span>
           </a>
-          <a href="https://wa.me/351927773854" className="inline-flex items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[13px] font-bold text-white no-underline rounded-lg border-none bg-[#25D366] transition-colors duration-200 hover:bg-[#1FB157] active:bg-[#1FB157] outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2">💬 WhatsApp</a>
+          <a href="https://wa.me/351927773854" className="inline-flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[13px] font-bold text-white no-underline rounded-lg border-none bg-[#25D366] transition-colors duration-200 hover:bg-[#1FB157] active:bg-[#1FB157] outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2"><Ico icon={CommentIcon} sm /> WhatsApp</a>
         </div>
       </header>
 
@@ -88,7 +105,7 @@ export default function MatriculaPublica() {
         <>
           <div className="py-[72px] px-6 pb-20 text-center" style={{ background: 'linear-gradient(135deg, #0D0508 0%, #1A0208 60%, #2A0510 100%)' }}>
             <div className="inline-block py-1.5 px-[18px] mb-[22px] rounded-full border border-gb-red/35 bg-gb-red/[0.18]">
-              <span className="text-xs font-bold tracking-[2px] text-[#FF7A95] uppercase">🏆 Gracie Barra Braga · gbbraga.com</span>
+              <span className="inline-flex gap-1.5 items-center text-xs font-bold tracking-[2px] text-[#FF7A95] uppercase"><Ico icon={TrophyIcon} sm />Gracie Barra Braga · gbbraga.com</span>
             </div>
             <h1 className="mb-[18px] font-display font-black leading-[1.05] text-white" style={{ fontSize: 'clamp(30px,5vw,58px)' }}>
               Começa a tua jornada<br/>no Brazilian Jiu-Jitsu
@@ -106,9 +123,11 @@ export default function MatriculaPublica() {
               </a>
             </div>
             <div className="flex flex-wrap gap-10 justify-center mt-12">
-              {[['200+','Alunos'],['Seg–Sáb','Horários'],['5★','Google']].map(([v,l]) => (
+              {([['200+','Alunos'],['Seg–Sáb','Horários'],['5','Google',StarIcon]] as [string, string, HeroIcon?][]).map(([v,l,icon]) => (
                 <div key={l} className="text-center">
-                  <div className="font-display text-[30px] font-black text-gb-red">{v}</div>
+                  <div className="flex gap-1 justify-center items-center font-display text-[30px] font-black text-gb-red">
+                    {v}{icon && <FontAwesomeIcon icon={icon} className="w-5 h-5" />}
+                  </div>
                   <div className="mt-0.5 text-xs text-white/45">{l}</div>
                 </div>
               ))}
@@ -136,7 +155,7 @@ export default function MatriculaPublica() {
                     onMouseEnter={e => { e.currentTarget.style.borderColor = cat.color; e.currentTarget.style.boxShadow = `0 4px 14px ${cat.color}20`; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E0DB'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'; }}
                   >
-                    <div className="mb-2.5 text-3xl">{cat.icon}</div>
+                    <div className="flex justify-center mb-2.5"><FontAwesomeIcon icon={cat.icon} className="w-8 h-8" style={{ color: cat.color }} /></div>
                     <div className="mb-1 text-base font-extrabold text-primary">{cat.label}</div>
                     <div className="mb-3 text-xs text-muted">{cat.desc}</div>
                     {minPrice > 0 && (
@@ -154,7 +173,7 @@ export default function MatriculaPublica() {
             <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-3">
               {BENEFITS.map(b => (
                 <div key={b.text} className="flex gap-3 py-4 px-[18px] rounded-xl border border-border bg-white">
-                  <span className="text-2xl shrink-0">{b.icon}</span>
+                  <FontAwesomeIcon icon={b.icon} className="w-6 h-6 shrink-0 text-gb-red" />
                   <span className="text-[13.5px] leading-[1.5] text-[#333]">{b.text}</span>
                 </div>
               ))}
@@ -207,7 +226,7 @@ export default function MatriculaPublica() {
                   onMouseEnter={e => { e.currentTarget.style.borderColor = cat.color; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 6px 18px ${cat.color}25`; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E0DB'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'; }}
                 >
-                  <div className="mb-2.5 text-4xl">{cat.icon}</div>
+                  <div className="flex justify-center mb-2.5"><FontAwesomeIcon icon={cat.icon} className="w-9 h-9" style={{ color: cat.color }} /></div>
                   <div className="mb-1 text-[17px] font-extrabold text-primary">{cat.label}</div>
                   <div className="mb-3 text-xs text-muted">{cat.desc}</div>
                   <div className="font-display text-xl font-black" style={{ color: cat.color }}>
@@ -229,7 +248,7 @@ export default function MatriculaPublica() {
         <div className="mx-auto py-12 px-6 max-w-[680px]">
           <StepBar step={step}/>
           <div className="flex gap-2.5 justify-center items-center mb-1.5">
-            <span className="text-[28px]">{catSel?.icon}</span>
+            {catSel && <FontAwesomeIcon icon={catSel.icon} className="w-7 h-7" style={{ color: catSel.color }} />}
             <h2 className="font-display text-2xl font-black uppercase">Planos {catSel?.label}</h2>
           </div>
           <p className="mb-7 text-sm text-center text-muted">Escolhe o plano que melhor se adapta</p>
@@ -300,7 +319,7 @@ export default function MatriculaPublica() {
                 className={[FIELD_CLASS, 'resize-none'].join(' ')}
               />
             </div>
-            <p className="mb-5 text-[11px] leading-[1.6] text-[#B8B7C3]">🔒 Dados protegidos pelo RGPD · gbbraga.com</p>
+            <p className="flex gap-1.5 items-center mb-5 text-[11px] leading-[1.6] text-[#B8B7C3]"><Ico icon={LockClosedIcon} sm />Dados protegidos pelo RGPD · gbbraga.com</p>
             <div className="flex gap-2.5">
               <button onClick={() => setStep('plano')} className="flex-1 py-2.5 min-h-11 sm:min-h-0 text-sm rounded-lg border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">← Voltar</button>
               <button onClick={handleSubmit} disabled={!nome||!email||!tel||submitting}
@@ -309,7 +328,7 @@ export default function MatriculaPublica() {
                   'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
                   nome&&email&&tel ? 'text-white shadow-[0_4px_14px_rgba(200,16,46,0.3)] cursor-pointer bg-gb-red hover:bg-gb-red-dark active:scale-[0.98]' : 'cursor-not-allowed text-muted bg-border',
                 ].join(' ')}>
-                {submitting ? '⟳ A enviar...' : 'ENVIAR INSCRIÇÃO'}
+                {submitting ? <span className="inline-flex gap-1.5 justify-center items-center"><Ico icon={ArrowPathIcon} sm className="animate-spin" />A enviar...</span> : 'ENVIAR INSCRIÇÃO'}
               </button>
             </div>
           </div>
@@ -319,7 +338,7 @@ export default function MatriculaPublica() {
       {/* SUCESSO */}
       {step === 'sucesso' && (
         <div className="mx-auto py-16 px-6 max-w-[520px] text-center">
-          <div className="flex justify-center items-center mx-auto mb-5 w-20 h-20 text-4xl rounded-full border-[3px] border-green-600/30 bg-green-600/10">✓</div>
+          <div className="flex justify-center items-center mx-auto mb-5 w-20 h-20 rounded-full border-[3px] border-green-600/30 bg-green-600/10"><FontAwesomeIcon icon={CheckIcon} className="w-8 h-8 text-green-600" /></div>
           <h2 className="mb-2.5 font-display text-[34px] font-black uppercase">Inscrição enviada!</h2>
           <p className="mb-7 text-[15px] leading-[1.7] text-secondary">
             Obrigado, <strong>{nome.split(' ')[0]}</strong>!<br/>
@@ -334,10 +353,10 @@ export default function MatriculaPublica() {
             ))}
           </div>
           <div className="flex gap-2.5 justify-center">
-            <a href="https://wa.me/351927773854" className="inline-flex items-center py-3 px-[22px] min-h-11 sm:min-h-0 text-sm font-bold text-white no-underline rounded-[10px] bg-[#25D366] transition-colors duration-200 hover:bg-[#1FB157] active:bg-[#1FB157] outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2">💬 WhatsApp</a>
+            <a href="https://wa.me/351927773854" className="inline-flex gap-1.5 items-center py-3 px-[22px] min-h-11 sm:min-h-0 text-sm font-bold text-white no-underline rounded-[10px] bg-[#25D366] transition-colors duration-200 hover:bg-[#1FB157] active:bg-[#1FB157] outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2"><Ico icon={CommentIcon} sm /> WhatsApp</a>
             <button onClick={() => { setStep('intro'); setPlanoId(''); setNome(''); setEmail(''); setTel(''); }} className="py-3 px-[22px] min-h-11 sm:min-h-0 text-sm rounded-[10px] border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">Voltar ao início</button>
           </div>
-          <p className="mt-[22px] text-[13px] text-[#B8B7C3]">🥋 OSS! Bem-vindo(a) à família Gracie Barra Braga</p>
+          <p className="flex gap-1.5 justify-center items-center mt-[22px] text-[13px] text-[#B8B7C3]"><Ico icon={MartialArtsIcon} sm />OSS! Bem-vindo(a) à família Gracie Barra Braga</p>
         </div>
       )}
 

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { usePlanos, db } from '../../lib/useData';
 import { beltConfig } from '../../lib/gbBrand';
-import { Ico, ArrowLeftIcon, ArrowRightIcon } from '../../lib/icons';
+import { Ico, ArrowLeftIcon, ArrowRightIcon, CheckIcon } from '../../lib/icons';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
 
@@ -321,8 +321,8 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
           </div>
 
           {saved && (
-            <div className="py-2.5 px-4 mb-4 text-[13px] font-semibold text-green-600 rounded-lg border border-green-500/30 bg-green-500/10">
-              ✓ Aluno criado com sucesso!
+            <div className="flex gap-1.5 items-center py-2.5 px-4 mb-4 text-[13px] font-semibold text-green-600 rounded-lg border border-green-500/30 bg-green-500/10">
+              <Ico icon={CheckIcon} sm /> Aluno criado com sucesso!
             </div>
           )}
 
@@ -334,7 +334,9 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
               className={saved ? '!bg-green-500 !shadow-none' : undefined}
               onClick={handleSave}
             >
-              {saved ? '✓ Criado!' : saving ? 'A guardar...' : '✓ Confirmar Matrícula'}
+              {saved
+                ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Criado!</span>
+                : saving ? 'A guardar...' : <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Confirmar Matrícula</span>}
             </Button>
           </div>
         </div>

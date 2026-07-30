@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { GB, beltConfig } from '../../lib/gbBrand';
 import { defaultTocConfig } from '../../data/mockData';
 import { supabase, isConfigured } from '../../lib/supabaseClient';
@@ -11,17 +12,47 @@ import { inviteStaff } from '../../services/api/edgeFunctions';
 import { haversineDistanceMeters } from '../../services/geo';
 import type { TocConfig } from '../../types';
 import PageHeader from '../../components/common/PageHeader';
+import {
+  Ico,
+  type HeroIcon,
+  UsersIcon,
+  ReceiptPercentIcon,
+  CreditCardIcon,
+  ChatBubbleLeftRightIcon,
+  EnvelopeIcon,
+  SchoolIcon,
+  ClipboardDocumentIcon,
+  ArrowPathIcon,
+  CheckIcon,
+  XMarkIcon,
+  SaveIcon,
+  BoltIcon,
+  BookIcon,
+  CircleIcon,
+  CrownIcon,
+  PhoneIcon,
+  KeyIcon,
+  MartialArtsIcon,
+  Cog6ToothIcon,
+  PlusIcon,
+  UserIcon,
+  LinkIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  FlaskIcon,
+  MapPinIcon,
+} from '../../lib/icons';
 
 type Section = 'equipa' | 'toconline' | 'stripe' | 'whatsapp' | 'email' | 'academia' | 'compliance';
 
-const SECTIONS: { id: Section; label: string; icon: string; desc: string; superadminOnly?: boolean }[] = [
-  { id: 'equipa',     label: 'Equipa',             icon: '👥', desc: 'Convidar professores e staff' },
-  { id: 'toconline',  label: 'TOConline',           icon: '🧾', desc: 'Faturação certificada AT' },
-  { id: 'stripe',     label: 'Stripe',              icon: '💳', desc: 'Pagamentos online' },
-  { id: 'whatsapp',   label: 'WhatsApp Business',   icon: '💬', desc: 'Comunicação com alunos' },
-  { id: 'email',      label: 'Email / SMTP',         icon: '📧', desc: 'Notificações por email' },
-  { id: 'academia',   label: 'Academia',             icon: '🏫', desc: 'Dados gerais e horários' },
-  { id: 'compliance', label: 'IPDJ / RGPD',          icon: '📋', desc: 'Legal e conformidade' },
+const SECTIONS: { id: Section; label: string; icon: HeroIcon; desc: string; superadminOnly?: boolean }[] = [
+  { id: 'equipa',     label: 'Equipa',             icon: UsersIcon, desc: 'Convidar professores e staff' },
+  { id: 'toconline',  label: 'TOConline',           icon: ReceiptPercentIcon, desc: 'Faturação certificada AT' },
+  { id: 'stripe',     label: 'Stripe',              icon: CreditCardIcon, desc: 'Pagamentos online' },
+  { id: 'whatsapp',   label: 'WhatsApp Business',   icon: ChatBubbleLeftRightIcon, desc: 'Comunicação com alunos' },
+  { id: 'email',      label: 'Email / SMTP',         icon: EnvelopeIcon, desc: 'Notificações por email' },
+  { id: 'academia',   label: 'Academia',             icon: SchoolIcon, desc: 'Dados gerais e horários' },
+  { id: 'compliance', label: 'IPDJ / RGPD',          icon: ClipboardDocumentIcon, desc: 'Legal e conformidade' },
 ];
 
 // Config sections now load/save via useConfiguracaoSection (src/hooks/useConfiguracoes.ts),
@@ -67,7 +98,11 @@ function SaveBar({ onSave, saved, saving = false }: { onSave: () => void; saved:
         ].join(' ')}
         style={{ background: saved ? '#22C55E' : GB.red, boxShadow: `0 0 16px ${saved ? 'rgba(34,197,94,0.2)' : GB.redGlow}` }}
       >
-        {saving ? '⟳ A guardar...' : saved ? '✓ Guardado' : '💾 Guardar Configuração'}
+        {saving
+          ? <span className="inline-flex gap-1.5 items-center"><Ico icon={ArrowPathIcon} sm />A guardar...</span>
+          : saved
+          ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Guardado</span>
+          : <span className="inline-flex gap-1.5 items-center"><Ico icon={SaveIcon} sm />Guardar Configuração</span>}
       </button>
     </div>
   );
@@ -112,7 +147,9 @@ function TocSection() {
         >
           <div>
             <div className={['text-xs font-bold', cfg.simulationMode ? 'text-amber-500' : 'text-green-500'].join(' ')}>
-              {cfg.simulationMode ? '⚡ Modo Simulação' : '✓ Modo Produção'}
+              {cfg.simulationMode
+                ? <span className="inline-flex gap-1.5 items-center"><Ico icon={BoltIcon} sm />Modo Simulação</span>
+                : <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Modo Produção</span>}
             </div>
             <div className="mt-0.5 text-[11px] text-muted">
               {cfg.simulationMode ? 'Não emite faturas reais — ideal para testes' : 'Faturas comunicadas à AT em tempo real'}
@@ -160,7 +197,13 @@ function TocSection() {
               'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
               connStatus === 'ok' ? 'border-green-500/40 text-green-500' : connStatus === 'fail' ? 'border-gb-red/40 text-gb-red' : 'border-border text-secondary',
             ].join(' ')}>
-            {testing ? '⟳ A testar...' : connStatus === 'ok' ? '✓ Ligação OK' : connStatus === 'fail' ? '✕ Sem ligação' : '⚡ Testar Ligação'}
+            {testing
+              ? <span className="inline-flex gap-1.5 items-center"><Ico icon={ArrowPathIcon} sm />A testar...</span>
+              : connStatus === 'ok'
+              ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Ligação OK</span>
+              : connStatus === 'fail'
+              ? <span className="inline-flex gap-1.5 items-center"><Ico icon={XMarkIcon} sm />Sem ligação</span>
+              : <span className="inline-flex gap-1.5 items-center"><Ico icon={BoltIcon} sm />Testar Ligação</span>}
           </button>
           <Button2 saving={saving} saved={saved} onClick={() => save()} className="flex-[2]" />
         </div>
@@ -182,7 +225,7 @@ function TocSection() {
             <div key={s.label} className="flex justify-between items-center py-1.5 border-b border-border-subtle">
               <span className="text-xs text-secondary">{s.label}</span>
               {s.ok
-                ? <span className="py-0.5 px-2 text-[11px] font-semibold text-green-500 rounded-full bg-green-500/10">✓ OK</span>
+                ? <span className="inline-flex gap-1 items-center py-0.5 px-2 text-[11px] font-semibold text-green-500 rounded-full bg-green-500/10"><Ico icon={CheckIcon} sm />OK</span>
                 : <span className="py-0.5 px-2 text-[11px] font-semibold text-amber-500 rounded-full bg-amber-500/10">Pendente</span>}
             </div>
           ))}
@@ -208,7 +251,7 @@ function TocSection() {
           ))}
           <a href="https://api-docs.toconline.pt" target="_blank" rel="noreferrer"
             className="block py-2 mt-1 min-h-11 sm:min-h-0 text-xs font-semibold text-center text-blue-500 no-underline rounded-sm border transition-colors duration-200 border-blue-500/20 bg-blue-500/[0.08] hover:bg-blue-500/[0.16] active:bg-blue-500/[0.16] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
-            📖 Documentação API TOConline →
+            <span className="inline-flex gap-1.5 items-center"><Ico icon={BookIcon} sm />Documentação API TOConline →</span>
           </a>
         </Card>
       </div>
@@ -217,7 +260,8 @@ function TocSection() {
 }
 
 // Small shared "Guardar" button matching the saved/saving three-state pattern used across sections
-function Button2({ saving, saved, onClick, className = '', label = '💾 Guardar' }: { saving: boolean; saved: boolean; onClick: () => void; className?: string; label?: string }) {
+const defaultButton2Label = <span className="inline-flex gap-1.5 items-center"><Ico icon={SaveIcon} sm />Guardar</span>;
+function Button2({ saving, saved, onClick, className = '', label = defaultButton2Label }: { saving: boolean; saved: boolean; onClick: () => void; className?: string; label?: React.ReactNode }) {
   return (
     <button onClick={onClick} disabled={saving}
       className={[
@@ -227,7 +271,11 @@ function Button2({ saving, saved, onClick, className = '', label = '💾 Guardar
         className,
       ].join(' ')}
       style={{ background: saved ? '#22C55E' : saving ? '#aaa' : GB.red }}>
-      {saving ? '⟳ A guardar...' : saved ? '✓ Guardado!' : label}
+      {saving
+        ? <span className="inline-flex gap-1.5 items-center"><Ico icon={ArrowPathIcon} sm />A guardar...</span>
+        : saved
+        ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Guardado!</span>
+        : label}
     </button>
   );
 }
@@ -313,14 +361,17 @@ function StripeSection() {
                 ].join(' ')}
                 style={{ background: mode === m ? (m === 'live' ? '#22C55E' : '#D97706') : undefined }}
               >
-                {m === 'live' ? '🟢 LIVE' : '🟡 TEST'}
+                <span className="inline-flex gap-1 items-center">
+                  <Ico icon={CircleIcon} sm className={m === 'live' ? 'text-green-500' : 'text-amber-400'} />
+                  {m === 'live' ? 'LIVE' : 'TEST'}
+                </span>
               </button>
             ))}
           </div>
         </div>
         {mode === 'live' && (
           <div className="py-2 px-3 mb-3.5 text-xs text-red-600 rounded-lg border border-red-600/20 bg-red-600/[0.06]">
-            ⚠️ Modo LIVE — cobranças reais aos clientes!
+            <span className="inline-flex gap-1.5 items-center"><Ico icon={ExclamationTriangleIcon} sm />Modo LIVE — cobranças reais aos clientes!</span>
           </div>
         )}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -337,17 +388,19 @@ function StripeSection() {
         <div className="flex flex-wrap gap-2 items-center mt-4">
           <button onClick={testConn} disabled={testing}
             className="py-2 px-3.5 min-h-11 sm:min-h-0 text-xs font-semibold rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed">
-            {testing ? '⟳ A testar...' : '⚡ Testar'}
+            {testing
+              ? <span className="inline-flex gap-1.5 items-center"><Ico icon={ArrowPathIcon} sm />A testar...</span>
+              : <span className="inline-flex gap-1.5 items-center"><Ico icon={BoltIcon} sm />Testar</span>}
           </button>
-          {testResult === 'ok' && <span className="text-xs font-bold text-green-500">✓ OK</span>}
-          {testResult === 'err' && <span className="text-xs font-bold text-gb-red">✕ Inválida</span>}
+          {testResult === 'ok' && <span className="inline-flex gap-1 items-center text-xs font-bold text-green-500"><Ico icon={CheckIcon} sm />OK</span>}
+          {testResult === 'err' && <span className="inline-flex gap-1 items-center text-xs font-bold text-gb-red"><Ico icon={XMarkIcon} sm />Inválida</span>}
           <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noreferrer"
             className="py-2 px-3 min-h-11 sm:min-h-0 text-[11.5px] font-semibold text-[#635BFF] no-underline rounded-sm border transition-colors duration-200 border-[#635BFF]/20 bg-[#635BFF]/[0.08] hover:bg-[#635BFF]/[0.16] active:bg-[#635BFF]/[0.16] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
-            🔗 Dashboard →
+            <span className="inline-flex gap-1.5 items-center"><Ico icon={LinkIcon} sm />Dashboard →</span>
           </a>
           <a href="https://billing.stripe.com/p/login/test_28o3cS3Ub0GQdeU288" target="_blank" rel="noreferrer"
             className="py-2 px-3 min-h-11 sm:min-h-0 text-[11.5px] font-semibold text-[#635BFF] no-underline rounded-sm border transition-colors duration-200 border-[#635BFF]/20 bg-[#635BFF]/[0.08] hover:bg-[#635BFF]/[0.16] active:bg-[#635BFF]/[0.16] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
-            👤 Portal →
+            <span className="inline-flex gap-1.5 items-center"><Ico icon={UserIcon} sm />Portal →</span>
           </a>
           <Button2 saving={saving} saved={saved} onClick={() => save()} className="ml-auto px-5" />
         </div>
@@ -379,7 +432,7 @@ function StripeSection() {
           ))}
         </div>
         <div className="flex justify-end mt-3.5">
-          <Button2 saving={saving} saved={saved} onClick={() => save()} label="💾 Guardar Price IDs" className="px-5" />
+          <Button2 saving={saving} saved={saved} onClick={() => save()} label={<span className="inline-flex gap-1.5 items-center"><Ico icon={SaveIcon} sm />Guardar Price IDs</span>} className="px-5" />
         </div>
       </Card>
 
@@ -419,7 +472,7 @@ function WhatsAppSection() {
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <Card>
         <div className="flex gap-2.5 items-center pb-4 mb-[18px] border-b border-border-subtle">
-          <div className="flex justify-center items-center w-10 h-10 text-xl rounded-[10px] bg-[#075E54]">💬</div>
+          <div className="flex justify-center items-center w-10 h-10 text-xl rounded-[10px] bg-[#075E54]"><FontAwesomeIcon icon={ChatBubbleLeftRightIcon} className="w-5 h-5 text-white" /></div>
           <div>
             <div className="text-[15px] font-bold text-primary">WhatsApp Business API</div>
             <div className="text-[11px] text-muted">Meta Cloud API</div>
@@ -455,7 +508,7 @@ function WhatsAppSection() {
 function SimpleSection({ secao, title, icon, bg, fields }: {
   secao: string;
   title: string;
-  icon: string;
+  icon: HeroIcon;
   bg: string;
   fields: { label: string; placeholder: string; type?: string }[];
 }) {
@@ -467,7 +520,7 @@ function SimpleSection({ secao, title, icon, bg, fields }: {
     <div className="max-w-[560px]">
       <Card>
         <div className="flex gap-2.5 items-center pb-4 mb-5 border-b border-border-subtle">
-          <div className="flex justify-center items-center w-10 h-10 text-xl rounded-[10px]" style={{ background: bg }}>{icon}</div>
+          <div className="flex justify-center items-center w-10 h-10 text-xl rounded-[10px]" style={{ background: bg }}><FontAwesomeIcon icon={icon} className="w-5 h-5 text-white" /></div>
           <div className="text-[15px] font-bold text-primary">{title}</div>
         </div>
         {fields.map(f => (
@@ -587,7 +640,11 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
           className="flex justify-center items-center w-[38px] h-[38px] text-base rounded-full border-2 shrink-0"
           style={{ background: badge.bg, borderColor: badge.color }}
         >
-          {d.role === 'professor' ? '🥋' : d.role === 'admin' ? '⚙️' : d.role === 'superadmin' ? '👑' : '📞'}
+          <FontAwesomeIcon
+            icon={d.role === 'professor' ? MartialArtsIcon : d.role === 'admin' ? Cog6ToothIcon : d.role === 'superadmin' ? CrownIcon : PhoneIcon}
+            className="w-4 h-4"
+            style={{ color: badge.color }}
+          />
         </div>
 
         {/* Info */}
@@ -600,7 +657,7 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
                 className="py-px px-1.5 text-[9.5px] font-bold rounded-full shrink-0"
                 style={{ background: faixaCfg.bg, color: faixaCfg.text, border: d.faixa === 'branca' ? '1px solid #ccc' : 'none' }}
               >
-                🥋 {faixaCfg.label}
+                <Ico icon={MartialArtsIcon} sm className="mr-1 inline-block align-[-2px]" />{faixaCfg.label}
               </span>
             )}
           </div>
@@ -653,14 +710,15 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
             <div>
               <label className={STAFF_LBL}>Estado</label>
               <div className="flex gap-2">
-                {[{ v: true, l: '✓ Ativo', bg: '#16A34A' }, { v: false, l: '✕ Inativo', bg: '#6B7280' }].map(opt => (
+                {[{ v: true, l: 'Ativo', icon: CheckIcon, bg: '#16A34A' }, { v: false, l: 'Inativo', icon: XMarkIcon, bg: '#6B7280' }].map(opt => (
                   <button key={String(opt.v)} onClick={() => setD(p => ({ ...p, ativo: opt.v }))}
-                    className="flex-1 p-2 min-h-11 text-xs font-bold rounded-sm border-[1.5px] cursor-pointer transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
+                    className="flex flex-1 gap-1.5 justify-center items-center p-2 min-h-11 text-xs font-bold rounded-sm border-[1.5px] cursor-pointer transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
                     style={{
                       borderColor: d.ativo === opt.v ? opt.bg : 'var(--border)',
                       background: d.ativo === opt.v ? `${opt.bg}18` : 'var(--bg-elevated)',
                       color: d.ativo === opt.v ? opt.bg : 'var(--text-muted)',
                     }}>
+                    <Ico icon={opt.icon} sm />
                     {opt.l}
                   </button>
                 ))}
@@ -673,7 +731,7 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
             </div>
           </div>
 
-          {err && <div className="mt-2 text-[11.5px] font-semibold text-gb-red">⚠ {err}</div>}
+          {err && <div className="inline-flex gap-1.5 items-center mt-2 text-[11.5px] font-semibold text-gb-red"><Ico icon={ExclamationTriangleIcon} sm />{err}</div>}
           <div className="flex flex-wrap gap-2.5 justify-between items-center mt-3">
             {/* Reset password */}
             <button
@@ -686,7 +744,7 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
                 (resetting || resetDone) ? 'cursor-not-allowed' : 'cursor-pointer',
               ].join(' ')}
             >
-              <span>{resetDone ? '✓' : '🔑'}</span>
+              <Ico icon={resetDone ? CheckIcon : KeyIcon} sm />
               {resetting ? 'A enviar...' : resetDone ? 'Email enviado!' : 'Enviar reset de password'}
             </button>
 
@@ -769,7 +827,9 @@ function EquipaSection() {
               'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
               showInvite ? 'border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle' : 'text-white border-none bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark',
             ].join(' ')}>
-            {showInvite ? '✕ Fechar' : '+ Convidar membro'}
+            {showInvite
+              ? <span className="inline-flex gap-1.5 items-center"><Ico icon={XMarkIcon} sm />Fechar</span>
+              : <span className="inline-flex gap-1.5 items-center"><Ico icon={PlusIcon} sm />Convidar membro</span>}
           </button>
         </div>
 
@@ -791,7 +851,7 @@ function EquipaSection() {
         <div>
           <Card className={result ? 'mb-4' : 'mb-0'}>
             <div className="flex gap-3 items-center pb-3.5 mb-[18px] border-b border-border-subtle">
-              <div className="flex justify-center items-center w-[38px] h-[38px] text-lg rounded-[10px] bg-gb-red">✉️</div>
+              <div className="flex justify-center items-center w-[38px] h-[38px] text-lg rounded-[10px] bg-gb-red"><FontAwesomeIcon icon={EnvelopeIcon} className="w-4 h-4 text-white" /></div>
               <div>
                 <div className="text-sm font-bold text-primary">Convidar Membro</div>
                 <div className="text-[11px] text-muted">O convidado define a sua própria password</div>
@@ -820,21 +880,23 @@ function EquipaSection() {
                 ))}
               </div>
             </Field>
-            {err && <div className="mb-2.5 text-xs font-semibold text-gb-red">⚠ {err}</div>}
+            {err && <div className="inline-flex gap-1.5 items-center mb-2.5 text-xs font-semibold text-gb-red"><Ico icon={ExclamationTriangleIcon} sm />{err}</div>}
             <button onClick={invite} disabled={inviting}
               className={[
                 'py-2.5 w-full min-h-11 text-[13px] font-bold text-white rounded-sm border-none transition-colors duration-200',
                 'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
                 inviting ? 'cursor-not-allowed bg-neutral-400 shadow-none' : 'cursor-pointer bg-gb-red shadow-red hover:bg-gb-red-dark active:bg-gb-red-dark',
               ].join(' ')}>
-              {inviting ? 'A criar conta...' : '✉ Criar e Gerar Link'}
+              {inviting
+                ? 'A criar conta...'
+                : <span className="inline-flex gap-1.5 items-center"><Ico icon={EnvelopeIcon} sm />Criar e Gerar Link</span>}
             </button>
           </Card>
 
           {result && (
             <Card className="!border-[1.5px] !border-green-500">
               <div className="flex gap-2.5 items-center mb-3">
-                <span className="text-xl">✅</span>
+                <FontAwesomeIcon icon={CheckCircleIcon} className="w-5 h-5 text-green-500" />
                 <div>
                   <div className="text-[13px] font-bold text-primary">Conta criada!</div>
                   <div className="text-[11px] text-muted">{result.email}</div>
@@ -851,9 +913,11 @@ function EquipaSection() {
                       'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
                       copied ? 'text-white bg-green-500 border-green-500 hover:bg-green-600 active:bg-green-600' : 'border-border bg-elevated text-primary hover:bg-border-subtle active:bg-border-subtle',
                     ].join(' ')}>
-                    {copied ? '✓ Copiado!' : '📋 Copiar link'}
+                    {copied
+                      ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Copiado!</span>
+                      : <span className="inline-flex gap-1.5 items-center"><Ico icon={ClipboardDocumentIcon} sm />Copiar link</span>}
                   </button>
-                  <p className="mt-2 text-[10.5px] leading-[1.5] text-muted">⚠ Link de uso único — expira em 24h.</p>
+                  <p className="inline-flex gap-1.5 items-center mt-2 text-[10.5px] leading-[1.5] text-muted"><Ico icon={ExclamationTriangleIcon} sm />Link de uso único — expira em 24h.</p>
                 </>
               ) : (
                 <p className="text-xs text-muted">Conta criada. Gera o link manualmente no Supabase Dashboard.</p>
@@ -926,7 +990,7 @@ function AcademiaSection() {
       {/* Dados básicos */}
       <Card>
         <div className="flex gap-2.5 items-center pb-3.5 mb-5 border-b border-border-subtle">
-          <div className="flex justify-center items-center w-10 h-10 text-xl rounded-[10px] bg-[#1A1A1A]">🏫</div>
+          <div className="flex justify-center items-center w-10 h-10 text-xl rounded-[10px] bg-[#1A1A1A]"><FontAwesomeIcon icon={SchoolIcon} className="w-5 h-5 text-white" /></div>
           <div className="text-[15px] font-bold text-primary">Academia</div>
         </div>
         {[
@@ -950,7 +1014,7 @@ function AcademiaSection() {
       {/* GPS Fence */}
       <Card className="mt-4">
         <div className="flex gap-2.5 items-center pb-3.5 mb-5 border-b border-border-subtle">
-          <div className="flex justify-center items-center w-10 h-10 text-xl rounded-[10px] bg-[#064E3B]">📍</div>
+          <div className="flex justify-center items-center w-10 h-10 text-xl rounded-[10px] bg-[#064E3B]"><FontAwesomeIcon icon={MapPinIcon} className="w-5 h-5 text-white" /></div>
           <div>
             <div className="text-[15px] font-bold text-primary">GPS Fence — Check-in</div>
             <div className="text-[11px] text-muted">Ponto de referência para validar presenças</div>
@@ -967,7 +1031,9 @@ function AcademiaSection() {
             locating ? 'bg-neutral-400' : 'cursor-pointer bg-green-600 hover:bg-green-700 active:bg-green-700',
           ].join(' ')}
         >
-          {locating ? '⟳ A obter localização...' : '📍 Usar localização actual como referência'}
+          {locating
+            ? <span className="inline-flex gap-1.5 items-center"><Ico icon={ArrowPathIcon} sm />A obter localização...</span>
+            : <span className="inline-flex gap-1.5 items-center"><Ico icon={MapPinIcon} sm />Usar localização actual como referência</span>}
         </button>
 
         {/* Coords */}
@@ -1022,7 +1088,7 @@ function AcademiaSection() {
         {hasPoint && (
           <div className="flex gap-2.5 justify-between items-center py-2.5 px-3.5 mb-3.5 rounded-sm border border-green-600/20 bg-green-600/[0.06]">
             <div>
-              <div className="text-xs font-bold text-green-600">✓ Ponto definido</div>
+              <div className="inline-flex gap-1.5 items-center text-xs font-bold text-green-600"><Ico icon={CheckIcon} sm />Ponto definido</div>
               <div className="mt-0.5 text-[11px] text-muted">
                 {cfg['GPS Latitude']}, {cfg['GPS Longitude']} · Raio: {radius}m
                 {cfg['GPS Precisão'] && ` · Precisão: ±${cfg['GPS Precisão']}`}
@@ -1036,7 +1102,9 @@ function AcademiaSection() {
                 'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
                 testing ? 'cursor-not-allowed' : 'cursor-pointer',
               ].join(' ')}>
-              {testing ? '⟳' : '🧪 Testar'}
+              {testing
+                ? <Ico icon={ArrowPathIcon} sm />
+                : <span className="inline-flex gap-1.5 items-center"><Ico icon={FlaskIcon} sm />Testar</span>}
             </button>
           </div>
         )}
@@ -1047,12 +1115,12 @@ function AcademiaSection() {
             className={['py-2.5 px-3.5 mb-3.5 text-[12.5px] font-bold rounded-sm border', testDist <= radius ? 'border-green-600/30 text-green-600 bg-green-600/[0.08]' : 'border-gb-red/20 text-gb-red bg-gb-red/[0.07]'].join(' ')}
           >
             {testDist <= radius
-              ? `✓ Dentro do fence — ${testDist}m do ponto (raio: ${radius}m)`
-              : `✕ Fora do fence — ${testDist}m do ponto (raio: ${radius}m)`}
+              ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />{`Dentro do fence — ${testDist}m do ponto (raio: ${radius}m)`}</span>
+              : <span className="inline-flex gap-1.5 items-center"><Ico icon={XMarkIcon} sm />{`Fora do fence — ${testDist}m do ponto (raio: ${radius}m)`}</span>}
           </div>
         )}
 
-        {locErr && <div className="mb-2.5 text-[11.5px] font-semibold text-gb-red">⚠ {locErr}</div>}
+        {locErr && <div className="inline-flex gap-1.5 items-center mb-2.5 text-[11.5px] font-semibold text-gb-red"><Ico icon={ExclamationTriangleIcon} sm />{locErr}</div>}
 
         <SaveBar onSave={() => save()} saved={saved} saving={saving} />
       </Card>
@@ -1077,14 +1145,14 @@ function ConfigPageInner() {
       case 'toconline':  return <TocSection />;
       case 'stripe':     return <StripeSection />;
       case 'whatsapp':   return <WhatsAppSection />;
-      case 'email':      return <SimpleSection secao="email" title="Email / SMTP" icon="📧" bg="#1E3A5F" fields={[
+      case 'email':      return <SimpleSection secao="email" title="Email / SMTP" icon={EnvelopeIcon} bg="#1E3A5F" fields={[
         { label: 'Servidor SMTP', placeholder: 'smtp.gmail.com' },
         { label: 'Porta', placeholder: '587' },
         { label: 'Email remetente', placeholder: 'noreply@graciebarra.pt' },
         { label: 'Password', placeholder: '••••••••', type: 'password' },
       ]}/>;
       case 'academia':   return <AcademiaSection />;
-      case 'compliance': return <SimpleSection secao="compliance" title="IPDJ / RGPD" icon="📋" bg="#2D1B69" fields={[
+      case 'compliance': return <SimpleSection secao="compliance" title="IPDJ / RGPD" icon={ClipboardDocumentIcon} bg="#2D1B69" fields={[
         { label: 'Número alvará IPDJ', placeholder: 'AL-XXXXX' },
         { label: 'DPO (Responsável RGPD)', placeholder: 'Nome do responsável' },
         { label: 'Email RGPD', placeholder: 'rgpd@graciebarra.pt' },
@@ -1102,7 +1170,7 @@ function ConfigPageInner() {
             background: active === s.id ? GB.redGlow : 'var(--bg-card)',
             borderColor: active === s.id ? GB.red : 'var(--border)',
           }}>
-          <span className="text-lg">{s.icon}</span>
+          <FontAwesomeIcon icon={s.icon} className="w-[18px] h-[18px]" style={{ color: active === s.id ? GB.red : 'var(--text-secondary)' }} />
           <span className="text-[10.5px] whitespace-nowrap" style={{ color: active === s.id ? GB.red : 'var(--text-secondary)', fontWeight: active === s.id ? 700 : 500 }}>{s.label}</span>
         </button>
       ))}
@@ -1119,7 +1187,7 @@ function ConfigPageInner() {
               background: active === s.id ? GB.redGlow : 'transparent',
               borderLeft: `2px solid ${active === s.id ? GB.red : 'transparent'}`,
             }}>
-            <span className="text-base">{s.icon}</span>
+            <FontAwesomeIcon icon={s.icon} className="w-4 h-4" style={{ color: active === s.id ? GB.red : 'var(--text-primary)' }} />
             <div>
               <div className="text-[12.5px] leading-none" style={{ color: active === s.id ? GB.red : 'var(--text-primary)', fontWeight: active === s.id ? 700 : 500 }}>{s.label}</div>
               <div className="mt-0.5 text-[10.5px] text-muted">{s.desc}</div>
