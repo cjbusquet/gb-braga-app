@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import type React from 'react';
 import { useAlunos, useMensagens, useTemplates, db } from '../../lib/useData';
-import { GB } from '../../lib/gbBrand';
 import { isConfigured } from '../../lib/supabaseClient';
 import { useAuth } from '../../lib/auth';
 import { sendEmail } from '../../services/api/edgeFunctions';
+import Card from '../../components/common/Card';
+import PageHeader from '../../components/common/PageHeader';
+import Badge from '../../components/common/Badge';
 
 type Canal = 'whatsapp' | 'sms' | 'email' | 'push';
 
@@ -15,38 +16,25 @@ const CANAL: Record<Canal, { icon: string; label: string; accent: string; bg: st
   push:     { icon: '🔔', label: 'Push',      accent: '#F59E0B', bg: 'rgba(245,158,11,0.1)' },
 };
 
-const TEMPLATES = [
-  { id: 1, nome: 'Lembrete de Pagamento',  canal: 'whatsapp' as Canal, corpo: 'Olá {nome}! A sua mensalidade de {mes} vence em {dias} dias. Valor: €{valor}. Pague aqui: {link}' },
-  { id: 2, nome: 'Pagamento em Atraso',    canal: 'whatsapp' as Canal, corpo: '⚠️ {nome}, a sua mensalidade está em atraso há {dias} dias. Entre em contacto urgentemente.' },
-  { id: 3, nome: 'Fatura Emitida',         canal: 'email'    as Canal, corpo: 'Olá {nome}, a sua Fatura-Recibo {numero} foi emitida. Download: {link_pdf}' },
-  { id: 4, nome: 'Boas-vindas',            canal: 'email'    as Canal, corpo: 'Bem-vindo(a) à família Gracie Barra Braga, {nome}! A sua jornada começa agora. Oss!' },
-  { id: 5, nome: 'Graduação Confirmada',   canal: 'whatsapp' as Canal, corpo: '🎖️ Parabéns {nome}! Foste graduado(a) para a faixa {faixa}! Oss!' },
-  { id: 6, nome: 'Cancelamento de Aula',  canal: 'push'     as Canal, corpo: 'Atenção! A aula de {turma} do dia {data} foi cancelada. Pedimos desculpa.' },
-  { id: 7, nome: 'Lembrete de Aula',      canal: 'push'     as Canal, corpo: 'Hoje às {hora} — {turma} com Prof. {professor}. Oss!' },
-];
-
-function Card({ children, style = {} }: { children: React.ReactNode; style?: React.CSSProperties }) {
-  return <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', ...style }}>{children}</div>;
-}
-
 function TabBar({ tabs, active, onSelect }: { tabs: { id: string; label: string; icon: string }[]; active: string; onSelect: (id: string) => void }) {
   return (
-    <div style={{ display: 'flex', gap: 2, marginBottom: 16, borderBottom: '1px solid var(--border)' }}>
+    <div className="flex overflow-x-auto gap-0.5 mb-4 border-b border-border">
       {tabs.map(t => (
-        <button key={t.id} onClick={() => onSelect(t.id)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: '9px 14px', fontSize: 13, color: active === t.id ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: active === t.id ? 600 : 400, borderBottom: `2px solid ${active === t.id ? GB.red : 'transparent'}`, marginBottom: -1 }}>
-          <span style={{ fontSize: 14 }}>{t.icon}</span>{t.label}
+        <button key={t.id} onClick={() => onSelect(t.id)}
+          className={[
+            'flex gap-1.5 items-center py-2.5 px-3.5 -mb-px min-h-11 sm:min-h-0 text-[13px] whitespace-nowrap bg-none border-none border-b-2 cursor-pointer transition-colors duration-200',
+            'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+            active === t.id ? 'font-semibold border-gb-red text-primary' : 'font-normal border-transparent text-muted hover:text-primary active:text-primary',
+          ].join(' ')}>
+          <span className="text-sm">{t.icon}</span>{t.label}
         </button>
       ))}
     </div>
   );
 }
 
-// ─── Templates CRUD component ──────────────────────────────────────────────
-const INP: React.CSSProperties = {
-  width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-  borderRadius: 'var(--radius-sm)', padding: '9px 12px', color: 'var(--text-primary)',
-  fontSize: 13, fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box',
-};
+const FIELD_CLASS = 'box-border w-full py-2.5 px-3 min-h-11 sm:min-h-0 font-ui text-[13px] rounded-sm border transition-all duration-200 border-border bg-elevated text-primary outline-none focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25';
+const FIELD_LABEL_CLASS = 'block mb-1 text-[10.5px] font-bold tracking-[0.8px] uppercase text-muted';
 
 function TemplatesTab({ templates, onUse, onRefresh }: {
   templates: any[];
@@ -89,28 +77,32 @@ function TemplatesTab({ templates, onUse, onRefresh }: {
   return (
     <div>
       {/* Header + novo botão */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{templates.length} template{templates.length !== 1 ? 's' : ''}</div>
+      <div className="flex justify-between items-center mb-3.5">
+        <div className="text-xs text-muted">{templates.length} template{templates.length !== 1 ? 's' : ''}</div>
         <button
           onClick={() => { setShowForm(s => !s); setErr(''); }}
-          style={{ background: showForm ? 'var(--bg-elevated)' : GB.red, border: showForm ? '1px solid var(--border)' : 'none', borderRadius: 'var(--radius-sm)', padding: '8px 16px', color: showForm ? 'var(--text-secondary)' : '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>
+          className={[
+            'py-2 px-4 min-h-11 sm:min-h-0 text-[12.5px] font-bold rounded-sm border cursor-pointer transition-colors duration-200',
+            'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+            showForm ? 'border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle' : 'text-white border-none bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark',
+          ].join(' ')}>
           {showForm ? '✕ Cancelar' : '+ Novo Template'}
         </button>
       </div>
 
       {/* Formulário de criação */}
       {showForm && (
-        <Card style={{ padding: 20, marginBottom: 16 }}>
-          <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Novo Template</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+        <Card padding="lg" className="mb-4">
+          <div className="mb-4 text-sm font-bold text-primary">Novo Template</div>
+          <div className="grid grid-cols-1 gap-3 mb-3 sm:grid-cols-2">
             <div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 5 }}>Nome</div>
-              <input value={nome} onChange={e => setNome(e.target.value)} placeholder="ex: Lembrete de pagamento" style={INP} />
+              <div className={FIELD_LABEL_CLASS}>Nome</div>
+              <input value={nome} onChange={e => setNome(e.target.value)} placeholder="ex: Lembrete de pagamento" className={FIELD_CLASS} />
             </div>
             <div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 5 }}>Canal</div>
+              <div className={FIELD_LABEL_CLASS}>Canal</div>
               <select value={canal} onChange={e => setCanal(e.target.value as Canal)}
-                style={{ ...INP, cursor: 'pointer' }}>
+                className={[FIELD_CLASS, 'cursor-pointer'].join(' ')}>
                 {(Object.entries(CANAL) as [Canal, typeof CANAL[Canal]][]).map(([id, c]) => (
                   <option key={id} value={id}>{c.icon} {c.label}</option>
                 ))}
@@ -118,28 +110,32 @@ function TemplatesTab({ templates, onUse, onRefresh }: {
             </div>
           </div>
           {canal === 'email' && (
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 5 }}>Assunto</div>
-              <input value={assunto} onChange={e => setAssunto(e.target.value)} placeholder="Assunto do email" style={INP} />
+            <div className="mb-3">
+              <div className={FIELD_LABEL_CLASS}>Assunto</div>
+              <input value={assunto} onChange={e => setAssunto(e.target.value)} placeholder="Assunto do email" className={FIELD_CLASS} />
             </div>
           )}
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 5 }}>
+          <div className="mb-3">
+            <div className={FIELD_LABEL_CLASS}>
               Corpo da mensagem
             </div>
             <textarea
               value={corpo} onChange={e => setCorpo(e.target.value)} rows={4}
               placeholder={'Variáveis: {nome} {valor} {vencimento} {faixa} {link}'}
-              style={{ ...INP, resize: 'vertical' as const }}
+              className={[FIELD_CLASS, 'resize-y'].join(' ')}
             />
-            <div style={{ color: 'var(--text-muted)', fontSize: 10.5, marginTop: 4 }}>
+            <div className="mt-1 text-[10.5px] text-muted">
               Variáveis disponíveis: <code>{'{nome}'}</code> <code>{'{valor}'}</code> <code>{'{vencimento}'}</code> <code>{'{faixa}'}</code> <code>{'{link}'}</code>
             </div>
           </div>
-          {err && <div style={{ color: GB.red, fontSize: 11.5, fontWeight: 600, marginBottom: 10 }}>⚠ {err}</div>}
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          {err && <div className="mb-2.5 text-[11.5px] font-semibold text-gb-red">⚠ {err}</div>}
+          <div className="flex justify-end">
             <button onClick={handleCreate} disabled={saving}
-              style={{ background: saving ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 22px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
+              className={[
+                'py-2 px-[22px] min-h-11 sm:min-h-0 text-[13px] font-bold text-white rounded-sm border-none transition-colors duration-200',
+                'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
+                saving ? 'bg-neutral-400' : 'cursor-pointer bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark',
+              ].join(' ')}>
               {saving ? '⟳ A guardar...' : '💾 Guardar Template'}
             </button>
           </div>
@@ -147,32 +143,36 @@ function TemplatesTab({ templates, onUse, onRefresh }: {
       )}
 
       {/* Lista de templates */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="flex flex-col gap-2">
         {templates.length === 0 ? (
-          <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: '24px', textAlign: 'center' }}>
+          <div className="p-6 text-[13px] text-center text-muted">
             Nenhum template criado ainda.
           </div>
         ) : templates.map((t: any) => {
           const c = CANAL[t.canal as Canal] || CANAL.email;
           return (
-            <Card key={t.id} style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-                  <span style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}>{t.nome}</span>
-                  <span style={{ background: c.bg, color: c.accent, fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 99, flexShrink: 0 }}>{c.icon} {c.label}</span>
+            <Card key={t.id} padding="none" className="flex flex-wrap gap-4 justify-between items-center py-3.5 px-[18px]">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap gap-2 items-center mb-1">
+                  <span className="text-[13px] font-semibold text-primary">{t.nome}</span>
+                  <span className="py-0.5 px-1.5 text-[10.5px] font-bold rounded-full shrink-0" style={{ background: c.bg, color: c.accent }}>{c.icon} {c.label}</span>
                 </div>
-                {t.assunto && <div style={{ color: 'var(--text-secondary)', fontSize: 11.5, fontWeight: 600, marginBottom: 3 }}>{t.assunto}</div>}
-                <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: 0, lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{t.corpo}</p>
+                {t.assunto && <div className="mb-1 text-[11.5px] font-semibold text-secondary">{t.assunto}</div>}
+                <p className="overflow-hidden m-0 text-xs leading-[1.5] whitespace-nowrap text-ellipsis text-muted">{t.corpo}</p>
               </div>
-              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+              <div className="flex gap-2 shrink-0">
                 <button onClick={() => onUse(t)}
-                  style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '7px 13px', color: 'var(--text-primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' as const }}>
+                  className="py-1.5 px-3 min-h-11 sm:min-h-0 text-xs font-semibold whitespace-nowrap rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-primary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
                   Usar →
                 </button>
                 <button
                   onClick={() => handleDelete(t.id)}
                   disabled={deleting === t.id}
-                  style={{ background: 'rgba(200,16,46,0.07)', border: '1px solid rgba(200,16,46,0.2)', borderRadius: 'var(--radius-sm)', padding: '7px 10px', color: GB.red, fontSize: 13, cursor: deleting === t.id ? 'not-allowed' : 'pointer' }}>
+                  className={[
+                    'py-1.5 px-2.5 min-h-11 sm:min-h-0 text-[13px] rounded-sm border transition-colors duration-200 border-gb-red/20 text-gb-red bg-gb-red/[0.07] hover:bg-gb-red/[0.14] active:bg-gb-red/[0.14]',
+                    'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                    deleting === t.id ? 'cursor-not-allowed' : 'cursor-pointer',
+                  ].join(' ')}>
                   {deleting === t.id ? '⟳' : '🗑'}
                 </button>
               </div>
@@ -253,34 +253,26 @@ export default function ComunicacaoPage() {
     setSending(false);
   };
 
-  const applyTemplate = (t: typeof TEMPLATES[0]) => {
-    setCanal(t.canal);
-    setMsg(t.corpo);
-    setTab('enviar');
-  };
-
   const mensagens = mensagensDB ?? [];
   const totalPorCanal = (c: Canal) => mensagens.filter((m: any) => m.canal === c).length;
 
   return (
     <div>
-      <div style={{ marginBottom: 18 }}>
-        <div style={{ color: 'var(--text-muted)', fontSize: 10.5, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 3 }}>Academia</div>
-        <h1 style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 700 }}>Comunicação</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: '3px 0 0' }}>WhatsApp · SMS · Email · Push</p>
-      </div>
+      <PageHeader eyebrow="Academia" title="Comunicação" subtitle="WhatsApp · SMS · Email · Push" />
 
       {/* Canal stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+      <div className="grid grid-cols-2 gap-3 mb-5 sm:grid-cols-4">
         {(Object.entries(CANAL) as [Canal, typeof CANAL[Canal]][]).map(([id, c]) => (
-          <div key={id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '12px 14px', cursor: 'pointer' }} onClick={() => { setCanal(id); setTab('enviar'); }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <span style={{ fontSize: 20 }}>{c.icon}</span>
-              <span style={{ color: c.accent, fontSize: 20, fontWeight: 700 }}>{totalPorCanal(id)}</span>
+          <button key={id}
+            className="py-3 px-3.5 text-left rounded-md border cursor-pointer transition-colors duration-200 border-border bg-card hover:bg-elevated active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
+            onClick={() => { setCanal(id); setTab('enviar'); }}>
+            <div className="flex justify-between items-start">
+              <span className="text-xl">{c.icon}</span>
+              <span className="text-xl font-bold" style={{ color: c.accent }}>{totalPorCanal(id)}</span>
             </div>
-            <div style={{ color: 'var(--text-primary)', fontSize: 12, fontWeight: 600, marginTop: 6 }}>{c.label}</div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 10.5 }}>mensagens enviadas</div>
-          </div>
+            <div className="mt-1.5 text-xs font-semibold text-primary">{c.label}</div>
+            <div className="text-[10.5px] text-muted">mensagens enviadas</div>
+          </button>
         ))}
       </div>
 
@@ -297,23 +289,26 @@ export default function ComunicacaoPage() {
 
       {/* ── ENVIAR ── */}
       {tab === 'enviar' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <Card style={{ padding: 22 }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 16 }}>Compor Mensagem</div>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Card padding="lg">
+            <div className="mb-4 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Compor Mensagem</div>
 
             {/* Canal selector */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 16 }}>
+            <div className="grid grid-cols-4 gap-2 mb-4">
               {(Object.entries(CANAL) as [Canal, typeof CANAL[Canal]][]).map(([id, c]) => (
-                <button key={id} onClick={() => setCanal(id)} style={{ background: canal === id ? c.bg : 'var(--bg-elevated)', border: `2px solid ${canal === id ? c.accent : 'var(--border)'}`, borderRadius: 'var(--radius-sm)', padding: '8px 4px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                  <span style={{ fontSize: 18 }}>{c.icon}</span>
-                  <span style={{ color: canal === id ? c.accent : 'var(--text-muted)', fontSize: 10.5, fontWeight: canal === id ? 700 : 400 }}>{c.label}</span>
+                <button key={id} onClick={() => setCanal(id)}
+                  className="flex flex-col gap-1 items-center py-2 px-1 min-h-11 rounded-sm border-2 cursor-pointer transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
+                  style={{ background: canal === id ? c.bg : 'var(--bg-elevated)', borderColor: canal === id ? c.accent : 'var(--border)' }}
+                >
+                  <span className="text-lg">{c.icon}</span>
+                  <span className="text-[10.5px]" style={{ color: canal === id ? c.accent : 'var(--text-muted)', fontWeight: canal === id ? 700 : 400 }}>{c.label}</span>
                 </button>
               ))}
             </div>
 
             {/* Destinatário */}
-            <label style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.8px', textTransform: 'uppercase' as const, display: 'block', marginBottom: 5 }}>Destinatário</label>
-            <select value={dest} onChange={e => setDest(e.target.value)} style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '9px 12px', color: 'var(--text-primary)', fontSize: 13, marginBottom: 14, cursor: 'pointer' }}>
+            <label className={FIELD_LABEL_CLASS}>Destinatário</label>
+            <select value={dest} onChange={e => setDest(e.target.value)} className={[FIELD_CLASS, 'cursor-pointer mb-3.5'].join(' ')}>
               <option value="all">📢 Todos os alunos ativos ({alunos.filter(a => a.status === 'ativo').length})</option>
               <option value="inadimplentes">⚠️ Inadimplentes</option>
               <option value="aniversariantes">🎂 Aniversariantes do mês</option>
@@ -325,92 +320,100 @@ export default function ComunicacaoPage() {
             {/* Assunto (email only) */}
             {canal === 'email' && (
               <>
-                <label style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.8px', textTransform: 'uppercase' as const, display: 'block', marginBottom: 5 }}>Assunto</label>
+                <label className={FIELD_LABEL_CLASS}>Assunto</label>
                 <input value={assunto} onChange={e => setAssunto(e.target.value)} placeholder="Assunto do email..."
-                  style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '9px 12px', color: 'var(--text-primary)', fontSize: 13, marginBottom: 14 }}/>
+                  className={[FIELD_CLASS, 'mb-3.5'].join(' ')}/>
               </>
             )}
 
             {/* Body */}
-            <label style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.8px', textTransform: 'uppercase' as const, display: 'block', marginBottom: 5 }}>Mensagem</label>
+            <label className={FIELD_LABEL_CLASS}>Mensagem</label>
             <textarea value={msg} onChange={e => setMsg(e.target.value)} rows={5}
               placeholder={`Escreva a mensagem...\n\nVariáveis: {nome} {valor} {vencimento} {faixa} {link}`}
-              style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '9px 12px', color: 'var(--text-primary)', fontSize: 13, resize: 'none', fontFamily: 'var(--font-ui)' }}/>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, marginBottom: 16 }}>
-              <span style={{ color: 'var(--text-muted)', fontSize: 10.5 }}>{msg.length} caracteres{canal === 'sms' ? ` · ${Math.ceil(msg.length / 160) || 1} SMS` : ''}</span>
-              <button onClick={() => setTab('templates')} style={{ background: 'none', border: 'none', color: '#3B82F6', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>+ Usar template</button>
+              className={[FIELD_CLASS, 'resize-none'].join(' ')}/>
+            <div className="flex justify-between mt-1 mb-4">
+              <span className="text-[10.5px] text-muted">{msg.length} caracteres{canal === 'sms' ? ` · ${Math.ceil(msg.length / 160) || 1} SMS` : ''}</span>
+              <button onClick={() => setTab('templates')} className="py-1 text-[11px] font-semibold text-blue-500 bg-none border-none cursor-pointer transition-colors duration-200 hover:text-blue-600 active:text-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">+ Usar template</button>
             </div>
 
             {sent && (
-              <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', marginBottom: 14, color: '#22C55E', fontSize: 12, fontWeight: 600 }}>
+              <div className="py-2.5 px-3.5 mb-3.5 text-xs font-semibold text-green-500 rounded-sm border border-green-500/25 bg-green-500/[0.08]">
                 ✓ {sendResult ? `${sendResult.sent} de ${sendResult.total} email(s) enviado(s)!` : 'Mensagem enviada com sucesso!'}
               </div>
             )}
             {sendErr && (
-              <div style={{ background: 'rgba(200,16,46,0.06)', border: '1px solid rgba(200,16,46,0.2)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', marginBottom: 14, color: GB.red, fontSize: 12, fontWeight: 600 }}>
+              <div className="py-2.5 px-3.5 mb-3.5 text-xs font-semibold rounded-sm border border-gb-red/20 text-gb-red bg-gb-red/[0.06]">
                 ⚠ {sendErr}
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', padding: '8px 12px' }}>
-              <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>📅 Agendar:</span>
-              <input type="datetime-local" style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: 12, fontFamily: 'var(--font-mono)', cursor: 'pointer', flex: 1 }}/>
-              <span style={{ color: 'var(--text-muted)', fontSize: 10.5 }}>ou enviar agora ↓</span>
+            <div className="flex gap-2 items-center py-2 px-3 mb-2.5 rounded-sm bg-elevated">
+              <span className="text-xs text-muted">📅 Agendar:</span>
+              <input type="datetime-local" className="flex-1 font-mono text-xs bg-none border-none cursor-pointer text-primary"/>
+              <span className="text-[10.5px] text-muted">ou enviar agora ↓</span>
             </div>
-            <button onClick={handleEnviar} disabled={sending || !msg.trim()} style={{ width: '100%', background: sending ? 'var(--bg-elevated)' : CANAL[canal].accent, border: 'none', borderRadius: 'var(--radius-sm)', padding: '12px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: sending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: (!msg.trim() && !sending) ? 0.5 : 1 }}>
+            <button onClick={handleEnviar} disabled={sending || !msg.trim()}
+              className={[
+                'flex gap-2 justify-center items-center py-3 w-full min-h-11 text-[13px] font-bold text-white rounded-sm border-none transition-all duration-200',
+                'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
+                sending ? 'bg-elevated' : 'cursor-pointer hover:brightness-90 active:brightness-90',
+                (!msg.trim() && !sending) ? 'opacity-50' : 'opacity-100',
+              ].join(' ')}
+              style={{ background: sending ? undefined : CANAL[canal].accent }}
+            >
               {sending ? '⟳ A enviar...' : `${CANAL[canal].icon} Enviar via ${CANAL[canal].label}`}
             </button>
           </Card>
 
           {/* Preview */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <Card style={{ padding: 20 }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 14 }}>Pré-visualização da mensagem</div>
+          <div className="flex flex-col gap-3.5">
+            <Card padding="lg">
+              <div className="mb-3.5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Pré-visualização da mensagem</div>
 
               {canal === 'whatsapp' && (
-                <div style={{ background: '#111B21', borderRadius: 10, padding: 14, minHeight: 100 }}>
-                  <div style={{ background: '#1F2C34', borderRadius: '8px 8px 8px 0', padding: '10px 12px', maxWidth: '85%', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
-                    <p style={{ fontSize: 13, color: '#E9EDF0', margin: 0, lineHeight: 1.5 }}>{msg || 'A mensagem aparecerá aqui...'}</p>
-                    <p style={{ fontSize: 10, color: '#8696A0', margin: '4px 0 0', textAlign: 'right' as const }}>14:32 ✓✓</p>
+                <div className="p-3.5 min-h-[100px] rounded-[10px] bg-[#111B21]">
+                  <div className="py-2.5 px-3 max-w-[85%] rounded-[8px_8px_8px_0] shadow-[0_1px_3px_rgba(0,0,0,0.3)] bg-[#1F2C34]">
+                    <p className="m-0 text-[13px] leading-[1.5] text-[#E9EDF0]">{msg || 'A mensagem aparecerá aqui...'}</p>
+                    <p className="mt-1 mb-0 text-[10px] text-right text-[#8696A0]">14:32 ✓✓</p>
                   </div>
                 </div>
               )}
               {canal === 'sms' && (
-                <div style={{ background: 'var(--bg-elevated)', borderRadius: 10, padding: 14, minHeight: 100 }}>
-                  <div style={{ background: '#3B82F6', borderRadius: '8px 8px 0 8px', padding: '10px 12px', maxWidth: '85%', marginLeft: 'auto' }}>
-                    <p style={{ fontSize: 13, color: '#fff', margin: 0, lineHeight: 1.5 }}>{msg || 'Mensagem SMS...'}</p>
+                <div className="p-3.5 min-h-[100px] rounded-[10px] bg-elevated">
+                  <div className="py-2.5 px-3 ml-auto max-w-[85%] rounded-[8px_8px_0_8px] bg-[#3B82F6]">
+                    <p className="m-0 text-[13px] leading-[1.5] text-white">{msg || 'Mensagem SMS...'}</p>
                   </div>
                 </div>
               )}
               {canal === 'email' && (
-                <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8 }}>
-                  <div style={{ background: 'var(--bg-elevated)', padding: '8px 14px', borderBottom: '1px solid var(--border)', fontSize: 11, color: 'var(--text-muted)' }}>
-                    <b style={{ color: 'var(--text-secondary)' }}>De:</b> noreply@graciebarra.pt &nbsp; <b style={{ color: 'var(--text-secondary)' }}>Para:</b> {dest === 'all' ? 'todos os alunos' : dest}
+                <div className="rounded-lg border border-border bg-elevated">
+                  <div className="py-2 px-3.5 text-[11px] border-b border-border text-muted bg-elevated">
+                    <b className="text-secondary">De:</b> noreply@graciebarra.pt &nbsp; <b className="text-secondary">Para:</b> {dest === 'all' ? 'todos os alunos' : dest}
                   </div>
-                  {assunto && <div style={{ padding: '8px 14px', borderBottom: '1px solid var(--border)', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{assunto}</div>}
-                  <div style={{ padding: 14, fontSize: 13, color: 'var(--text-secondary)', minHeight: 60, lineHeight: 1.6 }}>{msg || 'Corpo do email...'}</div>
+                  {assunto && <div className="py-2 px-3.5 text-xs font-semibold border-b border-border text-primary">{assunto}</div>}
+                  <div className="p-3.5 min-h-[60px] text-[13px] leading-[1.6] text-secondary">{msg || 'Corpo do email...'}</div>
                 </div>
               )}
               {canal === 'push' && (
-                <div style={{ background: '#1C1C1E', border: '1px solid #2C2C2E', borderRadius: 14, padding: 14 }}>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 10, background: GB.red, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>🥋</div>
+                <div className="p-3.5 rounded-2xl border border-[#2C2C2E] bg-[#1C1C1E]">
+                  <div className="flex gap-2.5 items-start">
+                    <div className="flex justify-center items-center w-10 h-10 text-xl rounded-[10px] shrink-0 bg-gb-red">🥋</div>
                     <div>
-                      <p style={{ fontSize: 12, fontWeight: 700, color: '#fff', margin: '0 0 2px' }}>Gracie Barra Braga</p>
-                      <p style={{ fontSize: 12, color: '#ADADAD', margin: 0, lineHeight: 1.4 }}>{msg || 'Notificação push...'}</p>
-                      <p style={{ fontSize: 10, color: '#6B6B6B', margin: '4px 0 0' }}>agora</p>
+                      <p className="my-0 mb-0.5 text-xs font-bold text-white">Gracie Barra Braga</p>
+                      <p className="m-0 text-xs leading-[1.4] text-[#ADADAD]">{msg || 'Notificação push...'}</p>
+                      <p className="mt-1 mb-0 text-[10px] text-[#6B6B6B]">agora</p>
                     </div>
                   </div>
                 </div>
               )}
             </Card>
 
-            <Card style={{ padding: 18 }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 12 }}>Estimativa de entrega</div>
+            <Card padding="lg">
+              <div className="mb-3 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Estimativa de entrega</div>
               {(Object.entries(CANAL) as [Canal, typeof CANAL[Canal]][]).map(([id, c]) => (
-                <div key={id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{c.icon} {c.label}</span>
-                  <span style={{ color: id === canal ? c.accent : 'var(--text-muted)', fontSize: 11, fontWeight: id === canal ? 700 : 400 }}>
+                <div key={id} className="flex justify-between py-1.5 border-b border-border-subtle">
+                  <span className="text-xs text-secondary">{c.icon} {c.label}</span>
+                  <span className="text-[11px]" style={{ color: id === canal ? c.accent : 'var(--text-muted)', fontWeight: id === canal ? 700 : 400 }}>
                     {id === 'whatsapp' ? '~30s' : id === 'sms' ? '~1min' : id === 'email' ? '~2min' : '~5s'}
                   </span>
                 </div>
@@ -436,7 +439,7 @@ export default function ComunicacaoPage() {
 
       {/* ── AUTOMAÇÕES ── */}
       {tab === 'automatizacoes' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
           {[
             { titulo: 'Lembrete de pagamento', desc: '3 dias antes do vencimento → WhatsApp automático', canal: 'whatsapp' as Canal, ativo: true, trigger: 'Vencimento - 3 dias' },
             { titulo: 'Pagamento em atraso', desc: '1 dia após vencimento → WhatsApp + SMS', canal: 'sms' as Canal, ativo: true, trigger: 'Vencimento + 1 dia' },
@@ -447,23 +450,25 @@ export default function ComunicacaoPage() {
           ].map((a, i) => {
             const c = CANAL[a.canal];
             return (
-              <Card key={i} style={{ padding: 18 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 18 }}>{c.icon}</span>
+              <Card key={i} padding="lg">
+                <div className="flex justify-between items-start mb-2.5">
+                  <div className="flex gap-2 items-center">
+                    <span className="text-lg">{c.icon}</span>
                     <div>
-                      <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}>{a.titulo}</div>
-                      <div style={{ color: 'var(--text-muted)', fontSize: 10.5, marginTop: 1 }}>{a.trigger}</div>
+                      <div className="text-[13px] font-semibold text-primary">{a.titulo}</div>
+                      <div className="mt-px text-[10.5px] text-muted">{a.trigger}</div>
                     </div>
                   </div>
-                  <div style={{ width: 36, height: 20, background: a.ativo ? '#22C55E' : 'var(--bg-elevated)', border: `1px solid ${a.ativo ? '#22C55E' : 'var(--border)'}`, borderRadius: 99, position: 'relative', cursor: 'pointer', flexShrink: 0 }}>
-                    <div style={{ position: 'absolute', top: 2, left: a.ativo ? 18 : 2, width: 14, height: 14, background: '#fff', borderRadius: '50%', transition: 'left 0.2s' }}/>
+                  <div
+                    className={['relative w-9 h-5 rounded-full border shrink-0', a.ativo ? 'border-green-500 bg-green-500' : 'border-border bg-elevated'].join(' ')}
+                  >
+                    <div className="absolute top-0.5 w-3.5 h-3.5 bg-white rounded-full transition-[left] duration-200" style={{ left: a.ativo ? 18 : 2 }}/>
                   </div>
                 </div>
-                <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: 0, lineHeight: 1.5 }}>{a.desc}</p>
-                <div style={{ marginTop: 10, display: 'flex', gap: 6 }}>
-                  <span style={{ background: c.bg, color: c.accent, fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>{c.label}</span>
-                  <span style={{ background: a.ativo ? 'rgba(34,197,94,0.1)' : 'var(--bg-elevated)', color: a.ativo ? '#22C55E' : 'var(--text-muted)', fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>{a.ativo ? 'ATIVA' : 'INATIVA'}</span>
+                <p className="m-0 text-xs leading-[1.5] text-muted">{a.desc}</p>
+                <div className="flex gap-1.5 mt-2.5">
+                  <Badge color="neutral" style={{ background: c.bg, color: c.accent }}>{c.label}</Badge>
+                  <Badge color={a.ativo ? 'success' : 'neutral'}>{a.ativo ? 'ATIVA' : 'INATIVA'}</Badge>
                 </div>
               </Card>
             );
@@ -473,19 +478,20 @@ export default function ComunicacaoPage() {
 
       {/* ── HISTÓRICO ── */}
       {tab === 'historico' && (
-        <Card>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <Card padding="none">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] border-collapse">
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+              <tr className="border-b border-border-subtle">
                 {['Canal', 'Destinatário', 'Mensagem', 'Data', 'Estado'].map(h => (
-                  <th key={h} style={{ padding: '11px 14px', textAlign: 'left', fontSize: 10.5, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
+                  <th key={h} className="py-2.5 px-3.5 text-[10.5px] font-semibold tracking-[0.5px] text-left uppercase text-muted">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {mensagens.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+                  <td colSpan={5} className="p-6 text-[13px] text-center text-muted">
                     Nenhuma mensagem enviada ainda.
                   </td>
                 </tr>
@@ -493,28 +499,29 @@ export default function ComunicacaoPage() {
                 const c = CANAL[m.canal as Canal] || CANAL.email;
                 const data = m.enviado_em || m.created_at;
                 return (
-                  <tr key={m.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                    <td style={{ padding: '10px 14px' }}>
-                      <span style={{ background: c.bg, color: c.accent, fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 6 }}>{c.icon} {c.label}</span>
+                  <tr key={m.id} className="border-b border-border-subtle">
+                    <td className="py-2.5 px-3.5">
+                      <span className="py-0.5 px-2 text-[11px] font-semibold rounded" style={{ background: c.bg, color: c.accent }}>{c.icon} {c.label}</span>
                     </td>
-                    <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{m.para_nome}</td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-secondary)', maxWidth: 280 }}>
-                      {m.assunto && <div style={{ fontWeight: 600, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.assunto}</div>}
-                      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.corpo}</div>
+                    <td className="py-2.5 px-3.5 text-[13px] font-semibold text-primary">{m.para_nome}</td>
+                    <td className="py-2.5 px-3.5 text-xs text-secondary max-w-[280px]">
+                      {m.assunto && <div className="overflow-hidden mb-0.5 font-semibold whitespace-nowrap text-ellipsis">{m.assunto}</div>}
+                      <div className="overflow-hidden whitespace-nowrap text-ellipsis">{m.corpo}</div>
                     </td>
-                    <td style={{ padding: '10px 14px', fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
+                    <td className="py-2.5 px-3.5 font-mono text-[11px] whitespace-nowrap text-muted">
                       {data ? new Date(data).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}
                     </td>
-                    <td style={{ padding: '10px 14px' }}>
-                      <span style={{ background: m.status === 'enviado' ? 'rgba(34,197,94,0.1)' : m.status === 'erro' ? 'rgba(200,16,46,0.1)' : 'var(--bg-elevated)', color: m.status === 'enviado' ? '#22C55E' : m.status === 'erro' ? GB.red : 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, padding: '2px 8px', borderRadius: 99 }}>
+                    <td className="py-2.5 px-3.5">
+                      <Badge color={m.status === 'enviado' ? 'success' : m.status === 'erro' ? 'danger' : 'neutral'}>
                         {m.status}
-                      </span>
+                      </Badge>
                     </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+          </div>
         </Card>
       )}
     </div>

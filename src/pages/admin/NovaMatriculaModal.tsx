@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { usePlanos, db } from '../../lib/useData';
-import { GB, beltConfig } from '../../lib/gbBrand';
-import { Ico, XMarkIcon, ArrowLeftIcon, ArrowRightIcon } from '../../lib/icons';
+import { beltConfig } from '../../lib/gbBrand';
+import { Ico, ArrowLeftIcon, ArrowRightIcon } from '../../lib/icons';
+import Modal from '../../components/common/Modal';
+import Button from '../../components/common/Button';
 
 const FAIXAS = [
   'branca',
@@ -19,6 +21,9 @@ const RELACAO_LABELS: Record<string, string> = {
 };
 const RELACAO_OPTS = ['pai', 'mae', 'avo', 'tutor', 'outro'];
 
+const FIELD_CLASS = 'box-border w-full py-2.5 px-3 min-h-11 sm:min-h-0 font-ui text-[13px] rounded-sm border outline-none transition-all duration-200 border-border bg-elevated text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25';
+const LABEL_CLASS = 'block mb-1 text-[10.5px] font-semibold tracking-[0.8px] uppercase text-muted';
+
 function calcularIdade(dataNasc: string): number | null {
   if (!dataNasc) return null;
   const nasc = new Date(dataNasc);
@@ -27,6 +32,14 @@ function calcularIdade(dataNasc: string): number | null {
   const m = hoje.getMonth() - nasc.getMonth();
   if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) anos--;
   return anos;
+}
+
+function VoltarButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Button variant="secondary" onClick={onClick}>
+      <Ico icon={ArrowLeftIcon} sm /> Voltar
+    </Button>
+  );
 }
 
 export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: () => void; onSuccess?: () => void }) {
@@ -102,17 +115,6 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
     }
   };
 
-  const inp: React.CSSProperties = {
-    width: '100%', background: 'var(--bg-elevated)',
-    border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
-    padding: '9px 11px', color: 'var(--text-primary)', fontSize: 13,
-    boxSizing: 'border-box', fontFamily: 'var(--font-ui)',
-  };
-  const lbl: React.CSSProperties = {
-    display: 'block', color: 'var(--text-muted)', fontSize: 10.5,
-    fontWeight: 600, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 4,
-  };
-
   const stepLabel: Record<number, string> = {
     1: 'Selecionar Plano',
     2: 'Dados Pessoais',
@@ -121,237 +123,222 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 28, maxWidth: 520, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+    <Modal onClose={onClose} eyebrow={`Nova Matrícula · Passo ${step} de ${totalSteps}`} title={stepLabel[step]}>
+      {/* Barra de progresso */}
+      <div className="flex gap-1.5 mb-6">
+        {Array.from({ length: totalSteps }, (_, i) => i + 1).map(s => (
+          <div key={s} className={['flex-1 h-[3px] rounded', s <= step ? 'bg-gb-red' : 'bg-border'].join(' ')} />
+        ))}
+      </div>
 
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' }}>
-              Nova Matrícula · Passo {step} de {totalSteps}
-            </div>
-            <div style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 700, marginTop: 2 }}>
-              {stepLabel[step]}
-            </div>
+      {/* ── STEP 1 — Plano ── */}
+      {step === 1 && (
+        <div>
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {CATS.map(c => (
+              <button key={c} onClick={() => { setCat(c); setPlanoId(''); }}
+                className={[
+                  'py-1.5 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] capitalize rounded-md border cursor-pointer transition-colors duration-200',
+                  'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                  cat === c ? 'text-white bg-gb-red border-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark' : 'text-secondary bg-elevated border-border hover:bg-border-subtle active:bg-border-subtle',
+                ].join(' ')}>
+                {c}
+              </button>
+            ))}
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Ico icon={XMarkIcon} /></button>
-        </div>
-
-        {/* Barra de progresso */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: 24 }}>
-          {Array.from({ length: totalSteps }, (_, i) => i + 1).map(s => (
-            <div key={s} style={{ flex: 1, height: 3, background: s <= step ? GB.red : 'var(--border)', borderRadius: 2 }} />
-          ))}
-        </div>
-
-        {/* ── STEP 1 — Plano ── */}
-        {step === 1 && (
-          <div>
-            <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
-              {CATS.map(c => (
-                <button key={c} onClick={() => { setCat(c); setPlanoId(''); }}
-                  style={{ background: cat === c ? GB.red : 'var(--bg-elevated)', border: `1px solid ${cat === c ? GB.red : 'var(--border)'}`, borderRadius: 6, padding: '5px 14px', color: cat === c ? '#fff' : 'var(--text-secondary)', fontSize: 12.5, cursor: 'pointer', textTransform: 'capitalize' }}>
-                  {c}
+          {planos.length === 0 ? (
+            <div className="p-5 text-center text-muted">A carregar planos...</div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {planos.map((p: any) => (
+                <button key={p.id} onClick={() => setPlanoId(p.id)}
+                  className={[
+                    'flex justify-between items-center py-3 px-4 min-h-11 text-left rounded-[10px] border-2 cursor-pointer transition-colors duration-200',
+                    'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                    planoId === p.id ? 'border-gb-red bg-gb-red/5 hover:bg-gb-red/10 active:bg-gb-red/10' : 'border-border bg-elevated hover:bg-border-subtle active:bg-border-subtle',
+                  ].join(' ')}>
+                  <div>
+                    <div className="text-[13px] font-semibold text-primary">{p.nome}</div>
+                    <div className="mt-0.5 text-[11px] text-muted">{p.descricao}</div>
+                  </div>
+                  <div className={['ml-4 text-xl font-extrabold shrink-0', planoId === p.id ? 'text-gb-red' : 'text-primary'].join(' ')}>
+                    €{p.valor}<span className="text-[11px] font-normal text-muted">/mês</span>
+                  </div>
                 </button>
               ))}
             </div>
-            {planos.length === 0 ? (
-              <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 20 }}>A carregar planos...</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {planos.map((p: any) => (
-                  <button key={p.id} onClick={() => setPlanoId(p.id)}
-                    style={{ background: planoId === p.id ? 'rgba(200,16,46,0.05)' : 'var(--bg-elevated)', border: `2px solid ${planoId === p.id ? GB.red : 'var(--border)'}`, borderRadius: 10, padding: '12px 16px', textAlign: 'left', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}>{p.nome}</div>
-                      <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2 }}>{p.descricao}</div>
-                    </div>
-                    <div style={{ color: planoId === p.id ? GB.red : 'var(--text-primary)', fontSize: 20, fontWeight: 800, flexShrink: 0, marginLeft: 16 }}>
-                      €{p.valor}<span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-muted)' }}>/mês</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
-              <button onClick={() => planoId && setStep(2)} disabled={!planoId}
-                style={{ background: planoId ? GB.red : '#ccc', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 24px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: planoId ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: 6 }}>
-                Seguinte <Ico icon={ArrowRightIcon} sm />
-              </button>
-            </div>
+          )}
+          <div className="flex justify-end mt-5">
+            <Button variant="primary" disabled={!planoId} onClick={() => planoId && setStep(2)}>
+              Seguinte <Ico icon={ArrowRightIcon} sm />
+            </Button>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ── STEP 2 — Dados pessoais ── */}
-        {step === 2 && (
-          <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div style={{ gridColumn: '1/-1' }}>
-                <label style={lbl}>Nome completo *</label>
-                <input value={nome} onChange={e => setNome(e.target.value)} placeholder="Nome do aluno" style={inp} />
-              </div>
-              <div>
-                <label style={lbl}>Email *</label>
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@exemplo.com" style={inp} />
-              </div>
-              <div>
-                <label style={lbl}>Telefone</label>
-                <input value={telefone} onChange={e => setTel(e.target.value)} placeholder="+351 9XX XXX XXX" style={inp} />
-              </div>
-              <div>
-                <label style={lbl}>NIF</label>
-                <input value={nif} onChange={e => setNif(e.target.value)} placeholder="000000000" style={inp} />
-              </div>
-              <div>
-                <label style={lbl}>Data de Nascimento *</label>
-                <input type="date" value={dataNasc} onChange={e => setDataNasc(e.target.value)} style={{ ...inp, borderColor: !dataNasc ? 'rgba(200,16,46,0.5)' : undefined }} />
-                {idade !== null && (
-                  <div style={{ marginTop: 4, fontSize: 11, color: eMenor ? '#D97706' : '#6B7280' }}>
-                    {idade} anos
-                    {eMenor
-                      ? (idade >= 12 ? ' · Menor · check-in autónomo permitido' : ' · Menor · próximo passo: responsável')
-                      : ' · Adulto'}
-                  </div>
-                )}
-              </div>
-              <div>
-                <label style={lbl}>Faixa actual</label>
-                <select value={faixa} onChange={e => setFaixa(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
-                  {FAIXAS.map(f => <option key={f} value={f}>{beltConfig[f]?.label || f}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={lbl}>Grau</label>
-                <select value={grau} onChange={e => setGrau(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
-                  {[0,1,2,3,4].map(g => <option key={g} value={g}>{g}</option>)}
-                </select>
-              </div>
+      {/* ── STEP 2 — Dados pessoais ── */}
+      {step === 2 && (
+        <div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="col-span-full">
+              <label className={LABEL_CLASS}>Nome completo *</label>
+              <input value={nome} onChange={e => setNome(e.target.value)} placeholder="Nome do aluno" className={FIELD_CLASS} />
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
-              <button onClick={() => setStep(1)} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '11px 20px', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Ico icon={ArrowLeftIcon} sm /> Voltar
-              </button>
-              <button onClick={avancarDeStep2} disabled={!nome || !email || !dataNasc}
-                style={{ background: nome && email && dataNasc ? GB.red : '#ccc', border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 24px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: nome && email && dataNasc ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: 6 }}>
-                {eMenor ? 'Seguinte — Responsável' : 'Seguinte'} <Ico icon={ArrowRightIcon} sm />
-              </button>
+            <div>
+              <label className={LABEL_CLASS}>Email *</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@exemplo.com" className={FIELD_CLASS} />
             </div>
-          </div>
-        )}
-
-        {/* ── STEP 3 — Responsável (só menores) ── */}
-        {step === 3 && eMenor && (
-          <div>
-            {/* Info do menor */}
-            <div style={{ background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.25)', borderRadius: 8, padding: '10px 14px', marginBottom: 16 }}>
-              <div style={{ fontSize: 12, color: '#D97706', fontWeight: 600 }}>
-                {nome} · {idade} anos · Menor de Idade
-              </div>
-              <div style={{ fontSize: 11.5, color: '#92400E', marginTop: 3 }}>
-                {idade! >= 12
-                  ? 'Pode fazer check-in de forma autónoma. É obrigatório registar um responsável.'
-                  : 'Tem menos de 12 anos — é obrigatório registar um responsável para check-in.'}
-              </div>
+            <div>
+              <label className={LABEL_CLASS}>Telefone</label>
+              <input value={telefone} onChange={e => setTel(e.target.value)} placeholder="+351 9XX XXX XXX" className={FIELD_CLASS} />
             </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div style={{ gridColumn: '1/-1' }}>
-                <label style={lbl}>Nome do responsável *</label>
-                <input value={respNome} onChange={e => setRespNome(e.target.value)} placeholder="Nome completo" style={inp} />
-              </div>
-              <div>
-                <label style={lbl}>Telefone</label>
-                <input value={respTel} onChange={e => setRespTel(e.target.value)} placeholder="+351 9XX XXX XXX" style={inp} />
-              </div>
-              <div>
-                <label style={lbl}>NIF do responsável</label>
-                <input value={respNif} onChange={e => setRespNif(e.target.value)} placeholder="000000000" style={inp} />
-              </div>
-              <div>
-                <label style={lbl}>Email</label>
-                <input type="email" value={respEmail} onChange={e => setRespEmail(e.target.value)} placeholder="email@exemplo.com" style={inp} />
-              </div>
-              <div>
-                <label style={lbl}>Relação</label>
-                <select value={respRelacao} onChange={e => setRespRelacao(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
-                  {RELACAO_OPTS.map(r => <option key={r} value={r}>{RELACAO_LABELS[r]}</option>)}
-                </select>
-              </div>
+            <div>
+              <label className={LABEL_CLASS}>NIF</label>
+              <input value={nif} onChange={e => setNif(e.target.value)} placeholder="000000000" className={FIELD_CLASS} />
             </div>
-
-            {/* Permissões */}
-            <div style={{ display: 'flex', gap: 20, marginTop: 14 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer', fontSize: 13, color: 'var(--text-secondary)' }}>
-                <input type="checkbox" checked={respCheckin} onChange={e => setRespCheckin(e.target.checked)} />
-                Pode fazer check-in
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer', fontSize: 13, color: 'var(--text-secondary)' }}>
-                <input type="checkbox" checked={respFatura} onChange={e => setRespFatura(e.target.checked)} />
-                Titular da fatura
-              </label>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
-              <button onClick={() => setStep(2)} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '11px 20px', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Ico icon={ArrowLeftIcon} sm /> Voltar
-              </button>
-              <button
-                onClick={() => setStep(4)}
-                disabled={!respNome.trim()}
-                style={{ background: !respNome.trim() ? '#ccc' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 24px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: !respNome.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-                Seguinte <Ico icon={ArrowRightIcon} sm />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP 4 (ou 3 se adulto) — Confirmar ── */}
-        {step === 4 && (
-          <div>
-            <div style={{ background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)', padding: 16, marginBottom: 20 }}>
-              {[
-                ['Nome',        nome],
-                ['Email',       email],
-                ['Telefone',    telefone || '—'],
-                ['NIF',         nif || '—'],
-                ['Nascimento',  dataNasc ? `${dataNasc}${idade !== null ? ` (${idade} anos)` : ''}` : '—'],
-                ['Faixa',       `${faixa.charAt(0).toUpperCase() + faixa.slice(1)} · Grau ${grau}`],
-                ['Plano',       planoSel?.nome || '—'],
-                ['Mensalidade', `€${planoSel?.valor || 0}/mês`],
-              ].map(([k, v]) => (
-                <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-                  <span style={{ color: 'var(--text-muted)', fontSize: 12.5 }}>{k}</span>
-                  <span style={{ color: 'var(--text-primary)', fontSize: 12.5, fontWeight: 500 }}>{v}</span>
-                </div>
-              ))}
-              {eMenor && respNome && (
-                <div style={{ marginTop: 10, padding: '8px 10px', background: 'rgba(217,119,6,0.07)', borderRadius: 6 }}>
-                  <div style={{ fontSize: 10.5, fontWeight: 700, color: '#D97706', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 3 }}>Responsável</div>
-                  <div style={{ fontSize: 12.5, color: 'var(--text-primary)', fontWeight: 500 }}>{respNome} · {RELACAO_LABELS[respRelacao]}</div>
-                  {respTel && <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{respTel}</div>}
+            <div>
+              <label className={LABEL_CLASS}>Data de Nascimento *</label>
+              <input type="date" value={dataNasc} onChange={e => setDataNasc(e.target.value)}
+                className={[FIELD_CLASS, !dataNasc ? 'border-gb-red/50' : ''].join(' ')} />
+              {idade !== null && (
+                <div className={['mt-1 text-[11px]', eMenor ? 'text-amber-600' : 'text-neutral-500'].join(' ')}>
+                  {idade} anos
+                  {eMenor
+                    ? (idade >= 12 ? ' · Menor · check-in autónomo permitido' : ' · Menor · próximo passo: responsável')
+                    : ' · Adulto'}
                 </div>
               )}
             </div>
-
-            {saved && (
-              <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, padding: '10px 16px', marginBottom: 16, color: '#16A34A', fontSize: 13, fontWeight: 600 }}>
-                ✓ Aluno criado com sucesso!
-              </div>
-            )}
-
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <button onClick={() => setStep(eMenor ? 3 : 2)} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '11px 20px', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Ico icon={ArrowLeftIcon} sm /> Voltar
-              </button>
-              <button onClick={handleSave} disabled={saving || saved}
-                style={{ background: saved ? '#22C55E' : saving ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px 28px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: saving || saved ? 'not-allowed' : 'pointer', boxShadow: saved || saving ? 'none' : 'var(--shadow-red)' }}>
-                {saved ? '✓ Criado!' : saving ? 'A guardar...' : '✓ Confirmar Matrícula'}
-              </button>
+            <div>
+              <label className={LABEL_CLASS}>Faixa actual</label>
+              <select value={faixa} onChange={e => setFaixa(e.target.value)} className={[FIELD_CLASS, 'cursor-pointer'].join(' ')}>
+                {FAIXAS.map(f => <option key={f} value={f}>{beltConfig[f]?.label || f}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={LABEL_CLASS}>Grau</label>
+              <select value={grau} onChange={e => setGrau(e.target.value)} className={[FIELD_CLASS, 'cursor-pointer'].join(' ')}>
+                {[0,1,2,3,4].map(g => <option key={g} value={g}>{g}</option>)}
+              </select>
             </div>
           </div>
-        )}
+          <div className="flex justify-between mt-5">
+            <VoltarButton onClick={() => setStep(1)} />
+            <Button variant="primary" disabled={!nome || !email || !dataNasc} onClick={avancarDeStep2}>
+              {eMenor ? 'Seguinte — Responsável' : 'Seguinte'} <Ico icon={ArrowRightIcon} sm />
+            </Button>
+          </div>
+        </div>
+      )}
 
-      </div>
-    </div>
+      {/* ── STEP 3 — Responsável (só menores) ── */}
+      {step === 3 && eMenor && (
+        <div>
+          {/* Info do menor */}
+          <div className="py-2.5 px-3.5 mb-4 rounded-lg border border-amber-600/25 bg-amber-600/[0.08]">
+            <div className="text-xs font-semibold text-amber-700">
+              {nome} · {idade} anos · Menor de Idade
+            </div>
+            <div className="mt-1 text-[11.5px] text-amber-800">
+              {idade! >= 12
+                ? 'Pode fazer check-in de forma autónoma. É obrigatório registar um responsável.'
+                : 'Tem menos de 12 anos — é obrigatório registar um responsável para check-in.'}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="col-span-full">
+              <label className={LABEL_CLASS}>Nome do responsável *</label>
+              <input value={respNome} onChange={e => setRespNome(e.target.value)} placeholder="Nome completo" className={FIELD_CLASS} />
+            </div>
+            <div>
+              <label className={LABEL_CLASS}>Telefone</label>
+              <input value={respTel} onChange={e => setRespTel(e.target.value)} placeholder="+351 9XX XXX XXX" className={FIELD_CLASS} />
+            </div>
+            <div>
+              <label className={LABEL_CLASS}>NIF do responsável</label>
+              <input value={respNif} onChange={e => setRespNif(e.target.value)} placeholder="000000000" className={FIELD_CLASS} />
+            </div>
+            <div>
+              <label className={LABEL_CLASS}>Email</label>
+              <input type="email" value={respEmail} onChange={e => setRespEmail(e.target.value)} placeholder="email@exemplo.com" className={FIELD_CLASS} />
+            </div>
+            <div>
+              <label className={LABEL_CLASS}>Relação</label>
+              <select value={respRelacao} onChange={e => setRespRelacao(e.target.value)} className={[FIELD_CLASS, 'cursor-pointer'].join(' ')}>
+                {RELACAO_OPTS.map(r => <option key={r} value={r}>{RELACAO_LABELS[r]}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Permissões */}
+          <div className="flex flex-wrap gap-5 mt-3.5">
+            <label className="flex gap-1.5 items-center py-1.5 text-[13px] cursor-pointer text-secondary">
+              <input type="checkbox" checked={respCheckin} onChange={e => setRespCheckin(e.target.checked)} />
+              Pode fazer check-in
+            </label>
+            <label className="flex gap-1.5 items-center py-1.5 text-[13px] cursor-pointer text-secondary">
+              <input type="checkbox" checked={respFatura} onChange={e => setRespFatura(e.target.checked)} />
+              Titular da fatura
+            </label>
+          </div>
+
+          <div className="flex justify-between mt-5">
+            <VoltarButton onClick={() => setStep(2)} />
+            <Button variant="primary" disabled={!respNome.trim()} onClick={() => setStep(4)}>
+              Seguinte <Ico icon={ArrowRightIcon} sm />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── STEP 4 (ou 3 se adulto) — Confirmar ── */}
+      {step === 4 && (
+        <div>
+          <div className="p-4 mb-5 rounded-md bg-elevated">
+            {[
+              ['Nome',        nome],
+              ['Email',       email],
+              ['Telefone',    telefone || '—'],
+              ['NIF',         nif || '—'],
+              ['Nascimento',  dataNasc ? `${dataNasc}${idade !== null ? ` (${idade} anos)` : ''}` : '—'],
+              ['Faixa',       `${faixa.charAt(0).toUpperCase() + faixa.slice(1)} · Grau ${grau}`],
+              ['Plano',       planoSel?.nome || '—'],
+              ['Mensalidade', `€${planoSel?.valor || 0}/mês`],
+            ].map(([k, v]) => (
+              <div key={k} className="flex justify-between py-1.5 border-b border-border-subtle">
+                <span className="text-[12.5px] text-muted">{k}</span>
+                <span className="text-[12.5px] font-medium text-primary">{v}</span>
+              </div>
+            ))}
+            {eMenor && respNome && (
+              <div className="py-2 px-2.5 mt-2.5 rounded bg-amber-600/[0.07]">
+                <div className="mb-1 text-[10.5px] font-bold tracking-[0.5px] uppercase text-amber-700">Responsável</div>
+                <div className="text-[12.5px] font-medium text-primary">{respNome} · {RELACAO_LABELS[respRelacao]}</div>
+                {respTel && <div className="text-xs text-muted">{respTel}</div>}
+              </div>
+            )}
+          </div>
+
+          {saved && (
+            <div className="py-2.5 px-4 mb-4 text-[13px] font-semibold text-green-600 rounded-lg border border-green-500/30 bg-green-500/10">
+              ✓ Aluno criado com sucesso!
+            </div>
+          )}
+
+          <div className="flex justify-between">
+            <VoltarButton onClick={() => setStep(eMenor ? 3 : 2)} />
+            <Button
+              variant="primary"
+              disabled={saving || saved}
+              className={saved ? '!bg-green-500 !shadow-none' : undefined}
+              onClick={handleSave}
+            >
+              {saved ? '✓ Criado!' : saving ? 'A guardar...' : '✓ Confirmar Matrícula'}
+            </Button>
+          </div>
+        </div>
+      )}
+    </Modal>
   );
 }

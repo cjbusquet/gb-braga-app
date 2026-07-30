@@ -27,8 +27,8 @@ import type { Belt } from '../../types';
 import { ClockIcon } from '@heroicons/react/24/solid';
 import { exportContratoPDF } from '../../services/pdf';
 import { useAuth } from '../../lib/auth';
-import { useMobile } from '../../lib/useMobile';
 import { useState } from 'react';
+import Card from '../../components/common/Card';
 
 type HeroIconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -60,20 +60,7 @@ function NavCard({
   return (
     <button
       onClick={onClick}
-      style={{
-        width: '100%',
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-lg)',
-        textAlign: 'left',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 20,
-        position: 'relative',
-        overflow: 'hidden',
-        boxSizing: 'border-box',
-      }}
+      className="flex overflow-hidden relative gap-5 items-center w-full min-h-11 text-left rounded-lg border cursor-pointer box-border border-border bg-card transition-colors duration-200 active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = accent + '30';
         e.currentTarget.style.background = 'var(--bg-elevated)';
@@ -84,56 +71,20 @@ function NavCard({
       }}
     >
       <div
-        style={{
-          width: 100,
-          height: 100,
-          borderRadius: '0',
-          background: accent + '18',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 18,
-          flexShrink: 0,
-        }}
+        className="flex justify-center items-center w-[100px] h-[100px] text-lg shrink-0"
+        style={{ background: accent + '18' }}
       >
-        <Icon style={{ width: 36, height: 36, color: accent }} />
+        <Icon className="w-9 h-9" style={{ color: accent }} />
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
-          style={{
-            color: 'rgb(0,0,0,0.85)',
-            fontWeight: 500,
-            fontSize: 14,
-            marginBottom: 1,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
+      <div className="flex-1 min-w-0">
+        <div className="overflow-hidden mb-px text-sm font-medium whitespace-nowrap text-ellipsis text-black/85">
           {label}
         </div>
-        <div
-          style={{
-            color: 'rgb(0,0,0,0.5)',
-            fontWeight: 500,
-            fontSize: 12,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
+        <div className="overflow-hidden text-xs font-medium whitespace-nowrap text-ellipsis text-black/50">
           {desc}
         </div>
       </div>
-      <ChevronRightIcon
-        style={{
-          width: 28,
-          height: 28,
-          marginRight: 12,
-          color: 'var(--text-muted)',
-          flexShrink: 0,
-        }}
-      />
+      <ChevronRightIcon className="mr-3 w-7 h-7 shrink-0 text-muted" />
     </button>
   );
 }
@@ -150,7 +101,6 @@ export default function PortalAluno({
   const [showEditPerfil, setShowEditPerfil] = useState(false);
   const [showContrato, setShowContrato] = useState(false);
   const { user } = useAuth();
-  const { isMobile } = useMobile();
   const aluno = alunos.find((a) => a.email === user?.email) || alunos[0];
   const meuContrato = contratos.find((c) => c.alunoId === aluno?.id);
   const minhasPresencas = presencas.filter((p) => p.alunoId === aluno.id);
@@ -182,56 +132,20 @@ export default function PortalAluno({
       {showEditPerfil && (
         <div
           onClick={() => setShowEditPerfil(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 20,
-          }}
+          className="flex fixed inset-0 z-[1000] justify-center items-center p-5 bg-black/50"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-lg)',
-              padding: 28,
-              maxWidth: 500,
-              width: '100%',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-            }}
+            className="p-7 w-full max-w-[500px] rounded-lg border shadow-lg border-border bg-card"
           >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                marginBottom: 20,
-              }}
-            >
-              <div
-                style={{
-                  color: 'var(--text-primary)',
-                  fontSize: 15,
-                  fontWeight: 800,
-                }}
-              >
+            <div className="flex justify-between mb-5">
+              <div className="text-[15px] font-extrabold text-primary">
                 Editar Dados Pessoais
               </div>
               <button
                 onClick={() => setShowEditPerfil(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: 'var(--text-muted)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                aria-label="Fechar"
+                className="flex justify-center items-center p-2 -m-2 bg-none rounded-full border-none cursor-pointer text-muted transition-colors duration-200 hover:text-primary hover:bg-elevated active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
               >
                 <Ico icon={XMarkIcon} />
               </button>
@@ -242,76 +156,28 @@ export default function PortalAluno({
               ['Telefone', aluno.telefone],
               ['WhatsApp', aluno.whatsapp || ''],
             ].map(([k, v]) => (
-              <div key={k} style={{ marginBottom: 12 }}>
-                <label
-                  style={{
-                    display: 'block',
-                    color: 'var(--text-muted)',
-                    fontSize: 10.5,
-                    fontWeight: 600,
-                    letterSpacing: '0.8px',
-                    textTransform: 'uppercase',
-                    marginBottom: 4,
-                  }}
-                >
+              <div key={k} className="mb-3">
+                <label className="block mb-1 text-[10.5px] font-semibold tracking-[0.8px] uppercase text-muted">
                   {k}
                 </label>
                 <input
                   defaultValue={v}
-                  style={{
-                    width: '100%',
-                    background: 'var(--bg-elevated)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 'var(--radius-sm)',
-                    padding: '9px 11px',
-                    color: 'var(--text-primary)',
-                    fontSize: 13,
-                    boxSizing: 'border-box',
-                  }}
-                  onFocus={(e) =>
-                    (e.target.style.borderColor = 'var(--gb-red)')
-                  }
-                  onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
+                  className="box-border w-full py-2.5 px-3 min-h-11 sm:min-h-0 text-[13px] rounded-sm border outline-none transition-all duration-200 border-border bg-elevated text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25"
                 />
               </div>
             ))}
-            <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+            <div className="flex gap-2.5 mt-[18px]">
               <button
                 onClick={() => setShowEditPerfil(false)}
-                style={{
-                  flex: 1,
-                  background: 'var(--bg-elevated)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius-sm)',
-                  padding: '10px',
-                  color: 'var(--text-secondary)',
-                  fontSize: 13,
-                  cursor: 'pointer',
-                }}
+                className="flex-1 py-2.5 min-h-11 sm:min-h-0 text-[13px] rounded-sm border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card hover:text-primary active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
               >
                 Cancelar
               </button>
               <button
                 onClick={() => setShowEditPerfil(false)}
-                style={{
-                  flex: 2,
-                  background: 'var(--gb-red)',
-                  border: 'none',
-                  borderRadius: 'var(--radius-sm)',
-                  padding: '10px',
-                  color: '#fff',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
+                className="flex-[2] py-2.5 min-h-11 sm:min-h-0 text-[13px] font-bold text-white rounded-sm border-none cursor-pointer bg-gb-red transition-all duration-200 hover:bg-gb-red-dark active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
               >
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                  }}
-                >
+                <span className="inline-flex gap-1.5 items-center">
                   <Ico icon={SaveIcon} sm />
                   Guardar
                 </span>
@@ -324,74 +190,25 @@ export default function PortalAluno({
       {showContrato && (
         <div
           onClick={() => setShowContrato(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 20,
-          }}
+          className="flex fixed inset-0 z-[1000] justify-center items-center p-5 bg-black/50"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-lg)',
-              padding: 28,
-              maxWidth: 560,
-              width: '100%',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-              maxHeight: '85vh',
-              overflowY: 'auto',
-            }}
+            className="overflow-y-auto p-7 w-full max-w-[560px] max-h-[85vh] rounded-lg border shadow-lg border-border bg-card"
           >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                marginBottom: 20,
-              }}
-            >
-              <div
-                style={{
-                  color: 'var(--text-primary)',
-                  fontSize: 15,
-                  fontWeight: 800,
-                }}
-              >
+            <div className="flex justify-between mb-5">
+              <div className="text-[15px] font-extrabold text-primary">
                 Contrato de Adesão
               </div>
               <button
                 onClick={() => setShowContrato(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: 'var(--text-muted)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                aria-label="Fechar"
+                className="flex justify-center items-center p-2 -m-2 bg-none rounded-full border-none cursor-pointer text-muted transition-colors duration-200 hover:text-primary hover:bg-elevated active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
               >
                 <Ico icon={XMarkIcon} />
               </button>
             </div>
-            <div
-              style={{
-                background: 'var(--bg-elevated)',
-                border: '1px solid var(--border)',
-                borderRadius: 10,
-                padding: '16px 20px',
-                fontSize: 13,
-                color: 'var(--text-secondary)',
-                lineHeight: 1.8,
-                marginBottom: 18,
-              }}
-            >
+            <div className="py-4 px-5 mb-[18px] text-[13px] leading-[1.8] rounded-[10px] border border-border bg-elevated text-secondary">
               <p>
                 <strong>Tribo Laurada Lda.</strong> (NIF 518948471) · Gracie
                 Barra Braga
@@ -401,7 +218,7 @@ export default function PortalAluno({
               <p>
                 O aluno <strong>{aluno.nome}</strong> comprometeu-se a:
               </p>
-              <ul style={{ marginLeft: 18, marginBottom: 10 }}>
+              <ul className="mb-2.5 ml-[18px]">
                 <li>
                   Efetuar o pagamento da mensalidade até ao dia 5 de cada mês
                 </li>
@@ -413,11 +230,11 @@ export default function PortalAluno({
                   Declarar estar fisicamente apto para a prática do Jiu-Jitsu
                 </li>
               </ul>
-              <p style={{ color: 'var(--text-muted)', fontSize: 11.5 }}>
+              <p className="text-[11.5px] text-muted">
                 Contrato em vigor desde {aluno.dataMatricula}.
               </p>
             </div>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <div className="flex flex-wrap gap-2.5">
               <button
                 onClick={() => {
                   exportContratoPDF({
@@ -436,21 +253,7 @@ export default function PortalAluno({
                   });
                   setShowContrato(false);
                 }}
-                style={{
-                  flex: '1 1 140px',
-                  background: 'var(--gb-red)',
-                  border: 'none',
-                  borderRadius: 'var(--radius-sm)',
-                  padding: '10px',
-                  color: '#fff',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                }}
+                className="flex flex-[1_1_140px] gap-1.5 justify-center items-center py-2.5 min-h-11 sm:min-h-0 text-[13px] font-bold text-white rounded-sm border-none cursor-pointer bg-gb-red transition-all duration-200 hover:bg-gb-red-dark active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
               >
                 <Ico icon={ArrowDownTrayIcon} sm /> Descarregar PDF
               </button>
@@ -467,21 +270,7 @@ export default function PortalAluno({
                     setShowContrato(false);
                   }
                 }}
-                style={{
-                  flex: '1 1 140px',
-                  background: 'rgba(200,16,46,0.08)',
-                  border: '1px solid rgba(200,16,46,0.2)',
-                  borderRadius: 'var(--radius-sm)',
-                  padding: '10px',
-                  color: 'var(--gb-red)',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                }}
+                className="flex flex-[1_1_140px] gap-1.5 justify-center items-center py-2.5 min-h-11 sm:min-h-0 text-xs font-semibold rounded-sm border cursor-pointer border-gb-red/20 text-gb-red bg-gb-red/[0.08] transition-colors duration-200 hover:bg-gb-red/[0.15] active:bg-gb-red/[0.15] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
               >
                 <Ico icon={ExclamationTriangleIcon} sm /> Cancelar subscrição
               </button>
@@ -492,136 +281,56 @@ export default function PortalAluno({
       {/* ── rest of portal ── */}
       {/* Hero */}
       <div
-        style={{
-          background: `linear-gradient(135deg, #0D0508 0%, ${bc?.bg || '#888'} 100%)`,
-          borderRadius: 'var(--radius-lg)',
-          padding: '24px 28px',
-          marginBottom: 16,
-          position: 'relative',
-          overflow: 'hidden',
-        }}
+        className="overflow-hidden relative py-6 px-7 mb-4 rounded-lg"
+        style={{ background: `linear-gradient(135deg, #0D0508 0%, ${bc?.bg || '#888'} 100%)` }}
       >
         {/* Subtle grid */}
         <div
+          className="absolute inset-0 pointer-events-none"
           style={{
-            position: 'absolute',
-            inset: 0,
             backgroundImage:
               'linear-gradient(transparent 1px, rgba(255,255,255,0.02) 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)',
             backgroundSize: '28px 28px',
-            pointerEvents: 'none',
           }}
         />
 
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            position: 'relative',
-            flexWrap: isMobile ? 'wrap' : 'nowrap',
-            gap: 12,
-          }}
-        >
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div
-              style={{
-                color: 'rgba(255,255,255,0.5)',
-                fontSize: 11,
-                letterSpacing: '1.5px',
-                textTransform: 'uppercase',
-                marginBottom: 6,
-              }}
-            >
+        <div className="flex relative flex-wrap gap-3 justify-between items-start md:flex-nowrap">
+          <div className="flex-1 min-w-0">
+            <div className="mb-1.5 text-[11px] tracking-[1.5px] uppercase text-white/50">
               Bem-vindo de volta
             </div>
-            <h1
-              style={{
-                color: '#fff',
-                fontSize: isMobile ? 22 : 26,
-                fontWeight: 800,
-                margin: 0,
-                lineHeight: 1,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
+            <h1 className="overflow-hidden m-0 text-[22px] font-extrabold leading-none whitespace-nowrap text-ellipsis text-white md:text-2xl">
               {aluno.nome}
             </h1>
-            <div
-              style={{
-                color: 'rgba(255,255,255,0.5)',
-                fontSize: 12,
-                marginTop: 5,
-              }}
-            >
+            <div className="mt-1.5 text-xs text-white/50">
               Membro desde {aluno.dataMatricula}
             </div>
 
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                marginTop: 16,
-                flexWrap: 'wrap',
-              }}
-            >
+            <div className="flex flex-wrap gap-2.5 items-center mt-4">
               <div
+                className="w-12 h-[11px] rounded-[3px] shrink-0"
                 style={{
-                  width: 48,
-                  height: 11,
                   background: bc?.bg || '#888',
-                  borderRadius: 3,
-                  border:
-                    aluno.faixa === 'branca' || aluno.faixa === 'preta'
-                      ? '1px solid #555'
-                      : 'none',
-                  flexShrink: 0,
+                  border: aluno.faixa === 'branca' || aluno.faixa === 'preta' ? '1px solid #555' : 'none',
                 }}
               />
-              <span
-                style={{
-                  color: '#fff',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  textTransform: 'capitalize',
-                }}
-              >
+              <span className="text-[13px] font-bold capitalize text-white">
                 {bc?.label} ·{' '}
                 {aluno.grau > 0 ? `${aluno.grau}° Grau` : 'Nenhum Grau'}
               </span>
             </div>
 
-            <div style={{ marginTop: 12 }}>
-              <span
-                style={{
-                  background: 'rgba(255,255,255,0.1)',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  color: 'rgba(255,255,255,0.85)',
-                  fontSize: 11.5,
-                  fontWeight: 600,
-                  padding: '4px 12px',
-                  borderRadius: 99,
-                }}
-              >
+            <div className="mt-3">
+              <span className="py-1 px-3 text-[11.5px] font-semibold text-white/85 rounded-full border border-white/15 bg-white/10">
                 {aluno.plano}
               </span>
             </div>
           </div>
 
           {/* Belt progression circle */}
-          <div
-            style={{
-              textAlign: 'center',
-              flexShrink: 0,
-              margin: 'auto 0',
-            }}
-          >
+          <div className="my-auto text-center shrink-0">
             <svg
-              width={isMobile ? 68 : 80}
-              height={isMobile ? 68 : 80}
+              className="w-[68px] h-[68px] md:w-20 md:h-20"
               viewBox="0 0 80 80"
             >
               <circle
@@ -650,7 +359,6 @@ export default function PortalAluno({
                 textAnchor="middle"
                 fill="white"
                 fontSize="12"
-                kim-dors
                 fontWeight="700"
                 fontFamily="DM Sans, sans-serif"
               >
@@ -662,14 +370,7 @@ export default function PortalAluno({
       </div>
 
       {/* Stats row */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(3, 1fr)',
-          gap: isMobile ? 8 : 12,
-          marginBottom: 16,
-        }}
-      >
+      <div className="grid grid-cols-3 gap-2 mb-4 md:gap-3">
         {[
           { label: 'Dias este mês', value: diasTreinoMes },
           {
@@ -680,29 +381,12 @@ export default function PortalAluno({
         ].map((s) => (
           <div
             key={s.label}
-            style={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '14px 16px',
-            }}
+            className="py-3.5 px-4 rounded-lg border border-border bg-card"
           >
-            <div
-              style={{
-                color: 'var(--text-muted)',
-                fontSize: 10.5,
-                marginBottom: 4,
-              }}
-            >
+            <div className="mb-1 text-[10.5px] text-muted">
               {s.label}
             </div>
-            <div
-              style={{
-                color: 'var(--text-primary)',
-                fontSize: 22,
-                fontWeight: 800,
-              }}
-            >
+            <div className="text-2xl font-extrabold text-primary">
               {s.value}
             </div>
           </div>
@@ -712,72 +396,39 @@ export default function PortalAluno({
       {/* Payment alert */}
       {proximoPagamento && (
         <div
-          style={{
-            background:
-              proximoPagamento.status === 'vencido'
-                ? 'rgba(200,16,46,0.08)'
-                : 'rgba(245,158,11,0.07)',
-            border: `1px solid ${proximoPagamento.status === 'vencido' ? 'rgba(200,16,46,0.3)' : 'rgba(245,158,11,0.25)'}`,
-            borderRadius: 'var(--radius-md)',
-            padding: '14px 16px',
-            marginBottom: 16,
-          }}
+          className={[
+            'py-3.5 px-4 mb-4 rounded-md border',
+            proximoPagamento.status === 'vencido' ? 'border-gb-red/30 bg-gb-red/8' : 'border-amber-500/25 bg-amber-500/[0.07]',
+          ].join(' ')}
         >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              flexWrap: 'wrap',
-              gap: 10,
-            }}
-          >
+          <div className="flex flex-wrap gap-2.5 justify-between items-start">
             <div>
               <div
-                style={{
-                  color:
-                    proximoPagamento.status === 'vencido' ? GB.red : '#F59E0B',
-                  fontSize: 12,
-                  marginBottom: 3,
-                }}
+                className="mb-1 text-xs"
+                style={{ color: proximoPagamento.status === 'vencido' ? GB.red : '#F59E0B' }}
               >
                 {proximoPagamento.status === 'vencido' ? (
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                    }}
-                  >
+                  <div className="flex gap-2 items-center">
                     <Ico icon={ExclamationTriangleIcon} />
-                    <span style={{ fontSize: 14 }}>Pagamento em atraso</span>
+                    <span className="text-sm">Pagamento em atraso</span>
                   </div>
                 ) : (
-                  <div
-                    style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-                  >
+                  <div className="flex gap-2 items-center">
                     <Ico icon={ClockIcon} />
-                    <span style={{ fontSize: 14 }}>Mensalidade a vencer</span>
+                    <span className="text-sm">Mensalidade a vencer</span>
                   </div>
                 )}
               </div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+              <div className="text-xs text-muted">
                 {proximoPagamento.plano} · Vence {proximoPagamento.vencimento}
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="flex gap-3 items-center">
               <button
+                className="py-2 px-4 min-h-11 sm:min-h-0 text-xs text-white whitespace-nowrap rounded-sm border-none cursor-pointer transition-all duration-200 hover:brightness-90 active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                 style={{
-                  background:
-                    proximoPagamento.status === 'vencido' ? GB.red : '#F59E0B',
-
-                  border: 'none',
-                  borderRadius: 'var(--radius-sm)',
-                  padding: '9px 16px',
-                  color: '#fff',
-                  fontSize: 12,
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
+                  background: proximoPagamento.status === 'vencido' ? GB.red : '#F59E0B',
+                  ['--tw-ring-color' as string]: proximoPagamento.status === 'vencido' ? GB.red : '#F59E0B',
                 }}
               >
                 {proximoPagamento.status === 'vencido'
@@ -790,14 +441,7 @@ export default function PortalAluno({
       )}
 
       {/* Navigation cards */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
-          gap: isMobile ? 6 : 10,
-          marginBottom: 16,
-        }}
-      >
+      <div className="grid grid-cols-1 gap-1.5 mb-4 md:grid-cols-3 md:gap-2.5">
         <NavCard
           Icon={CalendarIcon}
           label="Minhas Aulas"
@@ -850,97 +494,38 @@ export default function PortalAluno({
       </div>
 
       {/* Recent activity */}
-      <div
-        style={{
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-lg)',
-          padding: '18px 20px',
-        }}
-      >
-        <div
-          style={{
-            color: 'var(--text-muted)',
-            fontSize: 10.5,
-            fontWeight: 600,
-            letterSpacing: '1px',
-            textTransform: 'uppercase',
-            marginBottom: 14,
-          }}
-        >
+      <Card padding="lg">
+        <div className="mb-3.5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">
           Atividade Recente
         </div>
         {minhasPresencas.length > 0 ? (
           minhasPresencas.slice(0, 4).map((p) => (
             <div
               key={p.id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '8px 0',
-                borderBottom: '1px solid var(--border-subtle)',
-              }}
+              className="flex gap-2.5 items-center py-2 border-b border-border-subtle"
             >
-              <div
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: '50%',
-                  background: 'rgba(34,197,94,0.1)',
-                  border: '1px solid rgba(34,197,94,0.2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#22C55E',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  flexShrink: 0,
-                }}
-              >
+              <div className="flex justify-center items-center w-7 h-7 text-[11px] font-bold text-green-500 rounded-full border shrink-0 border-green-500/20 bg-green-500/10">
                 <Ico icon={CheckIcon} sm />
               </div>
-              <div style={{ flex: 1 }}>
-                <div
-                  style={{
-                    color: 'var(--text-primary)',
-                    fontSize: 13,
-                    fontWeight: 500,
-                  }}
-                >
+              <div className="flex-1">
+                <div className="text-[13px] font-medium text-primary">
                   {p.turmaNome}
                 </div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>
+                <div className="text-[11px] text-muted">
                   {p.data} às {p.hora}
                 </div>
               </div>
-              <span
-                style={{
-                  color: 'var(--text-muted)',
-                  fontSize: 10,
-                  fontFamily: 'var(--font-mono)',
-                  background: 'var(--bg-elevated)',
-                  padding: '2px 6px',
-                  borderRadius: 4,
-                }}
-              >
+              <span className="py-0.5 px-1.5 font-mono text-[10px] rounded bg-elevated text-muted">
                 {p.metodo}
               </span>
             </div>
           ))
         ) : (
-          <p
-            style={{
-              color: 'var(--text-muted)',
-              fontSize: 13,
-              textAlign: 'center',
-              padding: '16px 0',
-            }}
-          >
+          <p className="py-4 text-[13px] text-center text-muted">
             Sem atividade recente
           </p>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

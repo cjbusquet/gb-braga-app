@@ -14,14 +14,13 @@ import {
   GlobeAltIcon,
   HomeIcon,
   LinkIcon,
-  PlayCircleIcon,
   PuzzlePieceIcon,
   QrCodeIcon,
   Squares2X2Icon,
   TrophyIcon,
   UsersIcon,
 } from '@heroicons/react/24/outline';
-import { GB, roleThemes } from '../../lib/gbBrand';
+import { roleThemes } from '../../lib/gbBrand';
 import { useEffect, useState } from 'react';
 
 import { GBLogoFull } from '../GBLogo';
@@ -157,6 +156,32 @@ const BOTTOM_NAV: Record<string, string[]> = {
   superadmin: ['dashboard', 'alunos', 'financeiro', 'config'],
 };
 
+/* Shared focus ring for interactive elements sitting on a card/sidebar background */
+const FOCUS_RING = 'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 focus-visible:ring-offset-card';
+
+interface AvatarUser {
+  avatar?: string;
+  nome?: string;
+}
+
+/* ── Circular user avatar (photo or initial), used in sidebar + both top bars ── */
+function Avatar({ user, accent, size }: { user: AvatarUser; accent: string; size: number }) {
+  return (
+    <div
+      className="overflow-hidden relative shrink-0 rounded-full"
+      style={{ width: size, height: size, background: user.avatar ? 'transparent' : accent, border: `2px solid ${accent}` }}
+    >
+      {user.avatar ? (
+        <img src={user.avatar} alt="" className="block absolute inset-0 w-full h-full object-cover" />
+      ) : (
+        <span className="flex absolute inset-0 justify-center items-center text-sm font-bold text-white">
+          {user.nome?.charAt(0) || '?'}
+        </span>
+      )}
+    </div>
+  );
+}
+
 interface LayoutProps {
   currentPage: string;
   onNavigate: (page: string) => void;
@@ -209,13 +234,12 @@ export default function Layout({
         key={item.id}
         onClick={() => handleNav(item.id)}
         title={isCollapsed ? item.label : undefined}
+        className={[
+          'flex relative items-center w-full min-h-11 rounded-lg border-l-[3px] border-transparent cursor-pointer transition-colors duration-200 active:bg-elevated',
+          FOCUS_RING,
+          isCollapsed ? 'justify-center gap-0 py-2.5 px-0' : 'gap-2.5 justify-start py-2.5 px-3.5',
+        ].join(' ')}
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: isCollapsed ? 0 : 10,
-          justifyContent: isCollapsed ? 'center' : 'flex-start',
-          width: '100%',
-          padding: isCollapsed ? '11px 0' : '10px 14px',
           background: active
             ? `rgba(${rt.accent
                 .replace('#', '')
@@ -223,61 +247,27 @@ export default function Layout({
                 ?.map((x) => parseInt(x, 16))
                 .join(',')},0.12)`
             : 'transparent',
-          border: 'none',
-          borderRadius: 8,
-          cursor: 'pointer',
-          borderLeft: '3px solid transparent',
-          transition: 'all 0.15s',
-          position: 'relative',
         }}
       >
         <item.Icon
-          style={{
-            width: 18,
-            height: 18,
-            flexShrink: 0,
-            color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
-          }}
+          className="w-[18px] h-[18px] shrink-0"
+          style={{ color: active ? 'var(--text-primary)' : 'var(--text-secondary)' }}
         />
         {!isCollapsed && (
           <span
-            style={{
-              color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
-              fontSize: 13,
-              fontWeight: 500,
-              flex: 1,
-              textAlign: 'left',
-            }}
+            className="flex-1 text-[13px] font-medium text-left"
+            style={{ color: active ? 'var(--text-primary)' : 'var(--text-secondary)' }}
           >
             {item.label}
           </span>
         )}
         {item.badge && !isCollapsed && (
-          <span
-            style={{
-              background: GB.red,
-              color: '#fff',
-              fontSize: 10,
-              fontWeight: 700,
-              padding: '1px 6px',
-              borderRadius: 99,
-            }}
-          >
+          <span className="py-px px-1.5 text-[10px] font-bold text-white rounded-full bg-gb-red">
             {item.badge}
           </span>
         )}
         {item.badge && isCollapsed && (
-          <span
-            style={{
-              position: 'absolute',
-              top: 6,
-              right: 6,
-              width: 8,
-              height: 8,
-              background: GB.red,
-              borderRadius: '50%',
-            }}
-          />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-gb-red" />
         )}
       </button>
     );
@@ -286,53 +276,30 @@ export default function Layout({
   /* ── Sidebar ──────────────────────────────────────── */
   const sidebar = (
     <div
-      style={{
-        width: sidebarW,
-        flexShrink: 0,
-        background: 'var(--bg-card)',
-        borderRight: '1px solid var(--border)',
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        overflow: 'hidden',
-        transition: 'width 0.2s',
-        ...(isMobile
-          ? {
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              bottom: 0,
-              zIndex: 200,
-              width: 'min(280px, 88vw)',
-              transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
-              transition: 'transform 0.25s ease',
-              boxShadow: mobileOpen ? '4px 0 32px rgba(0,0,0,0.25)' : 'none',
-            }
-          : {}),
-      }}
+      className={[
+        'flex overflow-hidden flex-col shrink-0 h-screen border-r border-border bg-card transition-[width] duration-200',
+        isMobile
+          ? [
+              'fixed inset-y-0 left-0 z-[200] w-[min(280px,88vw)] transition-transform duration-250 ease-out',
+              mobileOpen ? 'translate-x-0 shadow-[4px_0_32px_rgba(0,0,0,0.25)]' : '-translate-x-full shadow-none',
+            ].join(' ')
+          : '',
+      ].join(' ')}
+      style={{ width: isMobile ? undefined : sidebarW }}
     >
       {/* Logo */}
       <div
-        style={{
-          padding: isCollapsed ? '16px 8px' : '16px 16px 12px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: isCollapsed ? 'center' : 'space-between',
-          borderBottom: '1px solid var(--border)',
-        }}
+        className={[
+          'flex items-center border-b border-border',
+          isCollapsed ? 'justify-center py-4 px-2' : 'justify-between pt-4 px-4 pb-3',
+        ].join(' ')}
       >
         {!isCollapsed && (
           <button
             onClick={() =>
               handleNav(user.role === 'aluno' ? 'portal' : 'dashboard')
             }
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0,
-              display: 'flex',
-            }}
+            className={['flex p-0 bg-none border-none rounded-md cursor-pointer transition-transform duration-200 active:scale-95', FOCUS_RING].join(' ')}
           >
             <GBLogoFull size={44} />
           </button>
@@ -342,12 +309,7 @@ export default function Layout({
             onClick={() =>
               handleNav(user.role === 'aluno' ? 'portal' : 'dashboard')
             }
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: 20,
-            }}
+            className={['text-xl bg-none border-none rounded-md cursor-pointer transition-transform duration-200 active:scale-95', FOCUS_RING].join(' ')}
           >
             🥋
           </button>
@@ -355,15 +317,7 @@ export default function Layout({
         {isMobile && (
           <button
             onClick={() => setMobileOpen(false)}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: 22,
-              cursor: 'pointer',
-              color: 'var(--text-muted)',
-              padding: 6,
-              minHeight: 44,
-            }}
+            className={['flex justify-center items-center p-1.5 min-h-11 min-w-11 text-[22px] bg-none border-none rounded-lg cursor-pointer transition-colors duration-200 text-muted hover:text-primary hover:bg-elevated active:bg-elevated', FOCUS_RING].join(' ')}
           >
             ✕
           </button>
@@ -372,157 +326,64 @@ export default function Layout({
 
       {/* User info */}
       {!isCollapsed && (
-        <div
+        <button
           onClick={() => handleNav('perfil')}
           title="Ver perfil"
-          style={{
-            padding: '12px 16px',
-            borderBottom: '1px solid var(--border)',
-            cursor: 'pointer',
-          }}
+          className={['py-3 px-4 w-full text-left border-b cursor-pointer transition-colors duration-200 border-border hover:bg-elevated active:bg-elevated', FOCUS_RING].join(' ')}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                background: user.avatar ? 'transparent' : rt.accent,
-                position: 'relative',
-                color: '#fff',
-                fontSize: 14,
-                fontWeight: 700,
-                flexShrink: 0,
-                overflow: 'hidden',
-                border: `2px solid ${rt.accent}`,
-              }}
-            >
-              {user.avatar ? (
-                <img
-                  src={user.avatar}
-                  alt=""
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    display: 'block',
-                  }}
-                />
-              ) : (
-                <span
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {user.nome?.charAt(0) || '?'}
-                </span>
-              )}
-            </div>
-            <div style={{ overflow: 'hidden', flex: 1 }}>
-              <div
-                style={{
-                  color: 'var(--text-primary)',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
+          <div className="flex gap-2.5 items-center">
+            <Avatar user={user} accent={rt.accent} size={36} />
+            <div className="overflow-hidden flex-1">
+              <div className="overflow-hidden text-[13px] font-semibold whitespace-nowrap text-ellipsis text-primary">
                 {user.nome}
               </div>
               <div
-                style={{
-                  color: rt.accent,
-                  fontSize: 10.5,
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                }}
+                className="text-[10.5px] font-semibold tracking-[0.5px] uppercase"
+                style={{ color: rt.accent }}
               >
                 {rt.label}
               </div>
             </div>
-            <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>›</span>
+            <span className="text-[11px] text-muted">›</span>
           </div>
-        </div>
+        </button>
       )}
 
       {/* Nav items */}
-      <div
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '8px',
-          scrollbarWidth: 'none',
-        }}
-      >
+      <div className="overflow-y-auto flex-1 p-2 [scrollbar-width:none]">
         {visibleNav.map(navBtn)}
       </div>
 
       {/* Bottom actions */}
       <div
-        style={{
-          padding: 8,
-          borderTop: '1px solid var(--border)',
-          paddingBottom: isMobile
-            ? 'calc(8px + env(safe-area-inset-bottom))'
-            : 8,
-        }}
+        className={[
+          'p-2 border-t border-border',
+          isMobile ? 'pb-[calc(8px+env(safe-area-inset-bottom))]' : 'pb-2',
+        ].join(' ')}
       >
         {!isMobile && (
           <button
             onClick={() => setCollapsed((c) => !c)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              width: '100%',
-              padding: '9px 14px',
-              background: 'none',
-              border: 'none',
-              borderRadius: 8,
-              cursor: 'pointer',
-              color: 'var(--text-muted)',
-              fontSize: 12,
-            }}
+            className={['flex gap-2 items-center py-2 px-3.5 min-h-11 w-full text-xs bg-none border-none rounded-lg cursor-pointer transition-colors duration-200 text-muted hover:text-primary hover:bg-elevated active:bg-elevated', FOCUS_RING].join(' ')}
           >
             {isCollapsed ? (
-              <ChevronRightIcon style={{ width: 16, height: 16 }} />
+              <ChevronRightIcon className="w-4 h-4" />
             ) : (
-              <ChevronLeftIcon style={{ width: 16, height: 16 }} />
+              <ChevronLeftIcon className="w-4 h-4" />
             )}
             {!isCollapsed && 'Colapsar'}
           </button>
         )}
         <button
           onClick={logout}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: isCollapsed ? 0 : 10,
-            justifyContent: isCollapsed ? 'center' : 'flex-start',
-            width: '100%',
-            padding: isCollapsed ? '11px 0' : '10px 14px',
-            background: 'none',
-            border: 'none',
-            borderRadius: 8,
-            cursor: 'pointer',
-            color: '#EF4444',
-            fontSize: 13,
-            fontWeight: 600,
-          }}
           title={isCollapsed ? 'Terminar sessão' : undefined}
+          className={[
+            'flex items-center w-full min-h-11 text-[13px] font-semibold bg-none border-none rounded-lg cursor-pointer transition-colors duration-200 text-red-500 hover:bg-red-50 active:bg-red-50',
+            'outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-card',
+            isCollapsed ? 'justify-center gap-0 py-2.5 px-0' : 'gap-2.5 justify-start py-2.5 px-3.5',
+          ].join(' ')}
         >
-          <ArrowRightOnRectangleIcon
-            style={{ width: 18, height: 18, flexShrink: 0 }}
-          />
+          <ArrowRightOnRectangleIcon className="w-[18px] h-[18px] shrink-0" />
           {!isCollapsed && 'Terminar sessão'}
         </button>
       </div>
@@ -531,79 +392,29 @@ export default function Layout({
 
   /* ── Bottom tab bar (mobile only) ────────────────── */
   const bottomTabBar = isMobile && (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 190,
-        background: 'var(--bg-card)',
-        borderTop: '1px solid var(--border)',
-        display: 'flex',
-        alignItems: 'stretch',
-        paddingBottom: 'env(safe-area-inset-bottom)',
-        boxShadow: '0 -2px 12px rgba(0,0,0,0.08)',
-      }}
-    >
+    <div className="flex fixed right-0 bottom-0 left-0 z-[190] items-stretch pb-[env(safe-area-inset-bottom)] border-t shadow-[0_-2px_12px_rgba(0,0,0,0.08)] border-border bg-card">
       {bottomItems.map((item) => {
         const active = currentPage === item.id;
         return (
           <button
             key={item.id}
             onClick={() => handleNav(item.id)}
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 3,
-              padding: '8px 4px 10px',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              borderTop: `2px solid ${active ? rt.accent : 'transparent'}`,
-              transition: 'all 0.15s',
-              minHeight: 56,
-              position: 'relative',
-            }}
+            className={['flex relative flex-col flex-1 gap-0.5 justify-center items-center py-2 px-1 pb-2.5 min-h-14 bg-none border-none transition-all duration-200 cursor-pointer active:bg-elevated', 'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-inset'].join(' ')}
+            style={{ borderTop: `2px solid ${active ? rt.accent : 'transparent'}` }}
           >
             <item.Icon
-              style={{
-                width: 22,
-                height: 22,
-                color: active ? rt.accent : 'var(--text-muted)',
-              }}
+              className="w-[22px] h-[22px]"
+              style={{ color: active ? rt.accent : 'var(--text-muted)' }}
             />
             <span
-              style={{
-                fontSize: 9.5,
-                fontWeight: active ? 700 : 400,
-                color: active ? rt.accent : 'var(--text-muted)',
-                letterSpacing: '0.2px',
-              }}
+              className="text-[9.5px] tracking-[0.2px]"
+              style={{ fontWeight: active ? 700 : 400, color: active ? rt.accent : 'var(--text-muted)' }}
             >
               {item.label}
             </span>
             {item.badge && (
               <span
-                style={{
-                  position: 'absolute',
-                  top: 6,
-                  right: '50%',
-                  transform: 'translateX(8px)',
-                  background: GB.red,
-                  color: '#fff',
-                  fontSize: 9,
-                  fontWeight: 700,
-                  width: 14,
-                  height: 14,
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                className="flex absolute top-1.5 right-1/2 justify-center items-center w-3.5 h-3.5 text-[9px] font-bold text-white rounded-full translate-x-2 bg-gb-red"
               >
                 {item.badge}
               </span>
@@ -617,27 +428,16 @@ export default function Layout({
   /* ── Render ──────────────────────────────────────── */
   return (
     <div
-      style={{
-        display: 'flex',
-        // Desktop: fixed-height box, inner divs scroll
-        // Mobile: natural flow so window/body scrolls → Chrome auto-hides address bar
-        height: isMobile ? undefined : '100vh',
-        minHeight: isMobile ? '100dvh' : undefined,
-        overflow: isMobile ? undefined : 'hidden',
-        fontFamily: 'var(--font-ui)',
-        background: 'var(--bg-base)',
-      }}
+      className={[
+        'flex overflow-x-hidden font-ui bg-base',
+        isMobile ? 'min-h-dvh' : 'overflow-hidden h-screen',
+      ].join(' ')}
     >
       {/* Backdrop on mobile */}
       {isMobile && mobileOpen && (
         <div
           onClick={() => setMobileOpen(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            zIndex: 199,
-          }}
+          className="fixed inset-0 z-[199] bg-black/50"
         />
       )}
 
@@ -645,219 +445,62 @@ export default function Layout({
 
       {/* Main area */}
       <div
-        style={{
-          flex: 1,
-          display: isMobile ? 'block' : 'flex',
-          flexDirection: isMobile ? undefined : 'column',
-          overflow: isMobile ? undefined : 'hidden',
-          // On mobile sidebar is position:fixed so main takes full width
-          width: isMobile ? '100%' : undefined,
-          minWidth: 0,
-        }}
+        className={[
+          'flex-1 min-w-0',
+          isMobile ? 'block w-full' : 'flex overflow-hidden flex-col',
+        ].join(' ')}
       >
         {/* Mobile top bar — position:fixed so window can scroll freely */}
         {isMobile && (
-          <div
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              zIndex: 100,
-              background: 'var(--bg-card)',
-              borderBottom: '1px solid var(--border)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '0 16px',
-              // Extra top padding for iPhone notch / Dynamic Island in PWA mode
-              paddingTop: 'env(safe-area-inset-top)',
-              minHeight: 56,
-              boxShadow: 'var(--shadow-xs)',
-            }}
-          >
+          <div className="flex fixed inset-x-0 top-0 z-[100] justify-between items-center py-0 px-4 pt-[env(safe-area-inset-top)] min-h-14 border-b shadow-xs border-border bg-card">
             <button
               onClick={() =>
                 handleNav(user.role === 'aluno' ? 'portal' : 'dashboard')
               }
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: 0,
-                display: 'flex',
-              }}
+              className={['flex p-0 bg-none border-none rounded-md cursor-pointer transition-transform duration-200 active:scale-95', FOCUS_RING].join(' ')}
             >
               <GBLogoFull size={36} />
             </button>
-            <div
-              style={{
-                color: 'var(--text-muted)',
-                fontSize: 12,
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}
-            >
+            <div className="overflow-hidden text-xs font-semibold tracking-[0.5px] uppercase truncate text-muted">
               {visibleNav.find((n) => n.id === currentPage)?.label || ''}
             </div>
-            <div
+            <button
               onClick={() => handleNav('perfil')}
               title="Ver perfil"
-              style={{
-                width: 38,
-                height: 38,
-                minWidth: 38,
-                minHeight: 38,
-                borderRadius: '50%',
-                background: user.avatar ? 'transparent' : rt.accent,
-                position: 'relative',
-                color: '#fff',
-                fontSize: 14,
-                fontWeight: 700,
-                overflow: 'hidden',
-                cursor: 'pointer',
-                flexShrink: 0,
-                border: `2px solid ${rt.accent}`,
-              }}
+              className={['shrink-0 rounded-full cursor-pointer transition-transform duration-200 active:scale-95', FOCUS_RING].join(' ')}
             >
-              {user.avatar ? (
-                <img
-                  src={user.avatar}
-                  alt=""
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    display: 'block',
-                  }}
-                />
-              ) : (
-                <span
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {user.nome?.charAt(0) || '?'}
-                </span>
-              )}
-            </div>
+              <Avatar user={user} accent={rt.accent} size={38} />
+            </button>
           </div>
         )}
 
         {/* Desktop top bar */}
         {!isMobile && (
-          <div
-            style={{
-              height: 56,
-              background: 'var(--bg-card)',
-              borderBottom: '1px solid var(--border)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              padding: '0 24px',
-              flexShrink: 0,
-            }}
-          >
-            <div
+          <div className="flex shrink-0 justify-end items-center py-0 px-6 h-14 border-b border-border bg-card">
+            <button
               onClick={() => handleNav('perfil')}
               title="Ver perfil"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                cursor: 'pointer',
-              }}
+              className={['flex gap-2.5 items-center py-1.5 px-2 -mx-2 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-elevated active:bg-elevated', FOCUS_RING].join(' ')}
             >
-              <div style={{ textAlign: 'right' }}>
-                <div
-                  style={{
-                    color: 'var(--text-primary)',
-                    fontSize: 13,
-                    fontWeight: 600,
-                  }}
-                >
-                  {user.nome}
-                </div>
-                <div
-                  style={{
-                    color: rt.accent,
-                    fontSize: 10.5,
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                  }}
-                >
+              <div className="text-right">
+                <div className="text-[13px] font-semibold text-primary">{user.nome}</div>
+                <div className="text-[10.5px] font-semibold uppercase" style={{ color: rt.accent }}>
                   {rt.label}
                 </div>
               </div>
-              <div
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: '50%',
-                  background: user.avatar ? 'transparent' : rt.accent,
-                  position: 'relative',
-                  color: '#fff',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  overflow: 'hidden',
-                  border: `2px solid ${rt.accent}`,
-                  flexShrink: 0,
-                }}
-              >
-                {user.avatar ? (
-                  <img
-                    src={user.avatar}
-                    alt=""
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      display: 'block',
-                    }}
-                  />
-                ) : (
-                  <span
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {user.nome?.charAt(0) || '?'}
-                  </span>
-                )}
-              </div>
-            </div>
+              <Avatar user={user} accent={rt.accent} size={34} />
+            </button>
           </div>
         )}
 
         {/* Page content */}
         <div
-          style={{
-            // Desktop: flex item that scrolls inside the fixed-height layout
-            flex: isMobile ? undefined : 1,
-            overflowY: isMobile ? undefined : 'auto',
-            overflowX: 'hidden',
-            padding: isMobile ? '16px 14px' : '28px 32px',
-            // Mobile: push content below fixed top bar + leave room for fixed bottom nav
-            paddingTop: isMobile
-              ? 'calc(56px + env(safe-area-inset-top) + 16px)'
-              : '28px',
-            paddingBottom: isMobile
-              ? 'calc(72px + env(safe-area-inset-bottom) + 16px)'
-              : undefined,
-          }}
+          className={[
+            'overflow-x-hidden',
+            isMobile
+              ? 'py-4 px-3.5 pt-[calc(56px+env(safe-area-inset-top)+16px)] pb-[calc(72px+env(safe-area-inset-bottom)+16px)]'
+              : 'flex-1 overflow-y-auto py-7 px-8',
+          ].join(' ')}
         >
           {children}
         </div>

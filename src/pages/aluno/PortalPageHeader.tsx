@@ -10,31 +10,17 @@ export default function PortalPageHeader({
   trailing,
 }: PortalPageHeaderProps) {
   return (
-    <div style={{ marginBottom: 18 }}>
-      <div
-        style={{
-          color: 'var(--text-muted)',
-          fontSize: 10.5,
-          letterSpacing: '1px',
-          textTransform: 'uppercase',
-          marginBottom: 3,
-        }}
-      >
+    <div className="mb-[18px]">
+      <div className="mb-1 text-[10.5px] tracking-[1px] uppercase text-muted">
         Aluno
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <h1 style={{ color: 'var(--text-primary)', fontSize: 20, margin: 0 }}>
+      <div className="flex gap-2.5 items-center">
+        <h1 className="m-0 text-xl text-primary">
           {title}
         </h1>
         {trailing}
       </div>
-      <p
-        style={{
-          color: 'var(--text-muted)',
-          fontSize: 13,
-          margin: '4px 0 0',
-        }}
-      >
+      <p className="mt-1 mb-0 text-[13px] text-muted">
         {description}
       </p>
     </div>

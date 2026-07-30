@@ -10,6 +10,7 @@ import { useStaffListQuery, useUpdateProfile, type StaffMember } from '../../hoo
 import { inviteStaff } from '../../services/api/edgeFunctions';
 import { haversineDistanceMeters } from '../../services/geo';
 import type { TocConfig } from '../../types';
+import PageHeader from '../../components/common/PageHeader';
 
 type Section = 'equipa' | 'toconline' | 'stripe' | 'whatsapp' | 'email' | 'academia' | 'compliance';
 
@@ -28,13 +29,13 @@ const SECTIONS: { id: Section; label: string; icon: string; desc: string; supera
 
 // ─── Small UI helpers ─────────────────────────────────────────────────────────
 function Label({ children }: { children: React.ReactNode }) {
-  return <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 12 }}>{children}</div>;
+  return <div className="mb-3 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">{children}</div>;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ marginBottom: 14 }}>
-      <label style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.8px', textTransform: 'uppercase' as const, display: 'block', marginBottom: 5 }}>{label}</label>
+    <div className="mb-3.5">
+      <label className="block mb-1 text-[10.5px] font-semibold tracking-[0.8px] uppercase text-muted">{label}</label>
       {children}
     </div>
   );
@@ -43,19 +44,29 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function Input({ value, onChange, placeholder, type = 'text', mono = false }: { value: string; onChange: (v: string) => void; placeholder?: string; type?: string; mono?: boolean }) {
   return (
     <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-      style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '9px 11px', color: 'var(--text-primary)', fontSize: 12.5, fontFamily: mono ? 'var(--font-mono)' : 'var(--font-ui)' }}
+      className={[
+        'box-border w-full py-2.5 px-3 min-h-11 sm:min-h-0 text-[12.5px] rounded-sm border outline-none transition-all duration-200 border-border bg-elevated text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25',
+        mono ? 'font-mono' : 'font-ui',
+      ].join(' ')}
     />
   );
 }
 
-function Card({ children, style = {} }: { children: React.ReactNode; style?: React.CSSProperties }) {
-  return <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 22, ...style }}>{children}</div>;
+function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return <div className={['p-[22px] rounded-lg border border-border bg-card', className].join(' ')}>{children}</div>;
 }
 
 function SaveBar({ onSave, saved, saving = false }: { onSave: () => void; saved: boolean; saving?: boolean }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
-      <button onClick={onSave} disabled={saving} style={{ background: saved ? '#22C55E' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '10px 22px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: `0 0 16px ${saved ? 'rgba(34,197,94,0.2)' : GB.redGlow}`, opacity: saving ? 0.7 : 1 }}>
+    <div className="flex justify-end mt-5">
+      <button onClick={onSave} disabled={saving}
+        className={[
+          'flex gap-2 items-center py-2.5 px-[22px] min-h-11 sm:min-h-0 text-[13px] font-bold text-white rounded-sm border-none transition-all duration-200',
+          'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
+          saving ? 'opacity-70' : 'cursor-pointer opacity-100 hover:brightness-90 active:brightness-90',
+        ].join(' ')}
+        style={{ background: saved ? '#22C55E' : GB.red, boxShadow: `0 0 16px ${saved ? 'rgba(34,197,94,0.2)' : GB.redGlow}` }}
+      >
         {saving ? '⟳ A guardar...' : saved ? '✓ Guardado' : '💾 Guardar Configuração'}
       </button>
     </div>
@@ -67,7 +78,6 @@ function TocSection() {
   const { data: cfg, setData: setCfg, loading, saving, saved, save } = useConfiguracaoSection<TocConfig>('toconline', defaultTocConfig);
   const [testing, setTesting] = useState(false);
   const [connStatus, setConnStatus] = useState<'idle' | 'ok' | 'fail'>('idle');
-  const { isMobile } = useMobile();
 
   const update = (key: keyof TocConfig, val: string | boolean) =>
     setCfg(c => ({ ...c, [key]: val }));
@@ -79,32 +89,41 @@ function TocSection() {
     setTesting(false);
   };
 
-  if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 24 }}>A carregar configuração...</div>;
+  if (loading) return <div className="p-6 text-[13px] text-muted">A carregar configuração...</div>;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       {/* Left: form */}
       <Card>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--border-subtle)' }}>
-          <div style={{ width: 40, height: 40, background: '#0E2D52', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🇵🇹</div>
+        <div className="flex gap-2.5 items-center pb-4 mb-5 border-b border-border-subtle">
+          <div className="flex justify-center items-center w-10 h-10 text-xl rounded-[10px] bg-[#0E2D52]">🇵🇹</div>
           <div>
-            <div style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 700 }}>TOConline</div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Faturação certificada pela Autoridade Tributária</div>
+            <div className="text-[15px] font-bold text-primary">TOConline</div>
+            <div className="text-[11px] text-muted">Faturação certificada pela Autoridade Tributária</div>
           </div>
         </div>
 
         {/* Simulation toggle */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: cfg.simulationMode ? 'rgba(245,158,11,0.07)' : 'rgba(34,197,94,0.07)', border: `1px solid ${cfg.simulationMode ? 'rgba(245,158,11,0.25)' : 'rgba(34,197,94,0.25)'}`, borderRadius: 'var(--radius-sm)', padding: '10px 14px', marginBottom: 18 }}>
+        <div
+          className={[
+            'flex justify-between items-center py-2.5 px-3.5 mb-[18px] rounded-sm border',
+            cfg.simulationMode ? 'border-amber-500/25 bg-amber-500/[0.07]' : 'border-green-500/25 bg-green-500/[0.07]',
+          ].join(' ')}
+        >
           <div>
-            <div style={{ color: cfg.simulationMode ? '#F59E0B' : '#22C55E', fontSize: 12, fontWeight: 700 }}>
+            <div className={['text-xs font-bold', cfg.simulationMode ? 'text-amber-500' : 'text-green-500'].join(' ')}>
               {cfg.simulationMode ? '⚡ Modo Simulação' : '✓ Modo Produção'}
             </div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2 }}>
+            <div className="mt-0.5 text-[11px] text-muted">
               {cfg.simulationMode ? 'Não emite faturas reais — ideal para testes' : 'Faturas comunicadas à AT em tempo real'}
             </div>
           </div>
           <button onClick={() => update('simulationMode', !cfg.simulationMode)}
-            style={{ background: cfg.simulationMode ? '#F59E0B' : '#22C55E', border: 'none', borderRadius: 20, padding: '5px 14px', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+            className={[
+              'py-1.5 px-3.5 min-h-11 sm:min-h-0 text-[11px] font-bold text-white rounded-full border-none cursor-pointer transition-all duration-200 hover:brightness-90 active:brightness-90',
+              'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+              cfg.simulationMode ? 'bg-amber-500' : 'bg-green-500',
+            ].join(' ')}>
             {cfg.simulationMode ? 'Ativar Produção' : 'Ativar Simulação'}
           </button>
         </div>
@@ -124,7 +143,7 @@ function TocSection() {
         <Field label="Nome da empresa">
           <Input value={cfg.empresaNome} onChange={v => update('empresaNome', v)} placeholder="Gracie Barra Braga, Lda." />
         </Field>
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10 }}>
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           <Field label="NIF">
             <Input value={cfg.empresaNIF} onChange={v => update('empresaNIF', v)} placeholder="512345678" mono />
           </Field>
@@ -134,21 +153,21 @@ function TocSection() {
         </div>
 
         {/* Test + Save */}
-        <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+        <div className="flex gap-2 mt-1.5">
           <button onClick={testConn} disabled={testing}
-            style={{ flex: 1, background: 'var(--bg-elevated)', border: `1px solid ${connStatus === 'ok' ? 'rgba(34,197,94,0.4)' : connStatus === 'fail' ? `${GB.red}40` : 'var(--border)'}`, borderRadius: 'var(--radius-sm)', padding: '10px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-              color: connStatus === 'ok' ? '#22C55E' : connStatus === 'fail' ? GB.red : 'var(--text-secondary)' }}>
+            className={[
+              'flex-1 py-2.5 min-h-11 sm:min-h-0 text-xs font-semibold rounded-sm border cursor-pointer transition-colors duration-200 bg-elevated hover:bg-border-subtle active:bg-border-subtle',
+              'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
+              connStatus === 'ok' ? 'border-green-500/40 text-green-500' : connStatus === 'fail' ? 'border-gb-red/40 text-gb-red' : 'border-border text-secondary',
+            ].join(' ')}>
             {testing ? '⟳ A testar...' : connStatus === 'ok' ? '✓ Ligação OK' : connStatus === 'fail' ? '✕ Sem ligação' : '⚡ Testar Ligação'}
           </button>
-          <button onClick={() => save()} disabled={saving}
-            style={{ flex: 2, background: saved ? '#22C55E' : saving ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '10px', color: '#fff', fontSize: 12, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
-            {saving ? '⟳ A guardar...' : saved ? '✓ Guardado!' : '💾 Guardar'}
-          </button>
+          <Button2 saving={saving} saved={saved} onClick={() => save()} className="flex-[2]" />
         </div>
       </Card>
 
       {/* Right: guide + status */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div className="flex flex-col gap-3.5">
         {/* Status summary */}
         <Card>
           <Label>Estado dos Serviços TOConline</Label>
@@ -160,11 +179,11 @@ function TocSection() {
             { label: 'SAF-T PT (exportação)', ok: !cfg.simulationMode },
             { label: 'Sincronização Stripe → FR', ok: true },
           ].map(s => (
-            <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-              <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{s.label}</span>
+            <div key={s.label} className="flex justify-between items-center py-1.5 border-b border-border-subtle">
+              <span className="text-xs text-secondary">{s.label}</span>
               {s.ok
-                ? <span style={{ color: '#22C55E', fontSize: 11, fontWeight: 600, background: 'rgba(34,197,94,0.1)', padding: '2px 8px', borderRadius: 99 }}>✓ OK</span>
-                : <span style={{ color: '#F59E0B', fontSize: 11, fontWeight: 600, background: 'rgba(245,158,11,0.1)', padding: '2px 8px', borderRadius: 99 }}>Pendente</span>}
+                ? <span className="py-0.5 px-2 text-[11px] font-semibold text-green-500 rounded-full bg-green-500/10">✓ OK</span>
+                : <span className="py-0.5 px-2 text-[11px] font-semibold text-amber-500 rounded-full bg-amber-500/10">Pendente</span>}
             </div>
           ))}
         </Card>
@@ -179,21 +198,37 @@ function TocSection() {
             { n: '4', title: 'Criar série GB2025', desc: 'Empresa → Séries → Nova série FR com prefixo "GB2025"' },
             { n: '5', title: 'Ligar webhook Stripe', desc: 'payment_intent.succeeded → emite FR automaticamente no TOConline' },
           ].map(s => (
-            <div key={s.n} style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-              <div style={{ width: 20, height: 20, borderRadius: '50%', background: GB.red, color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{s.n}</div>
+            <div key={s.n} className="flex gap-2.5 mb-3">
+              <div className="flex justify-center items-center mt-0.5 w-5 h-5 text-[10px] font-bold text-white rounded-full shrink-0 bg-gb-red">{s.n}</div>
               <div>
-                <div style={{ color: 'var(--text-primary)', fontSize: 12.5, fontWeight: 600, marginBottom: 2 }}>{s.title}</div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 11.5, lineHeight: 1.5 }}>{s.desc}</div>
+                <div className="mb-0.5 text-[12.5px] font-semibold text-primary">{s.title}</div>
+                <div className="text-[11.5px] leading-[1.5] text-muted">{s.desc}</div>
               </div>
             </div>
           ))}
           <a href="https://api-docs.toconline.pt" target="_blank" rel="noreferrer"
-            style={{ display: 'block', marginTop: 4, textAlign: 'center', color: '#3B82F6', fontSize: 12, fontWeight: 600, textDecoration: 'none', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 'var(--radius-sm)', padding: '8px' }}>
+            className="block py-2 mt-1 min-h-11 sm:min-h-0 text-xs font-semibold text-center text-blue-500 no-underline rounded-sm border transition-colors duration-200 border-blue-500/20 bg-blue-500/[0.08] hover:bg-blue-500/[0.16] active:bg-blue-500/[0.16] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
             📖 Documentação API TOConline →
           </a>
         </Card>
       </div>
     </div>
+  );
+}
+
+// Small shared "Guardar" button matching the saved/saving three-state pattern used across sections
+function Button2({ saving, saved, onClick, className = '', label = '💾 Guardar' }: { saving: boolean; saved: boolean; onClick: () => void; className?: string; label?: string }) {
+  return (
+    <button onClick={onClick} disabled={saving}
+      className={[
+        'py-2.5 min-h-11 sm:min-h-0 text-xs font-bold text-white rounded-sm border-none transition-all duration-200',
+        'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
+        saving ? 'opacity-70' : 'cursor-pointer opacity-100 hover:brightness-90 active:brightness-90',
+        className,
+      ].join(' ')}
+      style={{ background: saved ? '#22C55E' : saving ? '#aaa' : GB.red }}>
+      {saving ? '⟳ A guardar...' : saved ? '✓ Guardado!' : label}
+    </button>
   );
 }
 
@@ -233,7 +268,6 @@ function StripeSection() {
   const { data, setData, loading, saving, saved, save } = useConfiguracaoSection<StripeConfig>('stripe', defaultStripe);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<'ok'|'err'|null>(null);
-  const { isMobile } = useMobile();
 
   const mode    = data.mode;
   const pk      = data.pk;
@@ -256,33 +290,40 @@ function StripeSection() {
     setTimeout(() => setTestResult(null), 4000);
   };
 
-  if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 24 }}>A carregar configuração...</div>;
+  if (loading) return <div className="p-6 text-[13px] text-muted">A carregar configuração...</div>;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className="flex flex-col gap-4">
       {/* Keys card */}
       <Card>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, paddingBottom: 14, borderBottom: '1px solid var(--border-subtle)' }}>
-          <div style={{ width: 38, height: 38, background: '#635BFF', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 15 }}>S</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 700 }}>Stripe API</div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Pagamentos e subscrições recorrentes</div>
+        <div className="flex gap-2.5 items-center pb-3.5 mb-[18px] border-b border-border-subtle">
+          <div className="flex justify-center items-center w-[38px] h-[38px] text-[15px] font-extrabold text-white rounded-[10px] bg-[#635BFF]">S</div>
+          <div className="flex-1">
+            <div className="text-sm font-bold text-primary">Stripe API</div>
+            <div className="text-[11px] text-muted">Pagamentos e subscrições recorrentes</div>
           </div>
           {/* Live / Test toggle */}
-          <div style={{ display: 'flex', background: 'var(--bg-elevated)', borderRadius: 8, padding: 3, gap: 3 }}>
+          <div className="flex gap-0.5 p-0.5 rounded-lg bg-elevated">
             {(['test','live'] as const).map(m => (
-              <button key={m} onClick={() => setMode(m)} style={{ background: mode === m ? (m === 'live' ? '#22C55E' : '#D97706') : 'transparent', border: 'none', borderRadius: 6, padding: '4px 12px', color: mode === m ? '#fff' : 'var(--text-muted)', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', textTransform: 'uppercase' as const }}>
+              <button key={m} onClick={() => setMode(m)}
+                className={[
+                  'py-1 px-3 min-h-11 sm:min-h-0 text-[11.5px] font-bold uppercase rounded-md border-none cursor-pointer transition-colors duration-200',
+                  'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                  mode === m ? 'text-white' : 'bg-transparent text-muted hover:text-primary active:text-primary',
+                ].join(' ')}
+                style={{ background: mode === m ? (m === 'live' ? '#22C55E' : '#D97706') : undefined }}
+              >
                 {m === 'live' ? '🟢 LIVE' : '🟡 TEST'}
               </button>
             ))}
           </div>
         </div>
         {mode === 'live' && (
-          <div style={{ background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: 8, padding: '8px 12px', marginBottom: 14, color: '#DC2626', fontSize: 12 }}>
+          <div className="py-2 px-3 mb-3.5 text-xs text-red-600 rounded-lg border border-red-600/20 bg-red-600/[0.06]">
             ⚠️ Modo LIVE — cobranças reais aos clientes!
           </div>
         )}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={`Chave Pública (pk_${mode}_)`}>
             <Input value={pk} onChange={setPk} placeholder={`pk_${mode}_...`} mono />
           </Field>
@@ -293,61 +334,59 @@ function StripeSection() {
         <Field label="Webhook Secret (whsec_)">
           <Input value={whsec} onChange={setWhsec} placeholder="whsec_..." type="password" mono />
         </Field>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16, alignItems: 'center' }}>
-          <button onClick={testConn} disabled={testing} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 14px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+        <div className="flex flex-wrap gap-2 items-center mt-4">
+          <button onClick={testConn} disabled={testing}
+            className="py-2 px-3.5 min-h-11 sm:min-h-0 text-xs font-semibold rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed">
             {testing ? '⟳ A testar...' : '⚡ Testar'}
           </button>
-          {testResult === 'ok' && <span style={{ color: '#22C55E', fontSize: 12, fontWeight: 700 }}>✓ OK</span>}
-          {testResult === 'err' && <span style={{ color: 'var(--gb-red)', fontSize: 12, fontWeight: 700 }}>✕ Inválida</span>}
-          <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noreferrer" style={{ background: 'rgba(99,91,255,0.08)', border: '1px solid rgba(99,91,255,0.2)', borderRadius: 'var(--radius-sm)', padding: '8px 12px', color: '#635BFF', fontSize: 11.5, fontWeight: 600, textDecoration: 'none' }}>
+          {testResult === 'ok' && <span className="text-xs font-bold text-green-500">✓ OK</span>}
+          {testResult === 'err' && <span className="text-xs font-bold text-gb-red">✕ Inválida</span>}
+          <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noreferrer"
+            className="py-2 px-3 min-h-11 sm:min-h-0 text-[11.5px] font-semibold text-[#635BFF] no-underline rounded-sm border transition-colors duration-200 border-[#635BFF]/20 bg-[#635BFF]/[0.08] hover:bg-[#635BFF]/[0.16] active:bg-[#635BFF]/[0.16] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
             🔗 Dashboard →
           </a>
-          <a href="https://billing.stripe.com/p/login/test_28o3cS3Ub0GQdeU288" target="_blank" rel="noreferrer" style={{ background: 'rgba(99,91,255,0.08)', border: '1px solid rgba(99,91,255,0.2)', borderRadius: 'var(--radius-sm)', padding: '8px 12px', color: '#635BFF', fontSize: 11.5, fontWeight: 600, textDecoration: 'none' }}>
+          <a href="https://billing.stripe.com/p/login/test_28o3cS3Ub0GQdeU288" target="_blank" rel="noreferrer"
+            className="py-2 px-3 min-h-11 sm:min-h-0 text-[11.5px] font-semibold text-[#635BFF] no-underline rounded-sm border transition-colors duration-200 border-[#635BFF]/20 bg-[#635BFF]/[0.08] hover:bg-[#635BFF]/[0.16] active:bg-[#635BFF]/[0.16] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
             👤 Portal →
           </a>
-          <button onClick={() => save()} disabled={saving}
-            style={{ marginLeft: 'auto', background: saved ? '#22C55E' : saving ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 20px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
-            {saving ? '⟳' : saved ? '✓ Guardado' : '💾 Guardar'}
-          </button>
+          <Button2 saving={saving} saved={saved} onClick={() => save()} className="ml-auto px-5" />
         </div>
       </Card>
 
       {/* Price IDs table */}
       <Card>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div className="flex justify-between items-center mb-3.5">
           <div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 3 }}>Price IDs dos Planos</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Obter em Stripe Dashboard → Products → cada plano → copiar Price ID</div>
+            <div className="mb-1 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Price IDs dos Planos</div>
+            <div className="text-xs text-secondary">Obter em Stripe Dashboard → Products → cada plano → copiar Price ID</div>
           </div>
-          <a href="https://dashboard.stripe.com/products" target="_blank" rel="noreferrer" style={{ background: 'rgba(99,91,255,0.08)', border: '1px solid rgba(99,91,255,0.2)', borderRadius: 6, padding: '6px 12px', color: '#635BFF', fontSize: 11.5, fontWeight: 600, textDecoration: 'none' }}>
+          <a href="https://dashboard.stripe.com/products" target="_blank" rel="noreferrer"
+            className="py-1.5 px-3 min-h-11 sm:min-h-0 text-[11.5px] font-semibold text-[#635BFF] no-underline rounded transition-colors duration-200 bg-[#635BFF]/[0.08] border border-[#635BFF]/20 hover:bg-[#635BFF]/[0.16] active:bg-[#635BFF]/[0.16] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
             Ver Produtos →
           </a>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 8 }}>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {PLANOS_STRIPE.map(p => (
-            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ flexShrink: 0, width: 120 }}>
-                <div style={{ color: 'var(--text-primary)', fontSize: 12, fontWeight: 600 }}>{p.nome}</div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 10.5 }}>€{p.valor}/mês</div>
+            <div key={p.id} className="flex gap-2 items-center">
+              <div className="w-[120px] shrink-0">
+                <div className="text-xs font-semibold text-primary">{p.nome}</div>
+                <div className="text-[10.5px] text-muted">€{p.valor}/mês</div>
               </div>
               <input value={priceIds[p.id] ?? ''} onChange={e => setPriceId(p.id, e.target.value)}
                 placeholder={`price_${mode === 'live' ? 'live' : 'test'}_...`}
-                style={{ flex: 1, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 9px', color: 'var(--text-primary)', fontSize: 11.5, fontFamily: 'var(--font-mono)' }}/>
+                className="flex-1 py-1.5 px-2.5 min-h-11 sm:min-h-0 font-mono text-[11.5px] rounded border outline-none transition-all duration-200 border-border bg-elevated text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25"/>
             </div>
           ))}
         </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 14 }}>
-          <button onClick={() => save()} disabled={saving}
-            style={{ background: saved ? '#22C55E' : saving ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 20px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
-            {saving ? '⟳ A guardar...' : saved ? '✓ Guardado' : '💾 Guardar Price IDs'}
-          </button>
+        <div className="flex justify-end mt-3.5">
+          <Button2 saving={saving} saved={saved} onClick={() => save()} label="💾 Guardar Price IDs" className="px-5" />
         </div>
       </Card>
 
       {/* Webhooks */}
       <Card>
         <Label>Webhook URL para configurar no Stripe</Label>
-        <div style={{ background: 'var(--bg-elevated)', borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-primary)' }}>
+        <div className="py-2.5 px-3.5 mb-3.5 font-mono text-xs rounded-lg bg-elevated text-primary">
           https://gbbraga.com/api/stripe/webhook
         </div>
         <Label>Eventos a subscrever</Label>
@@ -358,9 +397,9 @@ function StripeSection() {
           { event: 'customer.subscription.deleted',      action: 'Suspender acesso + notificar admin' },
           { event: 'invoice.payment_failed',             action: 'Suspender após 3 falhas consecutivas' },
         ].map(w => (
-          <div key={w.event} style={{ padding: '9px 0', borderBottom: '1px solid var(--border-subtle)', display: 'flex', gap: 10 }}>
-            <span style={{ color: '#635BFF', fontSize: 11, fontFamily: 'var(--font-mono)', flexShrink: 0 }}>{w.event}</span>
-            <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>→ {w.action}</span>
+          <div key={w.event} className="flex gap-2.5 py-2.5 border-b border-border-subtle">
+            <span className="font-mono text-[11px] text-[#635BFF] shrink-0">{w.event}</span>
+            <span className="text-[11px] text-muted">→ {w.action}</span>
           </div>
         ))}
       </Card>
@@ -373,18 +412,17 @@ type WaConfig = { num: string; token: string };
 
 function WhatsAppSection() {
   const { data, setData, loading, saving, saved, save } = useConfiguracaoSection<WaConfig>('whatsapp', { num: '+351912345679', token: '' });
-  const { isMobile } = useMobile();
 
-  if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 24 }}>A carregar configuração...</div>;
+  if (loading) return <div className="p-6 text-[13px] text-muted">A carregar configuração...</div>;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <Card>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, paddingBottom: 16, borderBottom: '1px solid var(--border-subtle)' }}>
-          <div style={{ width: 40, height: 40, background: '#075E54', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>💬</div>
+        <div className="flex gap-2.5 items-center pb-4 mb-[18px] border-b border-border-subtle">
+          <div className="flex justify-center items-center w-10 h-10 text-xl rounded-[10px] bg-[#075E54]">💬</div>
           <div>
-            <div style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 700 }}>WhatsApp Business API</div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Meta Cloud API</div>
+            <div className="text-[15px] font-bold text-primary">WhatsApp Business API</div>
+            <div className="text-[11px] text-muted">Meta Cloud API</div>
           </div>
         </div>
         <Field label="Número WhatsApp Business">
@@ -403,9 +441,9 @@ function WhatsAppSection() {
           { nome: 'graduacao_confirmada', status: 'aprovado' },
           { nome: 'boas_vindas', status: 'pendente' },
         ].map(t => (
-          <div key={t.nome} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>{t.nome}</span>
-            <span style={{ color: t.status === 'aprovado' ? '#22C55E' : '#F59E0B', fontSize: 11, fontWeight: 600 }}>{t.status}</span>
+          <div key={t.nome} className="flex justify-between py-2 border-b border-border-subtle">
+            <span className="font-mono text-xs text-secondary">{t.nome}</span>
+            <span className={['text-[11px] font-semibold', t.status === 'aprovado' ? 'text-green-500' : 'text-amber-500'].join(' ')}>{t.status}</span>
           </div>
         ))}
       </Card>
@@ -423,14 +461,14 @@ function SimpleSection({ secao, title, icon, bg, fields }: {
 }) {
   const { data: vals, setData: setVals, loading, saving, saved, save } = useConfiguracaoSection<Record<string, string>>(secao, {});
 
-  if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 24 }}>A carregar configuração...</div>;
+  if (loading) return <div className="p-6 text-[13px] text-muted">A carregar configuração...</div>;
 
   return (
-    <div style={{ maxWidth: 560 }}>
+    <div className="max-w-[560px]">
       <Card>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--border-subtle)' }}>
-          <div style={{ width: 40, height: 40, background: bg, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>{icon}</div>
-          <div style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 700 }}>{title}</div>
+        <div className="flex gap-2.5 items-center pb-4 mb-5 border-b border-border-subtle">
+          <div className="flex justify-center items-center w-10 h-10 text-xl rounded-[10px]" style={{ background: bg }}>{icon}</div>
+          <div className="text-[15px] font-bold text-primary">{title}</div>
         </div>
         {fields.map(f => (
           <Field key={f.label} label={f.label}>
@@ -486,6 +524,9 @@ const STAFF_FAIXAS = [
   { value: 'vermelha',       label: 'Vermelha' },
 ];
 
+const STAFF_INP = 'box-border w-full py-2 px-2.5 min-h-11 sm:min-h-0 font-ui text-[12.5px] rounded-sm border transition-all duration-200 border-border bg-elevated text-primary outline-none focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25';
+const STAFF_LBL = 'block mb-1 text-[10px] font-bold tracking-[0.8px] uppercase text-muted';
+
 function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => void }) {
   const [open, setOpen]     = useState(false);
   const [d, setD]           = useState(member);
@@ -493,20 +534,8 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
   const [err,      setErr]      = useState('');
   const [resetting, setResetting] = useState(false);
   const [resetDone, setResetDone] = useState(false);
-  const { isMobile }             = useMobile();
   const updateProfile = useUpdateProfile();
   const saving = updateProfile.isPending;
-
-  const INP: React.CSSProperties = {
-    width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-    borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)',
-    fontSize: 12.5, fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box',
-  };
-
-  const LBL: React.CSSProperties = {
-    display: 'block', color: 'var(--text-muted)', fontSize: 10, fontWeight: 700,
-    letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 4,
-  };
 
   const sendPasswordReset = async () => {
     setResetting(true); setErr('');
@@ -546,27 +575,31 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
   const faixaCfg  = beltConfig[d.faixa] ?? null;
 
   return (
-    <div style={{
-      background: 'var(--bg-card)',
-      border: `1px solid ${open ? GB.red : d.ativo ? 'var(--border)' : 'var(--border-subtle)'}`,
-      borderRadius: 'var(--radius-lg)', overflow: 'hidden', transition: 'border-color 0.15s',
-      opacity: d.ativo ? 1 : 0.65,
-    }}>
+    <div
+      className={['overflow-hidden rounded-lg border transition-colors', d.ativo ? 'opacity-100' : 'opacity-65'].join(' ')}
+      style={{ borderColor: open ? GB.red : d.ativo ? 'var(--border)' : 'var(--border-subtle)' }}
+    >
       {/* Header row */}
       <button onClick={() => setOpen(o => !o)}
-        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+        className="flex gap-3 items-center py-3.5 px-[18px] w-full text-left bg-transparent border-none cursor-pointer transition-colors duration-200 hover:bg-elevated active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-inset">
         {/* Avatar */}
-        <div style={{ width: 38, height: 38, borderRadius: '50%', background: badge.bg, border: `2px solid ${badge.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
+        <div
+          className="flex justify-center items-center w-[38px] h-[38px] text-base rounded-full border-2 shrink-0"
+          style={{ background: badge.bg, borderColor: badge.color }}
+        >
           {d.role === 'professor' ? '🥋' : d.role === 'admin' ? '⚙️' : d.role === 'superadmin' ? '👑' : '📞'}
         </div>
 
         {/* Info */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ color: 'var(--text-primary)', fontSize: 13.5, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.nome}</div>
-          <div style={{ color: 'var(--text-muted)', fontSize: 11, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.email}</span>
+        <div className="flex-1 min-w-0">
+          <div className="overflow-hidden text-[13.5px] font-bold whitespace-nowrap text-ellipsis text-primary">{d.nome}</div>
+          <div className="flex flex-wrap gap-1.5 items-center text-[11px] text-muted">
+            <span className="overflow-hidden whitespace-nowrap text-ellipsis">{d.email}</span>
             {faixaCfg && (
-              <span style={{ background: faixaCfg.bg, color: faixaCfg.text, fontSize: 9.5, fontWeight: 700, padding: '1px 6px', borderRadius: 99, flexShrink: 0, border: d.faixa === 'branca' ? '1px solid #ccc' : 'none' }}>
+              <span
+                className="py-px px-1.5 text-[9.5px] font-bold rounded-full shrink-0"
+                style={{ background: faixaCfg.bg, color: faixaCfg.text, border: d.faixa === 'branca' ? '1px solid #ccc' : 'none' }}
+              >
                 🥋 {faixaCfg.label}
               </span>
             )}
@@ -574,42 +607,42 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
         </div>
 
         {/* Badges */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end', flexShrink: 0 }}>
-          <span style={{ background: badge.bg, color: badge.color, fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 99 }}>{badge.label}</span>
-          <span style={{ background: d.ativo ? 'rgba(34,197,94,0.12)' : 'rgba(107,114,128,0.12)', color: d.ativo ? '#16A34A' : '#6B7280', fontSize: 9.5, fontWeight: 700, padding: '1px 6px', borderRadius: 99 }}>
+        <div className="flex flex-col gap-1 items-end shrink-0">
+          <span className="py-0.5 px-1.5 text-[10px] font-bold rounded-full" style={{ background: badge.bg, color: badge.color }}>{badge.label}</span>
+          <span className={['py-px px-1.5 text-[9.5px] font-bold rounded-full', d.ativo ? 'text-green-600 bg-green-600/[0.12]' : 'text-neutral-500 bg-neutral-500/[0.12]'].join(' ')}>
             {d.ativo ? 'Ativo' : 'Inativo'}
           </span>
         </div>
-        <span style={{ color: 'var(--text-muted)', fontSize: 14, marginLeft: 4 }}>{open ? '▲' : '▼'}</span>
+        <span className="ml-1 text-sm text-muted">{open ? '▲' : '▼'}</span>
       </button>
 
       {/* Expanded edit form */}
       {open && (
-        <div style={{ padding: '0 18px 18px', borderTop: '1px solid var(--border-subtle)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10, marginTop: 14 }}>
+        <div className="pb-[18px] px-[18px] border-t border-border-subtle">
+          <div className="grid grid-cols-1 gap-2.5 mt-3.5 sm:grid-cols-2">
 
             <div>
-              <label style={LBL}>Nome completo</label>
-              <input value={d.nome} onChange={e => setD(p => ({ ...p, nome: e.target.value }))} style={INP} />
+              <label className={STAFF_LBL}>Nome completo</label>
+              <input value={d.nome} onChange={e => setD(p => ({ ...p, nome: e.target.value }))} className={STAFF_INP} />
             </div>
             <div>
-              <label style={LBL}>Email</label>
-              <input value={d.email} readOnly style={{ ...INP, opacity: 0.55, cursor: 'not-allowed' }} title="O email não pode ser alterado aqui" />
+              <label className={STAFF_LBL}>Email</label>
+              <input value={d.email} readOnly className={[STAFF_INP, 'opacity-55 cursor-not-allowed'].join(' ')} title="O email não pode ser alterado aqui" />
             </div>
             <div>
-              <label style={LBL}>Telefone</label>
-              <input value={d.telefone} onChange={e => setD(p => ({ ...p, telefone: e.target.value }))} placeholder="+351 9xx xxx xxx" style={INP} />
+              <label className={STAFF_LBL}>Telefone</label>
+              <input value={d.telefone} onChange={e => setD(p => ({ ...p, telefone: e.target.value }))} placeholder="+351 9xx xxx xxx" className={STAFF_INP} />
             </div>
             <div>
-              <label style={LBL}>NIF</label>
-              <input value={d.nif} onChange={e => setD(p => ({ ...p, nif: e.target.value }))} placeholder="123456789" style={INP} />
+              <label className={STAFF_LBL}>NIF</label>
+              <input value={d.nif} onChange={e => setD(p => ({ ...p, nif: e.target.value }))} placeholder="123456789" className={STAFF_INP} />
             </div>
 
             {/* Faixa */}
             <div>
-              <label style={LBL}>Faixa</label>
+              <label className={STAFF_LBL}>Faixa</label>
               <select value={d.faixa} onChange={e => setD(p => ({ ...p, faixa: e.target.value }))}
-                style={{ ...INP, cursor: 'pointer' }}>
+                className={[STAFF_INP, 'cursor-pointer'].join(' ')}>
                 {STAFF_FAIXAS.map(f => (
                   <option key={f.value} value={f.value}>{f.label}</option>
                 ))}
@@ -618,14 +651,15 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
 
             {/* Status ativo/inativo */}
             <div>
-              <label style={LBL}>Estado</label>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <label className={STAFF_LBL}>Estado</label>
+              <div className="flex gap-2">
                 {[{ v: true, l: '✓ Ativo', bg: '#16A34A' }, { v: false, l: '✕ Inativo', bg: '#6B7280' }].map(opt => (
                   <button key={String(opt.v)} onClick={() => setD(p => ({ ...p, ativo: opt.v }))}
+                    className="flex-1 p-2 min-h-11 text-xs font-bold rounded-sm border-[1.5px] cursor-pointer transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
                     style={{
-                      flex: 1, padding: '8px', border: `1.5px solid ${d.ativo === opt.v ? opt.bg : 'var(--border)'}`,
-                      borderRadius: 'var(--radius-sm)', background: d.ativo === opt.v ? `${opt.bg}18` : 'var(--bg-elevated)',
-                      color: d.ativo === opt.v ? opt.bg : 'var(--text-muted)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                      borderColor: d.ativo === opt.v ? opt.bg : 'var(--border)',
+                      background: d.ativo === opt.v ? `${opt.bg}18` : 'var(--bg-elevated)',
+                      color: d.ativo === opt.v ? opt.bg : 'var(--text-muted)',
                     }}>
                     {opt.l}
                   </button>
@@ -633,37 +667,31 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
               </div>
             </div>
 
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={LBL}>Morada</label>
-              <input value={d.morada} onChange={e => setD(p => ({ ...p, morada: e.target.value }))} placeholder="Rua..., 4700 Braga" style={INP} />
+            <div className="col-span-full">
+              <label className={STAFF_LBL}>Morada</label>
+              <input value={d.morada} onChange={e => setD(p => ({ ...p, morada: e.target.value }))} placeholder="Rua..., 4700 Braga" className={STAFF_INP} />
             </div>
           </div>
 
-          {err && <div style={{ color: GB.red, fontSize: 11.5, marginTop: 8, fontWeight: 600 }}>⚠ {err}</div>}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, gap: 10, flexWrap: 'wrap' }}>
+          {err && <div className="mt-2 text-[11.5px] font-semibold text-gb-red">⚠ {err}</div>}
+          <div className="flex flex-wrap gap-2.5 justify-between items-center mt-3">
             {/* Reset password */}
             <button
               onClick={sendPasswordReset}
               disabled={resetting || resetDone}
-              style={{
-                background: resetDone ? 'rgba(34,197,94,0.1)' : 'var(--bg-elevated)',
-                border: `1px solid ${resetDone ? '#22C55E' : 'var(--border)'}`,
-                borderRadius: 'var(--radius-sm)', padding: '8px 14px',
-                color: resetDone ? '#16A34A' : 'var(--text-secondary)',
-                fontSize: 12, fontWeight: 600,
-                cursor: (resetting || resetDone) ? 'not-allowed' : 'pointer',
-                display: 'flex', alignItems: 'center', gap: 6,
-              }}
+              className={[
+                'flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-xs font-semibold rounded-sm border transition-colors duration-200',
+                'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                resetDone ? 'border-green-500 text-green-600 bg-green-500/10' : 'border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle',
+                (resetting || resetDone) ? 'cursor-not-allowed' : 'cursor-pointer',
+              ].join(' ')}
             >
               <span>{resetDone ? '✓' : '🔑'}</span>
               {resetting ? 'A enviar...' : resetDone ? 'Email enviado!' : 'Enviar reset de password'}
             </button>
 
             {/* Save */}
-            <button onClick={saveStaff} disabled={saving}
-              style={{ background: saved ? '#22C55E' : saving ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '8px 20px', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
-              {saving ? '⟳ A guardar...' : saved ? '✓ Guardado' : '💾 Guardar'}
-            </button>
+            <Button2 saving={saving} saved={saved} onClick={saveStaff} className="px-5" />
           </div>
         </div>
       )}
@@ -673,7 +701,6 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
 
 function EquipaSection() {
   const { user } = useAuth();
-  const { isMobile } = useMobile();
 
   // ── Staff list state ──────────────────────────────────────────────────────
   const { data: staff = [], isLoading: loadingList, refetch: loadStaff } = useStaffListQuery();
@@ -687,12 +714,6 @@ function EquipaSection() {
   const [result,   setResult]  = useState<{ link: string; email: string } | null>(null);
   const [err,      setErr]     = useState('');
   const [copied,   setCopied]  = useState(false);
-
-  const INP: React.CSSProperties = {
-    width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-    borderRadius: 'var(--radius-sm)', padding: '9px 11px', color: 'var(--text-primary)',
-    fontSize: 12.5, fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box',
-  };
 
   const invite = async () => {
     if (!nome.trim()) return setErr('Preenche o nome.');
@@ -724,7 +745,7 @@ function EquipaSection() {
   };
 
   if (!['superadmin', 'admin'].includes(user?.role ?? '')) {
-    return <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 24 }}>Acesso restrito a administradores.</div>;
+    return <div className="p-6 text-[13px] text-muted">Acesso restrito a administradores.</div>;
   }
 
   // Admin pode convidar professor e atendimento, mas não criar novos admin
@@ -733,27 +754,31 @@ function EquipaSection() {
   );
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 420px', gap: 20, alignItems: 'start' }}>
+    <div className="grid grid-cols-1 gap-5 items-start lg:grid-cols-[1fr_420px]">
 
       {/* ── Left: staff list ── */}
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div className="flex justify-between items-center mb-3.5">
           <div>
-            <div style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 700 }}>Equipa</div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 11.5 }}>{staff.length} membro{staff.length !== 1 ? 's' : ''}</div>
+            <div className="text-[15px] font-bold text-primary">Equipa</div>
+            <div className="text-[11.5px] text-muted">{staff.length} membro{staff.length !== 1 ? 's' : ''}</div>
           </div>
           <button onClick={() => { setShowInvite(s => !s); setResult(null); setErr(''); }}
-            style={{ background: showInvite ? 'var(--bg-elevated)' : GB.red, border: showInvite ? '1px solid var(--border)' : 'none', borderRadius: 'var(--radius-sm)', padding: '8px 16px', color: showInvite ? 'var(--text-secondary)' : '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>
+            className={[
+              'py-2 px-4 min-h-11 sm:min-h-0 text-[12.5px] font-bold rounded-sm border cursor-pointer transition-colors duration-200',
+              'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+              showInvite ? 'border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle' : 'text-white border-none bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark',
+            ].join(' ')}>
             {showInvite ? '✕ Fechar' : '+ Convidar membro'}
           </button>
         </div>
 
         {loadingList ? (
-          <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 16 }}>A carregar equipa...</div>
+          <div className="p-4 text-[13px] text-muted">A carregar equipa...</div>
         ) : staff.length === 0 ? (
-          <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 16, textAlign: 'center' }}>Nenhum membro de equipa encontrado.</div>
+          <div className="p-4 text-[13px] text-center text-muted">Nenhum membro de equipa encontrado.</div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="flex flex-col gap-2">
             {staff.map(m => (
               <StaffCard key={m.id} member={m} onSaved={loadStaff} />
             ))}
@@ -764,61 +789,74 @@ function EquipaSection() {
       {/* ── Right: invite form (toggle) ── */}
       {showInvite && (
         <div>
-          <Card style={{ marginBottom: result ? 16 : 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, paddingBottom: 14, borderBottom: '1px solid var(--border-subtle)' }}>
-              <div style={{ width: 38, height: 38, background: GB.red, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>✉️</div>
+          <Card className={result ? 'mb-4' : 'mb-0'}>
+            <div className="flex gap-3 items-center pb-3.5 mb-[18px] border-b border-border-subtle">
+              <div className="flex justify-center items-center w-[38px] h-[38px] text-lg rounded-[10px] bg-gb-red">✉️</div>
               <div>
-                <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 700 }}>Convidar Membro</div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>O convidado define a sua própria password</div>
+                <div className="text-sm font-bold text-primary">Convidar Membro</div>
+                <div className="text-[11px] text-muted">O convidado define a sua própria password</div>
               </div>
             </div>
             <Field label="Nome completo">
-              <input value={nome} onChange={e => setNome(e.target.value)} placeholder="ex: João Silva" style={INP} />
+              <input value={nome} onChange={e => setNome(e.target.value)} placeholder="ex: João Silva" className={STAFF_INP} />
             </Field>
             <Field label="Email">
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="joao@gbbraga.com" style={INP} />
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="joao@gbbraga.com" className={STAFF_INP} />
             </Field>
             <Field label="Função">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div className="flex flex-col gap-1.5">
                 {availableRoles.map(r => (
-                  <label key={r.value} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: role === r.value ? 'rgba(200,16,46,0.06)' : 'var(--bg-elevated)', border: `1.5px solid ${role === r.value ? GB.red : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer' }}>
-                    <input type="radio" name="staffRole" checked={role === r.value} onChange={() => setRole(r.value)} style={{ accentColor: GB.red }} />
+                  <label key={r.value}
+                    className={[
+                      'flex gap-2.5 items-center py-2.5 px-3 min-h-11 rounded-lg border-[1.5px] cursor-pointer transition-colors duration-200 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-gb-red has-[:focus-visible]:ring-offset-2',
+                      role === r.value ? 'border-gb-red bg-gb-red/[0.06]' : 'border-border bg-elevated hover:bg-border-subtle active:bg-border-subtle',
+                    ].join(' ')}>
+                    <input type="radio" name="staffRole" checked={role === r.value} onChange={() => setRole(r.value)} className="accent-gb-red" />
                     <div>
-                      <div style={{ color: 'var(--text-primary)', fontSize: 12.5, fontWeight: 600 }}>{r.label}</div>
-                      <div style={{ color: 'var(--text-muted)', fontSize: 10.5 }}>{r.desc}</div>
+                      <div className="text-[12.5px] font-semibold text-primary">{r.label}</div>
+                      <div className="text-[10.5px] text-muted">{r.desc}</div>
                     </div>
                   </label>
                 ))}
               </div>
             </Field>
-            {err && <div style={{ color: GB.red, fontSize: 12, marginBottom: 10, fontWeight: 600 }}>⚠ {err}</div>}
+            {err && <div className="mb-2.5 text-xs font-semibold text-gb-red">⚠ {err}</div>}
             <button onClick={invite} disabled={inviting}
-              style={{ width: '100%', background: inviting ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '11px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: inviting ? 'not-allowed' : 'pointer', boxShadow: inviting ? 'none' : `0 4px 12px ${GB.redGlow}` }}>
+              className={[
+                'py-2.5 w-full min-h-11 text-[13px] font-bold text-white rounded-sm border-none transition-colors duration-200',
+                'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                inviting ? 'cursor-not-allowed bg-neutral-400 shadow-none' : 'cursor-pointer bg-gb-red shadow-red hover:bg-gb-red-dark active:bg-gb-red-dark',
+              ].join(' ')}>
               {inviting ? 'A criar conta...' : '✉ Criar e Gerar Link'}
             </button>
           </Card>
 
           {result && (
-            <Card style={{ border: '1.5px solid #22C55E' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <span style={{ fontSize: 20 }}>✅</span>
+            <Card className="!border-[1.5px] !border-green-500">
+              <div className="flex gap-2.5 items-center mb-3">
+                <span className="text-xl">✅</span>
                 <div>
-                  <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 700 }}>Conta criada!</div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>{result.email}</div>
+                  <div className="text-[13px] font-bold text-primary">Conta criada!</div>
+                  <div className="text-[11px] text-muted">{result.email}</div>
                 </div>
               </div>
               {result.link ? (
                 <>
-                  <div style={{ background: 'var(--bg-elevated)', borderRadius: 8, padding: '8px 10px', marginBottom: 8, fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--text-secondary)', wordBreak: 'break-all', border: '1px solid var(--border)' }}>
+                  <div className="p-2 mb-2 font-mono text-[10.5px] break-all rounded-lg border border-border bg-elevated text-secondary">
                     {result.link}
                   </div>
-                  <button onClick={copy} style={{ background: copied ? '#22C55E' : 'var(--bg-elevated)', border: `1px solid ${copied ? '#22C55E' : 'var(--border)'}`, borderRadius: 8, padding: '7px 14px', color: copied ? '#fff' : 'var(--text-primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer', width: '100%' }}>
+                  <button onClick={copy}
+                    className={[
+                      'py-1.5 px-3.5 w-full min-h-11 sm:min-h-0 text-xs font-semibold rounded-lg border cursor-pointer transition-colors duration-200',
+                      'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                      copied ? 'text-white bg-green-500 border-green-500 hover:bg-green-600 active:bg-green-600' : 'border-border bg-elevated text-primary hover:bg-border-subtle active:bg-border-subtle',
+                    ].join(' ')}>
                     {copied ? '✓ Copiado!' : '📋 Copiar link'}
                   </button>
-                  <p style={{ color: 'var(--text-muted)', fontSize: 10.5, marginTop: 8, lineHeight: 1.5 }}>⚠ Link de uso único — expira em 24h.</p>
+                  <p className="mt-2 text-[10.5px] leading-[1.5] text-muted">⚠ Link de uso único — expira em 24h.</p>
                 </>
               ) : (
-                <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>Conta criada. Gera o link manualmente no Supabase Dashboard.</p>
+                <p className="text-xs text-muted">Conta criada. Gera o link manualmente no Supabase Dashboard.</p>
               )}
             </Card>
           )}
@@ -842,16 +880,6 @@ function AcademiaSection() {
   const [locErr,   setLocErr]     = useState('');
   const [testDist, setTestDist]   = useState<number | null>(null);
   const [testing,  setTesting]    = useState(false);
-
-  const INP: React.CSSProperties = {
-    width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-    borderRadius: 'var(--radius-sm)', padding: '9px 11px', color: 'var(--text-primary)',
-    fontSize: 12.5, fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box',
-  };
-  const LBL: React.CSSProperties = {
-    display: 'block', color: 'var(--text-muted)', fontSize: 10, fontWeight: 700,
-    letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 4,
-  };
 
   const captureLocation = () => {
     if (!navigator.geolocation) { setLocErr('Geolocalização não suportada.'); return; }
@@ -891,15 +919,15 @@ function AcademiaSection() {
   const radius   = parseInt(cfg['GPS Raio (m)'] ?? '100');
   const hasPoint = !isNaN(parseFloat(cfg['GPS Latitude'] ?? '')) && !isNaN(parseFloat(cfg['GPS Longitude'] ?? ''));
 
-  if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 24 }}>A carregar...</div>;
+  if (loading) return <div className="p-6 text-[13px] text-muted">A carregar...</div>;
 
   return (
-    <div style={{ maxWidth: 560 }}>
+    <div className="max-w-[560px]">
       {/* Dados básicos */}
       <Card>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 14, borderBottom: '1px solid var(--border-subtle)' }}>
-          <div style={{ width: 40, height: 40, background: '#1A1A1A', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🏫</div>
-          <div style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 700 }}>Academia</div>
+        <div className="flex gap-2.5 items-center pb-3.5 mb-5 border-b border-border-subtle">
+          <div className="flex justify-center items-center w-10 h-10 text-xl rounded-[10px] bg-[#1A1A1A]">🏫</div>
+          <div className="text-[15px] font-bold text-primary">Academia</div>
         </div>
         {[
           { label: 'Nome da academia', placeholder: 'Gracie Barra Braga' },
@@ -920,12 +948,12 @@ function AcademiaSection() {
       </Card>
 
       {/* GPS Fence */}
-      <Card style={{ marginTop: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 14, borderBottom: '1px solid var(--border-subtle)' }}>
-          <div style={{ width: 40, height: 40, background: '#064E3B', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📍</div>
+      <Card className="mt-4">
+        <div className="flex gap-2.5 items-center pb-3.5 mb-5 border-b border-border-subtle">
+          <div className="flex justify-center items-center w-10 h-10 text-xl rounded-[10px] bg-[#064E3B]">📍</div>
           <div>
-            <div style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 700 }}>GPS Fence — Check-in</div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Ponto de referência para validar presenças</div>
+            <div className="text-[15px] font-bold text-primary">GPS Fence — Check-in</div>
+            <div className="text-[11px] text-muted">Ponto de referência para validar presenças</div>
           </div>
         </div>
 
@@ -933,52 +961,49 @@ function AcademiaSection() {
         <button
           onClick={captureLocation}
           disabled={locating}
-          style={{
-            width: '100%', padding: '12px', marginBottom: 16,
-            background: locating ? '#aaa' : '#16A34A',
-            border: 'none', borderRadius: 'var(--radius-sm)',
-            color: '#fff', fontSize: 13, fontWeight: 700,
-            cursor: locating ? 'not-allowed' : 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          }}
+          className={[
+            'flex gap-2 justify-center items-center py-3 mb-4 w-full min-h-11 text-[13px] font-bold text-white rounded-sm border-none transition-colors duration-200',
+            'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
+            locating ? 'bg-neutral-400' : 'cursor-pointer bg-green-600 hover:bg-green-700 active:bg-green-700',
+          ].join(' ')}
         >
           {locating ? '⟳ A obter localização...' : '📍 Usar localização actual como referência'}
         </button>
 
         {/* Coords */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+        <div className="grid grid-cols-1 gap-2.5 mb-2.5 sm:grid-cols-2">
           <div>
-            <label style={LBL}>Latitude</label>
+            <label className={STAFF_LBL}>Latitude</label>
             <input
               value={cfg['GPS Latitude'] || ''}
               onChange={e => setCfg(p => ({ ...p, 'GPS Latitude': e.target.value }))}
               placeholder="41.5503700"
-              style={INP}
+              className={STAFF_INP}
             />
           </div>
           <div>
-            <label style={LBL}>Longitude</label>
+            <label className={STAFF_LBL}>Longitude</label>
             <input
               value={cfg['GPS Longitude'] || ''}
               onChange={e => setCfg(p => ({ ...p, 'GPS Longitude': e.target.value }))}
               placeholder="-8.4200000"
-              style={INP}
+              className={STAFF_INP}
             />
           </div>
         </div>
 
         {/* Radius */}
-        <div style={{ marginBottom: 14 }}>
-          <label style={LBL}>Raio do fence (metros)</label>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div className="mb-3.5">
+          <label className={STAFF_LBL}>Raio do fence (metros)</label>
+          <div className="flex flex-wrap gap-2">
             {[50, 100, 150, 200, 300].map(r => (
               <button key={r} onClick={() => setCfg(p => ({ ...p, 'GPS Raio (m)': String(r) }))}
+                className="py-1.5 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] rounded-sm border-[1.5px] cursor-pointer transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
                 style={{
-                  padding: '7px 14px', borderRadius: 'var(--radius-sm)',
-                  border: `1.5px solid ${radius === r ? '#16A34A' : 'var(--border)'}`,
+                  borderColor: radius === r ? '#16A34A' : 'var(--border)',
                   background: radius === r ? 'rgba(22,163,74,0.1)' : 'var(--bg-elevated)',
                   color: radius === r ? '#16A34A' : 'var(--text-secondary)',
-                  fontSize: 12.5, fontWeight: radius === r ? 700 : 400, cursor: 'pointer',
+                  fontWeight: radius === r ? 700 : 400,
                 }}>
                 {r}m
               </button>
@@ -988,21 +1013,17 @@ function AcademiaSection() {
               value={cfg['GPS Raio (m)'] || '100'}
               onChange={e => setCfg(p => ({ ...p, 'GPS Raio (m)': e.target.value }))}
               placeholder="100"
-              style={{ ...INP, width: 70 }}
+              className={[STAFF_INP, 'w-[70px]'].join(' ')}
             />
           </div>
         </div>
 
         {/* Status + Test */}
         {hasPoint && (
-          <div style={{
-            background: 'rgba(22,163,74,0.06)', border: '1px solid rgba(22,163,74,0.2)',
-            borderRadius: 'var(--radius-sm)', padding: '10px 14px', marginBottom: 14,
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10,
-          }}>
+          <div className="flex gap-2.5 justify-between items-center py-2.5 px-3.5 mb-3.5 rounded-sm border border-green-600/20 bg-green-600/[0.06]">
             <div>
-              <div style={{ color: '#16A34A', fontSize: 12, fontWeight: 700 }}>✓ Ponto definido</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2 }}>
+              <div className="text-xs font-bold text-green-600">✓ Ponto definido</div>
+              <div className="mt-0.5 text-[11px] text-muted">
                 {cfg['GPS Latitude']}, {cfg['GPS Longitude']} · Raio: {radius}m
                 {cfg['GPS Precisão'] && ` · Precisão: ±${cfg['GPS Precisão']}`}
               </div>
@@ -1010,12 +1031,11 @@ function AcademiaSection() {
             <button
               onClick={testMyPosition}
               disabled={testing}
-              style={{
-                background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-                borderRadius: 'var(--radius-sm)', padding: '7px 12px',
-                color: 'var(--text-secondary)', fontSize: 11.5, fontWeight: 600,
-                cursor: testing ? 'not-allowed' : 'pointer', flexShrink: 0,
-              }}>
+              className={[
+                'py-1.5 px-3 min-h-11 sm:min-h-0 text-[11.5px] font-semibold rounded-sm border shrink-0 transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle',
+                'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                testing ? 'cursor-not-allowed' : 'cursor-pointer',
+              ].join(' ')}>
               {testing ? '⟳' : '🧪 Testar'}
             </button>
           </div>
@@ -1023,19 +1043,16 @@ function AcademiaSection() {
 
         {/* Test result */}
         {testDist !== null && (
-          <div style={{
-            background: testDist <= radius ? 'rgba(22,163,74,0.08)' : 'rgba(200,16,46,0.07)',
-            border: `1px solid ${testDist <= radius ? 'rgba(22,163,74,0.3)' : 'rgba(200,16,46,0.2)'}`,
-            borderRadius: 'var(--radius-sm)', padding: '10px 14px', marginBottom: 14,
-            color: testDist <= radius ? '#16A34A' : GB.red, fontSize: 12.5, fontWeight: 700,
-          }}>
+          <div
+            className={['py-2.5 px-3.5 mb-3.5 text-[12.5px] font-bold rounded-sm border', testDist <= radius ? 'border-green-600/30 text-green-600 bg-green-600/[0.08]' : 'border-gb-red/20 text-gb-red bg-gb-red/[0.07]'].join(' ')}
+          >
             {testDist <= radius
               ? `✓ Dentro do fence — ${testDist}m do ponto (raio: ${radius}m)`
               : `✕ Fora do fence — ${testDist}m do ponto (raio: ${radius}m)`}
           </div>
         )}
 
-        {locErr && <div style={{ color: GB.red, fontSize: 11.5, fontWeight: 600, marginBottom: 10 }}>⚠ {locErr}</div>}
+        {locErr && <div className="mb-2.5 text-[11.5px] font-semibold text-gb-red">⚠ {locErr}</div>}
 
         <SaveBar onSave={() => save()} saved={saved} saving={saving} />
       </Card>
@@ -1077,46 +1094,38 @@ function ConfigPageInner() {
 
   /* ── Mobile: horizontal scrollable tabs ── Desktop: vertical sidebar ── */
   const mobileTabs = (
-    <div style={{
-      display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4,
-      marginBottom: 16, scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' as any,
-    }}>
+    <div className="flex overflow-x-auto gap-1.5 pb-1 mb-4 [-webkit-overflow-scrolling:touch] [scrollbar-width:none]">
       {visibleSections.map(s => (
-        <button key={s.id} onClick={() => setActive(s.id)} style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-          flexShrink: 0, padding: '10px 14px', cursor: 'pointer',
-          background: active === s.id ? GB.redGlow : 'var(--bg-card)',
-          borderRadius: 'var(--radius-md)',
-          border: `1.5px solid ${active === s.id ? GB.red : 'var(--border)'}`,
-          minWidth: 72,
-        }}>
-          <span style={{ fontSize: 18 }}>{s.icon}</span>
-          <span style={{ color: active === s.id ? GB.red : 'var(--text-secondary)', fontSize: 10.5, fontWeight: active === s.id ? 700 : 500, whiteSpace: 'nowrap' }}>{s.label}</span>
+        <button key={s.id} onClick={() => setActive(s.id)}
+          className="flex flex-col gap-0.5 items-center py-2.5 px-3.5 min-w-[72px] min-h-11 rounded-md border-[1.5px] shrink-0 cursor-pointer transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
+          style={{
+            background: active === s.id ? GB.redGlow : 'var(--bg-card)',
+            borderColor: active === s.id ? GB.red : 'var(--border)',
+          }}>
+          <span className="text-lg">{s.icon}</span>
+          <span className="text-[10.5px] whitespace-nowrap" style={{ color: active === s.id ? GB.red : 'var(--text-secondary)', fontWeight: active === s.id ? 700 : 500 }}>{s.label}</span>
         </button>
       ))}
     </div>
   );
 
   const desktopSidebar = (
-    <div style={{ width: 210, flexShrink: 0 }}>
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+    <div className="w-[210px] shrink-0">
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
         {visibleSections.map(s => (
           <button key={s.id} onClick={() => setActive(s.id)}
+            className="flex gap-2.5 items-center py-3 px-3.5 w-full min-h-11 text-left border-none cursor-pointer transition-colors duration-200 border-b border-border-subtle hover:bg-elevated active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-inset"
             style={{
-              display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-              padding: '12px 14px', border: 'none', cursor: 'pointer',
               background: active === s.id ? GB.redGlow : 'transparent',
               borderLeft: `2px solid ${active === s.id ? GB.red : 'transparent'}`,
-              borderBottom: '1px solid var(--border-subtle)',
-              textAlign: 'left',
             }}>
-            <span style={{ fontSize: 16 }}>{s.icon}</span>
+            <span className="text-base">{s.icon}</span>
             <div>
-              <div style={{ color: active === s.id ? GB.red : 'var(--text-primary)', fontSize: 12.5, fontWeight: active === s.id ? 700 : 500, lineHeight: 1 }}>{s.label}</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 10.5, marginTop: 2 }}>{s.desc}</div>
+              <div className="text-[12.5px] leading-none" style={{ color: active === s.id ? GB.red : 'var(--text-primary)', fontWeight: active === s.id ? 700 : 500 }}>{s.label}</div>
+              <div className="mt-0.5 text-[10.5px] text-muted">{s.desc}</div>
             </div>
             {s.id === 'toconline' && (
-              <span style={{ marginLeft: 'auto', background: 'rgba(245,158,11,0.15)', color: '#F59E0B', fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3 }}>PT</span>
+              <span className="py-px px-[5px] ml-auto text-[9px] font-bold text-amber-500 rounded bg-amber-500/15">PT</span>
             )}
           </button>
         ))}
@@ -1126,25 +1135,21 @@ function ConfigPageInner() {
 
   return (
     <div>
-      {/* Header */}
-      <div style={{ marginBottom: isMobile ? 14 : 22 }}>
-        <div style={{ color: 'var(--text-muted)', fontSize: 10.5, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 3 }}>Sistema</div>
-        <h1 style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 700 }}>Configurações</h1>
-      </div>
+      <PageHeader eyebrow="Sistema" title="Configurações" />
 
       {isMobile ? (
         /* Mobile layout: tabs on top, content below */
         <div>
           {mobileTabs}
-          <div style={{ minWidth: 0 }}>
+          <div className="min-w-0">
             {renderSection()}
           </div>
         </div>
       ) : (
         /* Desktop layout: sidebar + content */
-        <div style={{ display: 'flex', gap: 20 }}>
+        <div className="flex gap-5">
           {desktopSidebar}
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="flex-1 min-w-0">
             {renderSection()}
           </div>
         </div>

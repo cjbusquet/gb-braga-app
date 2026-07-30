@@ -29,12 +29,12 @@ interface ContratoData {
 const FAIXAS = ['Branca','Cinza e Branca','Cinza','Cinza e Preta','Amarela e Branca','Amarela','Amarela e Preta','Laranja e Branca','Laranja','Laranja e Preta','Verde e Branca','Verde','Verde e Preta','Azul','Roxa','Marrom','Preta'];
 const CATEGORIAS = [{id:'adulto',label:'Adulto',icon:'🥋'},{id:'kids',label:'Kids',icon:'⭐'},{id:'familia',label:'Família',icon:'👨‍👩‍👧'},{id:'fundador',label:'Sócio Fundador',icon:'🏆'}];
 
-const INP: React.CSSProperties = { width:'100%', border:'1.5px solid #E2E0DB', borderRadius:8, padding:'10px 13px', fontSize:14, fontFamily:'inherit', outline:'none', background:'#fff', color:'#111', boxSizing:'border-box', transition:'border-color 0.15s' };
-const BTN: React.CSSProperties = { background:'#C8102E', border:'none', borderRadius:10, padding:'13px 32px', color:'#fff', fontSize:15, fontWeight:800, fontFamily:"'Arial Black',sans-serif", cursor:'pointer', boxShadow:'0 4px 14px rgba(200,16,46,0.3)' };
-const BTN2: React.CSSProperties = { background:'#F0EFEC', border:'1px solid #E2E0DB', borderRadius:10, padding:'13px 24px', color:'#5C5B66', fontSize:14, cursor:'pointer', fontFamily:'inherit' };
-const CARD: React.CSSProperties = { background:'#fff', border:'1px solid #E2E0DB', borderRadius:16, padding:28, boxShadow:'0 1px 4px rgba(0,0,0,0.06)', marginBottom:20 };
-const LBL: React.CSSProperties = { display:'block', color:'#5C5B66', fontSize:11, fontWeight:700, letterSpacing:'0.8px', textTransform:'uppercase', marginBottom:5 };
-const SEC: React.CSSProperties = { color:'#111', fontSize:15, fontWeight:700, marginBottom:14, paddingBottom:8, borderBottom:'2px solid #E2E0DB' };
+const INP_CLASS = 'block box-border w-full py-2.5 px-3.5 min-h-11 sm:min-h-0 font-inherit text-sm rounded-lg border-[1.5px] outline-none transition-all duration-200 border-border bg-white text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25';
+const BTN_CLASS = 'py-3.5 px-8 min-h-11 sm:min-h-0 font-display text-[15px] font-extrabold text-white rounded-[10px] border-none shadow-[0_4px_14px_rgba(200,16,46,0.3)] cursor-pointer bg-gb-red transition-all duration-200 hover:bg-gb-red-dark active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2';
+const BTN2_CLASS = 'py-3.5 px-6 min-h-11 sm:min-h-0 font-inherit text-sm rounded-[10px] border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2';
+const CARD_CLASS = 'p-7 mb-5 rounded-2xl border shadow-[0_1px_4px_rgba(0,0,0,0.06)] border-border bg-white';
+const LBL_CLASS = 'block mb-1.5 text-[11px] font-bold tracking-[0.8px] uppercase text-secondary';
+const SEC_CLASS = 'pb-2 mb-3.5 text-[15px] font-bold border-b-2 text-primary border-border';
 
 function StepBar({ step, isStaff = false }: { step: Step; isStaff?: boolean }) {
   const steps = isStaff
@@ -42,16 +42,16 @@ function StepBar({ step, isStaff = false }: { step: Step; isStaff?: boolean }) {
     : [{id:'ficha',label:'Ficha'},{id:'contrato',label:'Contrato'},{id:'pagamento',label:'Pagamento'},{id:'completo',label:'Ativo'}];
   const idx = steps.findIndex(s => s.id === step || (step==='pendente' && s.id==='completo'));
   return (
-    <div style={{ display:'flex', alignItems:'center', marginBottom:28 }}>
+    <div className="flex items-center mb-7">
       {steps.map((s,i) => (
-        <div key={s.id} style={{ display:'flex', alignItems:'center', flex: i<steps.length-1?1:'none' }}>
-          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
-            <div style={{ width:30, height:30, borderRadius:'50%', background: i<=idx?'#C8102E':'#E2E0DB', display:'flex', alignItems:'center', justifyContent:'center', color: i<=idx?'#fff':'#9896A4', fontSize:12, fontWeight:700 }}>
+        <div key={s.id} className={['flex items-center', i<steps.length-1 ? 'flex-1' : 'flex-none'].join(' ')}>
+          <div className="flex flex-col gap-1 items-center">
+            <div className={['flex justify-center items-center w-[30px] h-[30px] text-xs font-bold rounded-full', i<=idx ? 'text-white bg-gb-red' : 'text-muted bg-border'].join(' ')}>
               {i<idx?'✓':i+1}
             </div>
-            <span style={{ color: i===idx?'#111':i<idx?'#C8102E':'#9896A4', fontSize:10.5, fontWeight: i===idx?700:400, whiteSpace:'nowrap' }}>{s.label}</span>
+            <span className={['text-[10.5px] whitespace-nowrap', i===idx ? 'font-bold text-primary' : i<idx ? 'font-normal text-gb-red' : 'font-normal text-muted'].join(' ')}>{s.label}</span>
           </div>
-          {i<steps.length-1 && <div style={{ flex:1, height:2, background: i<idx?'#C8102E':'#E2E0DB', margin:'0 6px', marginBottom:16 }}/>}
+          {i<steps.length-1 && <div className={['flex-1 h-0.5 mx-1.5 mb-4', i<idx ? 'bg-gb-red' : 'bg-border'].join(' ')}/>}
         </div>
       ))}
     </div>
@@ -88,13 +88,11 @@ function FichaInscricao({ onNext, registerMode = false, isStaff = false, planos 
     setD(p => ({ ...p, [k]: e.target.type==='checkbox' ? e.target.checked : e.target.value }));
 
   const field = (k: keyof FichaData, label: string, type='text', ph='', required=true) => (
-    <div style={{ marginBottom:12 }}>
-      <label style={LBL}>{label}{required ? ' *' : ''}</label>
+    <div className="mb-3">
+      <label className={LBL_CLASS}>{label}{required ? ' *' : ''}</label>
       <input type={type} value={d[k] as string} onChange={set(k)} placeholder={ph}
-        style={{ ...INP, borderColor: err[k]?'#C8102E':'#E2E0DB' }}
-        onFocus={e=>(e.target.style.borderColor='#C8102E')}
-        onBlur={e=>(e.target.style.borderColor=err[k]?'#C8102E':'#E2E0DB')}/>
-      {err[k] && <div style={{ color:'#C8102E', fontSize:11, marginTop:3 }}>{err[k]}</div>}
+        className={[INP_CLASS, err[k] ? 'border-gb-red' : ''].join(' ')}/>
+      {err[k] && <div className="mt-1 text-[11px] text-gb-red">{err[k]}</div>}
     </div>
   );
 
@@ -123,50 +121,50 @@ function FichaInscricao({ onNext, registerMode = false, isStaff = false, planos 
   };
 
   return (
-    <div style={CARD}>
-      <div style={{ background:'linear-gradient(135deg,#0D0508,#2A0510)', borderRadius:12, padding:'18px 22px', marginBottom:22, display:'flex', alignItems:'center', gap:14 }}>
+    <div className={CARD_CLASS}>
+      <div className="flex gap-3.5 items-center py-[18px] px-[22px] mb-[22px] rounded-xl" style={{ background: 'linear-gradient(135deg,#0D0508,#2A0510)' }}>
         <GBLogoFull size={50}/>
         <div>
-          <div style={{ color:'#fff', fontSize:16, fontWeight:800, fontFamily:"'Arial Black',sans-serif", textTransform:'uppercase' }}>Ficha de Inscrição</div>
-          <div style={{ color:'rgba(255,255,255,0.55)', fontSize:12, marginTop:2 }}>Gracie Barra Braga · Rua Nova Santa Cruz 11, Braga</div>
+          <div className="font-display text-base font-extrabold text-white uppercase">Ficha de Inscrição</div>
+          <div className="mt-0.5 text-xs text-white/55">Gracie Barra Braga · Rua Nova Santa Cruz 11, Braga</div>
         </div>
       </div>
-      <p style={{ color:'#5C5B66', fontSize:13, lineHeight:1.7, marginBottom:22, padding:'12px 16px', background:'rgba(200,16,46,0.04)', border:'1px solid rgba(200,16,46,0.12)', borderRadius:8 }}>
+      <p className="py-3 px-4 mb-[22px] text-[13px] leading-[1.7] rounded-lg border text-secondary border-gb-red/[0.12] bg-gb-red/[0.04]">
         Por favor preencha a ficha de matrícula para formalizar a sua adesão e ativar o seu seguro de aluno.{' '}
-        <strong style={{ color:'#C8102E' }}>Atenção:</strong> As fichas têm que ser preenchidas uma por aluno.
+        <strong className="text-gb-red">Atenção:</strong> As fichas têm que ser preenchidas uma por aluno.
       </p>
 
-      <div style={SEC}>🥋 Identificação do Aluno</div>
-      <p style={{ color:'#9896A4', fontSize:11, marginBottom:14 }}>Todos os campos marcados com * são obrigatórios</p>
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+      <div className={SEC_CLASS}>🥋 Identificação do Aluno</div>
+      <p className="mb-3.5 text-[11px] text-muted">Todos os campos marcados com * são obrigatórios</p>
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
         {field('nomeAluno','Nome do Aluno')}
         {field('dataNasc','Data de Nascimento','date')}
         {field('nif','NIF','text','000000000')}
         {field('telefone','Telefone','tel','+351 9XX XXX XXX')}
       </div>
       {field('email','Email','email','email@exemplo.com')}
-      <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:14 }}>
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-[2fr_1fr]">
         {field('morada','Morada')}
         {field('codPostal','Código Postal','text','4710-409')}
       </div>
-      <div style={{ marginBottom:14 }}>
-        <label style={LBL}>Faixa (se aplicável)</label>
-        <select value={d.faixa} onChange={set('faixa')} style={{ ...INP, cursor:'pointer' }}>
+      <div className="mb-3.5">
+        <label className={LBL_CLASS}>Faixa (se aplicável)</label>
+        <select value={d.faixa} onChange={set('faixa')} className={[INP_CLASS, 'cursor-pointer'].join(' ')}>
           <option value="">Escolha a sua faixa</option>
           {FAIXAS.map(fx=><option key={fx} value={fx}>{fx}</option>)}
         </select>
       </div>
-      <div style={{ marginBottom:22 }}>
-        <label style={LBL}>Necessidades especiais (opcional)</label>
+      <div className="mb-[22px]">
+        <label className={LBL_CLASS}>Necessidades especiais (opcional)</label>
         <textarea value={d.necessidades} onChange={set('necessidades')} rows={2}
           placeholder="Alergias, condições médicas, limitações físicas..."
-          style={{ ...INP, resize:'none' }}/>
+          className={[INP_CLASS, 'resize-none'].join(' ')}/>
       </div>
 
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14, paddingBottom:8, borderBottom:'2px solid #E2E0DB' }}>
-        <span style={{ color:'#111', fontSize:15, fontWeight:700 }}>👤 Encarregado de Educação</span>
+      <div className="flex justify-between items-center pb-2 mb-3.5 border-b-2 border-border">
+        <span className="text-[15px] font-bold text-primary">👤 Encarregado de Educação</span>
         {isMinor && (
-          <span style={{ background:'#C8102E', color:'#fff', fontSize:10, fontWeight:800, letterSpacing:'0.6px', textTransform:'uppercase', borderRadius:6, padding:'3px 9px' }}>
+          <span className="py-1 px-2.5 text-[10px] font-extrabold tracking-[0.6px] text-white uppercase rounded-md bg-gb-red">
             Obrigatório
           </span>
         )}
@@ -174,23 +172,23 @@ function FichaInscricao({ onNext, registerMode = false, isStaff = false, planos 
 
       {isMinor ? (
         /* Minor: locked notice — cannot uncheck */
-        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14, padding:'10px 14px', background:'rgba(200,16,46,0.06)', border:'1.5px solid rgba(200,16,46,0.25)', borderRadius:8 }}>
-          <span style={{ fontSize:16 }}>⚠️</span>
-          <span style={{ color:'#C8102E', fontSize:13, fontWeight:600 }}>
+        <div className="flex gap-2.5 items-center py-2.5 px-3.5 mb-3.5 rounded-lg border-[1.5px] border-gb-red/25 bg-gb-red/[0.06]">
+          <span className="text-base">⚠️</span>
+          <span className="text-[13px] font-semibold text-gb-red">
             O aluno tem menos de 18 anos — dados do Encarregado de Educação são obrigatórios.
           </span>
         </div>
       ) : (
         /* Adult: optional toggle */
-        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14, padding:'10px 14px', background:'#F7F6F4', borderRadius:8, cursor:'pointer' }}
+        <div className="flex gap-2.5 items-center py-2.5 px-3.5 mb-3.5 rounded-lg cursor-pointer transition-colors duration-200 bg-base hover:bg-elevated"
           onClick={()=>setD(p=>({...p, temEE:!p.temEE}))}>
-          <input type="checkbox" checked={d.temEE} onChange={()=>{}} style={{ width:16, height:16, accentColor:'#C8102E', cursor:'pointer' }}/>
-          <span style={{ color:'#333', fontSize:13 }}>Aplicável (menor de 18 anos ou dependente)</span>
+          <input type="checkbox" checked={d.temEE} onChange={()=>{}} className="w-4 h-4 cursor-pointer outline-none accent-gb-red focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"/>
+          <span className="text-[13px] text-[#333]">Aplicável (menor de 18 anos ou dependente)</span>
         </div>
       )}
 
       {(d.temEE || isMinor) && (
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
           {field('nomeEE','Nome')}
           {field('nifEE','NIF','text','000000000')}
           {field('telEE','Telefone','tel')}
@@ -198,20 +196,24 @@ function FichaInscricao({ onNext, registerMode = false, isStaff = false, planos 
         </div>
       )}
 
-      <div style={SEC}>💳 Encarregado do Pagamento da Mensalidade</div>
+      <div className={SEC_CLASS}>💳 Encarregado do Pagamento da Mensalidade</div>
       {(['aluno','ee','outro'] as const).map(val => {
         const labels = { aluno:'O aluno', ee:'O encarregado de educação', outro:'Nenhum dos mencionados (outro)' };
         return (
-          <label key={val} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', marginBottom:8, background: d.encPagamento===val?'rgba(200,16,46,0.05)':'#F7F6F4', border:`1.5px solid ${d.encPagamento===val?'#C8102E':'#E2E0DB'}`, borderRadius:8, cursor:'pointer' }}>
-            <input type="radio" name="ep" checked={d.encPagamento===val} onChange={()=>setD(p=>({...p,encPagamento:val}))} style={{ accentColor:'#C8102E' }}/>
-            <span style={{ color:'#333', fontSize:13 }}>{labels[val]}</span>
+          <label key={val}
+            className={[
+              'flex gap-2.5 items-center py-2.5 px-3.5 mb-2 rounded-lg border-[1.5px] cursor-pointer transition-colors duration-200',
+              d.encPagamento===val ? 'border-gb-red bg-gb-red/5' : 'border-border bg-base hover:bg-elevated',
+            ].join(' ')}>
+            <input type="radio" name="ep" checked={d.encPagamento===val} onChange={()=>setD(p=>({...p,encPagamento:val}))} className="outline-none accent-gb-red focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"/>
+            <span className="text-[13px] text-[#333]">{labels[val]}</span>
           </label>
         );
       })}
       {d.encPagamento==='outro' && (
-        <div style={{ marginTop:12, padding:'14px 16px', background:'#F7F6F4', borderRadius:10 }}>
-          <p style={{ color:'#9896A4', fontSize:11, marginBottom:12 }}>Preencha os dados do responsável pelo pagamento:</p>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+        <div className="p-3.5 px-4 mt-3 rounded-xl bg-base">
+          <p className="mb-3 text-[11px] text-muted">Preencha os dados do responsável pelo pagamento:</p>
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             {field('nomePag','Nome')}
             {field('nifPag','NIF','text','000000000')}
             {field('telPag','Telefone','tel')}
@@ -223,31 +225,39 @@ function FichaInscricao({ onNext, registerMode = false, isStaff = false, planos 
       {/* ── Plano (staff enrollment only) ── */}
       {isStaff && planos.length > 0 && (
         <>
-          <div style={{ ...SEC, marginTop:8 }}>📋 Plano de Adesão</div>
-          <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap' }}>
+          <div className={[SEC_CLASS, 'mt-2'].join(' ')}>📋 Plano de Adesão</div>
+          <div className="flex flex-wrap gap-2 mb-3.5">
             {CATEGORIAS.map(c => (
               <button key={c.id} onClick={()=>setCatStaff(c.id)}
-                style={{ display:'flex', alignItems:'center', gap:6, background: catStaff===c.id?'rgba(200,16,46,0.08)':'#F7F6F4', border:`1.5px solid ${catStaff===c.id?'#C8102E':'#E2E0DB'}`, borderRadius:8, padding:'7px 14px', cursor:'pointer', color: catStaff===c.id?'#C8102E':'#5C5B66', fontWeight: catStaff===c.id?700:400, fontSize:13, fontFamily:'inherit' }}>
+                className={[
+                  'flex gap-1.5 items-center py-1.5 px-3.5 min-h-11 sm:min-h-0 font-inherit text-[13px] rounded-lg border-[1.5px] cursor-pointer transition-colors duration-200',
+                  'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                  catStaff===c.id ? 'font-bold text-gb-red border-gb-red bg-gb-red/8' : 'font-normal text-secondary border-border bg-base hover:bg-elevated active:bg-elevated',
+                ].join(' ')}>
                 {c.icon} {c.label}
               </button>
             ))}
           </div>
-          <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:22 }}>
+          <div className="flex flex-col gap-2 mb-[22px]">
             {planos.filter(p => p.ativo && (p as any).categoria === catStaff).map(p => (
               <button key={p.id} onClick={()=>setD(prev=>({...prev, planoId: p.id}))}
-                style={{ background: d.planoId===p.id?'rgba(200,16,46,0.04)':'#fff', border:`2px solid ${d.planoId===p.id?'#C8102E':'#E2E0DB'}`, borderRadius:12, padding:'13px 18px', textAlign:'left', cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', transition:'all 0.15s' }}>
+                className={[
+                  'flex justify-between items-center py-3.5 px-[18px] text-left rounded-xl border-2 transition-all duration-200 cursor-pointer active:scale-[0.99]',
+                  'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                  d.planoId===p.id ? 'border-gb-red bg-gb-red/[0.04]' : 'border-border bg-white hover:bg-elevated',
+                ].join(' ')}>
                 <div>
-                  <div style={{ color:'#111', fontSize:14, fontWeight:700, marginBottom:2 }}>{p.nome}</div>
-                  <div style={{ color:'#9896A4', fontSize:12 }}>{p.descricao}</div>
+                  <div className="mb-0.5 text-sm font-bold text-primary">{p.nome}</div>
+                  <div className="text-xs text-muted">{p.descricao}</div>
                 </div>
-                <div style={{ textAlign:'right', flexShrink:0, marginLeft:16 }}>
-                  <div style={{ color: d.planoId===p.id?'#C8102E':'#111', fontSize:20, fontWeight:900, fontFamily:"'Arial Black',sans-serif" }}>€{p.valor}</div>
-                  <div style={{ color:'#9896A4', fontSize:11 }}>/mês</div>
+                <div className="flex-shrink-0 ml-4 text-right">
+                  <div className={['font-display text-xl font-black', d.planoId===p.id ? 'text-gb-red' : 'text-primary'].join(' ')}>€{p.valor}</div>
+                  <div className="text-[11px] text-muted">/mês</div>
                 </div>
               </button>
             ))}
             {planos.filter(p => p.ativo && (p as any).categoria === catStaff).length === 0 && (
-              <p style={{ color:'#9896A4', fontSize:13, padding:'12px 16px', background:'#F7F6F4', borderRadius:8 }}>
+              <p className="p-3 px-4 text-[13px] rounded-lg text-muted bg-base">
                 Sem planos disponíveis nesta categoria.
               </p>
             )}
@@ -258,19 +268,19 @@ function FichaInscricao({ onNext, registerMode = false, isStaff = false, planos 
       {/* ── Password section (only in registerMode) ── */}
       {registerMode && (
         <>
-          <div style={{ ...SEC, marginTop:8 }}>🔑 Criar Acesso à Plataforma</div>
-          <p style={{ color:'#9896A4', fontSize:12, marginBottom:14, lineHeight:1.6 }}>
+          <div className={[SEC_CLASS, 'mt-2'].join(' ')}>🔑 Criar Acesso à Plataforma</div>
+          <p className="mb-3.5 text-xs leading-[1.6] text-muted">
             Define a password que vais usar para entrar no portal do aluno.
           </p>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             {field('senha','Password','password','Mínimo 6 caracteres')}
             {field('confirmarSenha','Confirmar Password','password','Repete a password')}
           </div>
         </>
       )}
 
-      <div style={{ display:'flex', justifyContent:'flex-end', marginTop:16 }}>
-        <button style={BTN} onClick={()=>{ if(validate()) onNext(d); }}>Seguinte → Contrato</button>
+      <div className="flex justify-end mt-4">
+        <button className={BTN_CLASS} onClick={()=>{ if(validate()) onNext(d); }}>Seguinte → Contrato</button>
       </div>
     </div>
   );
@@ -308,73 +318,76 @@ function ContratoAssinatura({ ficha, onNext, onBack }: { ficha:FichaData; onNext
   };
 
   const chk = (key: keyof ContratoData, label: string) => (
-    <label style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'12px 16px', background:(c[key] as boolean)?'rgba(200,16,46,0.04)':'#F7F6F4', border:`1.5px solid ${(c[key] as boolean)?'#C8102E':'#E2E0DB'}`, borderRadius:10, cursor:'pointer', marginBottom:10 }}>
+    <label className={[
+      'flex gap-3 items-start py-3 px-4 mb-2.5 rounded-xl border-[1.5px] cursor-pointer transition-colors duration-200',
+      (c[key] as boolean) ? 'border-gb-red bg-gb-red/[0.04]' : 'border-border bg-base hover:bg-elevated',
+    ].join(' ')}>
       <input type="checkbox" checked={c[key] as boolean} onChange={()=>setC(p=>({...p,[key]:!p[key as keyof ContratoData]}))}
-        style={{ marginTop:2, accentColor:'#C8102E', width:16, height:16, flexShrink:0 }}/>
-      <span style={{ color:'#333', fontSize:13, lineHeight:1.5 }}>{label}</span>
+        className="mt-0.5 w-4 h-4 shrink-0 outline-none accent-gb-red focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"/>
+      <span className="text-[13px] leading-[1.5] text-[#333]">{label}</span>
     </label>
   );
 
   return (
-    <div style={CARD}>
-      <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20 }}>
+    <div className={CARD_CLASS}>
+      <div className="flex gap-3 items-center mb-5">
         <GBLogoFull size={46}/>
         <div>
-          <div style={{ color:'#111', fontSize:15, fontWeight:800, fontFamily:"'Arial Black',sans-serif", textTransform:'uppercase' }}>Contrato de Adesão</div>
-          <div style={{ color:'#9896A4', fontSize:11.5 }}>Gracie Barra Braga · {hoje}</div>
+          <div className="font-display text-[15px] font-extrabold text-primary uppercase">Contrato de Adesão</div>
+          <div className="text-[11.5px] text-muted">Gracie Barra Braga · {hoje}</div>
         </div>
       </div>
 
-      <div style={{ background:'#F7F6F4', border:'1px solid #E2E0DB', borderRadius:12, padding:'20px 22px', marginBottom:22, fontSize:13.5, color:'#333', lineHeight:1.8 }}>
-        <p style={{ marginBottom:12 }}>
+      <div className="p-[22px] px-[26px] mb-[22px] text-[13.5px] leading-[1.8] rounded-xl border text-[#333] border-border bg-base">
+        <p className="mb-3">
           O presente contrato é celebrado entre <strong>Tribo Laurada Lda.</strong> (NIF 518948471), proprietária da escola de Jiu-Jitsu <strong>Gracie Barra Braga</strong>, com sede na Rua Nova de Santa Cruz, 11 – 4710-409 Braga, e o(a) aluno(a){' '}
           <strong>{ficha.nomeAluno||'_______________'}</strong>, NIF <strong>{ficha.nif||'_________'}</strong>,{' '}
           residente em <strong>{ficha.morada||'_______________'}{ficha.codPostal?`, ${ficha.codPostal}`:''}</strong>.
         </p>
-        <p style={{ fontWeight:700, marginBottom:8 }}>O aluno compromete-se a:</p>
-        <ul style={{ marginLeft:18, marginBottom:12 }}>
+        <p className="mb-2 font-bold">O aluno compromete-se a:</p>
+        <ul className="mb-3 ml-[18px]">
           {['Efetuar o pagamento da mensalidade até ao dia 5 de cada mês;','Utilizar o uniforme oficial da Gracie Barra durante os treinos e eventos;','Cumprir o regulamento interno da escola;','Autorizar a utilização da sua imagem em fotografias e vídeos para fins institucionais;','Declarar estar fisicamente apto para a prática do Jiu-Jitsu.'].map((item,i)=>(
-            <li key={i} style={{ marginBottom:6 }}>{item}</li>
+            <li key={i} className="mb-1.5">{item}</li>
           ))}
         </ul>
-        <p style={{ color:'#5C5B66', fontSize:12.5, borderTop:'1px solid #E2E0DB', paddingTop:10 }}>
+        <p className="pt-2.5 text-[12.5px] border-t text-secondary border-border">
           O contrato entra em vigor na data da assinatura e mantém-se válido enquanto o aluno frequentar a escola.
         </p>
       </div>
 
-      <div style={{ marginBottom:20 }}>
+      <div className="mb-5">
         {chk('aceitaImagem','Autorizo a utilização da minha imagem para fins institucionais e promocionais da Gracie Barra Braga.')}
         {chk('aceitaRGPD','Aceito o tratamento dos meus dados pessoais conforme o RGPD e a Política de Privacidade da escola.')}
         {chk('aceitaContrato','O contrato de adesão foi lido e estou de acordo.')}
       </div>
 
-      <div style={SEC}>✍️ Assine aqui com o mouse ou dedo</div>
-      <div style={{ border:'1.5px solid #E2E0DB', borderRadius:10, background:'#FAFAF9', overflow:'hidden', position:'relative' }}>
-        <canvas ref={canvasRef} width={640} height={160} style={{ display:'block', width:'100%', cursor:'crosshair', touchAction:'none' }}
+      <div className={SEC_CLASS}>✍️ Assine aqui com o mouse ou dedo</div>
+      <div className="overflow-hidden relative rounded-xl border-[1.5px] border-border bg-[#FAFAF9]">
+        <canvas ref={canvasRef} width={640} height={160} className="block w-full cursor-crosshair [touch-action:none]"
           onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end}
           onTouchStart={start} onTouchMove={move} onTouchEnd={end}/>
         {!hasSig && (
-          <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none' }}>
-            <span style={{ color:'#C0BFCA', fontSize:14 }}>Assine aqui...</span>
+          <div className="flex absolute inset-0 justify-center items-center pointer-events-none">
+            <span className="text-sm text-[#C0BFCA]">Assine aqui...</span>
           </div>
         )}
       </div>
-      <div style={{ display:'flex', justifyContent:'flex-end', marginTop:6, marginBottom:20 }}>
-        <button onClick={clear} style={{ background:'none', border:'1px solid #E2E0DB', borderRadius:6, padding:'5px 14px', color:'#9896A4', fontSize:12, cursor:'pointer' }}>
+      <div className="flex justify-end mt-1.5 mb-5">
+        <button onClick={clear} className="py-1.5 px-3.5 min-h-11 sm:min-h-0 text-xs bg-none rounded-md border cursor-pointer border-border text-muted transition-colors duration-200 hover:bg-elevated hover:text-primary active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
           Limpar
         </button>
       </div>
 
       {errors.length>0 && (
-        <div style={{ background:'rgba(200,16,46,0.05)', border:'1px solid rgba(200,16,46,0.2)', borderRadius:8, padding:'12px 16px', marginBottom:16 }}>
-          <div style={{ color:'#C8102E', fontSize:12, fontWeight:700, marginBottom:6 }}>Complete os seguintes campos:</div>
-          {errors.map((e,i)=><div key={i} style={{ color:'#C8102E', fontSize:12 }}>• {e}</div>)}
+        <div className="p-3 px-4 mb-4 rounded-lg border border-gb-red/20 bg-gb-red/5">
+          <div className="mb-1.5 text-xs font-bold text-gb-red">Complete os seguintes campos:</div>
+          {errors.map((e,i)=><div key={i} className="text-xs text-gb-red">• {e}</div>)}
         </div>
       )}
 
-      <div style={{ display:'flex', justifyContent:'space-between' }}>
-        <button style={BTN2} onClick={onBack}>← Voltar</button>
-        <button style={BTN} onClick={()=>{ if(validate()) onNext(c); }}>Seguinte → Pagamento</button>
+      <div className="flex justify-between">
+        <button className={BTN2_CLASS} onClick={onBack}>← Voltar</button>
+        <button className={BTN_CLASS} onClick={()=>{ if(validate()) onNext(c); }}>Seguinte → Pagamento</button>
       </div>
     </div>
   );
@@ -389,66 +402,90 @@ function EscolhaPagamento({ ficha, onNext, onBack }: { ficha:FichaData; onNext:(
   const sel = planos.find(p=>p.id===planoId);
 
   return (
-    <div style={CARD}>
-      <div style={SEC}>📋 Escolha o Plano</div>
-      <div style={{ display:'flex', gap:8, marginBottom:18, flexWrap:'wrap' }}>
+    <div className={CARD_CLASS}>
+      <div className={SEC_CLASS}>📋 Escolha o Plano</div>
+      <div className="flex flex-wrap gap-2 mb-[18px]">
         {CATEGORIAS.map(c=>(
           <button key={c.id} onClick={()=>{ setCat(c.id); setPlanoId(''); }}
-            style={{ display:'flex', alignItems:'center', gap:6, background: cat===c.id?'rgba(200,16,46,0.08)':'#F7F6F4', border:`1.5px solid ${cat===c.id?'#C8102E':'#E2E0DB'}`, borderRadius:8, padding:'7px 14px', cursor:'pointer', color: cat===c.id?'#C8102E':'#5C5B66', fontWeight: cat===c.id?700:400, fontSize:13, fontFamily:'inherit' }}>
+            className={[
+              'flex gap-1.5 items-center py-1.5 px-3.5 min-h-11 sm:min-h-0 font-inherit text-[13px] rounded-lg border-[1.5px] cursor-pointer transition-colors duration-200',
+              'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+              cat===c.id ? 'font-bold text-gb-red border-gb-red bg-gb-red/8' : 'font-normal text-secondary border-border bg-base hover:bg-elevated active:bg-elevated',
+            ].join(' ')}>
             {c.icon} {c.label}
           </button>
         ))}
       </div>
-      <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:22 }}>
+      <div className="flex flex-col gap-2 mb-[22px]">
         {planos.map(p=>(
           <button key={p.id} onClick={()=>setPlanoId(p.id)}
-            style={{ background: planoId===p.id?'rgba(200,16,46,0.04)':'#fff', border:`2px solid ${planoId===p.id?'#C8102E':'#E2E0DB'}`, borderRadius:12, padding:'13px 18px', textAlign:'left', cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', transition:'all 0.15s' }}>
+            className={[
+              'flex justify-between items-center py-3.5 px-[18px] text-left rounded-xl border-2 transition-all duration-200 cursor-pointer active:scale-[0.99]',
+              'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+              planoId===p.id ? 'border-gb-red bg-gb-red/[0.04]' : 'border-border bg-white hover:bg-elevated',
+            ].join(' ')}>
             <div>
-              <div style={{ color:'#111', fontSize:14, fontWeight:700, marginBottom:2 }}>{p.nome}</div>
-              <div style={{ color:'#9896A4', fontSize:12 }}>{p.descricao} · IVA 23% incluído</div>
+              <div className="mb-0.5 text-sm font-bold text-primary">{p.nome}</div>
+              <div className="text-xs text-muted">{p.descricao} · IVA 23% incluído</div>
             </div>
-            <div style={{ textAlign:'right', flexShrink:0, marginLeft:16 }}>
-              <div style={{ color: planoId===p.id?'#C8102E':'#111', fontSize:22, fontWeight:900, fontFamily:"'Arial Black',sans-serif" }}>€{p.valor}</div>
-              <div style={{ color:'#9896A4', fontSize:11 }}>/mês</div>
+            <div className="flex-shrink-0 ml-4 text-right">
+              <div className={['font-display text-[22px] font-black', planoId===p.id ? 'text-gb-red' : 'text-primary'].join(' ')}>€{p.valor}</div>
+              <div className="text-[11px] text-muted">/mês</div>
             </div>
           </button>
         ))}
       </div>
 
-      <div style={SEC}>💳 Forma de Pagamento</div>
-      <label style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'14px 18px', background: metodo==='stripe'?'rgba(200,16,46,0.04)':'#F7F6F4', border:`2px solid ${metodo==='stripe'?'#C8102E':'#E2E0DB'}`, borderRadius:12, cursor:'pointer', marginBottom:10 }}>
-        <input type="radio" name="met" checked={metodo==='stripe'} onChange={()=>setMetodo('stripe')} style={{ marginTop:3, accentColor:'#C8102E' }}/>
+      <div className={SEC_CLASS}>💳 Forma de Pagamento</div>
+      <label className={[
+        'flex gap-3 items-start py-3.5 px-[18px] mb-2.5 rounded-xl border-2 cursor-pointer transition-colors duration-200',
+        metodo==='stripe' ? 'border-gb-red bg-gb-red/[0.04]' : 'border-border bg-base hover:bg-elevated',
+      ].join(' ')}>
+        <input type="radio" name="met" checked={metodo==='stripe'} onChange={()=>setMetodo('stripe')} className="mt-0.5 outline-none accent-gb-red focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"/>
         <div>
-          <div style={{ color:'#111', fontSize:14, fontWeight:700, marginBottom:3 }}>💳 Débito Automático — Stripe</div>
-          <div style={{ color:'#9896A4', fontSize:12.5, lineHeight:1.5 }}>Cartão de débito ou crédito. Cobrança automática no dia 5 de cada mês. Cancelamento a qualquer momento. 100% seguro.</div>
+          <div className="mb-1 text-sm font-bold text-primary">💳 Débito Automático — Stripe</div>
+          <div className="text-[12.5px] leading-[1.5] text-muted">Cartão de débito ou crédito. Cobrança automática no dia 5 de cada mês. Cancelamento a qualquer momento. 100% seguro.</div>
         </div>
       </label>
-      <label style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'14px 18px', background: metodo==='numerario'?'rgba(217,119,6,0.05)':'#F7F6F4', border:`2px solid ${metodo==='numerario'?'#D97706':'#E2E0DB'}`, borderRadius:12, cursor:'pointer', marginBottom:20 }}>
-        <input type="radio" name="met" checked={metodo==='numerario'} onChange={()=>setMetodo('numerario')} style={{ marginTop:3, accentColor:'#D97706' }}/>
+      <label className={[
+        'flex gap-3 items-start py-3.5 px-[18px] mb-5 rounded-xl border-2 cursor-pointer transition-colors duration-200',
+        metodo==='numerario' ? 'border-amber-600 bg-amber-600/5' : 'border-border bg-base hover:bg-elevated',
+      ].join(' ')}>
+        <input type="radio" name="met" checked={metodo==='numerario'} onChange={()=>setMetodo('numerario')} className="mt-0.5 outline-none accent-amber-600 focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2"/>
         <div>
-          <div style={{ color:'#111', fontSize:14, fontWeight:700, marginBottom:3 }}>💵 Numerário (dinheiro)</div>
-          <div style={{ color:'#9896A4', fontSize:12.5, lineHeight:1.5 }}>
+          <div className="mb-1 text-sm font-bold text-primary">💵 Numerário (dinheiro)</div>
+          <div className="text-[12.5px] leading-[1.5] text-muted">
             Pagamento em dinheiro na receção até ao dia 5 de cada mês.
-            <span style={{ color:'#D97706', fontWeight:700 }}> Requer aprovação do Super Administrador.</span>
+            <span className="font-bold text-amber-600"> Requer aprovação do Super Administrador.</span>
           </div>
         </div>
       </label>
 
       {sel && (
-        <div style={{ background:'#F7F6F4', border:'1px solid #E2E0DB', borderRadius:10, padding:'14px 18px', marginBottom:20 }}>
-          <div style={{ color:'#9896A4', fontSize:10.5, fontWeight:700, letterSpacing:'0.8px', textTransform:'uppercase', marginBottom:8 }}>Resumo</div>
+        <div className="py-3.5 px-[18px] mb-5 rounded-lg border border-border bg-base">
+          <div className="mb-2 text-[10.5px] font-bold tracking-[0.8px] uppercase text-muted">Resumo</div>
           {[['Aluno',ficha.nomeAluno],['Plano',sel.nome],['Mensalidade',`€${sel.valor}/mês`],['Pagamento',metodo==='stripe'?'Stripe — débito automático':'Numerário — pendente aprovação']].map(([k,v])=>(
-            <div key={k} style={{ display:'flex', justifyContent:'space-between', padding:'5px 0', borderBottom:'1px solid #EDECE9' }}>
-              <span style={{ color:'#9896A4', fontSize:12.5 }}>{k}</span>
-              <span style={{ color:'#111', fontSize:12.5, fontWeight:600 }}>{v}</span>
+            <div key={k} className="flex justify-between py-1.5 border-b border-border-subtle">
+              <span className="text-[12.5px] text-muted">{k}</span>
+              <span className="text-[12.5px] font-semibold text-primary">{v}</span>
             </div>
           ))}
         </div>
       )}
 
-      <div style={{ display:'flex', justifyContent:'space-between' }}>
-        <button style={BTN2} onClick={onBack}>← Voltar</button>
-        <button style={{ ...BTN, opacity:planoId?1:0.4, cursor:planoId?'pointer':'not-allowed', background: metodo==='numerario'?'#D97706':'#C8102E', boxShadow: metodo==='numerario'?'0 4px 14px rgba(217,119,6,0.3)':'0 4px 14px rgba(200,16,46,0.3)' }}
+      <div className="flex justify-between">
+        <button className={BTN2_CLASS} onClick={onBack}>← Voltar</button>
+        <button
+          className={[
+            'py-3.5 px-8 min-h-11 sm:min-h-0 font-display text-[15px] font-extrabold text-white rounded-[10px] border-none transition-all duration-200',
+            'outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+            planoId ? 'cursor-pointer opacity-100 hover:brightness-90 active:scale-[0.98]' : 'cursor-not-allowed opacity-40',
+          ].join(' ')}
+          style={{
+            background: metodo==='numerario' ? '#D97706' : '#C8102E',
+            boxShadow: metodo==='numerario' ? '0 4px 14px rgba(217,119,6,0.3)' : '0 4px 14px rgba(200,16,46,0.3)',
+            ['--tw-ring-color' as string]: metodo==='numerario' ? '#D97706' : '#C8102E',
+          }}
           onClick={()=>{ if(planoId) onNext(planoId,metodo); }}>
           {metodo==='stripe'?'💳 Concluir com Stripe':'📋 Submeter — aguardar aprovação'}
         </button>
@@ -580,59 +617,58 @@ function Pendente({ ficha, contrato, plano, registerMode, onVoltar }: {
   }, []);
 
   return (
-    <div style={{ ...CARD, textAlign:'center', padding:'32px 28px' }}>
-      <div style={{ fontSize:48, marginBottom:16 }}>⏳</div>
-      <h2 style={{ color:'#D97706', fontSize:20, fontWeight:800, fontFamily:"'Arial Black',sans-serif", textTransform:'uppercase', marginBottom:10 }}>Inscrição Pendente de Aprovação</h2>
-      <p style={{ color:'#5C5B66', fontSize:13.5, lineHeight:1.7, maxWidth:480, margin:'0 auto 22px' }}>
+    <div className={[CARD_CLASS, 'py-8 px-7 text-center'].join(' ')}>
+      <div className="mb-4 text-5xl">⏳</div>
+      <h2 className="mb-2.5 font-display text-xl font-extrabold text-amber-600 uppercase">Inscrição Pendente de Aprovação</h2>
+      <p className="mx-auto mb-[22px] max-w-[480px] text-[13.5px] leading-[1.7] text-secondary">
         A tua inscrição foi registada com <strong>pagamento em numerário</strong>. Um administrador irá rever e aprovar o pedido. Receberás um contacto em <strong>{ficha.email}</strong> quando a conta estiver ativa.
       </p>
 
       {/* Account status feedback (registerMode only) */}
       {registerMode && acctStatus === 'creating' && (
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:10, marginBottom:18, color:'#9896A4', fontSize:13 }}>
-          <div style={{ width:18, height:18, border:'2px solid #E2E0DB', borderTop:'2px solid #D97706', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+        <div className="flex gap-2.5 justify-center items-center mb-[18px] text-[13px] text-muted">
+          <div className="w-[18px] h-[18px] rounded-full border-2 border-border border-t-amber-600 animate-[spin_0.8s_linear_infinite]"/>
           A criar a tua conta...
-          <style>{`@keyframes spin { to { transform:rotate(360deg) } }`}</style>
         </div>
       )}
       {registerMode && acctStatus === 'confirm_email' && (
-        <div style={{ background:'#FFF7ED', border:'1px solid #FED7AA', borderRadius:10, padding:'12px 16px', maxWidth:440, margin:'0 auto 18px', fontSize:13, color:'#92400E', lineHeight:1.6 }}>
+        <div className="p-3 px-4 mx-auto mb-[18px] max-w-[440px] text-[13px] leading-[1.6] text-amber-800 rounded-xl border border-amber-300 bg-amber-50">
           📬 <strong>Verifica o teu email</strong> — enviámos um link de confirmação para <strong>{ficha.email}</strong> para ativares a conta.
         </div>
       )}
       {registerMode && acctStatus === 'error' && (
-        <div style={{ background:'rgba(200,16,46,0.05)', border:'1px solid rgba(200,16,46,0.2)', borderRadius:10, padding:'12px 16px', maxWidth:440, margin:'0 auto 18px', fontSize:13, color:'#C8102E' }}>
+        <div className="p-3 px-4 mx-auto mb-[18px] max-w-[440px] text-[13px] rounded-xl border border-gb-red/20 text-gb-red bg-gb-red/5">
           ⚠️ {acctErr}
         </div>
       )}
 
-      <div style={{ background:'#FFFBEB', border:'1px solid #FCD34D', borderRadius:12, padding:'16px 20px', maxWidth:400, margin:'0 auto 20px', textAlign:'left' }}>
-        <div style={{ color:'#92400E', fontSize:11, fontWeight:700, letterSpacing:'0.8px', textTransform:'uppercase', marginBottom:8 }}>Detalhes da inscrição</div>
+      <div className="p-4 px-5 mx-auto mb-5 max-w-[400px] text-left rounded-xl border border-amber-300 bg-amber-50">
+        <div className="mb-2 text-[11px] font-bold tracking-[0.8px] text-amber-800 uppercase">Detalhes da inscrição</div>
         {[['Aluno',ficha.nomeAluno],['Plano',plano?.nome||'—'],['Mensalidade',plano?`€${plano.valor}/mês`:'—'],['Pagamento','Numerário — aguarda aprovação'],['Email',ficha.email]].map(([k,v])=>(
-          <div key={k} style={{ display:'flex', justifyContent:'space-between', padding:'5px 0', borderBottom:'1px solid #FEF3C7' }}>
-            <span style={{ color:'#78350F', fontSize:12.5 }}>{k}</span>
-            <span style={{ color:'#451A03', fontSize:12.5, fontWeight:600 }}>{v}</span>
+          <div key={k} className="flex justify-between py-1.5 border-b border-amber-100">
+            <span className="text-[12.5px] text-amber-900">{k}</span>
+            <span className="text-[12.5px] font-semibold text-amber-950">{v}</span>
           </div>
         ))}
       </div>
 
-      <div style={{ color:'#9896A4', fontSize:12.5, marginBottom:22 }}>
-        <a href="https://wa.me/351927773854" style={{ color:'#25D366', fontWeight:700 }}>💬 +351 927 773 854</a>
+      <div className="mb-[22px] text-[12.5px] text-muted">
+        <a href="https://wa.me/351927773854" className="inline-flex items-center font-bold text-[#25D366] transition-colors duration-200 hover:underline outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 rounded-sm">💬 +351 927 773 854</a>
         {' · '}
-        <a href="mailto:atendimento@gbbraga.com" style={{ color:'#C8102E' }}>atendimento@gbbraga.com</a>
+        <a href="mailto:atendimento@gbbraga.com" className="inline-flex items-center text-gb-red transition-colors duration-200 hover:underline outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 rounded-sm">atendimento@gbbraga.com</a>
       </div>
 
       {contratoErr && (
-        <div style={{ background:'rgba(200,16,46,0.05)', border:'1px solid rgba(200,16,46,0.25)', borderRadius:10, padding:'12px 16px', marginBottom:16, maxWidth:440, margin:'0 auto 16px', textAlign:'left' }}>
-          <div style={{ color:'#C8102E', fontSize:12, fontWeight:700, marginBottom:4 }}>⚠️ Erro ao guardar contrato</div>
-          <div style={{ color:'#C8102E', fontSize:12 }}>{contratoErr}</div>
+        <div className="p-3 px-4 mx-auto mb-4 max-w-[440px] text-left rounded-xl border border-gb-red/25 bg-gb-red/5">
+          <div className="mb-1 text-xs font-bold text-gb-red">⚠️ Erro ao guardar contrato</div>
+          <div className="text-xs text-gb-red">{contratoErr}</div>
         </div>
       )}
 
       {/* Back to login button — always shown in registerMode */}
       {registerMode && onVoltar && (
         <button onClick={onVoltar}
-          style={{ background:'#F0EFEC', border:'1px solid #E2E0DB', borderRadius:10, padding:'12px 28px', color:'#5C5B66', fontSize:14, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+          className="py-3 px-7 min-h-11 sm:min-h-0 font-inherit text-sm font-semibold rounded-[10px] border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
           ← Voltar ao Login
         </button>
       )}
@@ -772,25 +808,24 @@ function Completo({ ficha, contrato, plano, isStaff, registerMode, onConcludo }:
 
   if (acctStatus === 'creating') {
     return (
-      <div style={{ ...CARD, textAlign:'center', padding:'40px 28px' }}>
-        <div style={{ width:48, height:48, border:'4px solid #F0EFEC', borderTop:'4px solid #C8102E', borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 20px' }}/>
-        <p style={{ color:'#5C5B66', fontSize:14 }}>A criar a tua conta...</p>
-        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+      <div className={[CARD_CLASS, 'py-10 px-7 text-center'].join(' ')}>
+        <div className="mx-auto mb-5 w-12 h-12 rounded-full border-4 border-elevated border-t-gb-red animate-[spin_0.8s_linear_infinite]"/>
+        <p className="text-sm text-secondary">A criar a tua conta...</p>
       </div>
     );
   }
 
   if (acctStatus === 'confirm_email') {
     return (
-      <div style={{ ...CARD, textAlign:'center', padding:'32px 28px' }}>
-        <div style={{ fontSize:52, marginBottom:16 }}>📬</div>
-        <h2 style={{ color:'#111', fontSize:20, fontWeight:800, fontFamily:"'Arial Black',sans-serif", textTransform:'uppercase', marginBottom:10 }}>Confirma o teu email</h2>
-        <p style={{ color:'#5C5B66', fontSize:13.5, lineHeight:1.7, maxWidth:460, margin:'0 auto 16px' }}>
+      <div className={[CARD_CLASS, 'py-8 px-7 text-center'].join(' ')}>
+        <div className="mb-4 text-[52px]">📬</div>
+        <h2 className="mb-2.5 font-display text-xl font-extrabold text-primary uppercase">Confirma o teu email</h2>
+        <p className="mx-auto mb-4 max-w-[460px] text-[13.5px] leading-[1.7] text-secondary">
           Enviámos um email de confirmação para <strong>{ficha.email}</strong>.<br/>
           Clica no link para activar a conta e depois volta aqui para entrar.
         </p>
-        <div style={{ color:'#9896A4', fontSize:12.5, marginTop:12 }}>
-          <a href="https://wa.me/351927773854" style={{ color:'#25D366', fontWeight:700 }}>💬 Suporte WhatsApp</a>
+        <div className="mt-3 text-[12.5px] text-muted">
+          <a href="https://wa.me/351927773854" className="inline-flex items-center font-bold text-[#25D366] transition-colors duration-200 hover:underline outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 rounded-sm">💬 Suporte WhatsApp</a>
         </div>
       </div>
     );
@@ -798,20 +833,20 @@ function Completo({ ficha, contrato, plano, isStaff, registerMode, onConcludo }:
 
   if (acctStatus === 'error') {
     return (
-      <div style={{ ...CARD, textAlign:'center', padding:'32px 28px' }}>
-        <div style={{ fontSize:48, marginBottom:16 }}>⚠️</div>
-        <h2 style={{ color:'#C8102E', fontSize:18, fontWeight:800, fontFamily:"'Arial Black',sans-serif", marginBottom:10 }}>Erro ao criar conta</h2>
-        <p style={{ color:'#5C5B66', fontSize:13.5, lineHeight:1.7 }}>{acctErr}</p>
-        <a href="mailto:atendimento@gbbraga.com" style={{ color:'#C8102E', fontSize:13, marginTop:14, display:'block' }}>atendimento@gbbraga.com</a>
+      <div className={[CARD_CLASS, 'py-8 px-7 text-center'].join(' ')}>
+        <div className="mb-4 text-5xl">⚠️</div>
+        <h2 className="mb-2.5 font-display text-lg font-extrabold text-gb-red">Erro ao criar conta</h2>
+        <p className="text-[13.5px] leading-[1.7] text-secondary">{acctErr}</p>
+        <a href="mailto:atendimento@gbbraga.com" className="inline-block mt-3.5 text-[13px] text-gb-red transition-colors duration-200 hover:underline outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 rounded-sm">atendimento@gbbraga.com</a>
       </div>
     );
   }
 
   return (
-    <div style={{ ...CARD, textAlign:'center', padding:'32px 28px' }}>
-      <div style={{ width:68, height:68, borderRadius:'50%', background:'rgba(22,163,74,0.1)', border:'3px solid rgba(22,163,74,0.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:32, margin:'0 auto 16px' }}>✓</div>
-      <h2 style={{ color:'#16A34A', fontSize:20, fontWeight:800, fontFamily:"'Arial Black',sans-serif", textTransform:'uppercase', marginBottom:10 }}>Bem-vindo à família GB! 🥋</h2>
-      <p style={{ color:'#5C5B66', fontSize:13.5, lineHeight:1.7, maxWidth:480, margin:'0 auto 22px' }}>
+    <div className={[CARD_CLASS, 'py-8 px-7 text-center'].join(' ')}>
+      <div className="flex justify-center items-center mx-auto mb-4 w-[68px] h-[68px] text-3xl rounded-full border-[3px] border-green-600/30 bg-green-600/10">✓</div>
+      <h2 className="mb-2.5 font-display text-xl font-extrabold text-green-600 uppercase">Bem-vindo à família GB! 🥋</h2>
+      <p className="mx-auto mb-[22px] max-w-[480px] text-[13.5px] leading-[1.7] text-secondary">
         {isStaff
           ? <>Ficha e contrato concluídos, <strong>{ficha.nomeAluno.split(' ')[0]}</strong>! O perfil está activo. OSS! 🥋</>
           : registerMode
@@ -819,25 +854,25 @@ function Completo({ ficha, contrato, plano, isStaff, registerMode, onConcludo }:
           : <>Inscrição concluída, <strong>{ficha.nomeAluno.split(' ')[0]}</strong>! O débito automático Stripe está ativo. OSS!</>
         }
       </p>
-      <div style={{ background:'rgba(22,163,74,0.05)', border:'1px solid rgba(22,163,74,0.2)', borderRadius:12, padding:'16px 20px', maxWidth:400, margin:'0 auto 20px', textAlign:'left' }}>
+      <div className="p-4 px-5 mx-auto mb-5 max-w-[400px] text-left rounded-xl border border-green-600/20 bg-green-600/5">
         {[['Aluno',ficha.nomeAluno],['Email',ficha.email],['Plano',plano?.nome||'—'],['Mensalidade',plano?`€${plano.valor}/mês`:'—']].map(([k,v])=>(
-          <div key={k} style={{ display:'flex', justifyContent:'space-between', padding:'5px 0', borderBottom:'1px solid rgba(22,163,74,0.1)' }}>
-            <span style={{ color:'#16A34A', fontSize:12.5 }}>{k}</span>
-            <span style={{ color:'#111', fontSize:12.5, fontWeight:600 }}>{v}</span>
+          <div key={k} className="flex justify-between py-1.5 border-b border-green-600/10">
+            <span className="text-[12.5px] text-green-600">{k}</span>
+            <span className="text-[12.5px] font-semibold text-primary">{v}</span>
           </div>
         ))}
       </div>
       {registerMode && acctStatus === 'ok' && (
-        <p style={{ color:'#9896A4', fontSize:12, marginTop:8 }}>
+        <p className="mt-2 text-xs text-muted">
           Já podes fechar esta página e{' '}
-          <a href="/" style={{ color:'#C8102E', fontWeight:700 }}>entrar com o teu email e password</a>.
+          <a href="/" className="font-bold text-gb-red transition-colors duration-200 hover:underline outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 rounded-sm">entrar com o teu email e password</a>.
         </p>
       )}
       {contratoErr && (
-        <div style={{ background:'rgba(200,16,46,0.05)', border:'1px solid rgba(200,16,46,0.25)', borderRadius:10, padding:'12px 16px', marginTop:16, maxWidth:480, margin:'16px auto 0', textAlign:'left' }}>
-          <div style={{ color:'#C8102E', fontSize:12, fontWeight:700, marginBottom:4 }}>⚠️ Erro ao guardar contrato</div>
-          <div style={{ color:'#C8102E', fontSize:12 }}>{contratoErr}</div>
-          <div style={{ color:'#9896A4', fontSize:11, marginTop:6 }}>O aluno foi criado mas o contrato não foi guardado. Contacte o administrador.</div>
+        <div className="p-3 px-4 mx-auto mt-4 max-w-[480px] text-left rounded-xl border border-gb-red/25 bg-gb-red/5">
+          <div className="mb-1 text-xs font-bold text-gb-red">⚠️ Erro ao guardar contrato</div>
+          <div className="text-xs text-gb-red">{contratoErr}</div>
+          <div className="mt-1.5 text-[11px] text-muted">O aluno foi criado mas o contrato não foi guardado. Contacte o administrador.</div>
         </div>
       )}
     </div>
@@ -873,16 +908,16 @@ export default function FluxoMatricula({ embedded = false, registerMode = false,
   const content = (
     <>
       {!embedded && (
-        <div style={{ color:'#C8102E', fontSize:10.5, fontWeight:700, letterSpacing:'1.5px', textTransform:'uppercase', marginBottom:4 }}>
+        <div className="mb-1 text-[10.5px] font-bold tracking-[1.5px] text-gb-red uppercase">
           Gracie Barra Braga
         </div>
       )}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
-        <h1 style={{ color:'#111', fontSize: embedded ? 18 : 22, fontWeight:900, fontFamily:"'Arial Black',sans-serif", textTransform:'uppercase', margin:0 }}>
+      <div className="flex justify-between items-center mb-5">
+        <h1 className={['m-0 font-display font-black text-primary uppercase', embedded ? 'text-lg' : 'text-[22px]'].join(' ')}>
           {embedded ? '📋 Nova Matrícula de Aluno' : registerMode ? 'Matrícula' : 'Nova Matrícula'}
         </h1>
         {registerMode && onVoltar && step === 'ficha' && (
-          <button onClick={onVoltar} style={{ background:'none', border:'1px solid #E2E0DB', borderRadius:8, padding:'7px 14px', color:'#9896A4', fontSize:13, cursor:'pointer', fontFamily:'inherit' }}>
+          <button onClick={onVoltar} className="py-1.5 px-3.5 min-h-11 sm:min-h-0 font-inherit text-[13px] bg-none rounded-lg border cursor-pointer border-border text-muted transition-colors duration-200 hover:bg-elevated hover:text-primary active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
             ← Voltar ao login
           </button>
         )}
@@ -898,21 +933,21 @@ export default function FluxoMatricula({ embedded = false, registerMode = false,
 
   if (embedded) {
     return (
-      <div style={{ maxWidth:720, margin:'0 auto', padding:'4px 0 32px', fontFamily:"'DM Sans',system-ui,sans-serif" }}>
+      <div className="mx-auto pt-1 pb-8 max-w-[720px] font-ui">
         {content}
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight:'100vh', background:'#F7F6F4', fontFamily:"'DM Sans',system-ui,sans-serif" }}>
-      <header style={{ background:'#fff', borderBottom:'1px solid #E2E0DB', padding:'0 24px', height:64, display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100, boxShadow:'0 1px 4px rgba(0,0,0,0.06)' }}>
+    <div className="min-h-screen font-ui bg-base">
+      <header className="flex sticky top-0 z-[100] justify-between items-center py-0 px-6 h-16 border-b shadow-[0_1px_4px_rgba(0,0,0,0.06)] border-border bg-white">
         <GBLogoFull size={50}/>
-        <div style={{ color:'#5C5B66', fontSize:12, textAlign:'right' }}>
+        <div className="text-xs text-right text-secondary">
           Rua Nova Santa Cruz 11, Braga<br/>+351 927 773 854
         </div>
       </header>
-      <div style={{ maxWidth:720, margin:'0 auto', padding:'32px 20px' }}>
+      <div className="mx-auto py-8 px-5 max-w-[720px]">
         {content}
       </div>
     </div>

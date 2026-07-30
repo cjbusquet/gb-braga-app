@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import PageHeader from '../../components/common/PageHeader';
+import Card from '../../components/common/Card';
 
 type WebhookStatus = 'ok' | 'warn' | 'error' | 'idle';
 type LogLevel = 'success' | 'info' | 'error' | 'warn';
@@ -48,37 +50,41 @@ const TOC_FLOW_STEPS = [
   { icon: '📧', label: 'Email + PDF', desc: 'Fatura enviada ao aluno' },
 ];
 
+const STATUS_COLOR: Record<WebhookStatus, string> = { ok: '#16A34A', warn: '#D97706', error: '#C8102E', idle: '#9896A4' };
+const STATUS_LABEL: Record<WebhookStatus, string> = { ok: 'Ativo', warn: 'Aviso', error: 'Erro', idle: 'Inativo' };
+
 function StatusDot({ status }: { status: WebhookStatus }) {
-  const c = { ok: '#16A34A', warn: '#D97706', error: '#C8102E', idle: '#9896A4' }[status];
-  const l = { ok: 'Ativo', warn: 'Aviso', error: 'Erro', idle: 'Inativo' }[status];
+  const c = STATUS_COLOR[status];
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-      <div style={{ width: 8, height: 8, borderRadius: '50%', background: c, boxShadow: status === 'ok' ? `0 0 6px ${c}66` : 'none' }}/>
-      <span style={{ color: c, fontSize: 11, fontWeight: 600 }}>{l}</span>
+    <div className="flex gap-1.5 items-center">
+      <div className="w-2 h-2 rounded-full" style={{ background: c, boxShadow: status === 'ok' ? `0 0 6px ${c}66` : 'none' }}/>
+      <span className="text-[11px] font-semibold" style={{ color: c }}>{STATUS_LABEL[status]}</span>
     </div>
   );
 }
 
+const LOG_LEVEL_COLOR: Record<LogLevel, string> = { success: '#16A34A', info: '#2563EB', error: '#C8102E', warn: '#D97706' };
+
 function LogRow({ log }: { log: WebhookLog }) {
   const [expanded, setExpanded] = useState(false);
-  const colors = { success: '#16A34A', info: '#2563EB', error: '#C8102E', warn: '#D97706' };
-  const c = colors[log.level];
+  const c = LOG_LEVEL_COLOR[log.level];
   return (
-    <div style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-      <div onClick={() => setExpanded(!expanded)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 14px', cursor: 'pointer' }}
-        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
-        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-      >
-        <div style={{ width: 8, height: 8, borderRadius: '50%', background: c, flexShrink: 0 }}/>
-        <span style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-mono)', width: 56, flexShrink: 0 }}>{log.time}</span>
-        <span style={{ flex: 1, color: 'var(--text-primary)', fontSize: 12.5, fontFamily: 'var(--font-mono)' }}>{log.event}</span>
-        <span style={{ background: log.status === 200 ? 'rgba(22,163,74,0.08)' : 'rgba(200,16,46,0.08)', color: log.status === 200 ? '#16A34A' : '#C8102E', fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 4, fontFamily: 'var(--font-mono)' }}>{log.status}</span>
-        <span style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-mono)', width: 50, textAlign: 'right' as const }}>{log.duration}</span>
-        <span style={{ color: 'var(--text-muted)', fontSize: 12, marginLeft: 4 }}>{expanded ? '▾' : '▸'}</span>
-      </div>
+    <div className="border-b border-border-subtle">
+      <button onClick={() => setExpanded(!expanded)}
+        className="flex gap-3 items-center py-2.5 px-3.5 w-full min-h-11 sm:min-h-0 text-left bg-transparent border-none cursor-pointer transition-colors duration-200 hover:bg-elevated active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+        <div className="w-2 h-2 rounded-full shrink-0" style={{ background: c }}/>
+        <span className="w-14 font-mono text-[11px] shrink-0 text-muted">{log.time}</span>
+        <span className="flex-1 font-mono text-[12.5px] text-primary truncate">{log.event}</span>
+        <span
+          className="py-0.5 px-[7px] font-mono text-[11px] font-bold rounded shrink-0"
+          style={{ background: log.status === 200 ? 'rgba(22,163,74,0.08)' : 'rgba(200,16,46,0.08)', color: log.status === 200 ? '#16A34A' : '#C8102E' }}
+        >{log.status}</span>
+        <span className="w-[50px] font-mono text-[11px] text-right shrink-0 text-muted">{log.duration}</span>
+        <span className="ml-1 text-xs shrink-0 text-muted">{expanded ? '▾' : '▸'}</span>
+      </button>
       {expanded && (
-        <div style={{ padding: '8px 14px 12px 34px' }}>
-          <div style={{ background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+        <div className="py-2 px-3.5 pb-3 pl-[34px]">
+          <div className="py-2.5 px-3 font-mono text-[11.5px] leading-[1.6] rounded-sm bg-elevated text-secondary">
             {log.payload}
           </div>
         </div>
@@ -86,6 +92,8 @@ function LogRow({ log }: { log: WebhookLog }) {
     </div>
   );
 }
+
+const ROW_CLASS = 'flex justify-between py-2 border-b border-border-subtle';
 
 export default function IntegracoesPage() {
   const [tab, setTab] = useState<'stripe' | 'toconline' | 'logs' | 'fluxo'>('fluxo');
@@ -117,34 +125,35 @@ export default function IntegracoesPage() {
 
   return (
     <div>
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ color: 'var(--text-muted)', fontSize: 10.5, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 3 }}>Sistema</div>
-        <h1 style={{ color: 'var(--text-primary)', fontSize: 22, fontWeight: 800, fontFamily: 'var(--font-display)', textTransform: 'uppercase' as const }}>Integrações</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 3 }}>Stripe · TOConline · Webhooks · AT Certificado</p>
-      </div>
+      <PageHeader eyebrow="Sistema" title="Integrações" subtitle="Stripe · TOConline · Webhooks · AT Certificado" />
 
       {/* Status pills */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
+      <div className="flex overflow-x-auto flex-wrap gap-2.5 mb-[18px]">
         {[
           { label: 'Stripe', status: 'ok' as WebhookStatus, sub: 'Modo sandbox' },
           { label: 'TOConline', status: 'warn' as WebhookStatus, sub: 'Simulação ativa' },
           { label: 'Webhooks', status: 'ok' as WebhookStatus, sub: '3 endpoints' },
           { label: 'AT / e-fatura', status: 'warn' as WebhookStatus, sub: 'Aguarda produção' },
         ].map(s => (
-          <div key={s.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', display: 'flex', gap: 10, boxShadow: 'var(--shadow-xs)' }}>
+          <div key={s.label} className="flex gap-2.5 py-2.5 px-3.5 rounded-sm border shadow-xs border-border bg-card">
             <StatusDot status={s.status}/>
-            <div style={{ marginLeft: 4 }}>
-              <div style={{ color: 'var(--text-primary)', fontSize: 12.5, fontWeight: 600 }}>{s.label}</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 10.5 }}>{s.sub}</div>
+            <div className="ml-1">
+              <div className="text-[12.5px] font-semibold text-primary">{s.label}</div>
+              <div className="text-[10.5px] text-muted">{s.sub}</div>
             </div>
           </div>
         ))}
       </div>
 
       {/* Tab bar */}
-      <div style={{ display: 'flex', gap: 2, marginBottom: 18, borderBottom: '1px solid var(--border)' }}>
+      <div className="flex overflow-x-auto gap-0.5 mb-[18px] border-b border-border">
         {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id as typeof tab)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: '9px 14px', fontSize: 13, color: tab === t.id ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: tab === t.id ? 700 : 400, borderBottom: `2px solid ${tab === t.id ? 'var(--gb-red)' : 'transparent'}`, marginBottom: -1 }}>
+          <button key={t.id} onClick={() => setTab(t.id as typeof tab)}
+            className={[
+              'flex gap-1.5 items-center py-2.5 px-3.5 -mb-px min-h-11 sm:min-h-0 text-[13px] whitespace-nowrap bg-none border-none border-b-2 cursor-pointer transition-colors duration-200',
+              'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+              tab === t.id ? 'font-bold border-gb-red text-primary' : 'font-normal border-transparent text-muted hover:text-primary active:text-primary',
+            ].join(' ')}>
             <span>{t.icon}</span>{t.label}
           </button>
         ))}
@@ -153,33 +162,33 @@ export default function IntegracoesPage() {
       {/* ── FLUXO ── */}
       {tab === 'fluxo' && (
         <div>
-          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '28px', marginBottom: 16, boxShadow: 'var(--shadow-xs)' }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 20 }}>Fluxo Completo: Stripe → TOConline → AT</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const, justifyContent: 'center' }}>
+          <Card padding="lg" className="mb-4">
+            <div className="mb-5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Fluxo Completo: Stripe → TOConline → AT</div>
+            <div className="flex flex-wrap gap-2 justify-center items-center">
               {TOC_FLOW_STEPS.map((s, i) => {
-                if (s.icon === '→') return <div key={i} style={{ color: 'var(--gb-red)', fontSize: 18, fontWeight: 700 }}>→</div>;
+                if (s.icon === '→') return <div key={i} className="text-lg font-bold text-gb-red">→</div>;
                 return (
-                  <div key={i} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '14px 18px', textAlign: 'center' as const, minWidth: 110 }}>
-                    <div style={{ fontSize: 28, marginBottom: 6 }}>{s.icon}</div>
-                    <div style={{ color: 'var(--text-primary)', fontSize: 12, fontWeight: 700, marginBottom: 3 }}>{s.label}</div>
-                    <div style={{ color: 'var(--text-muted)', fontSize: 10.5, lineHeight: 1.4 }}>{s.desc}</div>
+                  <div key={i} className="py-3.5 px-[18px] text-center rounded-md border min-w-[110px] border-border bg-elevated">
+                    <div className="mb-1.5 text-[28px]">{s.icon}</div>
+                    <div className="mb-1 text-xs font-bold text-primary">{s.label}</div>
+                    <div className="text-[10.5px] leading-[1.4] text-muted">{s.desc}</div>
                   </div>
                 );
               })}
             </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          </Card>
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             {[
-              { titulo: 'Pagamento confirmado',       icon: '✓', desc: 'Stripe recebe o pagamento e emite payment_intent.succeeded', color: '#16A34A' },
+              { titulo: 'Pagamento confirmado',      icon: '✓', desc: 'Stripe recebe o pagamento e emite payment_intent.succeeded', color: '#16A34A' },
               { titulo: 'Webhook disparado',          icon: '⚡', desc: 'Servidor GB recebe o evento e valida a assinatura (whsec_)', color: '#2563EB' },
               { titulo: 'Fatura emitida (FR)',        icon: '🧾', desc: 'TOConline cria o documento fiscal e comunica à AT automaticamente', color: '#635BFF' },
               { titulo: 'Notificação ao aluno',      icon: '💬', desc: 'Email com PDF da fatura + WhatsApp de confirmação de pagamento', color: '#25D366' },
             ].map(c => (
-              <div key={c.titulo} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '16px 18px', display: 'flex', gap: 12, boxShadow: 'var(--shadow-xs)' }}>
-                <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-sm)', background: c.color + '14', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{c.icon}</div>
+              <div key={c.titulo} className="flex gap-3 py-4 px-[18px] rounded-md border shadow-xs border-border bg-card">
+                <div className="flex justify-center items-center w-9 h-9 text-lg rounded-sm shrink-0" style={{ background: c.color + '14' }}>{c.icon}</div>
                 <div>
-                  <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{c.titulo}</div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 12, lineHeight: 1.5 }}>{c.desc}</div>
+                  <div className="mb-1 text-[13px] font-bold text-primary">{c.titulo}</div>
+                  <div className="text-xs leading-[1.5] text-muted">{c.desc}</div>
                 </div>
               </div>
             ))}
@@ -189,13 +198,13 @@ export default function IntegracoesPage() {
 
       {/* ── STRIPE ── */}
       {tab === 'stripe' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 24, boxShadow: 'var(--shadow-xs)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-              <div style={{ width: 44, height: 44, background: '#635BFF', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 18 }}>S</div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Card padding="lg">
+            <div className="flex gap-3 items-center mb-5">
+              <div className="flex justify-center items-center w-11 h-11 text-lg font-extrabold text-white rounded-[10px] bg-[#635BFF]">S</div>
               <div>
-                <div style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 700 }}>Stripe</div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Pagamentos e subscrições recorrentes</div>
+                <div className="text-[15px] font-bold text-primary">Stripe</div>
+                <div className="text-[11px] text-muted">Pagamentos e subscrições recorrentes</div>
               </div>
               <StatusDot status="ok"/>
             </div>
@@ -206,52 +215,57 @@ export default function IntegracoesPage() {
               { k: 'Moeda',                      v: 'EUR (€) — Portugal' },
               { k: 'Modo',                       v: 'Sandbox (test)' },
             ].map(r => (
-              <div key={r.k} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>{r.k}</span>
-                <span style={{ color: 'var(--text-primary)', fontSize: 12, fontFamily: 'var(--font-mono)', fontWeight: 500 }}>{r.v}</span>
+              <div key={r.k} className={ROW_CLASS}>
+                <span className="text-xs text-muted">{r.k}</span>
+                <span className="font-mono text-xs font-medium text-primary">{r.v}</span>
               </div>
             ))}
-            <button onClick={testStripe} disabled={testingStripe} style={{ width: '100%', marginTop: 16, background: testingStripe ? 'var(--bg-elevated)' : stripeStatus === 'ok' ? '#16A34A' : '#635BFF', border: 'none', borderRadius: 'var(--radius-sm)', padding: '10px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+            <button onClick={testStripe} disabled={testingStripe}
+              className={[
+                'py-2.5 mt-4 min-h-11 sm:min-h-0 w-full text-[13px] font-bold text-white rounded-sm border-none cursor-pointer transition-colors duration-200',
+                'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
+                testingStripe ? 'bg-elevated' : stripeStatus === 'ok' ? 'bg-green-600 hover:bg-green-700 active:bg-green-700' : 'bg-[#635BFF] hover:bg-[#524ae0] active:bg-[#524ae0]',
+              ].join(' ')}>
               {testingStripe ? '⟳ A testar...' : stripeStatus === 'ok' ? '✓ Ligação OK' : '⚡ Testar Ligação'}
             </button>
-          </div>
+          </Card>
 
-          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 24, boxShadow: 'var(--shadow-xs)' }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 16 }}>Webhooks configurados</div>
+          <Card padding="lg">
+            <div className="mb-4 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Webhooks configurados</div>
             {STRIPE_ENDPOINTS.map(ep => (
-              <div key={ep.id} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', marginBottom: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <div key={ep.id} className="py-3 px-3.5 mb-2.5 rounded-sm border border-border bg-elevated">
+                <div className="flex justify-between mb-1.5">
                   <StatusDot status={ep.status}/>
-                  <span style={{ color: '#16A34A', fontSize: 11, fontWeight: 600 }}>{ep.successRate}</span>
+                  <span className="text-[11px] font-semibold text-green-600">{ep.successRate}</span>
                 </div>
-                <div style={{ color: 'var(--text-primary)', fontSize: 11.5, fontFamily: 'var(--font-mono)', marginBottom: 5, wordBreak: 'break-all' as const }}>{ep.url}</div>
-                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' as const }}>
+                <div className="mb-1 font-mono text-[11.5px] break-all text-primary">{ep.url}</div>
+                <div className="flex flex-wrap gap-1">
                   {ep.events.map(e => (
-                    <span key={e} style={{ background: 'rgba(99,91,255,0.08)', color: '#635BFF', fontSize: 10, padding: '2px 6px', borderRadius: 4, fontFamily: 'var(--font-mono)' }}>{e}</span>
+                    <span key={e} className="py-0.5 px-1.5 font-mono text-[10px] rounded text-[#635BFF] bg-[#635BFF]/[0.08]">{e}</span>
                   ))}
                 </div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 10.5, marginTop: 5 }}>Último: {ep.lastFired}</div>
+                <div className="mt-1 text-[10.5px] text-muted">Último: {ep.lastFired}</div>
               </div>
             ))}
-          </div>
+          </Card>
         </div>
       )}
 
       {/* ── TOCONLINE ── */}
       {tab === 'toconline' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 24, boxShadow: 'var(--shadow-xs)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-              <div style={{ width: 44, height: 44, background: '#0E2D52', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🇵🇹</div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Card padding="lg">
+            <div className="flex gap-3 items-center mb-5">
+              <div className="flex justify-center items-center w-11 h-11 text-xl rounded-[10px] bg-[#0E2D52]">🇵🇹</div>
               <div>
-                <div style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 700 }}>TOConline</div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Faturação certificada AT · Portugal</div>
+                <div className="text-[15px] font-bold text-primary">TOConline</div>
+                <div className="text-[11px] text-muted">Faturação certificada AT · Portugal</div>
               </div>
               <StatusDot status="warn"/>
             </div>
-            <div style={{ background: 'rgba(217,119,6,0.06)', border: '1px solid rgba(217,119,6,0.2)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', marginBottom: 16 }}>
-              <div style={{ color: 'var(--warning)', fontSize: 11.5, fontWeight: 700, marginBottom: 2 }}>⚡ Modo Simulação Ativo</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Faturas não são comunicadas à AT. Ativa o modo produção nas Configurações.</div>
+            <div className="py-2.5 px-3 mb-4 rounded-sm border border-amber-600/20 bg-amber-600/[0.06]">
+              <div className="mb-0.5 text-[11.5px] font-bold text-amber-700">⚡ Modo Simulação Ativo</div>
+              <div className="text-[11px] text-muted">Faturas não são comunicadas à AT. Ativa o modo produção nas Configurações.</div>
             </div>
             {[
               { k: 'API URL',      v: 'https://app.toconline.pt' },
@@ -260,64 +274,73 @@ export default function IntegracoesPage() {
               { k: 'NIF',         v: '512345678' },
               { k: 'Série',       v: 'GB2025' },
             ].map(r => (
-              <div key={r.k} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>{r.k}</span>
-                <span style={{ color: r.v.includes('configurar') ? 'var(--warning)' : 'var(--text-primary)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>{r.v}</span>
+              <div key={r.k} className={ROW_CLASS}>
+                <span className="text-xs text-muted">{r.k}</span>
+                <span className={['font-mono text-xs', r.v.includes('configurar') ? 'text-amber-700' : 'text-primary'].join(' ')}>{r.v}</span>
               </div>
             ))}
-            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-              <button onClick={testToc} disabled={testingToc} style={{ flex: 1, background: testingToc ? 'var(--bg-elevated)' : tocStatus === 'ok' ? '#16A34A' : 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '9px', color: tocStatus === 'ok' ? '#fff' : 'var(--text-secondary)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+            <div className="flex gap-2 mt-4">
+              <button onClick={testToc} disabled={testingToc}
+                className={[
+                  'flex-1 py-2.5 min-h-11 sm:min-h-0 text-xs font-semibold rounded-sm border cursor-pointer border-border transition-colors duration-200',
+                  'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
+                  testingToc ? 'bg-elevated text-secondary' : tocStatus === 'ok' ? 'text-white bg-green-600 hover:bg-green-700 active:bg-green-700' : 'bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle',
+                ].join(' ')}>
                 {testingToc ? '⟳ A testar...' : tocStatus === 'ok' ? '✓ OK' : 'Testar'}
               </button>
-              <button style={{ flex: 2, background: 'var(--gb-red)', border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+              <button className="flex-[2] py-2.5 min-h-11 sm:min-h-0 text-xs font-bold text-white rounded-sm border-none cursor-pointer transition-colors duration-200 bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
                 ⚙ Configurar → Config.
               </button>
             </div>
-          </div>
+          </Card>
 
-          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 24, boxShadow: 'var(--shadow-xs)' }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 16 }}>Documentos TOConline</div>
+          <Card padding="lg">
+            <div className="mb-4 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Documentos TOConline</div>
             {[
-              { tipo: 'Faturas-Recibo (FR)', count: 3,   status: 'ok'   },
-              { tipo: 'Notas de Crédito',   count: 0,   status: 'ok'   },
-              { tipo: 'Com erro',           count: 0,   status: 'ok'   },
-              { tipo: 'Pendentes de envio', count: 0,   status: 'ok'   },
+              { tipo: 'Faturas-Recibo (FR)', count: 3 },
+              { tipo: 'Notas de Crédito',   count: 0 },
+              { tipo: 'Com erro',           count: 0 },
+              { tipo: 'Pendentes de envio', count: 0 },
             ].map(r => (
-              <div key={r.tipo} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-                <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{r.tipo}</span>
-                <span style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 700 }}>{r.count}</span>
+              <div key={r.tipo} className="flex justify-between py-2.5 border-b border-border-subtle">
+                <span className="text-[13px] text-secondary">{r.tipo}</span>
+                <span className="text-sm font-bold text-primary">{r.count}</span>
               </div>
             ))}
-            <div style={{ marginTop: 16, background: 'rgba(99,91,255,0.05)', border: '1px solid rgba(99,91,255,0.15)', borderRadius: 'var(--radius-sm)', padding: '10px 12px' }}>
-              <div style={{ color: '#635BFF', fontSize: 11.5, fontWeight: 700, marginBottom: 4 }}>Próxima ação</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 11.5, lineHeight: 1.5 }}>
+            <div className="py-2.5 px-3 mt-4 rounded-sm border border-[#635BFF]/15 bg-[#635BFF]/5">
+              <div className="mb-1 text-[11.5px] font-bold text-[#635BFF]">Próxima ação</div>
+              <div className="text-[11.5px] leading-[1.5] text-muted">
                 Insere o Client ID e Client Secret TOConline em <strong>Config. → TOConline</strong> para ativar a emissão real de faturas.
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {/* ── LOGS ── */}
       {tab === 'logs' && (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>Últimos 24h · {MOCK_LOGS.length} eventos</div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '6px 12px', fontSize: 11.5, color: 'var(--text-secondary)', cursor: 'pointer' }}>⟳ Refresh</button>
-              <button style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '6px 12px', fontSize: 11.5, color: 'var(--text-secondary)', cursor: 'pointer' }}>📥 Exportar</button>
+          <div className="flex flex-wrap gap-2 justify-between items-center mb-3">
+            <div className="text-xs text-muted">Últimos 24h · {MOCK_LOGS.length} eventos</div>
+            <div className="flex gap-2">
+              <button className="py-1.5 px-3 min-h-11 sm:min-h-0 text-[11.5px] rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">⟳ Refresh</button>
+              <button className="py-1.5 px-3 min-h-11 sm:min-h-0 text-[11.5px] rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">📥 Exportar</button>
             </div>
           </div>
-          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-xs)' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '20px 56px 1fr 52px 50px 20px', gap: 12, padding: '9px 14px', background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' as const, letterSpacing: '0.5px' }}>
+          <div className="overflow-hidden rounded-lg border shadow-xs border-border bg-card">
+            <div className="overflow-x-auto">
+            <div className="min-w-[480px] grid grid-cols-[20px_56px_1fr_52px_50px_20px] gap-3 py-2.5 px-3.5 text-[10px] font-semibold tracking-[0.5px] uppercase border-b border-border bg-elevated text-muted">
               <div/>
               <div>Hora</div>
               <div>Evento</div>
               <div>Status</div>
-              <div style={{ textAlign: 'right' as const }}>Duração</div>
+              <div className="text-right">Duração</div>
               <div/>
             </div>
-            {MOCK_LOGS.map(log => <LogRow key={log.id} log={log}/>)}
+            <div className="min-w-[480px]">
+              {MOCK_LOGS.map(log => <LogRow key={log.id} log={log}/>)}
+            </div>
+            </div>
           </div>
         </div>
       )}

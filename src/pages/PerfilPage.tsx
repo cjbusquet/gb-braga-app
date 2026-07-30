@@ -10,7 +10,7 @@ import {
   PhotoIcon,
   UserIcon,
 } from '../lib/icons';
-import { GB, roleThemes } from '../lib/gbBrand';
+import { roleThemes } from '../lib/gbBrand';
 import { isConfigured, supabase } from '../lib/supabaseClient';
 import { useEffect, useRef, useState } from 'react';
 
@@ -82,18 +82,7 @@ const BELT_META: Record<Belt, { label: string; bg: string; color: string }> = {
 };
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
-const INP: React.CSSProperties = {
-  width: '100%',
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--border)',
-  borderRadius: 'var(--radius-sm)',
-  padding: '10px 12px',
-  color: 'var(--text-primary)',
-  fontSize: 13,
-  fontFamily: 'var(--font-ui)',
-  outline: 'none',
-  boxSizing: 'border-box',
-};
+const INP_CLASS = 'block box-border w-full py-2.5 px-3 min-h-11 sm:min-h-0 font-ui text-[13px] rounded-sm border outline-none transition-all duration-200 border-border bg-elevated text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25';
 
 function SectionCard({
   title,
@@ -105,52 +94,21 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div
-      style={{
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius)',
-        overflow: 'hidden',
-        marginBottom: 16,
-      }}
-    >
-      <div
-        style={{
-          padding: '14px 20px',
-          borderBottom: '1px solid var(--border)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-        }}
-      >
+    <div className="overflow-hidden mb-4 rounded-lg border border-border bg-card">
+      <div className="flex gap-2.5 items-center py-3.5 px-5 border-b border-border">
         <Ico icon={icon} />
-        <span
-          style={{
-            color: 'var(--text-primary)',
-            fontSize: 14,
-            fontWeight: 700,
-          }}
-        >
+        <span className="text-sm font-bold text-primary">
           {title}
         </span>
       </div>
-      <div style={{ padding: '20px' }}>{children}</div>
+      <div className="p-5">{children}</div>
     </div>
   );
 }
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      style={{
-        color: 'var(--text-muted)',
-        fontSize: 10.5,
-        fontWeight: 700,
-        letterSpacing: '0.8px',
-        textTransform: 'uppercase' as const,
-        marginBottom: 5,
-      }}
-    >
+    <div className="mb-1 text-[10.5px] font-bold tracking-[0.8px] uppercase text-muted">
       {children}
     </div>
   );
@@ -170,33 +128,27 @@ function SaveBtn({
   label?: string;
 }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+    <div className="flex justify-end mt-4">
       <button
         onClick={onClick}
         disabled={saving || disabled}
+        className={[
+          'py-2 px-[22px] min-h-11 sm:min-h-0 text-[13px] font-bold text-white rounded-sm border-none transition-all duration-200',
+          'outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+          saving || disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:brightness-90 active:scale-[0.98]',
+          disabled && !saving ? 'opacity-50' : 'opacity-100',
+        ].join(' ')}
         style={{
-          background: saved ? '#22C55E' : saving ? '#aaa' : GB.red,
-          border: 'none',
-          borderRadius: 'var(--radius-sm)',
-          padding: '9px 22px',
-          color: '#fff',
-          fontSize: 13,
-          fontWeight: 700,
-          cursor: saving || disabled ? 'not-allowed' : 'pointer',
-          opacity: disabled && !saving ? 0.5 : 1,
-          transition: 'background 0.2s',
+          background: saved ? '#22C55E' : saving ? '#aaa' : 'var(--gb-red)',
+          ['--tw-ring-color' as string]: saved ? '#22C55E' : 'var(--gb-red)',
         }}
       >
         {saving ? (
-          <span
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-          >
+          <span className="inline-flex gap-1.5 items-center">
             <Ico icon={ArrowPathIcon} sm />A guardar...
           </span>
         ) : saved ? (
-          <span
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-          >
+          <span className="inline-flex gap-1.5 items-center">
             <Ico icon={CheckCircleIcon} sm />
             Guardado!
           </span>
@@ -263,61 +215,30 @@ function AvatarSection({
       .toUpperCase() || '?';
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 20,
-        flexWrap: 'wrap',
-      }}
-    >
+    <div className="flex flex-wrap gap-5 items-center">
       {/* Avatar circle with upload overlay */}
       <div
-        style={{ position: 'relative', flexShrink: 0, cursor: 'pointer' }}
+        className="relative shrink-0 cursor-pointer"
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
         onClick={() => fileRef.current?.click()}
       >
         <div
+          className="overflow-hidden relative w-[88px] h-[88px] rounded-full border-[3px] transition-shadow"
           style={{
-            width: 88,
-            height: 88,
-            borderRadius: '50%',
             background: preview ? 'transparent' : rt.accent,
-            position: 'relative',
-            overflow: 'hidden',
-            border: `3px solid ${rt.accent}`,
+            borderColor: rt.accent,
             boxShadow: hover ? `0 0 0 4px ${rt.accent}33` : 'none',
-            transition: 'box-shadow 0.2s',
-            flexShrink: 0,
           }}
         >
           {preview ? (
             <img
               src={preview}
               alt="Avatar"
-              style={{
-                position: 'absolute',
-                inset: 0,
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                display: 'block',
-              }}
+              className="block absolute inset-0 w-full h-full object-cover"
             />
           ) : (
-            <span
-              style={{
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                fontSize: 28,
-                fontWeight: 700,
-              }}
-            >
+            <span className="flex absolute inset-0 justify-center items-center text-[28px] font-bold text-white">
               {initials}
             </span>
           )}
@@ -325,85 +246,40 @@ function AvatarSection({
 
         {/* Hover overlay */}
         <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: '50%',
-            background: 'rgba(0,0,0,0.45)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: hover || uploading ? 1 : 0,
-            transition: 'opacity 0.2s',
-            pointerEvents: 'none',
-          }}
+          className={[
+            'flex absolute inset-0 justify-center items-center rounded-full transition-opacity pointer-events-none bg-black/45',
+            hover || uploading ? 'opacity-100' : 'opacity-0',
+          ].join(' ')}
         >
-          <span style={{ fontSize: uploading ? 16 : 20, color: '#fff' }}>
+          <span className="text-white">
             <Ico
               icon={uploading ? ArrowPathIcon : CameraIcon}
-              style={{
-                width: uploading ? 16 : 20,
-                height: uploading ? 16 : 20,
-              }}
+              style={{ width: uploading ? 16 : 20, height: uploading ? 16 : 20 }}
             />
           </span>
         </div>
       </div>
 
-      <div style={{ minWidth: 0 }}>
-        <div
-          style={{
-            color: 'var(--text-primary)',
-            fontSize: 15,
-            fontWeight: 700,
-            marginBottom: 4,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
+      <div className="min-w-0">
+        <div className="overflow-hidden mb-1 text-[15px] font-bold whitespace-nowrap text-ellipsis text-primary">
           {user?.nome}
         </div>
-        <div
-          style={{
-            color: 'var(--text-muted)',
-            fontSize: 12,
-            marginBottom: 10,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
+        <div className="overflow-hidden mb-2.5 text-xs whitespace-nowrap text-ellipsis text-muted">
           {user?.email}
         </div>
         <button
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
-          style={{
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-sm)',
-            padding: '7px 14px',
-            color: 'var(--text-secondary)',
-            fontSize: 12,
-            fontWeight: 600,
-            cursor: uploading ? 'not-allowed' : 'pointer',
-          }}
+          className={[
+            'py-1.5 px-3.5 min-h-11 sm:min-h-0 text-xs font-semibold rounded-sm border border-border bg-elevated text-secondary transition-colors duration-200',
+            'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+            uploading ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-card active:bg-card',
+          ].join(' ')}
         >
           {uploading ? 'A enviar...' : 'Alterar foto'}
         </button>
         {err && (
-          <div
-            style={{
-              color: GB.red,
-              fontSize: 11.5,
-              marginTop: 6,
-              fontWeight: 600,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 5,
-            }}
-          >
+          <div className="inline-flex gap-1.5 items-center mt-1.5 text-[11.5px] font-semibold text-gb-red">
             <Ico icon={ExclamationTriangleIcon} sm />
             {err}
           </div>
@@ -414,7 +290,7 @@ function AvatarSection({
         ref={fileRef}
         type="file"
         accept="image/jpeg,image/png,image/webp,image/gif"
-        style={{ display: 'none' }}
+        className="hidden"
         onChange={handleFile}
       />
     </div>
@@ -450,13 +326,13 @@ function DadosPessoaisSection() {
 
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-        <div style={{ gridColumn: '1 / -1' }}>
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+        <div className="col-span-full">
           <FieldLabel>Nome completo</FieldLabel>
           <input
             value={nome}
             onChange={(e) => setNome(e.target.value)}
-            style={INP}
+            className={INP_CLASS}
             placeholder="O teu nome"
           />
         </div>
@@ -465,11 +341,9 @@ function DadosPessoaisSection() {
           <input
             value={user?.email || ''}
             disabled
-            style={{ ...INP, opacity: 0.5, cursor: 'not-allowed' }}
+            className={[INP_CLASS, 'opacity-50 cursor-not-allowed'].join(' ')}
           />
-          <div
-            style={{ color: 'var(--text-muted)', fontSize: 10.5, marginTop: 4 }}
-          >
+          <div className="mt-1 text-[10.5px] text-muted">
             O email não pode ser alterado aqui.
           </div>
         </div>
@@ -478,23 +352,13 @@ function DadosPessoaisSection() {
           <input
             value={telefone}
             onChange={(e) => setTelefone(e.target.value)}
-            style={INP}
+            className={INP_CLASS}
             placeholder="+351 9xx xxx xxx"
           />
         </div>
       </div>
       {err && (
-        <div
-          style={{
-            color: GB.red,
-            fontSize: 11.5,
-            marginTop: 10,
-            fontWeight: 600,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 5,
-          }}
-        >
+        <div className="inline-flex gap-1.5 items-center mt-2.5 text-[11.5px] font-semibold text-gb-red">
           <Ico icon={ExclamationTriangleIcon} sm />
           {err}
         </div>
@@ -534,14 +398,14 @@ function PasswordSection() {
 
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
         <div>
           <FieldLabel>Nova password</FieldLabel>
           <input
             type="password"
             value={pw1}
             onChange={(e) => setPw1(e.target.value)}
-            style={INP}
+            className={INP_CLASS}
             placeholder="Mínimo 6 caracteres"
           />
         </div>
@@ -551,23 +415,13 @@ function PasswordSection() {
             type="password"
             value={pw2}
             onChange={(e) => setPw2(e.target.value)}
-            style={INP}
+            className={INP_CLASS}
             placeholder="Repete a password"
           />
         </div>
       </div>
       {err && (
-        <div
-          style={{
-            color: GB.red,
-            fontSize: 11.5,
-            marginTop: 10,
-            fontWeight: 600,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 5,
-          }}
-        >
+        <div className="inline-flex gap-1.5 items-center mt-2.5 text-[11.5px] font-semibold text-gb-red">
           <Ico icon={ExclamationTriangleIcon} sm />
           {err}
         </div>
@@ -589,14 +443,14 @@ function AlunoSection() {
 
   if (loading) {
     return (
-      <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+      <div className="text-[13px] text-muted">
         A carregar...
       </div>
     );
   }
   if (!info) {
     return (
-      <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+      <div className="text-[13px] text-muted">
         Sem informação de matrícula disponível.
       </div>
     );
@@ -613,155 +467,55 @@ function AlunoSection() {
     : '—';
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-        gap: 14,
-      }}
-    >
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-3.5">
       {/* Faixa */}
-      <div
-        style={{
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-sm)',
-          padding: '14px 16px',
-        }}
-      >
-        <div
-          style={{
-            color: 'var(--text-muted)',
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: '0.8px',
-            textTransform: 'uppercase',
-            marginBottom: 10,
-          }}
-        >
+      <div className="py-3.5 px-4 rounded-sm border border-border bg-elevated">
+        <div className="mb-2.5 text-[10px] font-bold tracking-[0.8px] uppercase text-muted">
           Faixa
         </div>
         <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            background: belt.bg,
-            color: belt.color,
-            padding: '6px 14px',
-            borderRadius: 6,
-            fontWeight: 700,
-            fontSize: 13,
-            border:
-              info.faixa === 'branca' ? '1px solid var(--border)' : 'none',
-          }}
+          className="inline-flex gap-2 items-center py-1.5 px-3.5 text-[13px] font-bold rounded-md"
+          style={{ background: belt.bg, color: belt.color, border: info.faixa === 'branca' ? '1px solid var(--border)' : 'none' }}
         >
           <Ico icon={AcademicCapIcon} sm /> {belt.label}
         </div>
       </div>
 
       {/* Grau */}
-      <div
-        style={{
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-sm)',
-          padding: '14px 16px',
-        }}
-      >
-        <div
-          style={{
-            color: 'var(--text-muted)',
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: '0.8px',
-            textTransform: 'uppercase',
-            marginBottom: 10,
-          }}
-        >
+      <div className="py-3.5 px-4 rounded-sm border border-border bg-elevated">
+        <div className="mb-2.5 text-[10px] font-bold tracking-[0.8px] uppercase text-muted">
           Grau
         </div>
-        <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+        <div className="flex gap-1.5 items-center">
           {graus.map((filled, i) => (
             <div
               key={i}
-              style={{
-                width: 14,
-                height: 14,
-                borderRadius: '50%',
-                background: filled ? belt.bg : 'var(--bg-card)',
-                border: `2px solid ${filled ? belt.bg : 'var(--border)'}`,
-              }}
+              className="w-3.5 h-3.5 rounded-full border-2"
+              style={{ background: filled ? belt.bg : 'var(--bg-card)', borderColor: filled ? belt.bg : 'var(--border)' }}
             />
           ))}
-          <span
-            style={{ color: 'var(--text-muted)', fontSize: 11, marginLeft: 4 }}
-          >
+          <span className="ml-1 text-[11px] text-muted">
             {info.grau}/4
           </span>
         </div>
       </div>
 
       {/* Plano */}
-      <div
-        style={{
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-sm)',
-          padding: '14px 16px',
-        }}
-      >
-        <div
-          style={{
-            color: 'var(--text-muted)',
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: '0.8px',
-            textTransform: 'uppercase',
-            marginBottom: 10,
-          }}
-        >
+      <div className="py-3.5 px-4 rounded-sm border border-border bg-elevated">
+        <div className="mb-2.5 text-[10px] font-bold tracking-[0.8px] uppercase text-muted">
           Plano
         </div>
-        <div
-          style={{
-            color: 'var(--text-primary)',
-            fontSize: 13,
-            fontWeight: 600,
-          }}
-        >
+        <div className="text-[13px] font-semibold text-primary">
           {info.plano || '—'}
         </div>
       </div>
 
       {/* Data matrícula */}
-      <div
-        style={{
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-sm)',
-          padding: '14px 16px',
-        }}
-      >
-        <div
-          style={{
-            color: 'var(--text-muted)',
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: '0.8px',
-            textTransform: 'uppercase',
-            marginBottom: 10,
-          }}
-        >
+      <div className="py-3.5 px-4 rounded-sm border border-border bg-elevated">
+        <div className="mb-2.5 text-[10px] font-bold tracking-[0.8px] uppercase text-muted">
           Membro desde
         </div>
-        <div
-          style={{
-            color: 'var(--text-primary)',
-            fontSize: 12,
-            fontWeight: 600,
-          }}
-        >
+        <div className="text-xs font-semibold text-primary">
           {dataFmt}
         </div>
       </div>
@@ -781,26 +535,12 @@ export default function PerfilPage() {
   if (!user) return null;
 
   return (
-    <div style={{ maxWidth: 680, margin: '0 auto' }}>
-      <div style={{ marginBottom: 20 }}>
-        <h1
-          style={{
-            color: 'var(--text-primary)',
-            fontSize: 22,
-            fontWeight: 800,
-            margin: 0,
-            fontFamily: 'var(--font-display)',
-          }}
-        >
+    <div className="mx-auto max-w-[680px]">
+      <div className="mb-5">
+        <h1 className="m-0 font-display text-[22px] font-extrabold text-primary">
           O meu Perfil
         </h1>
-        <p
-          style={{
-            color: 'var(--text-muted)',
-            fontSize: 13,
-            margin: '4px 0 0',
-          }}
-        >
+        <p className="mt-1 mb-0 text-[13px] text-muted">
           Gere os teus dados pessoais e preferências de conta.
         </p>
       </div>
@@ -834,37 +574,12 @@ export default function PerfilPage() {
       )}
 
       {/* Logout */}
-      <div style={{ marginTop: 8, marginBottom: 32 }}>
+      <div className="mt-2 mb-8">
         <button
           onClick={logout}
-          style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            padding: '12px',
-            background: 'transparent',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius)',
-            color: 'var(--text-muted)',
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'border-color 0.15s, color 0.15s',
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.borderColor = GB.red;
-            (e.currentTarget as HTMLButtonElement).style.color = GB.red;
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.borderColor =
-              'var(--border)';
-            (e.currentTarget as HTMLButtonElement).style.color =
-              'var(--text-muted)';
-          }}
+          className="flex gap-2 justify-center items-center py-3 w-full text-[13px] font-semibold text-muted bg-transparent rounded-lg border border-border transition-colors duration-200 cursor-pointer hover:border-gb-red hover:text-gb-red active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
         >
-          <span style={{ fontSize: 15 }}>⎋</span>
+          <span className="text-[15px]">⎋</span>
           Terminar sessão
         </button>
       </div>

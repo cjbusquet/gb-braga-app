@@ -2,10 +2,13 @@
 import { useState, useMemo } from 'react';
 import { useResponsaveis, db } from '../../lib/useData';
 import { useAlunosQuery, useInvalidateAlunos } from '../../lib/queries';
-import { GB, beltConfig } from '../../lib/gbBrand';
-import { useMobile } from '../../lib/useMobile';
+import { beltConfig } from '../../lib/gbBrand';
 import NovaMatriculaModal from './NovaMatriculaModal';
-import { Ico, PencilIcon, CheckCircleIcon, XCircleIcon, ArrowLeftIcon, XMarkIcon, PlusIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, AdjustmentsHorizontalIcon } from '../../lib/icons';
+import { Ico, PencilIcon, CheckCircleIcon, XCircleIcon, ArrowLeftIcon, PlusIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, AdjustmentsHorizontalIcon } from '../../lib/icons';
+import Modal from '../../components/common/Modal';
+import Button from '../../components/common/Button';
+import PageHeader from '../../components/common/PageHeader';
+import Badge from '../../components/common/Badge';
 
 const PAGE_SIZE = 20;
 
@@ -43,6 +46,9 @@ const RELACAO_LABELS: Record<string, string> = {
   pai: 'Pai', mae: 'Mãe', avo: 'Avó/Avô', tutor: 'Tutor Legal', outro: 'Responsável',
 };
 
+const FIELD_CLASS = 'box-border w-full py-2.5 px-3 min-h-11 sm:min-h-0 text-[13px] rounded-sm border outline-none transition-all duration-200 border-border bg-elevated text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25';
+const LABEL_CLASS = 'block mb-1 text-[10.5px] font-semibold tracking-[0.8px] uppercase text-muted';
+
 // ── EditAlunoModal ──────────────────────────────────────────────────────────
 
 function EditAlunoModal({ aluno, onClose }: { aluno: any; onClose: () => void }) {
@@ -71,72 +77,60 @@ function EditAlunoModal({ aluno, onClose }: { aluno: any; onClose: () => void })
     }
   };
 
-  const inp: React.CSSProperties = {
-    width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-    borderRadius: 'var(--radius-sm)', padding: '9px 11px', color: 'var(--text-primary)',
-    fontSize: 13, boxSizing: 'border-box',
-  };
-  const lbl: React.CSSProperties = {
-    display: 'block', color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600,
-    letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 4,
-  };
-
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 28, maxWidth: 500, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-          <div style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 800 }}>Editar — {aluno.nome}</div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Ico icon={XMarkIcon} /></button>
+    <Modal onClose={onClose} title={`Editar — ${aluno.nome}`} maxWidth={500}>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="col-span-full">
+          <label className={LABEL_CLASS}>Nome completo</label>
+          <input value={nome} onChange={e => setNome(e.target.value)} className={FIELD_CLASS} />
         </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div style={{ gridColumn: '1/-1' }}>
-            <label style={lbl}>Nome completo</label>
-            <input value={nome} onChange={e => setNome(e.target.value)} style={inp} />
-          </div>
-          <div>
-            <label style={lbl}>Email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} style={inp} />
-          </div>
-          <div>
-            <label style={lbl}>Telefone</label>
-            <input value={telefone} onChange={e => setTel(e.target.value)} style={inp} />
-          </div>
-          <div>
-            <label style={lbl}>NIF</label>
-            <input value={nif} onChange={e => setNif(e.target.value)} style={inp} />
-          </div>
-          <div>
-            <label style={lbl}>Data de Nascimento *</label>
-            <input type="date" value={dataNasc} onChange={e => setDataNasc(e.target.value)} style={{ ...inp, borderColor: !dataNasc ? 'rgba(200,16,46,0.5)' : undefined }} />
-            {!dataNasc && <div style={{ color: '#C8102E', fontSize: 11, marginTop: 3 }}>Obrigatório</div>}
-            {idade !== null && (
-              <div style={{ marginTop: 4, fontSize: 11, color: idade < 18 ? '#D97706' : 'var(--text-muted)' }}>
-                {idade} anos{idade < 18 ? (idade >= 12 ? ' · Menor · Check-in autónomo' : ' · Menor · Requer responsável') : ' · Adulto'}
-              </div>
-            )}
-          </div>
+        <div>
+          <label className={LABEL_CLASS}>Email</label>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={FIELD_CLASS} />
         </div>
-
-        {precisaResp && (
-          <div style={{ marginTop: 14, background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.3)', borderRadius: 8, padding: '10px 14px' }}>
-            <div style={{ fontSize: 12, color: '#D97706', fontWeight: 600 }}>Encarregado de Educação obrigatório</div>
-            <div style={{ fontSize: 11.5, color: '#92400E', marginTop: 3 }}>
-              Este aluno é menor de 18 anos. Fecha esta janela e adiciona um responsável no perfil do aluno antes de guardar.
+        <div>
+          <label className={LABEL_CLASS}>Telefone</label>
+          <input value={telefone} onChange={e => setTel(e.target.value)} className={FIELD_CLASS} />
+        </div>
+        <div>
+          <label className={LABEL_CLASS}>NIF</label>
+          <input value={nif} onChange={e => setNif(e.target.value)} className={FIELD_CLASS} />
+        </div>
+        <div>
+          <label className={LABEL_CLASS}>Data de Nascimento *</label>
+          <input type="date" value={dataNasc} onChange={e => setDataNasc(e.target.value)}
+            className={[FIELD_CLASS, !dataNasc ? 'border-gb-red/50' : ''].join(' ')} />
+          {!dataNasc && <div className="mt-1 text-[11px] text-gb-red">Obrigatório</div>}
+          {idade !== null && (
+            <div className={['mt-1 text-[11px]', idade < 18 ? 'text-amber-600' : 'text-muted'].join(' ')}>
+              {idade} anos{idade < 18 ? (idade >= 12 ? ' · Menor · Check-in autónomo' : ' · Menor · Requer responsável') : ' · Adulto'}
             </div>
-          </div>
-        )}
-
-        <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-          <button onClick={onClose} style={{ flex: 1, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>
-            Cancelar
-          </button>
-          <button onClick={handleSave} disabled={saving || saved || !dataNasc || precisaResp} style={{ flex: 2, background: saved ? '#22C55E' : (saving || !dataNasc || precisaResp) ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '10px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: (saving || !dataNasc || precisaResp) ? 'not-allowed' : 'pointer' }}>
-            {saved ? '✓ Guardado!' : saving ? 'A guardar...' : '💾 Guardar'}
-          </button>
+          )}
         </div>
       </div>
-    </div>
+
+      {precisaResp && (
+        <div className="p-2.5 px-3.5 mt-3.5 rounded-lg border border-amber-600/30 bg-amber-600/[0.08]">
+          <div className="text-xs font-semibold text-amber-600">Encarregado de Educação obrigatório</div>
+          <div className="mt-1 text-[11.5px] text-amber-800">
+            Este aluno é menor de 18 anos. Fecha esta janela e adiciona um responsável no perfil do aluno antes de guardar.
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-2.5 mt-[18px]">
+        <Button variant="secondary" className="flex-1" onClick={onClose}>
+          Cancelar
+        </Button>
+        <Button
+          variant="primary" className={['flex-[2]', saved ? '!bg-green-500' : ''].join(' ')}
+          disabled={saving || saved || !dataNasc || precisaResp}
+          onClick={handleSave}
+        >
+          {saved ? '✓ Guardado!' : saving ? 'A guardar...' : '💾 Guardar'}
+        </Button>
+      </div>
+    </Modal>
   );
 }
 
@@ -145,6 +139,9 @@ function EditAlunoModal({ aluno, onClose }: { aluno: any; onClose: () => void })
 const RELACAO_OPTS = ['pai', 'mae', 'avo', 'tutor', 'outro'];
 
 const FORM_INIT = { nome: '', email: '', telefone: '', nif: '', tipoRelacao: 'pai', podeCheckin: true, eTitularFinanceiro: false };
+
+const MINI_FIELD_CLASS = 'box-border w-full py-1.5 px-2.5 min-h-11 sm:min-h-0 text-[12.5px] rounded-md border outline-none transition-all duration-200 border-border bg-elevated text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25';
+const MINI_LABEL_CLASS = 'block mb-0.5 text-[10px] font-bold tracking-[0.7px] uppercase text-muted';
 
 function ResponsaveisSection({ aluno }: { aluno: any }) {
   const { data: vinculos, refetch } = useResponsaveis(aluno.id);
@@ -186,39 +183,32 @@ function ResponsaveisSection({ aluno }: { aluno: any }) {
     }
   };
 
-  const inp: React.CSSProperties = {
-    width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-    borderRadius: 6, padding: '7px 10px', color: 'var(--text-primary)', fontSize: 12.5,
-    boxSizing: 'border-box',
-  };
-  const lbl: React.CSSProperties = {
-    display: 'block', color: 'var(--text-muted)', fontSize: 10, fontWeight: 700,
-    textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: 3,
-  };
-
   return (
-    <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border-subtle)' }}>
+    <div className="pt-4 mt-5 border-t border-border-subtle">
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+      <div className="flex justify-between items-center mb-2.5">
         <div>
-          <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--text-muted)' }}>
+          <span className="text-[11px] font-bold tracking-[0.6px] uppercase text-muted">
             Responsáveis
           </span>
-          {autonomo && (
-            <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 600, background: 'rgba(16,185,129,0.1)', color: '#059669', padding: '2px 7px', borderRadius: 99 }}>
+          {autonomo ? (
+            <span className="py-0.5 px-1.5 ml-2 text-[10px] font-semibold text-emerald-600 rounded-full bg-emerald-600/10">
               Check-in autónomo
             </span>
-          )}
-          {!autonomo && (
-            <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 600, background: 'rgba(217,119,6,0.1)', color: '#D97706', padding: '2px 7px', borderRadius: 99 }}>
+          ) : (
+            <span className="py-0.5 px-1.5 ml-2 text-[10px] font-semibold text-amber-600 rounded-full bg-amber-600/10">
               Requer responsável p/ check-in
             </span>
           )}
         </div>
         <button
           onClick={() => { setAdding(a => !a); setForm(FORM_INIT); }}
-          style={{ background: adding ? 'var(--bg-elevated)' : 'transparent', border: `1px solid ${adding ? 'var(--border)' : GB.red}`, borderRadius: 6, padding: '4px 12px', color: adding ? 'var(--text-muted)' : GB.red, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+          className={[
+            'py-1 px-3 min-h-11 sm:min-h-0 text-xs font-semibold rounded-md border cursor-pointer transition-colors duration-200',
+            'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+            adding ? 'border-border bg-elevated text-muted hover:bg-border-subtle active:bg-border-subtle' : 'bg-transparent border-gb-red text-gb-red hover:bg-gb-red/10 active:bg-gb-red/10',
+          ].join(' ')}
         >
           {adding ? 'Cancelar' : '+ Adicionar'}
         </button>
@@ -226,37 +216,37 @@ function ResponsaveisSection({ aluno }: { aluno: any }) {
 
       {/* Lista de responsáveis */}
       {vinculos.length === 0 && !adding && (
-        <div style={{ color: 'var(--text-muted)', fontSize: 12, padding: '6px 0' }}>
+        <div className="py-1.5 text-xs text-muted">
           Nenhum responsável registado.
         </div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="flex flex-col gap-2">
         {vinculos.map((v: any) => (
-          <div key={v.id} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div key={v.id} className="flex gap-2.5 items-center py-2.5 px-3.5 rounded-lg border border-border bg-elevated">
             {/* Avatar */}
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(200,16,46,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: GB.red, fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
+            <div className="flex justify-center items-center w-8 h-8 text-[13px] font-bold rounded-full shrink-0 text-gb-red bg-gb-red/10">
               {v.responsavel.nome.charAt(0)}
             </div>
             {/* Info */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}>{v.responsavel.nome}</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 11.5, marginTop: 1 }}>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-semibold text-primary">{v.responsavel.nome}</div>
+              <div className="mt-px text-[11.5px] text-muted">
                 {v.responsavel.telefone || v.responsavel.email || '—'}
               </div>
             </div>
             {/* Badges */}
-            <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
-              <span style={{ fontSize: 10, fontWeight: 600, background: 'rgba(99,102,241,0.1)', color: '#6366F1', padding: '2px 7px', borderRadius: 99 }}>
+            <div className="flex gap-1 shrink-0">
+              <span className="py-0.5 px-1.5 text-[10px] font-semibold text-indigo-500 rounded-full bg-indigo-500/10">
                 {RELACAO_LABELS[v.tipoRelacao] ?? v.tipoRelacao}
               </span>
               {v.podeCheckin && (
-                <span style={{ fontSize: 10, fontWeight: 600, background: 'rgba(16,185,129,0.1)', color: '#059669', padding: '2px 7px', borderRadius: 99 }}>
+                <span className="py-0.5 px-1.5 text-[10px] font-semibold text-emerald-600 rounded-full bg-emerald-600/10">
                   Check-in
                 </span>
               )}
               {v.eTitularFinanceiro && (
-                <span style={{ fontSize: 10, fontWeight: 600, background: 'rgba(217,119,6,0.1)', color: '#D97706', padding: '2px 7px', borderRadius: 99 }}>
+                <span className="py-0.5 px-1.5 text-[10px] font-semibold text-amber-600 rounded-full bg-amber-600/10">
                   Fatura
                 </span>
               )}
@@ -265,7 +255,11 @@ function ResponsaveisSection({ aluno }: { aluno: any }) {
             <button
               onClick={() => handleRemove(v.id)}
               disabled={removingId === v.id}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, opacity: removingId === v.id ? 0.4 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              className={[
+                'flex justify-center items-center p-1 min-h-11 min-w-11 bg-none border-none cursor-pointer transition-colors duration-200 text-muted hover:text-gb-red active:text-gb-red',
+                'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                removingId === v.id ? 'opacity-40' : 'opacity-100',
+              ].join(' ')}
             >
               <Ico icon={TrashIcon} sm />
             </button>
@@ -275,53 +269,59 @@ function ResponsaveisSection({ aluno }: { aluno: any }) {
 
       {/* Formulário inline de adição */}
       {adding && (
-        <div style={{ marginTop: 10, background: 'var(--bg-elevated)', border: `1px solid ${GB.red}30`, borderRadius: 10, padding: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 12 }}>
+        <div className="p-4 mt-2.5 rounded-[10px] border border-gb-red/20 bg-elevated">
+          <div className="mb-3 text-[11px] font-bold tracking-[0.6px] uppercase text-muted">
             Novo Responsável
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div style={{ gridColumn: '1/-1' }}>
-              <label style={lbl}>Nome completo *</label>
-              <input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Nome do responsável" style={inp} />
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            <div className="col-span-full">
+              <label className={MINI_LABEL_CLASS}>Nome completo *</label>
+              <input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Nome do responsável" className={MINI_FIELD_CLASS} />
             </div>
             <div>
-              <label style={lbl}>Telefone</label>
-              <input value={form.telefone} onChange={e => setForm(f => ({ ...f, telefone: e.target.value }))} placeholder="+351 9XX XXX XXX" style={inp} />
+              <label className={MINI_LABEL_CLASS}>Telefone</label>
+              <input value={form.telefone} onChange={e => setForm(f => ({ ...f, telefone: e.target.value }))} placeholder="+351 9XX XXX XXX" className={MINI_FIELD_CLASS} />
             </div>
             <div>
-              <label style={lbl}>NIF</label>
-              <input value={form.nif} onChange={e => setForm(f => ({ ...f, nif: e.target.value }))} placeholder="000000000" style={inp} />
+              <label className={MINI_LABEL_CLASS}>NIF</label>
+              <input value={form.nif} onChange={e => setForm(f => ({ ...f, nif: e.target.value }))} placeholder="000000000" className={MINI_FIELD_CLASS} />
             </div>
             <div>
-              <label style={lbl}>Email</label>
-              <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="email@exemplo.com" style={inp} />
+              <label className={MINI_LABEL_CLASS}>Email</label>
+              <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="email@exemplo.com" className={MINI_FIELD_CLASS} />
             </div>
             <div>
-              <label style={lbl}>Relação</label>
-              <select value={form.tipoRelacao} onChange={e => setForm(f => ({ ...f, tipoRelacao: e.target.value }))} style={{ ...inp, cursor: 'pointer' }}>
+              <label className={MINI_LABEL_CLASS}>Relação</label>
+              <select value={form.tipoRelacao} onChange={e => setForm(f => ({ ...f, tipoRelacao: e.target.value }))} className={[MINI_FIELD_CLASS, 'cursor-pointer'].join(' ')}>
                 {RELACAO_OPTS.map(r => <option key={r} value={r}>{RELACAO_LABELS[r]}</option>)}
               </select>
             </div>
           </div>
 
           {/* Permissões */}
-          <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12.5, color: 'var(--text-secondary)' }}>
+          <div className="flex flex-wrap gap-4 mt-3">
+            <label className="flex gap-1.5 items-center py-1.5 text-[12.5px] cursor-pointer text-secondary">
               <input type="checkbox" checked={form.podeCheckin} onChange={e => setForm(f => ({ ...f, podeCheckin: e.target.checked }))} />
               Pode fazer check-in
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12.5, color: 'var(--text-secondary)' }}>
+            <label className="flex gap-1.5 items-center py-1.5 text-[12.5px] cursor-pointer text-secondary">
               <input type="checkbox" checked={form.eTitularFinanceiro} onChange={e => setForm(f => ({ ...f, eTitularFinanceiro: e.target.checked }))} />
               Titular da fatura
             </label>
           </div>
 
-          <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-            <button onClick={() => { setAdding(false); setForm(FORM_INIT); }} style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '8px', color: 'var(--text-muted)', fontSize: 12.5, cursor: 'pointer' }}>
+          <div className="flex gap-2 mt-3.5">
+            <button onClick={() => { setAdding(false); setForm(FORM_INIT); }}
+              className="flex-1 py-2 min-h-11 sm:min-h-0 text-[12.5px] rounded-md border cursor-pointer transition-colors duration-200 border-border bg-base text-muted hover:bg-elevated active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
               Cancelar
             </button>
-            <button onClick={handleAdd} disabled={saving || !form.nome.trim()} style={{ flex: 2, background: saving || !form.nome.trim() ? '#aaa' : GB.red, border: 'none', borderRadius: 6, padding: '8px', color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: saving || !form.nome.trim() ? 'not-allowed' : 'pointer' }}>
+            <button onClick={handleAdd} disabled={saving || !form.nome.trim()}
+              className={[
+                'flex-[2] py-2 min-h-11 sm:min-h-0 text-[12.5px] font-bold text-white rounded-md border-none transition-colors duration-200',
+                'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
+                saving || !form.nome.trim() ? 'bg-neutral-400' : 'cursor-pointer bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark',
+              ].join(' ')}>
               {saving ? 'A guardar...' : '✓ Guardar Responsável'}
             </button>
           </div>
@@ -346,7 +346,6 @@ export default function AlunosPage() {
   const [editModal, setEditModal]       = useState(false);
   const [showMatricula, setShowMatricula] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
-  const { isMobile }                    = useMobile();
 
   const changeStatus = async (newStatus: 'ativo' | 'suspenso' | 'inativo') => {
     const labels: Record<string, string> = {
@@ -404,6 +403,9 @@ export default function AlunosPage() {
 
   const setFilter = (setter: (v: any) => void) => (v: any) => { setter(v); setPage(1); };
 
+  const statusBadgeColor = (status: string) =>
+    status === 'ativo' ? 'success' : status === 'suspenso' ? 'warning' : 'neutral';
+
   // ── Perfil do aluno seleccionado ────────────────────────────
   const renderPerfil = () => {
     const idade = calcularIdade(selected.dataNascimento);
@@ -411,33 +413,33 @@ export default function AlunosPage() {
 
     return (
       <div>
-        <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <button onClick={() => setSelected(null)} className="flex gap-1.5 items-center py-2 mb-4 min-h-11 sm:min-h-0 text-[13px] bg-none border-none cursor-pointer transition-colors duration-200 text-muted hover:text-primary active:text-primary outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
           <Ico icon={ArrowLeftIcon} sm /> Voltar
         </button>
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 24 }}>
+        <div className="p-6 rounded-lg border border-border bg-card">
 
           {/* Cabeçalho */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{ width: 52, height: 52, borderRadius: '50%', background: GB.red, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 20, fontWeight: 700, flexShrink: 0 }}>
+          <div className="flex justify-between items-start mb-5">
+            <div className="flex gap-3.5 items-center">
+              <div className="flex justify-center items-center w-[52px] h-[52px] text-xl font-bold text-white rounded-full shrink-0 bg-gb-red">
                 {selected.nome?.charAt(0) || '?'}
               </div>
               <div>
-                <div style={{ color: 'var(--text-primary)', fontSize: 17, fontWeight: 700 }}>{selected.nome}</div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>{selected.email}</div>
+                <div className="text-[17px] font-bold text-primary">{selected.nome}</div>
+                <div className="text-[13px] text-muted">{selected.email}</div>
                 {/* Badge de idade */}
                 {idade !== null && (
-                  <div style={{ marginTop: 4, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 10.5, fontWeight: 600, background: menor ? 'rgba(217,119,6,0.1)' : 'rgba(99,102,241,0.1)', color: menor ? '#D97706' : '#6366F1', padding: '2px 8px', borderRadius: 99 }}>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    <span className={['py-0.5 px-2 text-[10.5px] font-semibold rounded-full', menor ? 'text-amber-600 bg-amber-600/10' : 'text-indigo-500 bg-indigo-500/10'].join(' ')}>
                       {idade} anos{menor ? ' · Menor' : ' · Adulto'}
                     </span>
                     {menor && podeCheckinAutonomo(selected.dataNascimento) && (
-                      <span style={{ fontSize: 10.5, fontWeight: 600, background: 'rgba(16,185,129,0.1)', color: '#059669', padding: '2px 8px', borderRadius: 99 }}>
+                      <span className="py-0.5 px-2 text-[10.5px] font-semibold text-emerald-600 rounded-full bg-emerald-600/10">
                         Check-in autónomo (≥12)
                       </span>
                     )}
                     {menor && !podeCheckinAutonomo(selected.dataNascimento) && (
-                      <span style={{ fontSize: 10.5, fontWeight: 600, background: 'rgba(239,68,68,0.1)', color: '#DC2626', padding: '2px 8px', borderRadius: 99 }}>
+                      <span className="py-0.5 px-2 text-[10.5px] font-semibold text-red-600 rounded-full bg-red-600/10">
                         Requer responsável
                       </span>
                     )}
@@ -447,22 +449,38 @@ export default function AlunosPage() {
             </div>
 
             {/* Botões de acção */}
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button onClick={() => setEditModal(true)} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 14px', color: 'var(--text-secondary)', fontSize: 12.5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => setEditModal(true)}
+                className="flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
                 <Ico icon={PencilIcon} sm /> Editar
               </button>
               {(selected.status === 'suspenso' || selected.status === 'inativo') && (
-                <button onClick={() => changeStatus('ativo')} disabled={statusLoading} style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.35)', borderRadius: 'var(--radius-sm)', padding: '8px 14px', color: '#16A34A', fontSize: 12.5, cursor: 'pointer', opacity: statusLoading ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button onClick={() => changeStatus('ativo')} disabled={statusLoading}
+                  className={[
+                    'flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] text-green-600 rounded-sm border cursor-pointer transition-colors duration-200 border-green-500/35 bg-green-500/10 hover:bg-green-500/20 active:bg-green-500/20',
+                    'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
+                    statusLoading ? 'opacity-50' : 'opacity-100',
+                  ].join(' ')}>
                   <Ico icon={CheckCircleIcon} sm /> Reativar
                 </button>
               )}
               {selected.status !== 'suspenso' && (
-                <button onClick={() => changeStatus('suspenso')} disabled={statusLoading} style={{ background: 'rgba(217,119,6,0.1)', border: '1px solid rgba(217,119,6,0.3)', borderRadius: 'var(--radius-sm)', padding: '8px 14px', color: '#D97706', fontSize: 12.5, cursor: 'pointer', opacity: statusLoading ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button onClick={() => changeStatus('suspenso')} disabled={statusLoading}
+                  className={[
+                    'flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] text-amber-600 rounded-sm border cursor-pointer transition-colors duration-200 border-amber-600/30 bg-amber-600/10 hover:bg-amber-600/20 active:bg-amber-600/20',
+                    'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
+                    statusLoading ? 'opacity-50' : 'opacity-100',
+                  ].join(' ')}>
                   <Ico icon={XCircleIcon} sm /> Suspender
                 </button>
               )}
               {selected.status !== 'inativo' && (
-                <button onClick={() => changeStatus('inativo')} disabled={statusLoading} style={{ background: 'rgba(107,114,128,0.08)', border: '1px solid rgba(107,114,128,0.25)', borderRadius: 'var(--radius-sm)', padding: '8px 14px', color: '#6B7280', fontSize: 12.5, cursor: 'pointer', opacity: statusLoading ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button onClick={() => changeStatus('inativo')} disabled={statusLoading}
+                  className={[
+                    'flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] text-neutral-500 rounded-sm border cursor-pointer transition-colors duration-200 border-neutral-500/25 bg-neutral-500/[0.08] hover:bg-neutral-500/[0.16] active:bg-neutral-500/[0.16]',
+                    'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
+                    statusLoading ? 'opacity-50' : 'opacity-100',
+                  ].join(' ')}>
                   <Ico icon={XCircleIcon} sm /> Tornar Inativo
                 </button>
               )}
@@ -479,22 +497,18 @@ export default function AlunosPage() {
             ['Faixa',      `${selected.faixa} · Grau ${selected.grau}`],
             ['Frequência', `${selected.frequencia || 0}%`],
           ].map(([k, v]) => (
-            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-              <span style={{ color: 'var(--text-muted)', fontSize: 12.5 }}>{k}</span>
-              <span style={{ color: 'var(--text-primary)', fontSize: 12.5, fontWeight: 500 }}>{v}</span>
+            <div key={k} className="flex justify-between py-2 border-b border-border-subtle">
+              <span className="text-[12.5px] text-muted">{k}</span>
+              <span className="text-[12.5px] font-medium text-primary">{v}</span>
             </div>
           ))}
 
           {/* Status */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0' }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: 12.5 }}>Status</span>
-            <span style={{
-              background: selected.status === 'ativo' ? 'rgba(34,197,94,0.1)' : selected.status === 'suspenso' ? 'rgba(217,119,6,0.1)' : 'rgba(107,114,128,0.1)',
-              color:      selected.status === 'ativo' ? '#16A34A'             : selected.status === 'suspenso' ? '#D97706'             : '#6B7280',
-              fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 99, textTransform: 'capitalize',
-            }}>
+          <div className="flex justify-between items-center py-2">
+            <span className="text-[12.5px] text-muted">Status</span>
+            <Badge color={statusBadgeColor(selected.status)}>
               {selected.status === 'ativo' ? '● Ativo' : selected.status === 'suspenso' ? '⛔ Suspenso' : '○ Inativo'}
-            </span>
+            </Badge>
           </div>
 
           {/* Secção de responsáveis — só para menores */}
@@ -502,12 +516,6 @@ export default function AlunosPage() {
         </div>
       </div>
     );
-  };
-
-  const inp: React.CSSProperties = {
-    background: 'var(--bg-card)', border: '1px solid var(--border)',
-    borderRadius: 'var(--radius-sm)', padding: '8px 12px',
-    color: 'var(--text-primary)', fontSize: 12.5,
   };
 
   return (
@@ -523,31 +531,29 @@ export default function AlunosPage() {
         }} />
       )}
 
-      {/* Cabeçalho da página */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'center' : 'flex-end', marginBottom: 18, flexWrap: 'wrap', gap: 10 }}>
-        <div>
-          <div style={{ color: 'var(--text-muted)', fontSize: 10.5, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 3 }}>Academia</div>
-          <h1 style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 800, fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>
-            Alunos <span style={{ color: 'var(--text-muted)', fontSize: 14, fontWeight: 400 }}>({filtered.length}{filtered.length !== alunos.length ? ` de ${alunos.length}` : ''})</span>
-          </h1>
-        </div>
-        <button onClick={() => setShowMatricula(true)} style={{ background: GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '10px 18px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: 'var(--shadow-red)', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Ico icon={PlusIcon} sm /> Nova Matrícula
-        </button>
-      </div>
+      <PageHeader
+        eyebrow="Academia"
+        title={<>Alunos <span className="text-sm font-normal text-muted">({filtered.length}{filtered.length !== alunos.length ? ` de ${alunos.length}` : ''})</span></>}
+        actions={
+          <Button variant="primary" className="whitespace-nowrap" onClick={() => setShowMatricula(true)}>
+            <Ico icon={PlusIcon} sm /> Nova Matrícula
+          </Button>
+        }
+      />
 
       {/* Filtros */}
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '14px 16px', marginBottom: 16 }}>
+      <div className="py-3.5 px-4 mb-4 rounded-lg border border-border bg-card">
         {/* Linha 1: Pesquisa + Ordenação */}
-        <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: 180, position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <Ico icon={FunnelIcon} sm style={{ position: 'absolute', left: 10, color: 'var(--text-muted)', pointerEvents: 'none' }} />
+        <div className="flex flex-wrap gap-2.5 mb-2.5">
+          <div className="flex relative flex-1 items-center min-w-[180px]">
+            <Ico icon={FunnelIcon} sm className="absolute left-2.5 pointer-events-none text-muted" />
             <input value={search} onChange={e => { setFilter(setSearch)(e.target.value); }} placeholder="Pesquisar por nome ou email..."
-              style={{ ...inp, paddingLeft: 32, width: '100%', boxSizing: 'border-box' }} />
+              className="box-border py-2 pr-3 pl-8 w-full min-h-11 sm:min-h-0 text-[12.5px] rounded-sm border outline-none transition-all duration-200 border-border bg-card text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25" />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Ico icon={AdjustmentsHorizontalIcon} sm style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-            <select value={sortBy} onChange={e => setFilter(setSortBy)(e.target.value as typeof sortBy)} style={inp}>
+          <div className="flex gap-1.5 items-center">
+            <Ico icon={AdjustmentsHorizontalIcon} sm className="shrink-0 text-muted" />
+            <select value={sortBy} onChange={e => setFilter(setSortBy)(e.target.value as typeof sortBy)}
+              className="py-2 px-3 min-h-11 sm:min-h-0 text-[12.5px] rounded-sm border outline-none transition-all duration-200 border-border bg-card text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25">
               <option value="nome-az">Nome A→Z</option>
               <option value="nome-za">Nome Z→A</option>
               <option value="faixa-asc">Faixa ↑</option>
@@ -558,16 +564,21 @@ export default function AlunosPage() {
         </div>
 
         {/* Linha 2: Status + Faixa + Graduáveis */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div className="flex flex-wrap gap-2 items-center">
           {['todos','ativo','suspenso','inativo'].map(f => (
             <button key={f} onClick={() => setFilter(setFiltroStatus)(f)}
-              style={{ background: filtroStatus === f ? GB.red : 'var(--bg-elevated)', border: `1px solid ${filtroStatus === f ? GB.red : 'var(--border)'}`, borderRadius: 'var(--radius-sm)', padding: '5px 12px', color: filtroStatus === f ? '#fff' : 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', textTransform: 'capitalize', fontWeight: filtroStatus === f ? 700 : 400 }}>
+              className={[
+                'py-1 px-3 min-h-11 sm:min-h-0 text-xs capitalize rounded-sm border cursor-pointer transition-colors duration-200',
+                'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                filtroStatus === f ? 'font-bold text-white bg-gb-red border-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark' : 'font-normal text-secondary bg-elevated border-border hover:bg-border-subtle active:bg-border-subtle',
+              ].join(' ')}>
               {f === 'todos' ? 'Todos' : f}
             </button>
           ))}
 
           {faixasDisponiveis.length > 0 && (
-            <select value={filtroFaixa} onChange={e => setFilter(setFiltroFaixa)(e.target.value)} style={{ ...inp, fontSize: 12 }}>
+            <select value={filtroFaixa} onChange={e => setFilter(setFiltroFaixa)(e.target.value)}
+              className="py-2 px-3 min-h-11 sm:min-h-0 text-xs rounded-sm border outline-none transition-all duration-200 border-border bg-card text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25">
               <option value="todas">Todas as faixas</option>
               {faixasDisponiveis.map(f => (
                 <option key={f as string} value={f as string}>{(beltConfig[f as string]?.label) || f}</option>
@@ -575,10 +586,10 @@ export default function AlunosPage() {
             </select>
           )}
 
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', marginLeft: 'auto' }}>
+          <label className="flex gap-1.5 items-center py-1.5 ml-auto cursor-pointer">
             <input type="checkbox" checked={soGraduaveis} onChange={e => { setSoGraduaveis(e.target.checked); setPage(1); }}
-              style={{ accentColor: GB.red, width: 14, height: 14 }} />
-            <span style={{ color: 'var(--text-secondary)', fontSize: 12, whiteSpace: 'nowrap' }}>Elegíveis p/ graduação</span>
+              className="w-3.5 h-3.5 accent-gb-red" />
+            <span className="text-xs whitespace-nowrap text-secondary">Elegíveis p/ graduação</span>
           </label>
         </div>
       </div>
@@ -586,11 +597,11 @@ export default function AlunosPage() {
       {/* Conteúdo */}
       {selected ? renderPerfil() : (
         <div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="flex flex-col gap-2">
             {alunosLoading ? (
-              <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 40, fontSize: 13 }}>A carregar alunos...</div>
+              <div className="p-10 text-[13px] text-center text-muted">A carregar alunos...</div>
             ) : paginated.length === 0 ? (
-              <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>
+              <div className="p-10 text-center text-muted">
                 {search || filtroFaixa !== 'todas' || filtroStatus !== 'todos' || soGraduaveis
                   ? 'Nenhum aluno corresponde aos filtros activos.'
                   : 'Ainda não há alunos. Clica em "+ Nova Matrícula".'}
@@ -600,45 +611,50 @@ export default function AlunosPage() {
               const idade   = calcularIdade(a.dataNascimento);
               const menor   = eMenor(a.dataNascimento);
               return (
-                <div key={a.id} onClick={() => setSelected(a)}
-                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: 15, fontWeight: 700, flexShrink: 0 }}>
+                <button key={a.id} onClick={() => setSelected(a)}
+                  className="flex gap-3.5 items-center py-3.5 px-[18px] w-full text-left rounded-lg border cursor-pointer transition-colors duration-200 border-border bg-card hover:bg-elevated active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+                  <div className="flex justify-center items-center w-10 h-10 text-[15px] font-bold rounded-full shrink-0 bg-elevated text-secondary">
                     {a.nome?.charAt(0) || '?'}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 7, overflow: 'hidden' }}>
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 1, minWidth: 0 }}>{a.nome}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex overflow-hidden gap-1.5 items-center text-sm font-semibold text-primary">
+                      <span className="overflow-hidden shrink whitespace-nowrap text-ellipsis min-w-0">{a.nome}</span>
                       {menor && (
-                        <span style={{ fontSize: 9.5, fontWeight: 700, background: 'rgba(217,119,6,0.12)', color: '#D97706', padding: '1px 6px', borderRadius: 99, flexShrink: 0, whiteSpace: 'nowrap' }}>
+                        <span className="py-0.5 px-1.5 text-[9.5px] font-bold whitespace-nowrap rounded-full shrink-0 text-amber-600 bg-amber-600/[0.12]">
                           {idade}a · Menor
                         </span>
                       )}
                     </div>
-                    <div style={{ color: 'var(--text-muted)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.email} · {a.plano || '—'}</div>
+                    <div className="overflow-hidden text-xs whitespace-nowrap text-ellipsis text-muted">{a.email} · {a.plano || '—'}</div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                    <span style={{ background: beltCfg.bg, color: beltCfg.text, fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 99, border: a.faixa === 'branca' ? '1px solid #ccc' : 'none' }}>
+                  <div className="flex gap-2 items-center shrink-0">
+                    <span
+                      className="py-0.5 px-2 text-[10.5px] font-bold rounded-full"
+                      style={{ background: beltCfg.bg, color: beltCfg.text, border: a.faixa === 'branca' ? '1px solid #ccc' : 'none' }}
+                    >
                       {(beltConfig[a.faixa]?.label) || a.faixa}
                     </span>
-                    <span style={{ background: a.status === 'ativo' ? 'rgba(34,197,94,0.1)' : a.status === 'suspenso' ? 'rgba(217,119,6,0.1)' : 'rgba(107,114,128,0.1)', color: a.status === 'ativo' ? '#16A34A' : a.status === 'suspenso' ? '#D97706' : '#6B7280', fontSize: 10.5, fontWeight: 600, padding: '2px 8px', borderRadius: 99 }}>
-                      {a.status}
-                    </span>
-                    <ChevronRightIcon style={{ width: 16, height: 16, color: 'var(--text-muted)' }} />
+                    <Badge color={statusBadgeColor(a.status)}>{a.status}</Badge>
+                    <ChevronRightIcon className="w-4 h-4 text-muted" />
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
 
           {/* Paginação */}
           {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, padding: '12px 0', borderTop: '1px solid var(--border)' }}>
+            <div className="flex justify-between items-center py-3 mt-4 border-t border-border">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage === 1}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '7px 14px', color: safePage === 1 ? 'var(--text-muted)' : 'var(--text-primary)', fontSize: 13, cursor: safePage === 1 ? 'not-allowed' : 'pointer', opacity: safePage === 1 ? 0.5 : 1 }}>
-                <ChevronLeftIcon style={{ width: 15, height: 15 }} /> Anterior
+                className={[
+                  'flex gap-1 items-center py-1.5 px-3.5 min-h-11 sm:min-h-0 text-[13px] rounded-sm border transition-colors duration-200 border-border bg-card',
+                  'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
+                  safePage === 1 ? 'text-muted opacity-50' : 'cursor-pointer text-primary opacity-100 hover:bg-elevated active:bg-elevated',
+                ].join(' ')}>
+                <ChevronLeftIcon className="w-[15px] h-[15px]" /> Anterior
               </button>
 
-              <div style={{ display: 'flex', gap: 4 }}>
+              <div className="flex gap-1">
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
                   .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
                   .reduce<(number | '…')[]>((acc, p, i, arr) => {
@@ -647,24 +663,32 @@ export default function AlunosPage() {
                     return acc;
                   }, [])
                   .map((p, i) => p === '…'
-                    ? <span key={`e${i}`} style={{ padding: '0 4px', color: 'var(--text-muted)', lineHeight: '32px' }}>…</span>
+                    ? <span key={`e${i}`} className="px-1 leading-8 text-muted">…</span>
                     : <button key={p} onClick={() => setPage(p as number)}
-                        style={{ width: 32, height: 32, borderRadius: 6, border: `1px solid ${p === safePage ? GB.red : 'var(--border)'}`, background: p === safePage ? GB.red : 'var(--bg-card)', color: p === safePage ? '#fff' : 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', fontWeight: p === safePage ? 700 : 400 }}>
+                        className={[
+                          'flex justify-center items-center w-8 h-8 min-h-11 sm:min-h-0 text-[13px] rounded-md border cursor-pointer transition-colors duration-200',
+                          'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                          p === safePage ? 'font-bold text-white bg-gb-red border-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark' : 'font-normal text-secondary bg-card border-border hover:bg-elevated active:bg-elevated',
+                        ].join(' ')}>
                         {p}
                       </button>
                   )}
               </div>
 
               <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={safePage === totalPages}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '7px 14px', color: safePage === totalPages ? 'var(--text-muted)' : 'var(--text-primary)', fontSize: 13, cursor: safePage === totalPages ? 'not-allowed' : 'pointer', opacity: safePage === totalPages ? 0.5 : 1 }}>
-                Próximo <ChevronRightIcon style={{ width: 15, height: 15 }} />
+                className={[
+                  'flex gap-1 items-center py-1.5 px-3.5 min-h-11 sm:min-h-0 text-[13px] rounded-sm border transition-colors duration-200 border-border bg-card',
+                  'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
+                  safePage === totalPages ? 'text-muted opacity-50' : 'cursor-pointer text-primary opacity-100 hover:bg-elevated active:bg-elevated',
+                ].join(' ')}>
+                Próximo <ChevronRightIcon className="w-[15px] h-[15px]" />
               </button>
             </div>
           )}
 
           {/* Contador de resultados */}
           {!alunosLoading && filtered.length > 0 && (
-            <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 11.5, marginTop: totalPages > 1 ? 4 : 12 }}>
+            <div className={['text-[11.5px] text-center text-muted', totalPages > 1 ? 'mt-1' : 'mt-3'].join(' ')}>
               A mostrar {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} de {filtered.length} alunos
             </div>
           )}

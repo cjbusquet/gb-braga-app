@@ -1,11 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { usePagamentos, usePlanos, useAlunos, db } from '../../lib/useData';
-import { GB } from '../../lib/gbBrand';
-import { useMobile } from '../../lib/useMobile';
 import { Ico, ChatBubbleLeftRightIcon, DocumentTextIcon, ArrowUpTrayIcon } from '../../lib/icons';
+import Card from '../../components/common/Card';
+import Badge, { type BadgeColor } from '../../components/common/Badge';
+import PageHeader from '../../components/common/PageHeader';
 
 type Tab = 'cobranças' | 'planos' | 'toconline';
+
+const STATUS_CFG: Record<string, { color: BadgeColor; label: string }> = {
+  pago:      { color: 'success', label: 'Pago' },
+  pendente:  { color: 'warning', label: 'Pendente' },
+  vencido:   { color: 'danger',  label: 'Vencido' },
+  cancelado: { color: 'neutral', label: 'Cancelado' },
+};
 
 export default function FinanceiroPage() {
   const { data: pagamentos, refetch } = usePagamentos();
@@ -14,7 +22,6 @@ export default function FinanceiroPage() {
   const [tab, setTab]                 = useState<Tab>('cobranças');
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [saving, setSaving]           = useState<string|null>(null);
-  const { isMobile }                  = useMobile();
 
   const filtered = pagamentos.filter((p: any) =>
     filtroStatus === 'todos' || p.status === filtroStatus
@@ -35,37 +42,29 @@ export default function FinanceiroPage() {
     setSaving(null);
   };
 
-  const statusCfg: any = {
-    pago:     { color:'#16A34A', bg:'rgba(34,197,94,0.1)',  label:'Pago' },
-    pendente: { color:'#D97706', bg:'rgba(217,119,6,0.1)',  label:'Pendente' },
-    vencido:  { color:GB.red,   bg:'rgba(200,16,46,0.08)', label:'Vencido' },
-    cancelado:{ color:'#6B7280', bg:'rgba(107,114,128,0.1)',label:'Cancelado' },
-  };
-
   return (
     <div>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:18 }}>
-        <div>
-          <div style={{ color:'var(--text-muted)', fontSize:10.5, letterSpacing:'1px', textTransform:'uppercase', marginBottom:3 }}>Academia</div>
-          <h1 style={{ color:'var(--text-primary)', fontSize:20, fontWeight:800, fontFamily:'var(--font-display)', textTransform:'uppercase' }}>Financeiro</h1>
-        </div>
-      </div>
+      <PageHeader eyebrow="Academia" title="Financeiro" />
 
       {/* KPI Cards */}
-      <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap:12, marginBottom:20 }}>
-        {[['Receita Mês', totais.pago, '#22C55E'],['Pendente', totais.pendente, '#F59E0B'],['Vencido', totais.vencido, GB.red]].map(([label,val,color]) => (
-          <div key={label as string} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:16 }}>
-            <div style={{ color:'var(--text-muted)', fontSize:10.5, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.8px', marginBottom:6 }}>{label as string}</div>
-            <div style={{ color:color as string, fontSize:24, fontWeight:800, fontFamily:'var(--font-mono)' }}>€{(val as number).toFixed(2)}</div>
-          </div>
+      <div className="grid grid-cols-1 gap-3 mb-5 md:grid-cols-3">
+        {([['Receita Mês', totais.pago, '#22C55E'],['Pendente', totais.pendente, '#F59E0B'],['Vencido', totais.vencido, 'var(--gb-red)']] as const).map(([label,val,color]) => (
+          <Card key={label}>
+            <div className="mb-1.5 text-[10.5px] font-semibold tracking-[0.8px] uppercase text-muted">{label}</div>
+            <div className="font-mono text-2xl font-extrabold" style={{ color }}>€{(val as number).toFixed(2)}</div>
+          </Card>
         ))}
       </div>
 
       {/* Tabs */}
-      <div style={{ display:'flex', gap:4, marginBottom:20, borderBottom:'1px solid var(--border)' }}>
+      <div className="flex overflow-x-auto gap-1 mb-5 border-b border-border">
         {(['cobranças','planos','toconline'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
-            style={{ background:'none', border:'none', borderBottom:`2px solid ${tab===t?GB.red:'transparent'}`, padding:'8px 16px', color:tab===t?GB.red:'var(--text-muted)', fontSize:13, fontWeight:tab===t?700:400, cursor:'pointer', marginBottom:-1, textTransform:'capitalize' }}>
+            className={[
+              'py-2 px-4 -mb-px min-h-11 sm:min-h-0 text-[13px] capitalize bg-none border-none border-b-2 cursor-pointer whitespace-nowrap transition-colors duration-200',
+              'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+              tab === t ? 'font-bold border-gb-red text-gb-red' : 'font-normal border-transparent text-muted hover:text-secondary active:text-secondary',
+            ].join(' ')}>
             {t}
           </button>
         ))}
@@ -74,59 +73,65 @@ export default function FinanceiroPage() {
       {/* COBRANÇAS */}
       {tab === 'cobranças' && (
         <div>
-          <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap' }}>
+          <div className="flex flex-wrap gap-2 mb-3.5">
             {['todos','pago','pendente','vencido'].map(f => (
               <button key={f} onClick={() => setFiltroStatus(f)}
-                style={{ background:filtroStatus===f?GB.red:'var(--bg-card)', border:`1px solid ${filtroStatus===f?GB.red:'var(--border)'}`, borderRadius:'var(--radius-sm)', padding:'6px 14px', color:filtroStatus===f?'#fff':'var(--text-secondary)', fontSize:12.5, cursor:'pointer', textTransform:'capitalize' }}>
+                className={[
+                  'py-1.5 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] capitalize rounded-sm border cursor-pointer transition-colors duration-200',
+                  'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                  filtroStatus === f
+                    ? 'text-white bg-gb-red border-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark'
+                    : 'text-secondary bg-card border-border hover:bg-elevated active:bg-elevated',
+                ].join(' ')}>
                 {f} ({pagamentos.filter(p => f==='todos'||p.status===f).length})
               </button>
             ))}
           </div>
 
           {filtered.length === 0 ? (
-            <div style={{ textAlign:'center', color:'var(--text-muted)', padding:40 }}>
+            <div className="p-10 text-center text-muted">
               Sem pagamentos. Os pagamentos são criados automaticamente quando um aluno faz matrícula.
             </div>
           ) : (
-            <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', overflow:'hidden' }}>
-              <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch' as any }}>
-              <table style={{ width:'100%', borderCollapse:'collapse', minWidth: isMobile ? 560 : undefined }}>
+            <div className="overflow-hidden rounded-lg border border-border bg-card">
+              <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
+              <table className="w-full border-collapse min-w-[560px]">
                 <thead>
-                  <tr style={{ borderBottom:'1px solid var(--border-subtle)' }}>
+                  <tr className="border-b border-border-subtle">
                     {['Aluno','Plano','Valor','Vencimento','Estado','Ações'].map(h => (
-                      <th key={h} style={{ padding:'10px 14px', textAlign:'left', fontSize:10.5, fontWeight:600, color:'var(--text-muted)', textTransform:'uppercase' }}>{h}</th>
+                      <th key={h} className="py-2.5 px-3.5 text-[10.5px] font-semibold text-left uppercase whitespace-nowrap text-muted">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((p: any) => {
-                    const st = statusCfg[p.status] || statusCfg.pendente;
+                    const st = STATUS_CFG[p.status] || STATUS_CFG.pendente;
                     return (
-                      <tr key={p.id} style={{ borderBottom:'1px solid var(--border-subtle)' }}>
-                        <td style={{ padding:'10px 14px', fontSize:13, color:'var(--text-primary)', fontWeight:500 }}>{p.alunoNome}</td>
-                        <td style={{ padding:'10px 14px', fontSize:12, color:'var(--text-secondary)' }}>{p.plano||'—'}</td>
-                        <td style={{ padding:'10px 14px', fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>€{p.valor}</td>
-                        <td style={{ padding:'10px 14px', fontSize:12, color:'var(--text-secondary)', fontFamily:'var(--font-mono)' }}>{p.vencimento}</td>
-                        <td style={{ padding:'10px 14px' }}>
-                          <span style={{ background:st.bg, color:st.color, fontSize:10.5, fontWeight:700, padding:'2px 8px', borderRadius:99 }}>{st.label}</span>
+                      <tr key={p.id} className="border-b border-border-subtle">
+                        <td className="py-2.5 px-3.5 text-[13px] font-medium whitespace-nowrap text-primary">{p.alunoNome}</td>
+                        <td className="py-2.5 px-3.5 text-xs whitespace-nowrap text-secondary">{p.plano||'—'}</td>
+                        <td className="py-2.5 px-3.5 text-[13px] font-bold whitespace-nowrap text-primary">€{p.valor}</td>
+                        <td className="py-2.5 px-3.5 font-mono text-xs whitespace-nowrap text-secondary">{p.vencimento}</td>
+                        <td className="py-2.5 px-3.5">
+                          <Badge color={st.color}>{st.label}</Badge>
                         </td>
-                        <td style={{ padding:'10px 14px' }}>
-                          <div style={{ display:'flex', gap:6 }}>
+                        <td className="py-2.5 px-3.5">
+                          <div className="flex flex-wrap gap-1.5">
                             {p.status !== 'pago' && (
                               <button onClick={() => marcarPago(p.id)} disabled={saving===p.id}
-                                style={{ background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.3)', borderRadius:5, padding:'4px 10px', color:'#16A34A', fontSize:11, fontWeight:600, cursor:'pointer' }}>
+                                className="py-1 px-2.5 text-[11px] font-semibold text-green-600 whitespace-nowrap rounded border cursor-pointer border-green-500/30 bg-green-500/10 transition-colors duration-200 hover:bg-green-500/20 active:bg-green-500/25 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60">
                                 {saving===p.id ? '...' : '✓ Pago'}
                               </button>
                             )}
                             {p.status !== 'pago' && (
                               <button onClick={() => alert(`Lembrete enviado para ${p.alunoNome}!`)}
-                                style={{ background:'rgba(37,211,102,0.1)', border:'1px solid rgba(37,211,102,0.2)', borderRadius:5, padding:'4px 10px', color:'#25D366', fontSize:11, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
+                                className="flex gap-1 items-center py-1 px-2.5 text-[11px] font-semibold text-[#25D366] whitespace-nowrap rounded border cursor-pointer border-[#25D366]/20 bg-[#25D366]/10 transition-colors duration-200 hover:bg-[#25D366]/20 active:bg-[#25D366]/25 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
                                 <Ico icon={ChatBubbleLeftRightIcon} sm /> Lembrete
                               </button>
                             )}
                             {p.status === 'pago' && (
                               <button onClick={() => alert(`Recibo gerado para ${p.alunoNome} · €${p.valor}`)}
-                                style={{ background:'rgba(99,91,255,0.08)', border:'1px solid rgba(99,91,255,0.2)', borderRadius:5, padding:'4px 10px', color:'#635BFF', fontSize:11, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
+                                className="flex gap-1 items-center py-1 px-2.5 text-[11px] font-semibold text-[#635BFF] whitespace-nowrap rounded border cursor-pointer border-[#635BFF]/20 bg-[#635BFF]/[0.08] transition-colors duration-200 hover:bg-[#635BFF]/20 active:bg-[#635BFF]/25 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
                                 <Ico icon={DocumentTextIcon} sm /> Recibo
                               </button>
                             )}
@@ -145,22 +150,22 @@ export default function FinanceiroPage() {
 
       {/* PLANOS */}
       {tab === 'planos' && (
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px,1fr))', gap:14 }}>
+        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
           {planos.map((p: any) => {
             const count = alunos.filter((a: any) => a.planoId === p.id || a.plano === p.nome).length;
             return (
-              <div key={p.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:20 }}>
-                <div style={{ color:'var(--text-primary)', fontSize:14, fontWeight:700, marginBottom:4 }}>{p.nome}</div>
-                <div style={{ color:GB.red, fontSize:26, fontWeight:800, fontFamily:'var(--font-mono)', marginBottom:4 }}>€{p.valor}</div>
-                <div style={{ color:'var(--text-secondary)', fontSize:12, marginBottom:8 }}>{p.descricao}</div>
-                <div style={{ color:'var(--text-muted)', fontSize:11, marginBottom:12 }}>{count} alunos activos</div>
-                <div style={{ display:'flex', gap:6 }}>
+              <Card key={p.id}>
+                <div className="mb-1 text-sm font-bold text-primary">{p.nome}</div>
+                <div className="mb-1 font-mono text-2xl font-extrabold text-gb-red">€{p.valor}</div>
+                <div className="mb-2 text-xs text-secondary">{p.descricao}</div>
+                <div className="mb-3 text-[11px] text-muted">{count} alunos activos</div>
+                <div className="flex gap-1.5">
                   <a href="https://dashboard.stripe.com/products" target="_blank" rel="noreferrer"
-                    style={{ flex:1, background:'rgba(99,91,255,0.08)', border:'1px solid rgba(99,91,255,0.2)', borderRadius:6, padding:'7px 0', color:'#635BFF', fontSize:11, fontWeight:600, textDecoration:'none', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    className="flex flex-1 justify-center items-center py-1.5 min-h-11 sm:min-h-0 text-[11px] font-semibold text-[#635BFF] no-underline rounded border border-[#635BFF]/20 bg-[#635BFF]/[0.08] transition-colors duration-200 hover:bg-[#635BFF]/20 active:bg-[#635BFF]/25 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
                     ↗ Stripe
                   </a>
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>
@@ -168,29 +173,29 @@ export default function FinanceiroPage() {
 
       {/* TOCONLINE */}
       {tab === 'toconline' && (
-        <div style={{ maxWidth:600 }}>
-          <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:24 }}>
-            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16, paddingBottom:14, borderBottom:'1px solid var(--border-subtle)' }}>
-              <div style={{ width:8, height:8, borderRadius:'50%', background:'#22C55E' }}/>
+        <div className="max-w-[600px]">
+          <Card padding="lg">
+            <div className="flex gap-2.5 items-center pb-3.5 mb-4 border-b border-border-subtle">
+              <div className="w-2 h-2 bg-green-500 rounded-full"/>
               <div>
-                <div style={{ color:'#16A34A', fontSize:13, fontWeight:700 }}>Emissão automática configurada</div>
-                <div style={{ color:'var(--text-muted)', fontSize:11 }}>FR emitida quando Stripe confirma pagamento</div>
+                <div className="text-[13px] font-bold text-green-600">Emissão automática configurada</div>
+                <div className="text-[11px] text-muted">FR emitida quando Stripe confirma pagamento</div>
               </div>
             </div>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+            <div className="flex justify-between items-center mb-3.5">
               <div>
-                <div style={{ color:'var(--text-primary)', fontSize:13, fontWeight:700 }}>SAF-T PT — Exportação Mensal</div>
-                <div style={{ color:'var(--text-muted)', fontSize:11 }}>XML para entrega à AT</div>
+                <div className="text-[13px] font-bold text-primary">SAF-T PT — Exportação Mensal</div>
+                <div className="text-[11px] text-muted">XML para entrega à AT</div>
               </div>
               <button onClick={() => alert('SAF-T XML gerado!\nFicheiro: SAF-T_GBBraga.xml')}
-                style={{ background:'#635BFF', border:'none', borderRadius:6, padding:'8px 14px', color:'#fff', fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                className="flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-xs font-bold text-white rounded border-none cursor-pointer bg-[#635BFF] transition-colors duration-200 hover:bg-[#5147e0] active:bg-[#4038c9] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
                 <Ico icon={ArrowUpTrayIcon} sm /> Exportar SAF-T
               </button>
             </div>
-            <div style={{ color:'var(--text-muted)', fontSize:12, lineHeight:1.7 }}>
+            <div className="text-xs leading-[1.7] text-muted">
               Para configurar o TOConline: <strong>Config. → TOConline</strong> → inserir Client ID e Secret.
             </div>
-          </div>
+          </Card>
         </div>
       )}
     </div>

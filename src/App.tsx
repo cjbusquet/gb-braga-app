@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import type React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './lib/auth';
 import type { UserRole } from './types';
@@ -76,6 +75,9 @@ function canAccessModule(page: string, isActive: (id: string) => boolean): boole
 }
 
 // ─── Password Setup Screen (staff invite flow) ────────────────────────────────
+const FIELD_CLASS = 'block box-border w-full py-2.5 px-3.5 font-ui text-sm rounded-lg border-[1.5px] outline-none transition-all duration-200 border-border bg-white text-primary min-h-11 sm:min-h-0 focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25';
+const LABEL_CLASS = 'block mb-1 text-[11px] font-bold tracking-[0.8px] uppercase text-secondary';
+
 function SetPasswordScreen() {
   const { completePasswordSetup, logout } = useAuth();
   const [pw, setPw]       = useState('');
@@ -94,15 +96,16 @@ function SetPasswordScreen() {
     setDone(true);
   };
 
-  const INP: React.CSSProperties = { width: '100%', border: '1.5px solid #E2E0DB', borderRadius: 8, padding: '11px 13px', fontSize: 14, fontFamily: 'inherit', outline: 'none', background: '#fff', color: '#111', boxSizing: 'border-box' };
-
   if (done) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F7F6F4' }}>
-      <div style={{ background: '#fff', borderRadius: 16, padding: 40, maxWidth: 400, textAlign: 'center', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
-        <h2 style={{ fontFamily: "'Arial Black',sans-serif", textTransform: 'uppercase', color: '#111', marginBottom: 8 }}>Password definida!</h2>
-        <p style={{ color: '#666', fontSize: 14, marginBottom: 24 }}>A tua conta está pronta. Bem-vindo à equipa Gracie Barra Braga.</p>
-        <button onClick={() => window.location.reload()} style={{ background: '#C8102E', border: 'none', borderRadius: 10, padding: '12px 32px', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+    <div className="flex justify-center items-center py-8 px-4 min-h-screen bg-base">
+      <div className="p-8 w-full max-w-[400px] text-center rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.08)] bg-white">
+        <div className="mb-4 text-5xl">✅</div>
+        <h2 className="mb-2 font-display text-lg font-extrabold uppercase text-primary">Password definida!</h2>
+        <p className="mb-6 text-sm text-secondary">A tua conta está pronta. Bem-vindo à equipa Gracie Barra Braga.</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="py-3 px-8 min-h-11 text-sm font-bold text-white rounded-[10px] border-none outline-none transition-all duration-200 cursor-pointer bg-gb-red hover:bg-gb-red-dark active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
+        >
           Entrar na plataforma →
         </button>
       </div>
@@ -110,31 +113,42 @@ function SetPasswordScreen() {
   );
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F7F6F4' }}>
-      <div style={{ background: '#fff', borderRadius: 16, padding: 40, maxWidth: 420, width: '100%', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-          <div style={{ width: 44, height: 44, background: '#C8102E', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🔑</div>
-          <div>
-            <div style={{ fontFamily: "'Arial Black',sans-serif", fontWeight: 900, fontSize: 16, textTransform: 'uppercase', color: '#111' }}>Define a tua password</div>
-            <div style={{ color: '#999', fontSize: 12 }}>Gracie Barra Braga — Acesso de equipa</div>
+    <div className="flex justify-center items-center py-8 px-4 min-h-screen bg-base">
+      <div className="p-6 w-full max-w-[420px] rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.08)] sm:p-10 bg-white">
+        <div className="flex gap-3 items-center mb-6">
+          <div className="flex justify-center items-center w-11 h-11 text-xl rounded-xl shrink-0 bg-gb-red">🔑</div>
+          <div className="min-w-0">
+            <div className="font-display text-base font-black uppercase text-primary">Define a tua password</div>
+            <div className="text-xs text-muted">Gracie Barra Braga — Acesso de equipa</div>
           </div>
         </div>
-        <p style={{ color: '#666', fontSize: 13, marginBottom: 22, lineHeight: 1.6, background: 'rgba(200,16,46,0.04)', border: '1px solid rgba(200,16,46,0.12)', borderRadius: 8, padding: '10px 14px' }}>
+        <p className="py-2.5 px-3.5 mb-5 text-[13px] leading-[1.6] rounded-lg border text-secondary border-gb-red/[0.12] bg-gb-red/[0.04]">
           A tua conta foi criada pelo administrador. Escolhe a password que vais usar para aceder à plataforma.
         </p>
-        <div style={{ marginBottom: 14 }}>
-          <label style={{ display: 'block', color: '#666', fontSize: 11, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 5 }}>Nova Password *</label>
-          <input type="password" value={pw} onChange={e => setPw(e.target.value)} placeholder="Mínimo 6 caracteres" style={INP} />
+        <div className="mb-3.5">
+          <label className={LABEL_CLASS}>Nova Password *</label>
+          <input type="password" value={pw} onChange={e => setPw(e.target.value)} placeholder="Mínimo 6 caracteres" className={FIELD_CLASS} />
         </div>
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ display: 'block', color: '#666', fontSize: 11, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 5 }}>Confirmar Password *</label>
-          <input type="password" value={pw2} onChange={e => setPw2(e.target.value)} placeholder="Repete a password" style={INP} />
+        <div className="mb-5">
+          <label className={LABEL_CLASS}>Confirmar Password *</label>
+          <input type="password" value={pw2} onChange={e => setPw2(e.target.value)} placeholder="Repete a password" className={FIELD_CLASS} />
         </div>
-        {err && <div style={{ color: '#C8102E', fontSize: 12, marginBottom: 14, fontWeight: 600 }}>{err}</div>}
-        <button onClick={handle} disabled={saving} style={{ width: '100%', background: saving ? '#aaa' : '#C8102E', border: 'none', borderRadius: 10, padding: '13px', color: '#fff', fontSize: 14, fontWeight: 800, fontFamily: "'Arial Black',sans-serif", textTransform: 'uppercase' as const, letterSpacing: '1px', cursor: saving ? 'not-allowed' : 'pointer', boxShadow: saving ? 'none' : '0 4px 14px rgba(200,16,46,0.3)' }}>
+        {err && <div className="mb-3.5 text-xs font-semibold text-gb-red">{err}</div>}
+        <button
+          onClick={handle}
+          disabled={saving}
+          className={[
+            'py-3.5 w-full min-h-11 font-display text-sm font-extrabold tracking-wide text-white uppercase rounded-[10px] border-none outline-none transition-all duration-200',
+            'focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+            saving ? 'cursor-not-allowed bg-neutral-400 shadow-none' : 'cursor-pointer bg-gb-red shadow-[0_4px_14px_rgba(200,16,46,0.3)] hover:bg-gb-red-dark active:scale-[0.98]',
+          ].join(' ')}
+        >
           {saving ? 'A guardar...' : 'Confirmar Password →'}
         </button>
-        <button onClick={() => logout()} style={{ width: '100%', marginTop: 10, background: 'transparent', border: '1px solid #E2E0DB', borderRadius: 10, padding: '10px', color: '#999', fontSize: 13, cursor: 'pointer' }}>
+        <button
+          onClick={() => logout()}
+          className="py-2.5 mt-2.5 w-full min-h-11 text-sm bg-transparent rounded-[10px] border outline-none transition-colors duration-200 cursor-pointer border-border text-muted hover:bg-elevated hover:text-secondary focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 active:bg-elevated"
+        >
           Cancelar
         </button>
       </div>

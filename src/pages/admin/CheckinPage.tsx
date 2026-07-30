@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { usePresencas, useAlunos, useTurmas, db } from '../../lib/useData';
-import { GB } from '../../lib/gbBrand';
 import { Ico, ArrowDownTrayIcon, MapPinIcon, CheckIcon, PlusIcon } from '../../lib/icons';
+import PageHeader from '../../components/common/PageHeader';
 
 const ACADEMIA_LAT = 41.5484, ACADEMIA_LNG = -8.4259;
 
@@ -64,32 +64,33 @@ export default function CheckinPage() {
 
   const todayCheckins = checkIns.filter(p => p.data === new Date().toISOString().split('T')[0]);
 
-  const gpsColor = { idle:'var(--text-muted)', checking:'#F59E0B', inside:'#22C55E', outside:GB.red, denied:'#9CA3AF' }[gpsStatus];
+  const gpsColor = { idle:'var(--text-muted)', checking:'#F59E0B', inside:'#22C55E', outside:'var(--gb-red)', denied:'#9CA3AF' }[gpsStatus];
   const gpsLabel = { idle:'Verificar GPS', checking:'A verificar...', inside:'✓ Dentro do perímetro', outside:`✗ Fora (${gpsDist}m)`, denied:'GPS negado' }[gpsStatus];
 
   return (
     <div>
-      {/* Header */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:18 }}>
-        <div>
-          <div style={{ color:'var(--text-muted)', fontSize:10.5, letterSpacing:'1px', textTransform:'uppercase', marginBottom:3 }}>Academia</div>
-          <h1 style={{ color:'var(--text-primary)', fontSize:20, fontWeight:800, fontFamily:'var(--font-display)', textTransform:'uppercase' }}>Check-in</h1>
-        </div>
-        <div style={{ display:'flex', gap:8 }}>
-          <button onClick={exportCSV} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)', padding:'9px 14px', color:'var(--text-secondary)', fontSize:12.5, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+      <PageHeader
+        eyebrow="Academia"
+        title="Check-in"
+        actions={<>
+          <button onClick={exportCSV} className="flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] rounded-sm border cursor-pointer border-border bg-card text-secondary transition-colors duration-200 hover:bg-elevated active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
             <Ico icon={ArrowDownTrayIcon} sm /> Export CSV
           </button>
-          <button onClick={() => setKioskMode(true)} style={{ background:GB.red, border:'none', borderRadius:'var(--radius-sm)', padding:'10px 18px', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', boxShadow:'var(--shadow-red)' }}>
+          <button onClick={() => setKioskMode(true)} className="py-2.5 px-[18px] min-h-11 sm:min-h-0 text-[13px] font-bold text-white rounded-sm border-none shadow-red cursor-pointer bg-gb-red transition-colors duration-200 hover:bg-gb-red-dark active:bg-gb-red-dark outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
             Kiosk
           </button>
-        </div>
-      </div>
+        </>}
+      />
 
       {/* Tabs */}
-      <div style={{ display:'flex', gap:4, marginBottom:20, borderBottom:'1px solid var(--border)', paddingBottom:0 }}>
+      <div className="flex overflow-x-auto gap-1 mb-5 border-b border-border">
         {([['live','● Live'],['gps','GPS Fence'],['manual','Manual']] as const).map(([id,label]) => (
           <button key={id} onClick={() => setTab(id)}
-            style={{ background:'none', border:'none', borderBottom:`2px solid ${tab===id?GB.red:'transparent'}`, padding:'8px 16px', color:tab===id?GB.red:'var(--text-muted)', fontSize:13, fontWeight:tab===id?700:400, cursor:'pointer', marginBottom:-1 }}>
+            className={[
+              'py-2 px-4 -mb-px min-h-11 sm:min-h-0 text-[13px] bg-none border-none border-b-2 cursor-pointer whitespace-nowrap transition-colors duration-200',
+              'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+              tab === id ? 'font-bold border-gb-red text-gb-red' : 'font-normal border-transparent text-muted hover:text-secondary active:text-secondary',
+            ].join(' ')}>
             {label}
           </button>
         ))}
@@ -98,54 +99,61 @@ export default function CheckinPage() {
       {/* LIVE */}
       {tab === 'live' && (
         <div>
-          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
-            <div style={{ width:8, height:8, borderRadius:'50%', background:'#22C55E', animation:'pulse 1.5s infinite' }}/>
-            <span style={{ color:'var(--text-muted)', fontSize:12 }}>Hoje: {todayCheckins.length} check-ins</span>
+          <div className="flex gap-2 items-center mb-3.5">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-[pulse_1.5s_infinite]" />
+            <span className="text-xs text-muted">Hoje: {todayCheckins.length} check-ins</span>
           </div>
           {checkIns.slice(0,20).map((p: any) => (
-            <div key={p.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 14px', background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)', marginBottom:6 }}>
+            <div key={p.id} className="flex justify-between items-center py-2.5 px-3.5 mb-1.5 rounded-sm border border-border bg-card">
               <div>
-                <div style={{ color:'var(--text-primary)', fontSize:13, fontWeight:600 }}>{p.alunoNome}</div>
-                <div style={{ color:'var(--text-muted)', fontSize:11 }}>{p.turmaNome||'—'} · {p.metodo}</div>
+                <div className="text-[13px] font-semibold text-primary">{p.alunoNome}</div>
+                <div className="text-[11px] text-muted">{p.turmaNome||'—'} · {p.metodo}</div>
               </div>
-              <div style={{ textAlign:'right', color:'var(--text-muted)', fontSize:12 }}>
-                {p.hora}<br/><span style={{ fontSize:10 }}>{p.data}</span>
+              <div className="text-xs text-right text-muted">
+                {p.hora}<br/><span className="text-[10px]">{p.data}</span>
               </div>
             </div>
           ))}
-          {checkIns.length === 0 && <div style={{ textAlign:'center', color:'var(--text-muted)', padding:40 }}>Sem check-ins hoje</div>}
+          {checkIns.length === 0 && <div className="p-10 text-center text-muted">Sem check-ins hoje</div>}
         </div>
       )}
 
       {/* GPS */}
       {tab === 'gps' && (
-        <div style={{ maxWidth:500 }}>
-          <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:24, marginBottom:16 }}>
-            <div style={{ textAlign:'center', marginBottom:20 }}>
-              <div style={{ width:80, height:80, borderRadius:'50%', border:`3px solid ${gpsColor}`, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px', color:gpsColor }}>
+        <div className="max-w-[500px]">
+          <div className="p-6 mb-4 rounded-lg border border-border bg-card">
+            <div className="mb-5 text-center">
+              <div
+                className="flex justify-center items-center mx-auto mb-3 w-20 h-20 rounded-full border-[3px]"
+                style={{ borderColor: gpsColor, color: gpsColor }}
+              >
                 <Ico icon={MapPinIcon} lg />
               </div>
-              <div style={{ color:gpsColor, fontSize:14, fontWeight:700 }}>{gpsLabel}</div>
-              {gpsDist !== null && <div style={{ color:'var(--text-muted)', fontSize:12, marginTop:4 }}>{gpsDist}m da academia</div>}
+              <div className="text-sm font-bold" style={{ color: gpsColor }}>{gpsLabel}</div>
+              {gpsDist !== null && <div className="mt-1 text-xs text-muted">{gpsDist}m da academia</div>}
             </div>
-            <div style={{ display:'flex', gap:8, justifyContent:'center', marginBottom:16 }}>
+            <div className="flex flex-wrap gap-2 justify-center mb-4">
               <button onClick={checkGPS} disabled={gpsStatus==='checking'}
-                style={{ background:GB.red, border:'none', borderRadius:'var(--radius-sm)', padding:'10px 20px', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                className="flex gap-1.5 items-center py-2.5 px-5 min-h-11 sm:min-h-0 text-[13px] font-bold text-white rounded-sm border-none cursor-pointer bg-gb-red transition-colors duration-200 hover:bg-gb-red-dark active:bg-gb-red-dark outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60">
                 <Ico icon={MapPinIcon} sm /> Verificar GPS
               </button>
               <button onClick={demoGPS}
-                style={{ background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)', padding:'10px 16px', color:'var(--text-secondary)', fontSize:12.5, cursor:'pointer' }}>
+                className="py-2.5 px-4 min-h-11 sm:min-h-0 text-[12.5px] rounded-sm border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
                 Demo
               </button>
             </div>
-            <div style={{ marginBottom:12 }}>
-              <label style={{ color:'var(--text-muted)', fontSize:11, fontWeight:600 }}>Raio: {fenceRadius}m</label>
+            <div className="mb-3">
+              <label className="text-[11px] font-semibold text-muted">Raio: {fenceRadius}m</label>
               <input type="range" min={30} max={500} value={fenceRadius} onChange={e => setFenceRadius(parseInt(e.target.value))}
-                style={{ width:'100%', accentColor:GB.red }}/>
+                className="w-full accent-gb-red"/>
             </div>
             <button onClick={() => gpsStatus==='inside' && doCheckin('me','Utilizador Actual')}
               disabled={gpsStatus !== 'inside'}
-              style={{ width:'100%', background:gpsStatus==='inside'?GB.red:'#aaa', border:'none', borderRadius:'var(--radius-sm)', padding:'11px', color:'#fff', fontSize:13, fontWeight:700, cursor:gpsStatus==='inside'?'pointer':'not-allowed', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+              className={[
+                'flex gap-1.5 justify-center items-center py-2.5 w-full min-h-11 sm:min-h-0 text-[13px] font-bold text-white rounded-sm border-none transition-colors duration-200',
+                'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                gpsStatus==='inside' ? 'cursor-pointer bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark' : 'cursor-not-allowed bg-neutral-400',
+              ].join(' ')}>
               <Ico icon={CheckIcon} sm /> Check-in Pessoal
             </button>
           </div>
@@ -155,28 +163,31 @@ export default function CheckinPage() {
       {/* MANUAL */}
       {tab === 'manual' && (
         <div>
-          <div style={{ marginBottom:12 }}>
-            <select onChange={e => setTurmaFilter(e.target.value)} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)', padding:'8px 12px', color:'var(--text-primary)', fontSize:13, cursor:'pointer' }}>
+          <div className="mb-3">
+            <select onChange={e => setTurmaFilter(e.target.value)} className="py-2 px-3 min-h-11 sm:min-h-0 text-[13px] rounded-sm border cursor-pointer border-border bg-card text-primary transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
               <option value="">Todas as turmas</option>
               {turmas.map((t: any) => <option key={t.id} value={t.id}>{t.nome}</option>)}
             </select>
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(240px, 1fr))', gap:8 }}>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[repeat(auto-fill,minmax(240px,1fr))]">
             {alunos.filter((a: any) => a.status === 'ativo').map((a: any) => {
               const jaFez = checkIns.some(p => p.alunoId === a.id && p.data === new Date().toISOString().split('T')[0]);
               return (
                 <button key={a.id} onClick={() => !jaFez && doCheckin(a.id, a.nome)}
                   disabled={jaFez}
-                  style={{ background:jaFez?'rgba(34,197,94,0.08)':'var(--bg-card)', border:`1px solid ${jaFez?'rgba(34,197,94,0.3)':'var(--border)'}`, borderRadius:'var(--radius-sm)', padding:'12px 14px', cursor:jaFez?'default':'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', textAlign:'left' }}>
-                  <span style={{ color:'var(--text-primary)', fontSize:13 }}>{a.nome}</span>
-                  {jaFez ? <Ico icon={CheckIcon} style={{ color:'#22C55E', width:16, height:16, flexShrink:0 }} /> : <Ico icon={PlusIcon} style={{ color:'var(--text-muted)', width:18, height:18, flexShrink:0 }} />}
+                  className={[
+                    'flex justify-between items-center py-3 px-3.5 min-h-11 text-left rounded-sm border transition-colors duration-200',
+                    'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                    jaFez ? 'cursor-default border-green-500/30 bg-green-500/[0.08]' : 'cursor-pointer border-border bg-card hover:bg-elevated active:bg-elevated',
+                  ].join(' ')}>
+                  <span className="text-[13px] text-primary">{a.nome}</span>
+                  {jaFez ? <Ico icon={CheckIcon} className="w-4 h-4 text-green-500 shrink-0" /> : <Ico icon={PlusIcon} className="w-[18px] h-[18px] shrink-0 text-muted" />}
                 </button>
               );
             })}
           </div>
         </div>
       )}
-      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
     </div>
   );
 }

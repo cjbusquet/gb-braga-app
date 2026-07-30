@@ -31,21 +31,17 @@ function StepBar({ step }: { step: Step }) {
   const steps: Step[] = ['categoria', 'plano', 'dados'];
   const idx = steps.indexOf(step);
   return (
-    <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 28 }}>
+    <div className="flex gap-1.5 justify-center mb-7">
       {steps.map((s, i) => (
-        <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={{ width: i <= idx ? 22 : 7, height: 7, borderRadius: 99, background: i <= idx ? '#C8102E' : '#E2E0DB', transition: 'all 0.25s' }}/>
+        <div key={s} className="flex gap-1.5 items-center">
+          <div className={['h-[7px] rounded-full transition-all', i <= idx ? 'w-[22px] bg-gb-red' : 'w-[7px] bg-border'].join(' ')}/>
         </div>
       ))}
     </div>
   );
 }
 
-const INP: React.CSSProperties = {
-  width: '100%', border: '1.5px solid #E2E0DB', borderRadius: 8,
-  padding: '11px 14px', fontSize: 15, fontFamily: 'inherit',
-  outline: 'none', background: '#fff', color: '#111', transition: 'border-color 0.15s',
-};
+const FIELD_CLASS = 'block w-full py-[11px] px-3.5 min-h-11 sm:min-h-0 text-[15px] font-ui rounded-lg border-[1.5px] outline-none transition-all duration-200 border-border bg-white text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25';
 
 export default function MatriculaPublica() {
   const { data: planos } = usePlanos();
@@ -71,78 +67,81 @@ export default function MatriculaPublica() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F7F6F4', fontFamily: "'DM Sans',system-ui,sans-serif" }}>
+    <div className="min-h-screen font-ui bg-base">
 
       {/* Header */}
-      <header style={{ background: '#fff', borderBottom: '1px solid #E2E0DB', padding: '0 24px', height: 66, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-        <a href="https://gbbraga.com" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+      <header className="flex sticky top-0 z-[100] gap-2 justify-between items-center py-0 px-4 h-[66px] border-b shadow-[0_1px_3px_rgba(0,0,0,0.06)] border-border bg-white sm:px-6">
+        <a href="https://gbbraga.com" className="flex gap-2.5 items-center no-underline shrink-0">
           <GBLogoFull size={48}/>
         </a>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <a href="tel:+351927773854" style={{ padding: '8px 14px', background: '#F0EFEC', border: '1px solid #E2E0DB', borderRadius: 8, color: '#5C5B66', fontSize: 13, textDecoration: 'none', fontWeight: 500 }}>📞 +351 927 773 854</a>
-          <a href="https://wa.me/351927773854" style={{ padding: '8px 14px', background: '#25D366', border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, textDecoration: 'none', fontWeight: 700 }}>💬 WhatsApp</a>
+        <div className="flex gap-2 shrink-0">
+          <a href="tel:+351927773854" className="inline-flex items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[13px] font-medium no-underline rounded-lg border transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-card active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+            <span aria-hidden="true">📞</span>
+            <span className="hidden sm:inline">&nbsp;+351 927 773 854</span>
+          </a>
+          <a href="https://wa.me/351927773854" className="inline-flex items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[13px] font-bold text-white no-underline rounded-lg border-none bg-[#25D366] transition-colors duration-200 hover:bg-[#1FB157] active:bg-[#1FB157] outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2">💬 WhatsApp</a>
         </div>
       </header>
 
       {/* INTRO */}
       {step === 'intro' && (
         <>
-          <div style={{ background: 'linear-gradient(135deg, #0D0508 0%, #1A0208 60%, #2A0510 100%)', padding: '72px 24px 80px', textAlign: 'center' }}>
-            <div style={{ display: 'inline-block', background: 'rgba(200,16,46,0.18)', border: '1px solid rgba(200,16,46,0.35)', borderRadius: 99, padding: '5px 18px', marginBottom: 22 }}>
-              <span style={{ color: '#FF7A95', fontSize: 12, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase' as const }}>🏆 Gracie Barra Braga · gbbraga.com</span>
+          <div className="py-[72px] px-6 pb-20 text-center" style={{ background: 'linear-gradient(135deg, #0D0508 0%, #1A0208 60%, #2A0510 100%)' }}>
+            <div className="inline-block py-1.5 px-[18px] mb-[22px] rounded-full border border-gb-red/35 bg-gb-red/[0.18]">
+              <span className="text-xs font-bold tracking-[2px] text-[#FF7A95] uppercase">🏆 Gracie Barra Braga · gbbraga.com</span>
             </div>
-            <h1 style={{ color: '#fff', fontSize: 'clamp(30px,5vw,58px)', fontWeight: 900, fontFamily: "'Arial Black',sans-serif", lineHeight: 1.05, marginBottom: 18 }}>
+            <h1 className="mb-[18px] font-display font-black leading-[1.05] text-white" style={{ fontSize: 'clamp(30px,5vw,58px)' }}>
               Começa a tua jornada<br/>no Brazilian Jiu-Jitsu
             </h1>
-            <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 17, maxWidth: 520, margin: '0 auto 36px', lineHeight: 1.7 }}>
+            <p className="mx-auto mb-9 max-w-[520px] text-[17px] leading-[1.7] text-white/65">
               Junta-te à família Gracie Barra em Braga. Para todos os níveis e idades.<br/>
-              <strong style={{ color: 'rgba(255,255,255,0.9)' }}>Primeira aula completamente gratuita.</strong>
+              <strong className="text-white/90">Primeira aula completamente gratuita.</strong>
             </p>
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' as const }}>
-              <button onClick={() => setStep('categoria')} style={{ background: '#C8102E', border: 'none', borderRadius: 10, padding: '15px 36px', color: '#fff', fontSize: 17, fontWeight: 800, fontFamily: "'Arial Black',sans-serif", cursor: 'pointer', boxShadow: '0 4px 20px rgba(200,16,46,0.45)' }}>
+            <div className="flex flex-wrap gap-3 justify-center">
+              <button onClick={() => setStep('categoria')} className="py-[15px] px-9 min-h-11 sm:min-h-0 font-display text-[17px] font-extrabold text-white rounded-[10px] border-none shadow-[0_4px_20px_rgba(200,16,46,0.45)] cursor-pointer bg-gb-red transition-all duration-200 hover:bg-gb-red-dark active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
                 INSCREVER AGORA
               </button>
-              <a href="https://gbbraga.com/formulario-aula-teste-gratuita/" style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 10, padding: '15px 24px', color: '#fff', fontSize: 15, textDecoration: 'none' }}>
+              <a href="https://gbbraga.com/formulario-aula-teste-gratuita/" className="inline-flex items-center py-[15px] px-6 min-h-11 sm:min-h-0 text-[15px] text-white no-underline rounded-[10px] border transition-colors duration-200 border-white/20 bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.14] outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2">
                 Aula gratuita →
               </a>
             </div>
-            <div style={{ display: 'flex', gap: 40, justifyContent: 'center', marginTop: 48, flexWrap: 'wrap' as const }}>
+            <div className="flex flex-wrap gap-10 justify-center mt-12">
               {[['200+','Alunos'],['Seg–Sáb','Horários'],['5★','Google']].map(([v,l]) => (
-                <div key={l} style={{ textAlign: 'center' as const }}>
-                  <div style={{ color: '#C8102E', fontSize: 30, fontWeight: 900, fontFamily: "'Arial Black',sans-serif" }}>{v}</div>
-                  <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 2 }}>{l}</div>
+                <div key={l} className="text-center">
+                  <div className="font-display text-[30px] font-black text-gb-red">{v}</div>
+                  <div className="mt-0.5 text-xs text-white/45">{l}</div>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Belt stripe */}
-          <div style={{ height: 5, display: 'flex' }}>
-            {['#E8E7FF','#EAB308','#EA580C','#16A34A','#1D4ED8','#7C3AED','#7C4A35','#111'].map(c => <div key={c} style={{ flex: 1, background: c }}/>)}
+          <div className="flex h-[5px]">
+            {['#E8E7FF','#EAB308','#EA580C','#16A34A','#1D4ED8','#7C3AED','#7C4A35','#111'].map(c => <div key={c} className="flex-1" style={{ background: c }}/>)}
           </div>
 
           {/* Planos preview */}
-          <div style={{ maxWidth: 960, margin: '0 auto', padding: '60px 24px 48px' }}>
-            <h2 style={{ textAlign: 'center' as const, fontSize: 'clamp(22px,3vw,36px)', fontWeight: 900, fontFamily: "'Arial Black',sans-serif", marginBottom: 12, textTransform: 'uppercase' as const }}>Planos e Preços</h2>
-            <p style={{ textAlign: 'center' as const, color: '#5C5B66', marginBottom: 36, fontSize: 15 }}>Mensalidade debitada automaticamente. Cancele a qualquer momento.</p>
+          <div className="mx-auto py-[60px] px-6 pb-12 max-w-[960px]">
+            <h2 className="mb-3 font-display font-black text-center uppercase" style={{ fontSize: 'clamp(22px,3vw,36px)' }}>Planos e Preços</h2>
+            <p className="mb-9 text-[15px] text-center text-secondary">Mensalidade debitada automaticamente. Cancele a qualquer momento.</p>
 
             {/* Categoria cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 14, marginBottom: 40 }}>
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3.5 mb-10">
               {CATEGORIAS.map(cat => {
                 const catPlanos = planos.filter(p => p.ativo && (p as any).categoria === cat.id);
                 const minPrice = catPlanos.length ? Math.min(...catPlanos.map(p => p.valor)) : 0;
                 return (
                   <div key={cat.id} onClick={() => { setCategoria(cat.id); setStep('plano'); }}
-                    style={{ background: '#fff', border: '1px solid #E2E0DB', borderRadius: 14, padding: '22px 18px', cursor: 'pointer', textAlign: 'center' as const, transition: 'all 0.15s', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
+                    className="py-[22px] px-[18px] text-center rounded-2xl border shadow-[0_1px_3px_rgba(0,0,0,0.05)] cursor-pointer transition-all border-border bg-white"
                     onMouseEnter={e => { e.currentTarget.style.borderColor = cat.color; e.currentTarget.style.boxShadow = `0 4px 14px ${cat.color}20`; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E0DB'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'; }}
                   >
-                    <div style={{ fontSize: 32, marginBottom: 10 }}>{cat.icon}</div>
-                    <div style={{ color: '#111', fontSize: 16, fontWeight: 800, marginBottom: 4 }}>{cat.label}</div>
-                    <div style={{ color: '#9896A4', fontSize: 12, marginBottom: 12 }}>{cat.desc}</div>
+                    <div className="mb-2.5 text-3xl">{cat.icon}</div>
+                    <div className="mb-1 text-base font-extrabold text-primary">{cat.label}</div>
+                    <div className="mb-3 text-xs text-muted">{cat.desc}</div>
                     {minPrice > 0 && (
-                      <div style={{ color: cat.color, fontSize: 22, fontWeight: 900, fontFamily: "'Arial Black',sans-serif" }}>
-                        desde €{minPrice}<span style={{ fontSize: 12, fontWeight: 400, color: '#9896A4' }}>/mês</span>
+                      <div className="font-display text-[22px] font-black" style={{ color: cat.color }}>
+                        desde €{minPrice}<span className="text-xs font-normal text-muted">/mês</span>
                       </div>
                     )}
                   </div>
@@ -151,30 +150,30 @@ export default function MatriculaPublica() {
             </div>
 
             {/* Benefits */}
-            <h2 style={{ textAlign: 'center' as const, fontSize: 'clamp(20px,3vw,32px)', fontWeight: 900, fontFamily: "'Arial Black',sans-serif", marginBottom: 28, textTransform: 'uppercase' as const }}>Porquê a GB Braga?</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 12 }}>
+            <h2 className="mb-7 font-display font-black text-center uppercase" style={{ fontSize: 'clamp(20px,3vw,32px)' }}>Porquê a GB Braga?</h2>
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-3">
               {BENEFITS.map(b => (
-                <div key={b.text} style={{ background: '#fff', border: '1px solid #E2E0DB', borderRadius: 12, padding: '16px 18px', display: 'flex', gap: 12 }}>
-                  <span style={{ fontSize: 22, flexShrink: 0 }}>{b.icon}</span>
-                  <span style={{ color: '#333', fontSize: 13.5, lineHeight: 1.5 }}>{b.text}</span>
+                <div key={b.text} className="flex gap-3 py-4 px-[18px] rounded-xl border border-border bg-white">
+                  <span className="text-2xl shrink-0">{b.icon}</span>
+                  <span className="text-[13.5px] leading-[1.5] text-[#333]">{b.text}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Testimonials */}
-          <div style={{ background: '#fff', borderTop: '1px solid #E2E0DB', padding: '52px 24px' }}>
-            <div style={{ maxWidth: 900, margin: '0 auto' }}>
-              <h2 style={{ textAlign: 'center' as const, fontSize: 28, fontWeight: 900, fontFamily: "'Arial Black',sans-serif", marginBottom: 30, textTransform: 'uppercase' as const }}>O que dizem os nossos alunos</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: 14 }}>
+          <div className="py-[52px] px-6 border-t border-border bg-white">
+            <div className="mx-auto max-w-[900px]">
+              <h2 className="mb-[30px] font-display text-2xl font-black text-center uppercase">O que dizem os nossos alunos</h2>
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-3.5">
                 {TESTIMONIALS.map(t => (
-                  <div key={t.nome} style={{ background: '#F7F6F4', border: '1px solid #E2E0DB', borderRadius: 12, padding: 20 }}>
-                    <p style={{ color: '#333', fontSize: 14, lineHeight: 1.7, fontStyle: 'italic', marginBottom: 14 }}>"{t.texto}"</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#C8102E', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 700 }}>{t.nome.charAt(0)}</div>
+                  <div key={t.nome} className="p-5 rounded-xl border border-border bg-base">
+                    <p className="mb-3.5 text-sm italic leading-[1.7] text-[#333]">"{t.texto}"</p>
+                    <div className="flex gap-2 items-center">
+                      <div className="flex justify-center items-center w-8 h-8 text-[13px] font-bold text-white rounded-full bg-gb-red">{t.nome.charAt(0)}</div>
                       <div>
-                        <div style={{ color: '#111', fontSize: 13, fontWeight: 600 }}>{t.nome}</div>
-                        <div style={{ color: '#9896A4', fontSize: 11 }}>{t.faixa}</div>
+                        <div className="text-[13px] font-semibold text-primary">{t.nome}</div>
+                        <div className="text-[11px] text-muted">{t.faixa}</div>
                       </div>
                     </div>
                   </div>
@@ -184,80 +183,84 @@ export default function MatriculaPublica() {
           </div>
 
           {/* CTA */}
-          <div style={{ background: '#C8102E', padding: '52px 24px', textAlign: 'center' as const }}>
-            <h2 style={{ color: '#fff', fontSize: 34, fontWeight: 900, fontFamily: "'Arial Black',sans-serif", marginBottom: 14, textTransform: 'uppercase' as const }}>Pronto para começar?</h2>
-            <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 15, marginBottom: 24 }}>Primeira aula gratuita · Sem compromisso</p>
-            <button onClick={() => setStep('categoria')} style={{ background: '#fff', border: 'none', borderRadius: 10, padding: '14px 36px', color: '#C8102E', fontSize: 17, fontWeight: 900, fontFamily: "'Arial Black',sans-serif", cursor: 'pointer' }}>INSCREVER AGORA →</button>
+          <div className="py-[52px] px-6 text-center bg-gb-red">
+            <h2 className="mb-3.5 font-display text-[34px] font-black text-white uppercase">Pronto para começar?</h2>
+            <p className="mb-6 text-[15px] text-white/80">Primeira aula gratuita · Sem compromisso</p>
+            <button onClick={() => setStep('categoria')} className="py-3.5 px-9 min-h-11 sm:min-h-0 font-display text-[17px] font-black text-gb-red bg-white rounded-[10px] border-none cursor-pointer transition-all duration-200 hover:bg-white/90 active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-gb-red">INSCREVER AGORA →</button>
           </div>
         </>
       )}
 
       {/* CATEGORIA */}
       {step === 'categoria' && (
-        <div style={{ maxWidth: 680, margin: '0 auto', padding: '48px 24px' }}>
+        <div className="mx-auto py-12 px-6 max-w-[680px]">
           <StepBar step={step}/>
-          <h2 style={{ textAlign: 'center' as const, fontSize: 28, fontWeight: 900, fontFamily: "'Arial Black',sans-serif", textTransform: 'uppercase' as const, marginBottom: 6 }}>Quem se vai inscrever?</h2>
-          <p style={{ textAlign: 'center' as const, color: '#9896A4', fontSize: 14, marginBottom: 30 }}>Escolhe a categoria para ver os planos disponíveis</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+          <h2 className="mb-1.5 font-display text-2xl font-black text-center uppercase">Quem se vai inscrever?</h2>
+          <p className="mb-[30px] text-sm text-center text-muted">Escolhe a categoria para ver os planos disponíveis</p>
+          <div className="grid grid-cols-1 gap-3 mb-5 sm:grid-cols-2">
             {CATEGORIAS.map(cat => {
               const catPlanos = planos.filter(p => p.ativo && (p as any).categoria === cat.id);
               const minPrice = Math.min(...catPlanos.map(p => p.valor));
               return (
                 <button key={cat.id} onClick={() => { setCategoria(cat.id); setStep('plano'); }}
-                  style={{ background: '#fff', border: '2px solid #E2E0DB', borderRadius: 14, padding: '24px 20px', textAlign: 'center' as const, cursor: 'pointer', transition: 'all 0.15s', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
+                  className="py-6 px-5 text-center rounded-2xl border-2 shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition-all duration-200 cursor-pointer border-border bg-white active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
                   onMouseEnter={e => { e.currentTarget.style.borderColor = cat.color; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 6px 18px ${cat.color}25`; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E0DB'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'; }}
                 >
-                  <div style={{ fontSize: 38, marginBottom: 10 }}>{cat.icon}</div>
-                  <div style={{ color: '#111', fontSize: 17, fontWeight: 800, marginBottom: 4 }}>{cat.label}</div>
-                  <div style={{ color: '#9896A4', fontSize: 12, marginBottom: 12 }}>{cat.desc}</div>
-                  <div style={{ color: cat.color, fontSize: 20, fontWeight: 900, fontFamily: "'Arial Black',sans-serif" }}>
-                    desde €{minPrice}<span style={{ fontSize: 11, fontWeight: 400, color: '#9896A4' }}>/mês</span>
+                  <div className="mb-2.5 text-4xl">{cat.icon}</div>
+                  <div className="mb-1 text-[17px] font-extrabold text-primary">{cat.label}</div>
+                  <div className="mb-3 text-xs text-muted">{cat.desc}</div>
+                  <div className="font-display text-xl font-black" style={{ color: cat.color }}>
+                    desde €{minPrice}<span className="text-[11px] font-normal text-muted">/mês</span>
                   </div>
-                  <div style={{ color: planos.length > 1 ? '#9896A4' : 'transparent', fontSize: 11, marginTop: 4 }}>
+                  <div className={['mt-1 text-[11px]', planos.length > 1 ? 'text-muted' : 'text-transparent'].join(' ')}>
                     {planos.length} opção{planos.length !== 1 ? 'ões' : ''}
                   </div>
                 </button>
               );
             })}
           </div>
-          <button onClick={() => setStep('intro')} style={{ width: '100%', background: '#F0EFEC', border: '1px solid #E2E0DB', borderRadius: 8, padding: '11px', color: '#5C5B66', fontSize: 14, cursor: 'pointer' }}>← Voltar</button>
+          <button onClick={() => setStep('intro')} className="py-2.5 w-full min-h-11 sm:min-h-0 text-sm rounded-lg border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">← Voltar</button>
         </div>
       )}
 
       {/* PLANO */}
       {step === 'plano' && (
-        <div style={{ maxWidth: 680, margin: '0 auto', padding: '48px 24px' }}>
+        <div className="mx-auto py-12 px-6 max-w-[680px]">
           <StepBar step={step}/>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', marginBottom: 6 }}>
-            <span style={{ fontSize: 28 }}>{catSel?.icon}</span>
-            <h2 style={{ fontSize: 28, fontWeight: 900, fontFamily: "'Arial Black',sans-serif", textTransform: 'uppercase' as const }}>Planos {catSel?.label}</h2>
+          <div className="flex gap-2.5 justify-center items-center mb-1.5">
+            <span className="text-[28px]">{catSel?.icon}</span>
+            <h2 className="font-display text-2xl font-black uppercase">Planos {catSel?.label}</h2>
           </div>
-          <p style={{ textAlign: 'center' as const, color: '#9896A4', fontSize: 14, marginBottom: 28 }}>Escolhe o plano que melhor se adapta</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+          <p className="mb-7 text-sm text-center text-muted">Escolhe o plano que melhor se adapta</p>
+          <div className="flex flex-col gap-2.5 mb-5">
             {planosFiltrados.map(p => (
-              <button key={p.id} onClick={() => setPlanoId(p.id)} style={{
-                background: planoId === p.id ? 'rgba(200,16,46,0.04)' : '#fff',
-                border: `2px solid ${planoId === p.id ? '#C8102E' : '#E2E0DB'}`,
-                borderRadius: 12, padding: '16px 20px', textAlign: 'left' as const, cursor: 'pointer',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                boxShadow: planoId === p.id ? '0 0 0 4px rgba(200,16,46,0.07)' : '0 1px 3px rgba(0,0,0,0.04)',
-                transition: 'all 0.15s',
-              }}>
+              <button key={p.id} onClick={() => setPlanoId(p.id)}
+                className="flex justify-between items-center py-4 px-5 text-left rounded-xl border-2 transition-all duration-200 cursor-pointer active:scale-[0.99] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
+                style={{
+                  background: planoId === p.id ? 'rgba(200,16,46,0.04)' : '#fff',
+                  borderColor: planoId === p.id ? '#C8102E' : '#E2E0DB',
+                  boxShadow: planoId === p.id ? '0 0 0 4px rgba(200,16,46,0.07)' : '0 1px 3px rgba(0,0,0,0.04)',
+                }}>
                 <div>
-                  <div style={{ color: '#111', fontSize: 15, fontWeight: 700, marginBottom: 3 }}>{p.nome}</div>
-                  <div style={{ color: '#9896A4', fontSize: 12.5 }}>{p.descricao}</div>
+                  <div className="mb-1 text-[15px] font-bold text-primary">{p.nome}</div>
+                  <div className="text-[12.5px] text-muted">{p.descricao}</div>
                 </div>
-                <div style={{ textAlign: 'right' as const, flexShrink: 0, marginLeft: 16 }}>
-                  <div style={{ color: planoId === p.id ? '#C8102E' : '#111', fontSize: 26, fontWeight: 900, fontFamily: "'Arial Black',sans-serif" }}>€{p.valor}</div>
-                  <div style={{ color: '#9896A4', fontSize: 11 }}>/mês</div>
+                <div className="flex-shrink-0 ml-4 text-right">
+                  <div className={['font-display text-2xl font-black', planoId === p.id ? 'text-gb-red' : 'text-primary'].join(' ')}>€{p.valor}</div>
+                  <div className="text-[11px] text-muted">/mês</div>
                 </div>
               </button>
             ))}
           </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={() => { setStep('categoria'); setPlanoId(''); }} style={{ flex: 1, background: '#F0EFEC', border: '1px solid #E2E0DB', borderRadius: 8, padding: '11px', color: '#5C5B66', fontSize: 14, cursor: 'pointer' }}>← Voltar</button>
-            <button onClick={() => planoId && setStep('dados')} disabled={!planoId} style={{ flex: 2, background: planoId ? '#C8102E' : '#E2E0DB', border: 'none', borderRadius: 8, padding: '11px', color: planoId ? '#fff' : '#9896A4', fontSize: 15, fontWeight: 800, fontFamily: "'Arial Black',sans-serif", cursor: planoId ? 'pointer' : 'not-allowed', boxShadow: planoId ? '0 4px 14px rgba(200,16,46,0.3)' : 'none' }}>
+          <div className="flex gap-2.5">
+            <button onClick={() => { setStep('categoria'); setPlanoId(''); }} className="flex-1 py-2.5 min-h-11 sm:min-h-0 text-sm rounded-lg border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">← Voltar</button>
+            <button onClick={() => planoId && setStep('dados')} disabled={!planoId}
+              className={[
+                'flex-[2] py-2.5 min-h-11 sm:min-h-0 font-display text-[15px] font-extrabold rounded-lg border-none transition-all duration-200',
+                'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                planoId ? 'text-white shadow-[0_4px_14px_rgba(200,16,46,0.3)] cursor-pointer bg-gb-red hover:bg-gb-red-dark active:scale-[0.98]' : 'cursor-not-allowed text-muted bg-border',
+              ].join(' ')}>
               CONTINUAR{planoSel ? ` — €${planoSel.valor}/mês` : ''}
             </button>
           </div>
@@ -266,18 +269,18 @@ export default function MatriculaPublica() {
 
       {/* DADOS */}
       {step === 'dados' && (
-        <div style={{ maxWidth: 540, margin: '0 auto', padding: '48px 24px' }}>
+        <div className="mx-auto py-12 px-6 max-w-[540px]">
           <StepBar step={step}/>
-          <h2 style={{ textAlign: 'center' as const, fontSize: 26, fontWeight: 900, fontFamily: "'Arial Black',sans-serif", textTransform: 'uppercase' as const, marginBottom: 6 }}>Os teus dados</h2>
-          <p style={{ textAlign: 'center' as const, color: '#9896A4', fontSize: 14, marginBottom: 26 }}>Entraremos em contacto em menos de 24h</p>
-          <div style={{ background: '#fff', border: '1px solid #E2E0DB', borderRadius: 14, padding: 26, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+          <h2 className="mb-1.5 font-display text-[26px] font-black text-center uppercase">Os teus dados</h2>
+          <p className="mb-[26px] text-sm text-center text-muted">Entraremos em contacto em menos de 24h</p>
+          <div className="p-[26px] rounded-2xl border shadow-[0_1px_3px_rgba(0,0,0,0.08)] border-border bg-white">
             {/* Summary */}
-            <div style={{ background: 'rgba(200,16,46,0.05)', border: '1px solid rgba(200,16,46,0.15)', borderRadius: 8, padding: '10px 14px', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="flex justify-between items-center py-2.5 px-3.5 mb-5 rounded-lg border border-gb-red/15 bg-gb-red/5">
               <div>
-                <div style={{ color: '#5C5B66', fontSize: 11, textTransform: 'uppercase' as const, fontWeight: 600 }}>Plano selecionado</div>
-                <div style={{ color: '#111', fontSize: 13, fontWeight: 700, marginTop: 2 }}>{planoSel?.nome}</div>
+                <div className="text-[11px] font-semibold uppercase text-secondary">Plano selecionado</div>
+                <div className="mt-0.5 text-[13px] font-bold text-primary">{planoSel?.nome}</div>
               </div>
-              <div style={{ color: '#C8102E', fontSize: 22, fontWeight: 900, fontFamily: "'Arial Black',sans-serif" }}>€{planoSel?.valor}<span style={{ fontSize: 11, fontWeight: 400, color: '#9896A4' }}>/mês</span></div>
+              <div className="font-display text-[22px] font-black text-gb-red">€{planoSel?.valor}<span className="text-[11px] font-normal text-muted">/mês</span></div>
             </div>
 
             {[
@@ -286,26 +289,26 @@ export default function MatriculaPublica() {
               { label: 'Telefone / WhatsApp *', val: tel, set: setTel, ph: '+351 9XX XXX XXX', type: 'tel' },
               { label: 'Data de Nascimento',    val: nasc, set: setNasc, ph: '', type: 'date' },
             ].map(f => (
-              <div key={f.label} style={{ marginBottom: 13 }}>
-                <label style={{ display: 'block', color: '#5C5B66', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 4 }}>{f.label}</label>
-                <input type={f.type} value={f.val} onChange={e => f.set(e.target.value)} placeholder={f.ph} style={INP}
-                  onFocus={e => (e.target.style.borderColor = '#C8102E')}
-                  onBlur={e => (e.target.style.borderColor = '#E2E0DB')}
-                />
+              <div key={f.label} className="mb-3.5">
+                <label className="block mb-1 text-[10.5px] font-semibold tracking-[0.8px] uppercase text-secondary">{f.label}</label>
+                <input type={f.type} value={f.val} onChange={e => f.set(e.target.value)} placeholder={f.ph} className={FIELD_CLASS} />
               </div>
             ))}
-            <div style={{ marginBottom: 18 }}>
-              <label style={{ display: 'block', color: '#5C5B66', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 4 }}>Mensagem (opcional)</label>
+            <div className="mb-5">
+              <label className="block mb-1 text-[10.5px] font-semibold tracking-[0.8px] uppercase text-secondary">Mensagem (opcional)</label>
               <textarea value={msg} onChange={e => setMsg(e.target.value)} placeholder="Ex: nunca pratiquei, tenho interesse nos horários da manhã..." rows={3}
-                style={{ ...INP, resize: 'none' as const }}
-                onFocus={e => (e.target.style.borderColor = '#C8102E')}
-                onBlur={e => (e.target.style.borderColor = '#E2E0DB')}
+                className={[FIELD_CLASS, 'resize-none'].join(' ')}
               />
             </div>
-            <p style={{ color: '#B8B7C3', fontSize: 11, marginBottom: 18, lineHeight: 1.6 }}>🔒 Dados protegidos pelo RGPD · gbbraga.com</p>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setStep('plano')} style={{ flex: 1, background: '#F0EFEC', border: '1px solid #E2E0DB', borderRadius: 8, padding: '11px', color: '#5C5B66', fontSize: 14, cursor: 'pointer' }}>← Voltar</button>
-              <button onClick={handleSubmit} disabled={!nome||!email||!tel||submitting} style={{ flex: 2, background: nome&&email&&tel ? '#C8102E' : '#E2E0DB', border: 'none', borderRadius: 8, padding: '11px', color: nome&&email&&tel ? '#fff' : '#9896A4', fontSize: 15, fontWeight: 800, fontFamily: "'Arial Black',sans-serif", cursor: nome&&email&&tel ? 'pointer' : 'not-allowed', boxShadow: nome&&email&&tel ? '0 4px 14px rgba(200,16,46,0.3)' : 'none' }}>
+            <p className="mb-5 text-[11px] leading-[1.6] text-[#B8B7C3]">🔒 Dados protegidos pelo RGPD · gbbraga.com</p>
+            <div className="flex gap-2.5">
+              <button onClick={() => setStep('plano')} className="flex-1 py-2.5 min-h-11 sm:min-h-0 text-sm rounded-lg border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">← Voltar</button>
+              <button onClick={handleSubmit} disabled={!nome||!email||!tel||submitting}
+                className={[
+                  'flex-[2] py-2.5 min-h-11 sm:min-h-0 font-display text-[15px] font-extrabold rounded-lg border-none transition-all duration-200',
+                  'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                  nome&&email&&tel ? 'text-white shadow-[0_4px_14px_rgba(200,16,46,0.3)] cursor-pointer bg-gb-red hover:bg-gb-red-dark active:scale-[0.98]' : 'cursor-not-allowed text-muted bg-border',
+                ].join(' ')}>
                 {submitting ? '⟳ A enviar...' : 'ENVIAR INSCRIÇÃO'}
               </button>
             </div>
@@ -315,34 +318,34 @@ export default function MatriculaPublica() {
 
       {/* SUCESSO */}
       {step === 'sucesso' && (
-        <div style={{ maxWidth: 520, margin: '0 auto', padding: '64px 24px', textAlign: 'center' as const }}>
-          <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(22,163,74,0.1)', border: '3px solid rgba(22,163,74,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, margin: '0 auto 20px' }}>✓</div>
-          <h2 style={{ fontSize: 34, fontWeight: 900, fontFamily: "'Arial Black',sans-serif", textTransform: 'uppercase' as const, marginBottom: 10 }}>Inscrição enviada!</h2>
-          <p style={{ color: '#5C5B66', fontSize: 15, marginBottom: 28, lineHeight: 1.7 }}>
+        <div className="mx-auto py-16 px-6 max-w-[520px] text-center">
+          <div className="flex justify-center items-center mx-auto mb-5 w-20 h-20 text-4xl rounded-full border-[3px] border-green-600/30 bg-green-600/10">✓</div>
+          <h2 className="mb-2.5 font-display text-[34px] font-black uppercase">Inscrição enviada!</h2>
+          <p className="mb-7 text-[15px] leading-[1.7] text-secondary">
             Obrigado, <strong>{nome.split(' ')[0]}</strong>!<br/>
             A nossa equipa contactar-te-á em menos de 24h para confirmar a inscrição.
           </p>
-          <div style={{ background: '#fff', border: '1px solid #E2E0DB', borderRadius: 12, padding: '16px 20px', textAlign: 'left' as const, marginBottom: 24 }}>
+          <div className="p-5 px-5 mb-6 text-left rounded-xl border border-border bg-white">
             {[['Nome',nome],['Email',email],['Telefone',tel],['Plano',`${planoSel?.nome} — €${planoSel?.valor}/mês`]].map(([k,v]) => (
-              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid #EDECE9' }}>
-                <span style={{ color: '#9896A4', fontSize: 13 }}>{k}</span>
-                <span style={{ color: '#111', fontSize: 13, fontWeight: 600 }}>{v}</span>
+              <div key={k} className="flex justify-between py-1.5 border-b border-border-subtle">
+                <span className="text-[13px] text-muted">{k}</span>
+                <span className="text-[13px] font-semibold text-primary">{v}</span>
               </div>
             ))}
           </div>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-            <a href="https://wa.me/351927773854" style={{ background: '#25D366', borderRadius: 10, padding: '12px 22px', color: '#fff', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>💬 WhatsApp</a>
-            <button onClick={() => { setStep('intro'); setPlanoId(''); setNome(''); setEmail(''); setTel(''); }} style={{ background: '#F0EFEC', border: '1px solid #E2E0DB', borderRadius: 10, padding: '12px 22px', color: '#5C5B66', fontSize: 14, cursor: 'pointer' }}>Voltar ao início</button>
+          <div className="flex gap-2.5 justify-center">
+            <a href="https://wa.me/351927773854" className="inline-flex items-center py-3 px-[22px] min-h-11 sm:min-h-0 text-sm font-bold text-white no-underline rounded-[10px] bg-[#25D366] transition-colors duration-200 hover:bg-[#1FB157] active:bg-[#1FB157] outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2">💬 WhatsApp</a>
+            <button onClick={() => { setStep('intro'); setPlanoId(''); setNome(''); setEmail(''); setTel(''); }} className="py-3 px-[22px] min-h-11 sm:min-h-0 text-sm rounded-[10px] border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">Voltar ao início</button>
           </div>
-          <p style={{ color: '#B8B7C3', fontSize: 13, marginTop: 22 }}>🥋 OSS! Bem-vindo(a) à família Gracie Barra Braga</p>
+          <p className="mt-[22px] text-[13px] text-[#B8B7C3]">🥋 OSS! Bem-vindo(a) à família Gracie Barra Braga</p>
         </div>
       )}
 
-      <footer style={{ background: '#111', padding: '26px 24px', textAlign: 'center' as const }}>
-        <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>
+      <footer className="py-[26px] px-6 text-center bg-[#111]">
+        <div className="text-xs text-white/35">
           © 2025 Gracie Barra Braga · Rua Nova Santa Cruz 11, 4710-409 Braga · +351 927 773 854 · atendimento@gbbraga.com
         </div>
-        <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11, marginTop: 5 }}>
+        <div className="mt-1.5 text-[11px] text-white/20">
           gbbraga.com · Stripe · TOConline · RGPD
         </div>
       </footer>

@@ -6,6 +6,8 @@ import { ArrowPathIcon, CheckCircleSolidIcon, ExclamationTriangleIcon, Ico, MapP
 import { useAuth } from '../../lib/auth';
 import { useConfiguracaoSecaoQuery } from '../../hooks/useConfiguracoes';
 import { haversineDistanceMeters } from '../../services/geo';
+import PortalPageHeader from './PortalPageHeader';
+import Card from '../../components/common/Card';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const hoje = () => new Date().toISOString().split('T')[0];
@@ -148,14 +150,7 @@ export default function MeuCheckin() {
 
   if (!aluno) {
     return (
-      <div
-        style={{
-          color: 'var(--text-muted)',
-          fontSize: 13,
-          padding: 24,
-          textAlign: 'center',
-        }}
-      >
+      <div className="p-6 text-[13px] text-center text-muted">
         Perfil não encontrado.
       </div>
     );
@@ -163,68 +158,15 @@ export default function MeuCheckin() {
 
   return (
     <div>
-      <div style={{ marginBottom: 18 }}>
-        <div
-          style={{
-            color: 'var(--text-muted)',
-            fontSize: 10.5,
-            letterSpacing: '1px',
-            textTransform: 'uppercase' as const,
-            marginBottom: 3,
-          }}
-        >
-          Aluno
-        </div>
-        <h1
-          style={{
-            color: 'var(--text-primary)',
-            fontSize: 20,
-          }}
-        >
-          Checkin
-        </h1>
-        <p
-          style={{
-            color: 'var(--text-muted)',
-            fontSize: 13,
-            margin: '4px 0 0',
-          }}
-        >
-          Regista a tua presença na aula de hoje.
-        </p>
-      </div>
+      <PortalPageHeader title="Checkin" description="Regista a tua presença na aula de hoje." />
 
       {/* Data e hora */}
-      <div
-        style={{
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-lg)',
-          padding: '16px 20px',
-          marginBottom: 16,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
+      <div className="flex justify-between items-center py-4 px-5 mb-4 rounded-lg border border-border bg-card">
         <div>
-          <div
-            style={{
-              color: 'var(--text-muted)',
-              fontSize: 10.5,
-              letterSpacing: '0.8px',
-              textTransform: 'uppercase',
-              marginBottom: 3,
-            }}
-          >
+          <div className="mb-1 text-[10.5px] tracking-[0.8px] uppercase text-muted">
             Hoje
           </div>
-          <div
-            style={{
-              color: 'var(--text-primary)',
-              fontSize: 15,
-            }}
-          >
+          <div className="text-[15px] text-primary">
             {new Date().toLocaleDateString('pt-PT', {
               weekday: 'long',
               day: 'numeric',
@@ -232,26 +174,11 @@ export default function MeuCheckin() {
             })}
           </div>
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <div
-            style={{
-              color: 'var(--text-muted)',
-              fontSize: 10.5,
-              letterSpacing: '0.8px',
-              textTransform: 'uppercase',
-              marginBottom: 3,
-            }}
-          >
+        <div className="text-right">
+          <div className="mb-1 text-[10.5px] tracking-[0.8px] uppercase text-muted">
             Hora
           </div>
-          <div
-            style={{
-              color: 'var(--text-primary)',
-              fontSize: 20,
-              fontWeight: 800,
-              fontVariantNumeric: 'tabular-nums',
-            }}
-          >
+          <div className="text-xl font-extrabold tabular-nums text-primary">
             {hora}
           </div>
         </div>
@@ -259,29 +186,12 @@ export default function MeuCheckin() {
 
       {/* Check-ins de hoje (se já fez) */}
       {presencasHoje.length > 0 && (
-        <div
-          style={{
-            background: 'rgba(34,197,94,0.07)',
-            border: '1px solid rgba(34,197,94,0.25)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '12px 16px',
-            marginBottom: 16,
-          }}
-        >
-          <div
-            style={{
-              color: '#16A34A',
-              fontSize: 12.5,
-              marginBottom: 6,
-            }}
-          >
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Ico icon={CheckCircleSolidIcon} sm />Já fizeste check-in hoje</span>
+        <div className="py-3 px-4 mb-4 rounded-lg border border-green-600/25 bg-green-600/[0.07]">
+          <div className="mb-1.5 text-[12.5px] text-green-600">
+            <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckCircleSolidIcon} sm />Já fizeste check-in hoje</span>
           </div>
           {presencasHoje.map((p, i) => (
-            <div
-              key={i}
-              style={{ color: 'var(--text-secondary)', fontSize: 12 }}
-            >
+            <div key={i} className="text-xs text-secondary">
               {p.hora?.slice(0, 5)} — {p.turmaNome || 'Treino livre'}
             </div>
           ))}
@@ -291,31 +201,12 @@ export default function MeuCheckin() {
       {/* Formulário de check-in */}
       {done ? (
         /* ── Confirmação ── */
-        <div
-          style={{
-            background: 'var(--bg-card)',
-            border: '1px solid rgba(34,197,94,0.3)',
-            padding: '32px 24px',
-            textAlign: 'center',
-          }}
-        >
-          <div style={{ marginBottom: 12, color: '#16A34A' }}><Ico icon={CheckCircleSolidIcon} style={{ width: 52, height: 52 }} /></div>
-          <div
-            style={{
-              color: 'var(--text-primary)',
-              fontSize: 17,
-              marginBottom: 6,
-            }}
-          >
+        <div className="py-8 px-6 text-center border border-green-600/30 bg-card">
+          <div className="mb-3 text-green-600"><Ico icon={CheckCircleSolidIcon} style={{ width: 52, height: 52 }} /></div>
+          <div className="mb-1.5 text-[17px] text-primary">
             Presença registada!
           </div>
-          <div
-            style={{
-              color: 'var(--text-muted)',
-              fontSize: 13,
-              marginBottom: 20,
-            }}
-          >
+          <div className="mb-5 text-[13px] text-muted">
             {turmasHoje.find((t) => t.id === turmaId)?.nome || 'Treino livre'} ·{' '}
             {horaAtual()}
           </div>
@@ -324,71 +215,34 @@ export default function MeuCheckin() {
               setDone(false);
               setTurmaId(turmasHoje.length === 1 ? turmasHoje[0].id : '');
             }}
-            style={{
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '9px 20px',
-              color: 'var(--text-secondary)',
-              fontSize: 13,
-              cursor: 'pointer',
-            }}
+            className="py-2.5 px-5 min-h-11 sm:min-h-0 text-[13px] rounded-lg border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card hover:text-primary active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
           >
             Fazer outro check-in
           </button>
         </div>
       ) : (
         /* ── Formulário ── */
-        <div
-          style={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '20px',
-          }}
-        >
+        <Card padding="lg">
           {/* Selecionar turma */}
-          <div style={{ marginBottom: 20 }}>
-            <div
-              style={{
-                color: 'var(--text-muted)',
-                fontSize: 10.5,
-                letterSpacing: '0.8px',
-                textTransform: 'uppercase',
-                marginBottom: 8,
-              }}
-            >
+          <div className="mb-5">
+            <div className="mb-2 text-[10.5px] tracking-[0.8px] uppercase text-muted">
               Aula
             </div>
 
             {turmasHoje.length === 0 ? (
-              <div
-                style={{
-                  color: 'var(--text-muted)',
-                  fontSize: 13,
-                  padding: '12px 0',
-                }}
-              >
+              <div className="py-3 text-[13px] text-muted">
                 Sem aulas agendadas para hoje. Podes fazer check-in como treino
                 livre.
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div className="flex flex-col gap-2">
                 {turmasHoje.map((t) => (
                   <label
                     key={t.id}
+                    className="flex gap-3 items-center py-2.5 px-3.5 rounded-lg border-[1.5px] cursor-pointer transition-colors duration-200"
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      padding: '11px 14px',
-                      background:
-                        turmaId === t.id
-                          ? `${t.cor || GB.red}18`
-                          : 'var(--bg-elevated)',
-                      border: `1.5px solid ${turmaId === t.id ? t.cor || GB.red : 'var(--border)'}`,
-                      borderRadius: 8,
-                      cursor: 'pointer',
+                      background: turmaId === t.id ? `${t.cor || GB.red}18` : 'var(--bg-elevated)',
+                      borderColor: turmaId === t.id ? t.cor || GB.red : 'var(--border)',
                     }}
                   >
                     <input
@@ -397,18 +251,13 @@ export default function MeuCheckin() {
                       value={t.id}
                       checked={turmaId === t.id}
                       onChange={() => setTurmaId(t.id)}
-                      style={{ accentColor: GB.red }}
+                      className="outline-none accent-gb-red focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
                     />
                     <div>
-                      <div
-                        style={{
-                          color: 'var(--text-primary)',
-                          fontSize: 13,
-                        }}
-                      >
+                      <div className="text-[13px] text-primary">
                         {t.nome}
                       </div>
-                      <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>
+                      <div className="text-[11px] text-muted">
                         {t.horario}
                       </div>
                     </div>
@@ -417,19 +266,10 @@ export default function MeuCheckin() {
 
                 {/* Opção "Treino livre" */}
                 <label
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: '11px 14px',
-                    background:
-                      turmaId === ''
-                        ? 'rgba(200,16,46,0.06)'
-                        : 'var(--bg-elevated)',
-                    border: `1.5px solid ${turmaId === '' ? GB.red : 'var(--border)'}`,
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                  }}
+                  className={[
+                    'flex gap-3 items-center py-2.5 px-3.5 rounded-lg border-[1.5px] cursor-pointer transition-colors duration-200',
+                    turmaId === '' ? 'border-gb-red bg-gb-red/[0.06]' : 'border-border bg-elevated',
+                  ].join(' ')}
                 >
                   <input
                     type="radio"
@@ -437,18 +277,13 @@ export default function MeuCheckin() {
                     value=""
                     checked={turmaId === ''}
                     onChange={() => setTurmaId('')}
-                    style={{ accentColor: GB.red }}
+                    className="outline-none accent-gb-red focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
                   />
                   <div>
-                    <div
-                      style={{
-                        color: 'var(--text-primary)',
-                        fontSize: 13,
-                      }}
-                    >
+                    <div className="text-[13px] text-primary">
                       Treino livre
                     </div>
-                    <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>
+                    <div className="text-[11px] text-muted">
                       Sem turma específica
                     </div>
                   </div>
@@ -460,45 +295,23 @@ export default function MeuCheckin() {
           {/* GPS Fence indicator */}
           {fence && (
             <div
-              style={{
-                marginBottom: 14,
-                padding: '10px 14px',
-                borderRadius: 'var(--radius-lg)',
-                background:
-                  gpsStatus === 'inside'
-                    ? 'rgba(22,163,74,0.07)'
-                    : gpsStatus === 'outside'
-                      ? 'rgba(200,16,46,0.06)'
-                      : gpsStatus === 'checking'
-                        ? 'var(--bg-elevated)'
-                        : 'var(--bg-elevated)',
-                border: `1px solid ${
-                  gpsStatus === 'inside'
-                    ? 'rgba(22,163,74,0.25)'
-                    : gpsStatus === 'outside'
-                      ? 'rgba(200,16,46,0.2)'
-                      : 'var(--border)'
-                }`,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-              }}
+              className={[
+                'flex gap-2.5 items-center py-2.5 px-3.5 mb-3.5 rounded-lg border',
+                gpsStatus === 'inside' ? 'border-green-600/25 bg-green-600/[0.07]'
+                  : gpsStatus === 'outside' ? 'border-gb-red/20 bg-gb-red/[0.06]'
+                  : 'border-border bg-elevated',
+              ].join(' ')}
             >
               <Ico
                 icon={gpsStatus === 'inside' ? CheckCircleSolidIcon : gpsStatus === 'outside' ? MapPinIcon : gpsStatus === 'checking' ? ArrowPathIcon : gpsStatus === 'error' ? ExclamationTriangleIcon : SignalIcon}
-                style={{ width: 18, height: 18, flexShrink: 0 }}
+                className="w-[18px] h-[18px] shrink-0"
               />
               <div>
                 <div
-                  style={{
-                    fontSize: 12.5,
-                    color:
-                      gpsStatus === 'inside'
-                        ? '#16A34A'
-                        : gpsStatus === 'outside'
-                          ? GB.red
-                          : 'var(--text-secondary)',
-                  }}
+                  className={[
+                    'text-[12.5px]',
+                    gpsStatus === 'inside' ? 'text-green-600' : gpsStatus === 'outside' ? 'text-gb-red' : 'text-secondary',
+                  ].join(' ')}
                 >
                   {gpsStatus === 'inside'
                     ? `Dentro da academia (${gpsDist}m)`
@@ -511,13 +324,7 @@ export default function MeuCheckin() {
                           : 'GPS fence activo'}
                 </div>
                 {gpsStatus === 'outside' && (
-                  <div
-                    style={{
-                      color: 'var(--text-muted)',
-                      fontSize: 11,
-                      marginTop: 2,
-                    }}
-                  >
+                  <div className="mt-0.5 text-[11px] text-muted">
                     Podes fazer check-in mas a tua localização será registada.
                   </div>
                 )}
@@ -526,15 +333,8 @@ export default function MeuCheckin() {
           )}
 
           {err && (
-            <div
-              style={{
-                color: GB.red,
-                fontSize: 12,
-                fontWeight: 600,
-                marginBottom: 12,
-              }}
-            >
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Ico icon={ExclamationTriangleIcon} sm />{err}</span>
+            <div className="mb-3 text-xs font-semibold text-gb-red">
+              <span className="inline-flex gap-1.5 items-center"><Ico icon={ExclamationTriangleIcon} sm />{err}</span>
             </div>
           )}
 
@@ -542,17 +342,11 @@ export default function MeuCheckin() {
           <button
             onClick={handleCheckin}
             disabled={checking}
-            style={{
-              width: '100%',
-              padding: '14px',
-              background: checking ? '#aaa' : GB.red,
-              border: 'none',
-              borderRadius: 'var(--radius-sm)',
-              color: '#fff',
-              fontSize: 12,
-              cursor: checking ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s',
-            }}
+            className={[
+              'py-3.5 w-full min-h-11 sm:min-h-0 text-xs text-white rounded-sm border-none transition-all duration-200',
+              'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+              checking ? 'cursor-not-allowed bg-neutral-400' : 'cursor-pointer bg-gb-red hover:bg-gb-red-dark active:scale-[0.98]',
+            ].join(' ')}
           >
             {checking
               ? 'A registar...'
@@ -560,50 +354,29 @@ export default function MeuCheckin() {
                 ? 'Fazer check-in novamente'
                 : 'Fazer Check-in'}
           </button>
-        </div>
+        </Card>
       )}
 
       {/* Histórico recente */}
       {presencas.filter((p) => p.alunoId === aluno?.id).length > 0 && (
-        <div style={{ marginTop: 24 }}>
-          <div
-            style={{
-              color: 'var(--text-muted)',
-              fontSize: 10.5,
-              letterSpacing: '0.8px',
-              textTransform: 'uppercase',
-              marginBottom: 10,
-            }}
-          >
+        <div className="mt-6">
+          <div className="mb-2.5 text-[10.5px] tracking-[0.8px] uppercase text-muted">
             Últimas presenças
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div className="flex flex-col gap-1.5">
             {presencas
               .filter((p) => p.alunoId === aluno?.id)
               .slice(0, 5)
               .map((p, i) => (
                 <div
                   key={i}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '10px 14px',
-                    background: 'var(--bg-card)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 'var(--radius-lg)',
-                  }}
+                  className="flex justify-between items-center py-2.5 px-3.5 rounded-lg border border-border bg-card"
                 >
                   <div>
-                    <div
-                      style={{
-                        color: 'var(--text-primary)',
-                        fontSize: 12.5,
-                      }}
-                    >
+                    <div className="text-[12.5px] text-primary">
                       {p.turmaNome || 'Treino livre'}
                     </div>
-                    <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>
+                    <div className="text-[11px] text-muted">
                       {new Date(p.data).toLocaleDateString('pt-PT', {
                         weekday: 'short',
                         day: 'numeric',
@@ -611,13 +384,7 @@ export default function MeuCheckin() {
                       })}
                     </div>
                   </div>
-                  <div
-                    style={{
-                      color: 'var(--text-muted)',
-                      fontSize: 12,
-                      fontVariantNumeric: 'tabular-nums',
-                    }}
-                  >
+                  <div className="text-xs tabular-nums text-muted">
                     {p.hora?.slice(0, 5)}
                   </div>
                 </div>

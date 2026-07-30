@@ -32,47 +32,60 @@ export default function Conteudo() {
       />
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' as const }}>
-        <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
-        <Ico icon={MagnifyingGlassIcon} style={{ position: 'absolute', left: 11, top: 10, color: 'var(--text-muted)' }} />
+      <div className="flex flex-wrap gap-2.5 mb-4">
+        <div className="flex-1 relative min-w-[200px]">
+        <Ico icon={MagnifyingGlassIcon} className="absolute left-[11px] top-2.5 text-muted" />
         <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Pesquisar técnica..."
           aria-label="Pesquisar técnica"
-          style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 12px 8px 32px', color: 'var(--text-primary)', fontSize: 13 }}/>
+          className="box-border py-2 pr-3 pl-8 w-full text-[13px] rounded-sm border outline-none transition-all duration-200 border-border bg-card text-primary min-h-11 sm:min-h-0 focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25"/>
         </div>
         {['todos','branca','azul','roxa','marrom','preta'].map(n => (
-          <button key={n} onClick={() => setFilterNivel(n)} style={{ background: filterNivel === n ? GB.red : 'var(--bg-card)', border: `1px solid ${filterNivel === n ? GB.red : 'var(--border)'}`, borderRadius: 'var(--radius-sm)', padding: '7px 12px', color: filterNivel === n ? '#fff' : 'var(--text-secondary)', fontSize: 12, fontWeight: filterNivel === n ? 600 : 400, textTransform: 'capitalize' as const, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
-            {n !== 'todos' && <div style={{ width: 10, height: 4, background: beltConfig[n]?.bg || '#888', borderRadius: 1, border: n === 'branca' ? '1px solid #555' : 'none' }}/>}
+          <button key={n} onClick={() => setFilterNivel(n)}
+            className={[
+              'flex gap-1.5 items-center py-1.5 px-3 min-h-11 sm:min-h-0 text-xs capitalize rounded-sm border cursor-pointer transition-colors duration-200',
+              'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+              filterNivel === n ? 'font-semibold text-white bg-gb-red border-gb-red active:bg-gb-red-dark' : 'font-normal text-secondary bg-card border-border hover:bg-elevated active:bg-elevated',
+            ].join(' ')}>
+            {n !== 'todos' && <div className="w-2.5 h-1 rounded-[1px]" style={{ background: beltConfig[n]?.bg || '#888', border: n === 'branca' ? '1px solid #555' : 'none' }}/>}
             {n === 'todos' ? 'Todos' : beltConfig[n]?.label}
           </button>
         ))}
       </div>
 
       {/* Videos grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3.5">
         {filtered.map(v => {
           const bc = beltConfig[v.nivel];
           const isPlaying = playing === v.id;
           return (
-            <div key={v.id} style={{ background: 'var(--bg-card)', border: `1px solid ${isPlaying ? GB.red + '50' : 'var(--border)'}`, borderRadius: 'var(--radius-lg)', overflow: 'hidden', cursor: 'pointer', boxShadow: isPlaying ? `0 0 20px ${GB.redGlow}` : 'var(--shadow-card)' }}
+            <div key={v.id}
+              className="overflow-hidden rounded-lg border cursor-pointer transition-shadow duration-200 shadow-xs hover:shadow-md"
+              style={{ borderColor: isPlaying ? GB.red + '50' : 'var(--border)', boxShadow: isPlaying ? `0 0 20px ${GB.redGlow}` : undefined }}
               onClick={() => setPlaying(isPlaying ? null : v.id)}>
               {/* Thumbnail */}
-              <div style={{ height: 130, background: isPlaying ? `radial-gradient(ellipse at center, ${GB.red}33 0%, #0D0D0F 70%)` : 'radial-gradient(ellipse at center, #1A1A1E 0%, #0D0D0F 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                <div style={{ width: 48, height: 48, borderRadius: '50%', background: isPlaying ? GB.red : 'rgba(255,255,255,0.08)', border: `2px solid ${isPlaying ? GB.red : 'rgba(255,255,255,0.12)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, transition: 'all 0.2s' }}>
+              <div
+                className="flex relative justify-center items-center h-[130px]"
+                style={{ background: isPlaying ? `radial-gradient(ellipse at center, ${GB.red}33 0%, #0D0D0F 70%)` : 'radial-gradient(ellipse at center, #1A1A1E 0%, #0D0D0F 100%)' }}
+              >
+                <div
+                  className="flex justify-center items-center w-12 h-12 text-xl rounded-full border-2 transition-all"
+                  style={{ background: isPlaying ? GB.red : 'rgba(255,255,255,0.08)', borderColor: isPlaying ? GB.red : 'rgba(255,255,255,0.12)' }}
+                >
                   {isPlaying ? '⏸' : '▶'}
                 </div>
-                <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.6)', borderRadius: 4, padding: '2px 7px' }}>
-                  <span style={{ color: '#fff', fontSize: 10.5, fontFamily: 'var(--font-mono)' }}>{v.duracao}</span>
+                <div className="absolute top-2.5 right-2.5 py-0.5 px-[7px] rounded bg-black/60">
+                  <span className="font-mono text-[10.5px] text-white">{v.duracao}</span>
                 </div>
-                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: bc?.bg || '#888' }}/>
+                <div className="absolute right-0 bottom-0 left-0 h-[3px]" style={{ background: bc?.bg || '#888' }}/>
               </div>
-              <div style={{ padding: '14px 14px 16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                  <div style={{ width: 14, height: 5, background: bc?.bg || '#888', borderRadius: 1, border: v.nivel === 'branca' ? '1px solid #555' : 'none', flexShrink: 0 }}/>
-                  <span style={{ color: 'var(--text-muted)', fontSize: 10.5, textTransform: 'capitalize' as const }}>{bc?.label}</span>
+              <div className="pt-3.5 px-3.5 pb-4">
+                <div className="flex gap-1.5 items-center mb-1.5">
+                  <div className="w-3.5 h-[5px] rounded-[1px] shrink-0" style={{ background: bc?.bg || '#888', border: v.nivel === 'branca' ? '1px solid #555' : 'none' }}/>
+                  <span className="text-[10.5px] capitalize text-muted">{bc?.label}</span>
                 </div>
-                <div style={{ color: 'var(--text-primary)', fontSize: 13.5, fontWeight: 600, marginBottom: 4, lineHeight: 1.3 }}>{v.titulo}</div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 11.5, marginBottom: 8, lineHeight: 1.4 }}>{v.desc}</div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 10.5 }}>Prof. {v.prof}</div>
+                <div className="mb-1 text-[13.5px] font-semibold leading-[1.3] text-primary">{v.titulo}</div>
+                <div className="mb-2 text-[11.5px] leading-[1.4] text-muted">{v.desc}</div>
+                <div className="text-[10.5px] text-muted">Prof. {v.prof}</div>
               </div>
             </div>
           );
