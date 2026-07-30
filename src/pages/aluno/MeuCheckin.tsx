@@ -141,7 +141,7 @@ export default function MeuCheckin() {
       });
       setDone(true);
     } catch (e) {
-      setErr(e.message || 'Erro ao registar presença.');
+      setErr(e instanceof Error ? e.message : 'Erro ao registar presença.');
     }
     setChecking(false);
   };
