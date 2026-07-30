@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useKPIs, useAlunos, usePagamentos } from '../../lib/useData';
 import { revenueHistory } from '../../data/mockData';
-import { exportRelatorioFinanceiro, exportRelatorioAlunos, exportCSV } from '../../lib/reportExport';
+import { exportRelatorioFinanceiro, exportRelatorioAlunos, exportCSV } from '../../services/pdf';
 import { useMobile } from '../../lib/useMobile';
 
 // ─── Shared atoms ─────────────────────────────────────────────────────────────

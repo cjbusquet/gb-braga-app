@@ -18,6 +18,8 @@ import type { Belt } from '../types';
 import type { HeroIcon } from '../lib/icons';
 import type React from 'react';
 import { useAuth } from '../lib/auth';
+import { useProfileAvatarQuery, useUpdateProfile, useUploadAvatar } from '../hooks/useProfile';
+import { useAlunoInfoByEmailQuery } from '../hooks/useAlunoInfo';
 
 // ─── Belt metadata (derived from gbBrand beltConfig) ─────────────────────────
 // Mapped to the Belt type keys — bicolor belts use CSS gradients as bg
@@ -217,9 +219,10 @@ function AvatarSection({
   const { user } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(avatarUrl);
-  const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState('');
   const [hover, setHover] = useState(false);
+  const uploadAvatar = useUploadAvatar();
+  const uploading = uploadAvatar.isPending;
 
   // Sync if parent passes a new URL (e.g. first load)
   useEffect(() => {
@@ -238,47 +241,15 @@ function AvatarSection({
     const objectUrl = URL.createObjectURL(file);
     setPreview(objectUrl);
     setErr('');
-    setUploading(true);
 
     try {
-      if (!isConfigured) {
-        // Demo mode — just show preview
-        await new Promise((r) => setTimeout(r, 600));
-        onUploaded(objectUrl);
-        setUploading(false);
-        return;
-      }
-
-      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const path = `${user.id}/avatar.${ext}`;
-
-      // Upsert (remove old then insert, or use upsert option)
-      const { error: upErr } = await supabase.storage
-        .from('avatars')
-        .upload(path, file, { upsert: true, contentType: file.type });
-
-      if (upErr) throw new Error(upErr.message);
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from('avatars').getPublicUrl(path);
-
-      // Bust cache with timestamp param
-      const urlWithTs = `${publicUrl}?t=${Date.now()}`;
-
-      // Save to profiles.avatar_url
-      await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('id', user.id);
-
-      setPreview(urlWithTs);
-      onUploaded(urlWithTs);
-    } catch (e: any) {
-      setErr(e.message || 'Erro ao fazer upload.');
+      const url = await uploadAvatar.mutateAsync({ userId: user.id, file });
+      setPreview(url);
+      onUploaded(url);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Erro ao fazer upload.');
       setPreview(avatarUrl); // revert preview
     }
-    setUploading(false);
     // Reset input so same file can be re-selected
     if (fileRef.current) fileRef.current.value = '';
   };
@@ -455,30 +426,26 @@ function DadosPessoaisSection() {
   const { user, refreshProfile } = useAuth();
   const [nome, setNome] = useState(user?.nome || '');
   const [telefone, setTelefone] = useState(user?.telefone || '');
-  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [err, setErr] = useState('');
+  const updateProfile = useUpdateProfile();
+  const saving = updateProfile.isPending;
 
   const save = async () => {
     if (!user) return;
     if (!nome.trim()) return setErr('O nome não pode estar vazio.');
     setErr('');
-    setSaving(true);
     try {
-      if (isConfigured) {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ nome: nome.trim(), telefone: telefone.trim() || null })
-          .eq('id', user.id);
-        if (error) throw new Error(error.message);
-      }
+      await updateProfile.mutateAsync({
+        id: user.id,
+        patch: { nome: nome.trim(), telefone: telefone.trim() || null },
+      });
       await refreshProfile();
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
-    } catch (e: any) {
-      setErr(e.message || 'Erro ao guardar.');
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Erro ao guardar.');
     }
-    setSaving(false);
   };
 
   return (
@@ -616,34 +583,9 @@ function PasswordSection() {
 }
 
 // ─── Aluno info section ───────────────────────────────────────────────────────
-type AlunoInfo = {
-  faixa: Belt;
-  grau: number;
-  plano: string;
-  data_matricula: string;
-  status: string;
-};
-
 function AlunoSection() {
   const { user } = useAuth();
-  const [info, setInfo] = useState<AlunoInfo | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user || !isConfigured) {
-      setLoading(false);
-      return;
-    }
-    supabase
-      .from('alunos')
-      .select('faixa, grau, plano, data_matricula, status')
-      .eq('email', user.email)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) setInfo(data as AlunoInfo);
-        setLoading(false);
-      });
-  }, [user]);
+  const { data: info, isLoading: loading } = useAlunoInfoByEmailQuery(user?.email);
 
   if (loading) {
     return (
@@ -830,20 +772,11 @@ function AlunoSection() {
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function PerfilPage() {
   const { user, refreshProfile, logout } = useAuth();
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-
-  // Load avatar_url from DB on mount
-  useEffect(() => {
-    if (!user || !isConfigured) return;
-    supabase
-      .from('profiles')
-      .select('avatar_url')
-      .eq('id', user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data?.avatar_url) setAvatarUrl(data.avatar_url);
-      });
-  }, [user]);
+  const { data: storedAvatarUrl } = useProfileAvatarQuery(user?.id);
+  // Overrides the query result immediately after a fresh upload, so the UI
+  // doesn't flicker back to the stale URL while the query cache invalidates.
+  const [avatarOverride, setAvatarOverride] = useState<string | null>(null);
+  const avatarUrl = avatarOverride ?? storedAvatarUrl ?? null;
 
   if (!user) return null;
 
@@ -877,7 +810,7 @@ export default function PerfilPage() {
         <AvatarSection
           avatarUrl={avatarUrl}
           onUploaded={(url) => {
-            setAvatarUrl(url);
+            setAvatarOverride(url);
             refreshProfile();
           }}
         />

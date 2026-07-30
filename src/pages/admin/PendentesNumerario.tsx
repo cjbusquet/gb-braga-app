@@ -1,84 +1,41 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../../lib/supabaseClient';
-import { db } from '../../lib/useData';
-
-interface PedidoNumerario {
-  id: string;
-  nomeAluno: string;
-  email: string;
-  telefone: string;
-  plano: string;
-  valor: number;
-  dataPedido: string;
-  status: 'pendente' | 'aprovado' | 'rejeitado';
-  notaAdmin?: string;
-}
-
-function mapPedido(r: any): PedidoNumerario {
-  return {
-    id:         r.id,
-    nomeAluno:  r.nome_aluno ?? '',
-    email:      r.email ?? '',
-    telefone:   r.telefone ?? '',
-    plano:      r.plano_nome ?? '',
-    valor:      r.valor ?? 0,
-    dataPedido: r.created_at ? r.created_at.slice(0, 10) : '',
-    status:     r.status ?? 'pendente',
-    notaAdmin:  r.nota_admin ?? undefined,
-  };
-}
+import { useState } from 'react';
+import {
+  useAprovarNumerario,
+  usePedidosNumerarioQuery,
+  useRejeitarNumerario,
+} from '../../hooks/usePedidosNumerario';
 
 export default function PendentesNumerario() {
-  const [pedidos, setPedidos] = useState<PedidoNumerario[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [erro, setErro] = useState<string | null>(null);
+  const { data: pedidos = [], isLoading: loading, error, refetch } = usePedidosNumerarioQuery();
+  const aprovarMutation = useAprovarNumerario();
+  const rejeitarMutation = useRejeitarNumerario();
   const [modalId, setModalId] = useState<string | null>(null);
   const [nota, setNota] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [actionErro, setActionErro] = useState<string | null>(null);
   const [filtro, setFiltro] = useState<'todos' | 'pendente' | 'aprovado' | 'rejeitado'>('pendente');
 
-  const carregar = useCallback(async () => {
-    setLoading(true);
-    setErro(null);
-    const { data, error } = await supabase
-      .from('pedidos_numerario')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (error) {
-      setErro(error.message);
-    } else {
-      setPedidos((data ?? []).map(mapPedido));
-    }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { carregar(); }, [carregar]);
+  const erro = actionErro ?? (error instanceof Error ? error.message : null);
+  const saving = aprovarMutation.isPending || rejeitarMutation.isPending;
 
   const aprovar = async (id: string) => {
-    setSaving(true);
+    setActionErro(null);
     try {
-      await db.aprovarNumerario(id, nota || 'Aprovado pelo admin');
-      await carregar();
+      await aprovarMutation.mutateAsync({ id, nota: nota || 'Aprovado pelo admin' });
       setModalId(null);
       setNota('');
-    } catch (e: any) {
-      setErro(e.message);
-    } finally {
-      setSaving(false);
+    } catch (e) {
+      setActionErro(e instanceof Error ? e.message : String(e));
     }
   };
 
   const rejeitar = async (id: string) => {
-    setSaving(true);
+    setActionErro(null);
     try {
-      await db.rejeitarNumerario(id, nota || 'Rejeitado');
-      await carregar();
+      await rejeitarMutation.mutateAsync({ id, nota: nota || 'Rejeitado' });
       setModalId(null);
       setNota('');
-    } catch (e: any) {
-      setErro(e.message);
-    } finally {
-      setSaving(false);
+    } catch (e) {
+      setActionErro(e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -148,7 +105,7 @@ export default function PendentesNumerario() {
             {pendentes > 0 && <span style={{ background:'var(--gb-red)', color:'#fff', fontSize:12, fontWeight:700, padding:'2px 9px', borderRadius:99 }}>{pendentes} pendente{pendentes!==1?'s':''}</span>}
           </h1>
         </div>
-        <button onClick={carregar} style={{ background:'none', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)', padding:'6px 14px', color:'var(--text-muted)', fontSize:12, cursor:'pointer' }}>
+        <button onClick={() => refetch()} style={{ background:'none', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)', padding:'6px 14px', color:'var(--text-muted)', fontSize:12, cursor:'pointer' }}>
           ↻ Atualizar
         </button>
       </div>

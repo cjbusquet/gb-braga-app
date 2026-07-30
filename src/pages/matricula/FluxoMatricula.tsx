@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { usePlanos, db } from '../../lib/useData';
 import { useAuth } from '../../lib/auth';
+import { useUpdateProfile } from '../../hooks/useProfile';
 import { GBLogoFull } from '../../components/GBLogo';
 import type { Plano } from '../../types';
 
@@ -466,6 +467,7 @@ function Pendente({ ficha, contrato, plano, registerMode, onVoltar }: {
   const [acctStatus, setAcctStatus] = useState<AccountStatus>('creating');
   const [acctErr, setAcctErr] = useState('');
   const [contratoErr, setContratoErr] = useState('');
+  const updateProfile = useUpdateProfile();
 
   useEffect(() => {
     const run = async () => {
@@ -552,15 +554,19 @@ function Pendente({ ficha, contrato, plano, registerMode, onVoltar }: {
       }
 
       /* 5 ── Update profile (matricula_completa = false — pending approval) */
-      if (authUserId && isConfigured) {
-        const { error: profErr } = await supabase.from('profiles')
-          .update({
-            nome:               ficha.nomeAluno,
-            telefone:           ficha.telefone,
-            matricula_completa: false,
-          })
-          .eq('id', authUserId);
-        if (profErr) console.error('Profile update error (pendente):', profErr.message, profErr.code);
+      if (authUserId) {
+        try {
+          await updateProfile.mutateAsync({
+            id: authUserId,
+            patch: {
+              nome:               ficha.nomeAluno,
+              telefone:           ficha.telefone,
+              matricula_completa: false,
+            },
+          });
+        } catch (e) {
+          console.error('Profile update error (pendente):', e instanceof Error ? e.message : e);
+        }
       }
 
       setAcctStatus(needsConfirm ? 'confirm_email' : 'ok');
@@ -642,6 +648,7 @@ function Completo({ ficha, contrato, plano, isStaff, registerMode, onConcludo }:
   const [acctStatus, setAcctStatus] = useState<AccountStatus>('creating');
   const [acctErr, setAcctErr] = useState('');
   const [contratoErr, setContratoErr] = useState('');
+  const updateProfile = useUpdateProfile();
 
   useEffect(() => {
     const run = async () => {
@@ -732,15 +739,19 @@ function Completo({ ficha, contrato, plano, isStaff, registerMode, onConcludo }:
       }
 
       /* 5 ── Update profile (matricula_completa = true) */
-      if (authUserId && isConfigured) {
-        const { error: profErr } = await supabase.from('profiles')
-          .update({
-            nome:               ficha.nomeAluno,
-            telefone:           ficha.telefone,
-            matricula_completa: true,
-          })
-          .eq('id', authUserId);
-        if (profErr) console.error('Profile update error:', profErr.message, profErr.code);
+      if (authUserId) {
+        try {
+          await updateProfile.mutateAsync({
+            id: authUserId,
+            patch: {
+              nome:               ficha.nomeAluno,
+              telefone:           ficha.telefone,
+              matricula_completa: true,
+            },
+          });
+        } catch (e) {
+          console.error('Profile update error:', e instanceof Error ? e.message : e);
+        }
       }
 
       if (!needsConfirm) {

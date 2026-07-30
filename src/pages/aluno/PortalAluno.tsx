@@ -25,7 +25,7 @@ import {
 
 import type { Belt } from '../../types';
 import { ClockIcon } from '@heroicons/react/24/solid';
-import { exportContratoPDF } from '../../lib/reportExport';
+import { exportContratoPDF } from '../../services/pdf';
 import { useAuth } from '../../lib/auth';
 import { useMobile } from '../../lib/useMobile';
 import { useState } from 'react';

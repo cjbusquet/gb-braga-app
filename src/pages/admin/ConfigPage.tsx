@@ -1,10 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type React from 'react';
 import { GB, beltConfig } from '../../lib/gbBrand';
 import { defaultTocConfig } from '../../data/mockData';
 import { supabase, isConfigured } from '../../lib/supabaseClient';
 import { useAuth } from '../../lib/auth';
 import { useMobile } from '../../lib/useMobile';
+import { useConfiguracaoSection } from '../../hooks/useConfiguracoes';
+import { useStaffListQuery, useUpdateProfile, type StaffMember } from '../../hooks/useProfile';
+import { inviteStaff } from '../../services/api/edgeFunctions';
+import { haversineDistanceMeters } from '../../services/geo';
 import type { TocConfig } from '../../types';
 
 type Section = 'equipa' | 'toconline' | 'stripe' | 'whatsapp' | 'email' | 'academia' | 'compliance';
@@ -19,58 +23,8 @@ const SECTIONS: { id: Section; label: string; icon: string; desc: string; supera
   { id: 'compliance', label: 'IPDJ / RGPD',          icon: '📋', desc: 'Legal e conformidade' },
 ];
 
-// ─── useConfig hook — loads/saves a section's config from the `configuracoes` table ──
-function useConfig<T extends object>(secao: string, defaults: T) {
-  const [data, setData]     = useState<T>(defaults);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving]   = useState(false);
-  const [saved, setSaved]     = useState(false);
-
-  useEffect(() => {
-    if (!isConfigured) { setLoading(false); return; }
-    supabase
-      .from('configuracoes')
-      .select('dados')
-      .eq('secao', secao)
-      .maybeSingle()
-      .then(
-        ({ data: row }) => {
-          if (row?.dados && typeof row.dados === 'object') {
-            setData(prev => ({ ...prev, ...(row.dados as Partial<T>) }));
-          }
-          setLoading(false);
-        },
-        () => setLoading(false)
-      );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [secao]);
-
-  const save = async (override?: T) => {
-    const toSave = override ?? data;
-    if (!isConfigured) {
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
-      return;
-    }
-    setSaving(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      await supabase
-        .from('configuracoes')
-        .upsert(
-          { secao, dados: toSave, updated_at: new Date().toISOString(), updated_by: user?.id },
-          { onConflict: 'secao' }
-        );
-    } catch (e) {
-      console.error('useConfig save error:', e);
-    }
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
-  };
-
-  return { data, setData, loading, saving, saved, save };
-}
+// Config sections now load/save via useConfiguracaoSection (src/hooks/useConfiguracoes.ts),
+// a TanStack Query hook wrapping the `configuracoes` table.
 
 // ─── Small UI helpers ─────────────────────────────────────────────────────────
 function Label({ children }: { children: React.ReactNode }) {
@@ -110,7 +64,7 @@ function SaveBar({ onSave, saved, saving = false }: { onSave: () => void; saved:
 
 // ─── TOConline Section ────────────────────────────────────────────────────────
 function TocSection() {
-  const { data: cfg, setData: setCfg, loading, saving, saved, save } = useConfig<TocConfig>('toconline', defaultTocConfig);
+  const { data: cfg, setData: setCfg, loading, saving, saved, save } = useConfiguracaoSection<TocConfig>('toconline', defaultTocConfig);
   const [testing, setTesting] = useState(false);
   const [connStatus, setConnStatus] = useState<'idle' | 'ok' | 'fail'>('idle');
   const { isMobile } = useMobile();
@@ -276,7 +230,7 @@ const defaultStripe: StripeConfig = {
 };
 
 function StripeSection() {
-  const { data, setData, loading, saving, saved, save } = useConfig<StripeConfig>('stripe', defaultStripe);
+  const { data, setData, loading, saving, saved, save } = useConfiguracaoSection<StripeConfig>('stripe', defaultStripe);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<'ok'|'err'|null>(null);
   const { isMobile } = useMobile();
@@ -418,7 +372,7 @@ function StripeSection() {
 type WaConfig = { num: string; token: string };
 
 function WhatsAppSection() {
-  const { data, setData, loading, saving, saved, save } = useConfig<WaConfig>('whatsapp', { num: '+351912345679', token: '' });
+  const { data, setData, loading, saving, saved, save } = useConfiguracaoSection<WaConfig>('whatsapp', { num: '+351912345679', token: '' });
   const { isMobile } = useMobile();
 
   if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 24 }}>A carregar configuração...</div>;
@@ -467,7 +421,7 @@ function SimpleSection({ secao, title, icon, bg, fields }: {
   bg: string;
   fields: { label: string; placeholder: string; type?: string }[];
 }) {
-  const { data: vals, setData: setVals, loading, saving, saved, save } = useConfig<Record<string, string>>(secao, {});
+  const { data: vals, setData: setVals, loading, saving, saved, save } = useConfiguracaoSection<Record<string, string>>(secao, {});
 
   if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 24 }}>A carregar configuração...</div>;
 
@@ -509,18 +463,6 @@ const ROLE_BADGE: Record<string, { label: string; color: string; bg: string }> =
   atendimento: { label: 'Atendimento',    color: '#16A34A', bg: 'rgba(22,163,74,0.10)'  },
 };
 
-type StaffMember = {
-  id: string;
-  nome: string;
-  email: string;
-  role: string;
-  telefone: string;
-  nif: string;
-  morada: string;
-  faixa: string;
-  ativo: boolean;
-};
-
 // Ordered list of belts for the staff faixa selector (adult + kids)
 const STAFF_FAIXAS = [
   { value: '', label: 'Sem faixa definida' },
@@ -547,12 +489,13 @@ const STAFF_FAIXAS = [
 function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => void }) {
   const [open, setOpen]     = useState(false);
   const [d, setD]           = useState(member);
-  const [saving,   setSaving]   = useState(false);
   const [saved,    setSaved]    = useState(false);
   const [err,      setErr]      = useState('');
   const [resetting, setResetting] = useState(false);
   const [resetDone, setResetDone] = useState(false);
   const { isMobile }             = useMobile();
+  const updateProfile = useUpdateProfile();
+  const saving = updateProfile.isPending;
 
   const INP: React.CSSProperties = {
     width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
@@ -577,20 +520,23 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
   };
 
   const saveStaff = async () => {
-    setSaving(true); setErr('');
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        nome:     d.nome,
-        telefone: d.telefone || null,
-        nif:      d.nif      || null,
-        morada:   d.morada   || null,
-        faixa:    d.faixa    || null,
-        ativo:    d.ativo,
-      })
-      .eq('id', d.id);
-    setSaving(false);
-    if (error) { setErr(error.message); return; }
+    setErr('');
+    try {
+      await updateProfile.mutateAsync({
+        id: d.id,
+        patch: {
+          nome:     d.nome,
+          telefone: d.telefone || null,
+          nif:      d.nif      || null,
+          morada:   d.morada   || null,
+          faixa:    d.faixa    || null,
+          ativo:    d.ativo,
+        },
+      });
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+      return;
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
     onSaved();
@@ -730,33 +676,8 @@ function EquipaSection() {
   const { isMobile } = useMobile();
 
   // ── Staff list state ──────────────────────────────────────────────────────
-  const [staff, setStaff]       = useState<StaffMember[]>([]);
-  const [loadingList, setLoadingList] = useState(true);
+  const { data: staff = [], isLoading: loadingList, refetch: loadStaff } = useStaffListQuery();
   const [showInvite, setShowInvite]   = useState(false);
-
-  const loadStaff = async () => {
-    if (!isConfigured) { setLoadingList(false); return; }
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, nome, email, role, telefone, nif, morada, faixa, ativo')
-      .in('role', ['superadmin', 'admin', 'professor', 'atendimento'])
-      .order('role')
-      .order('nome');
-    setStaff((data ?? []).map(r => ({
-      id: r.id,
-      nome: r.nome ?? '',
-      email: r.email ?? '',
-      role: r.role ?? '',
-      telefone: r.telefone ?? '',
-      nif: r.nif ?? '',
-      morada: r.morada ?? '',
-      faixa: r.faixa ?? '',
-      ativo: r.ativo !== false,
-    })));
-    setLoadingList(false);
-  };
-
-  useEffect(() => { loadStaff(); }, []);
 
   // ── Invite form state ─────────────────────────────────────────────────────
   const [nome,  setNome]   = useState('');
@@ -784,29 +705,12 @@ function EquipaSection() {
         setInviting(false);
         return;
       }
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-staff`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`,
-            'apikey': import.meta.env.VITE_SUPABASE_ANON,
-          },
-          body: JSON.stringify({ email, nome, role }),
-        }
-      );
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        setErr(data.error || 'Erro ao criar conta.');
-      } else {
-        setResult({ link: data.action_link || '', email: data.email });
-        setNome(''); setEmail(''); setRole('professor');
-        loadStaff(); // refresh list
-      }
+      const data = await inviteStaff({ email, nome, role });
+      setResult({ link: data.action_link || '', email: data.email });
+      setNome(''); setEmail(''); setRole('professor');
+      loadStaff(); // refresh list
     } catch (e) {
-      setErr(String(e));
+      setErr(e instanceof Error ? e.message : String(e));
     }
     setInviting(false);
   };
@@ -932,7 +836,7 @@ export default function ConfigPage() {
 // ─── Academia + GPS Fence Section ────────────────────────────────────────────
 function AcademiaSection() {
   const { data: cfg, setData: setCfg, loading, saving, saved, save } =
-    useConfig<Record<string, string>>('academia', {});
+    useConfiguracaoSection<Record<string, string>>('academia', {});
 
   const [locating, setLocating]   = useState(false);
   const [locErr,   setLocErr]     = useState('');
@@ -975,7 +879,7 @@ function AcademiaSection() {
     setTesting(true); setLocErr('');
     navigator.geolocation.getCurrentPosition(
       pos => {
-        const d = haversineM(lat, lng, pos.coords.latitude, pos.coords.longitude);
+        const d = haversineDistanceMeters(lat, lng, pos.coords.latitude, pos.coords.longitude);
         setTestDist(Math.round(d));
         setTesting(false);
       },
@@ -1137,16 +1041,6 @@ function AcademiaSection() {
       </Card>
     </div>
   );
-}
-
-// Haversine distance in metres
-function haversineM(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371000;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2
-    + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 // ─── Main ConfigPage component ────────────────────────────────────────────────

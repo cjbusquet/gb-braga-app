@@ -2,8 +2,9 @@ import { useState } from 'react';
 import type React from 'react';
 import { useAlunos, useMensagens, useTemplates, db } from '../../lib/useData';
 import { GB } from '../../lib/gbBrand';
-import { supabase, isConfigured } from '../../lib/supabaseClient';
+import { isConfigured } from '../../lib/supabaseClient';
 import { useAuth } from '../../lib/auth';
+import { sendEmail } from '../../services/api/edgeFunctions';
 
 type Canal = 'whatsapp' | 'sms' | 'email' | 'push';
 
@@ -214,23 +215,8 @@ export default function ComunicacaoPage() {
 
     // Email: call send-email edge function
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`,
-            'apikey': import.meta.env.VITE_SUPABASE_ANON,
-          },
-          body: JSON.stringify({ dest, assunto, corpo: msg }),
-        }
-      );
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        setSendErr(data.error || 'Erro ao enviar.');
-      } else if (data.sent === 0) {
+      const data = await sendEmail({ dest, assunto, corpo: msg });
+      if (data.sent === 0) {
         // Sent 0 — show first error from batch
         const firstErr = data.errors?.[0] || 'Nenhum email enviado. Verifica as configurações SMTP.';
         setSendErr(firstErr);
@@ -262,7 +248,7 @@ export default function ComunicacaoPage() {
         setTimeout(() => { setSent(false); setSendResult(null); setSendErr(''); }, 6000);
       }
     } catch (e) {
-      setSendErr(String(e));
+      setSendErr(e instanceof Error ? e.message : String(e));
     }
     setSending(false);
   };

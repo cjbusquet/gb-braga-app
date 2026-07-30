@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { useContratos } from '../../lib/useData';
-import { exportContratoPDF } from '../../lib/reportExport';
+import { exportContratoPDF } from '../../services/pdf';
 import { GB } from '../../lib/gbBrand';
 
 export default function ContratosPage() {

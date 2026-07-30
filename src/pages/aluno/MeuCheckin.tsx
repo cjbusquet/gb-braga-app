@@ -1,28 +1,11 @@
 import { db, useAlunos, usePresencas, useTurmas } from '../../lib/useData';
-import { isConfigured, supabase } from '../../lib/supabaseClient';
 import { useEffect, useState } from 'react';
 
 import { GB } from '../../lib/gbBrand';
 import { ArrowPathIcon, CheckCircleSolidIcon, ExclamationTriangleIcon, Ico, MapPinIcon, SignalIcon } from '../../lib/icons';
 import { useAuth } from '../../lib/auth';
-
-// Haversine distance in metres
-function haversineM(
-  lon1: number,
-  lat1: number,
-  lat2: number,
-  lon2: number,
-): number {
-  const R = 6371000;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
+import { useConfiguracaoSecaoQuery } from '../../hooks/useConfiguracoes';
+import { haversineDistanceMeters } from '../../services/geo';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const hoje = () => new Date().toISOString().split('T')[0];
@@ -101,23 +84,16 @@ export default function MeuCheckin() {
   }, []);
 
   // Load GPS fence config from DB
+  const { data: academiaConfig } = useConfiguracaoSecaoQuery('academia');
   useEffect(() => {
-    if (!isConfigured) return;
-    supabase
-      .from('configuracoes')
-      .select('dados')
-      .eq('secao', 'academia')
-      .maybeSingle()
-      .then(({ data }) => {
-        const d = data?.dados as Record<string, string> | undefined;
-        if (!d) return;
-        const lat = parseFloat(d['GPS Latitude'] ?? '');
-        const lng = parseFloat(d['GPS Longitude'] ?? '');
-        const raio = parseInt(d['GPS Raio (m)'] ?? '100');
-        if (!isNaN(lat) && !isNaN(lng))
-          setFence({ lat, lng, raio: isNaN(raio) ? 100 : raio });
-      });
-  }, []);
+    const d = academiaConfig as Record<string, string> | null;
+    if (!d) return;
+    const lat = parseFloat(d['GPS Latitude'] ?? '');
+    const lng = parseFloat(d['GPS Longitude'] ?? '');
+    const raio = parseInt(d['GPS Raio (m)'] ?? '100');
+    if (!isNaN(lat) && !isNaN(lng))
+      setFence({ lat, lng, raio: isNaN(raio) ? 100 : raio });
+  }, [academiaConfig]);
 
   // Check user's GPS position when fence is loaded
   useEffect(() => {
@@ -127,7 +103,7 @@ export default function MeuCheckin() {
       (pos) => {
         setUserPos(pos.coords);
         const dist = Math.round(
-          haversineM(
+          haversineDistanceMeters(
             fence.lat,
             fence.lng,
             pos.coords.latitude,
