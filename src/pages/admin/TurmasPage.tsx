@@ -8,6 +8,7 @@ import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
 import PageHeader from '../../components/common/PageHeader';
 import Card from '../../components/common/Card';
+import BeltBadge from '../../components/common/BeltBadge';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const DIAS_LABEL: Record<string, string> = {
@@ -139,9 +140,9 @@ function TurmaDetail({ turma, onBack }: { turma: any; onBack: ()=>void }) {
         {inscritos.length === 0 ? (
           <div className="p-5 text-[13px] text-center text-muted">Nenhum aluno inscrito nesta turma</div>
         ) : inscritos.map((a: any) => (
-          <div key={a.id} className="flex justify-between py-2 border-b border-border-subtle">
+          <div key={a.id} className="flex justify-between items-center py-2 border-b border-border-subtle">
             <span className="text-[13px] text-primary">{a.nome}</span>
-            <span className="text-xs text-muted">{a.faixa} · grau {a.grau}</span>
+            <BeltBadge faixa={a.faixa} grau={a.grau} size="sm" />
           </div>
         ))}
       </Card>

@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useAlunos, useTurmas } from '../../lib/useData';
 import { ACADEMIA } from '../../data/mockData';
-import { beltConfig } from '../../lib/gbBrand';
 import { GBLogo } from '../../components/GBLogo';
 import { Ico, MapPinIcon, CheckIcon, MartialArtsIcon, UsersIcon, MagnifyingGlassIcon } from '../../lib/icons';
+import BeltBadge from '../../components/common/BeltBadge';
 import type { Aluno } from '../../types';
 
 const ACADEMIA_COORDS = { lat: 41.5484, lng: -8.4259, radius: 100 };
@@ -25,7 +25,7 @@ export default function KioskMode({ onExit }: Props) {
   const { data: alunos } = useAlunos();
   const { data: turmas } = useTurmas();
   const [state, setState] = useState<CheckInState>('idle');
-  const [lastCheckin, setLastCheckin] = useState<{nome:string;faixa:string;hora:string;dist:number}|null>(null);
+  const [lastCheckin, setLastCheckin] = useState<{nome:string;faixa:string;grau:number;hora:string;dist:number}|null>(null);
   const [todayCount, setTodayCount] = useState(12);
   const [showManual, setShowManual] = useState(false);
   const [search, setSearch] = useState('');
@@ -57,7 +57,7 @@ export default function KioskMode({ onExit }: Props) {
     if (!navigator.geolocation) {
       // Fallback: allow manual check-in without GPS
       setState('success');
-      setLastCheckin({ nome: aluno.nome, faixa: aluno.faixa, hora: new Date().toTimeString().slice(0,5), dist: 0 });
+      setLastCheckin({ nome: aluno.nome, faixa: aluno.faixa, grau: aluno.grau || 0, hora: new Date().toTimeString().slice(0,5), dist: 0 });
       setTodayCount(c => c+1);
       return;
     }
@@ -67,7 +67,7 @@ export default function KioskMode({ onExit }: Props) {
         const dist = distanciaMetros(pos.coords.latitude, pos.coords.longitude, ACADEMIA_COORDS.lat, ACADEMIA_COORDS.lng);
         if (dist <= ACADEMIA_COORDS.radius) {
           setState('success');
-          setLastCheckin({ nome: aluno.nome, faixa: aluno.faixa, hora: new Date().toTimeString().slice(0,5), dist: Math.round(dist) });
+          setLastCheckin({ nome: aluno.nome, faixa: aluno.faixa, grau: aluno.grau || 0, hora: new Date().toTimeString().slice(0,5), dist: Math.round(dist) });
           setTodayCount(c => c+1);
           setShowManual(false);
           setSearch('');
@@ -79,7 +79,7 @@ export default function KioskMode({ onExit }: Props) {
       () => {
         // GPS denied/error → allow manual override in kiosk
         setState('success');
-        setLastCheckin({ nome: aluno.nome, faixa: aluno.faixa, hora: new Date().toTimeString().slice(0,5), dist: 0 });
+        setLastCheckin({ nome: aluno.nome, faixa: aluno.faixa, grau: aluno.grau || 0, hora: new Date().toTimeString().slice(0,5), dist: 0 });
         setTodayCount(c => c+1);
         setShowManual(false);
         setSearch('');
@@ -192,11 +192,7 @@ export default function KioskMode({ onExit }: Props) {
                 <div className="mb-1.5 text-[28px] font-extrabold text-green-600">CHECK-IN!</div>
                 <div className="mb-2 text-[22px] font-bold text-white">{lastCheckin.nome}</div>
                 <div className="flex gap-2.5 justify-center items-center mb-1.5">
-                  <div
-                    className="w-7 h-[9px] rounded-[3px]"
-                    style={{ background: beltConfig[lastCheckin.faixa]?.bg || '#888', border: lastCheckin.faixa==='branca'?'1px solid #555':'none' }}
-                  />
-                  <span className="text-sm capitalize text-[#9CA3AF]">{beltConfig[lastCheckin.faixa]?.label}</span>
+                  <BeltBadge faixa={lastCheckin.faixa} grau={lastCheckin.grau} size="md" />
                 </div>
                 <div className="mb-1 font-mono text-[13px] text-[#4A4A58]">{lastCheckin.hora}</div>
                 {lastCheckin.dist > 0 && (
@@ -232,7 +228,6 @@ export default function KioskMode({ onExit }: Props) {
 
           <div className={['flex overflow-y-auto flex-col gap-1.5', showManual ? 'max-h-[420px]' : 'max-h-[380px]'].join(' ')}>
             {(showManual ? filteredAlunos : alunos.filter(a => a.status === 'ativo').slice(0, 6)).map(a => {
-              const bc = beltConfig[a.faixa];
               return (
                 <button key={a.id} onClick={() => doCheckin(a)}
                   className="flex gap-3 items-center py-3 px-3.5 min-h-11 text-left rounded-[10px] border cursor-pointer transition-colors duration-200 border-[#2A2A32] bg-[#161620] hover:border-gb-red active:bg-[#1E1E28] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0A0C]"
@@ -241,11 +236,7 @@ export default function KioskMode({ onExit }: Props) {
                   <div className="flex-1">
                     <div className="text-sm font-semibold text-white">{a.nome}</div>
                     <div className="flex gap-1.5 items-center mt-1">
-                      <div
-                        className="w-4 h-[5px] rounded-sm"
-                        style={{ background: bc?.bg || '#888', border: a.faixa==='branca'?'1px solid #555':'none' }}
-                      />
-                      <span className="text-[11px] capitalize text-[#6B6B78]">{bc?.label}</span>
+                      <BeltBadge faixa={a.faixa} grau={a.grau || 0} size="sm" />
                     </div>
                   </div>
                   <span className="inline-flex gap-1 items-center text-[13px] font-bold text-gb-red"><Ico icon={MapPinIcon} sm />Check-in</span>

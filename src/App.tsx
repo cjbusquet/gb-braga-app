@@ -30,7 +30,8 @@ import PerfilPage from './pages/PerfilPage';
 import ModulosPage from './pages/admin/ModulosPage';
 import ProfessoresPage from './pages/admin/ProfessoresPage';
 import { ModulosProvider, useModulos } from './lib/useModulos';
-import { Ico, CheckCircleIcon, KeyIcon } from './lib/icons';
+import { Ico, ArrowPathIcon, CheckCircleIcon, ClockIcon, KeyIcon } from './lib/icons';
+import { usePedidosNumerarioQuery, type PedidoNumerario } from './hooks/usePedidosNumerario';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 5 * 60 * 1000 } },
@@ -159,11 +160,70 @@ function SetPasswordScreen() {
   );
 }
 
+// ─── Aguardando Confirmação de Matrícula (pagamento em numerário por aprovar) ──
+function AguardandoConfirmacaoScreen({ pedido }: { pedido: PedidoNumerario }) {
+  const { logout, refreshProfile } = useAuth();
+  const { refetch } = usePedidosNumerarioQuery();
+  const [checking, setChecking] = useState(false);
+
+  const handleVerificar = async () => {
+    setChecking(true);
+    await Promise.all([refetch(), refreshProfile()]);
+    setChecking(false);
+  };
+
+  return (
+    <div className="flex justify-center items-center py-8 px-4 min-h-screen bg-base">
+      <div className="p-8 w-full max-w-[440px] text-center rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.08)] bg-white">
+        <div className="flex justify-center items-center mx-auto mb-4 w-14 h-14 text-amber-500 rounded-full bg-amber-500/10">
+          <Ico icon={ClockIcon} style={{ width: 26, height: 26 }} />
+        </div>
+        <h2 className="mb-2 font-display text-lg font-extrabold uppercase text-primary">Aguardando Confirmação de Matrícula</h2>
+        <p className="mb-1 text-sm leading-[1.6] text-secondary">
+          Recebemos o teu pedido de matrícula com pagamento em numerário{pedido.plano ? ` para o plano ${pedido.plano}` : ''}.
+        </p>
+        <p className="mb-6 text-sm leading-[1.6] text-secondary">
+          A equipa da academia vai confirmar o pagamento em breve e a tua conta será ativada automaticamente. Não é necessário preencher a ficha novamente.
+        </p>
+        <button
+          onClick={handleVerificar}
+          disabled={checking}
+          className={[
+            'py-3 px-8 mb-2.5 w-full min-h-11 text-sm font-bold text-white rounded-[10px] border-none outline-none transition-all duration-200',
+            'focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+            checking ? 'cursor-not-allowed bg-neutral-400' : 'cursor-pointer bg-gb-red hover:bg-gb-red-dark active:scale-[0.98]',
+          ].join(' ')}
+        >
+          <span className="inline-flex gap-1.5 items-center justify-center">
+            <Ico icon={ArrowPathIcon} sm className={checking ? 'animate-spin' : undefined} />
+            {checking ? 'A verificar...' : 'Verificar novamente'}
+          </span>
+        </button>
+        <button
+          onClick={() => logout()}
+          className="py-2.5 w-full min-h-11 text-sm bg-transparent rounded-[10px] border outline-none transition-colors duration-200 cursor-pointer border-border text-muted hover:bg-elevated hover:text-secondary focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 active:bg-elevated"
+        >
+          Terminar sessão
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AppContent() {
   const { user, refreshProfile, pendingPasswordSetup } = useAuth();
   const { isActive } = useModulos();
   const [currentPage, setCurrentPage] = useState('');
   const [registering, setRegistering] = useState(false);
+
+  // Only relevant for an aluno whose enrollment isn't complete yet — called
+  // unconditionally (Rules of Hooks) but the query itself stays disabled
+  // otherwise, so staff logins never pay for this fetch.
+  const precisaVerificarPendente = user?.role === 'aluno' && !user?.matriculaCompleta;
+  const { data: meusPedidosNumerario } = usePedidosNumerarioQuery({ enabled: precisaVerificarPendente });
+  const pedidoPendente = precisaVerificarPendente
+    ? meusPedidosNumerario?.find(p => p.email === user?.email && p.status === 'pendente')
+    : undefined;
 
   // ── Back button support ───────────────────────────────────────────────────
   // Must be declared before any conditional returns (Rules of Hooks).
@@ -221,6 +281,12 @@ function AppContent() {
   // Rendered here (before <Layout>) so this full-screen flow never gets
   // wrapped by the internal Sidebar/Layout — it's not "in the app" yet.
   if (user.role === 'aluno' && !user.matriculaCompleta) {
+    // Already submitted a cash-payment (numerário) request that's awaiting staff
+    // approval — show a dedicated waiting screen instead of restarting the whole
+    // Ficha/Contrato/Pagamento flow from scratch on every login.
+    if (pedidoPendente) {
+      return <AguardandoConfirmacaoScreen pedido={pedidoPendente} />;
+    }
     return <FluxoMatricula onConcludo={refreshProfile} />;
   }
 

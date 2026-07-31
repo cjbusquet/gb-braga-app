@@ -27,7 +27,7 @@ interface LoginPageProps {
 }
 
 export default function LoginPage({ onRegister }: LoginPageProps) {
-  const { login } = useAuth();
+  const { login, blockedMessage } = useAuth();
   const [tab, setTab]           = useState<'login' | 'register'>('login');
   const [email, setEmail]       = useState('');
   const [pw, setPw]             = useState('');
@@ -42,9 +42,9 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(''); setLoading(true);
-    const ok = await login(email, pw);
+    const result = await login(email, pw);
     setLoading(false);
-    if (!ok) setErr('Email ou password incorrectos.');
+    if (!result.ok) setErr(result.message || 'Email ou password incorrectos.');
   };
 
   const handleForgot = async (e: React.FormEvent) => {
@@ -190,7 +190,10 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
                     Esqueceste a password?
                   </button>
                 </div>
-                {err && <p className="mb-3 text-[13px] font-medium text-gb-red">{err}</p>}
+                {/* blockedMessage: a session already open in this tab belonged to an
+                    aluno staff just suspended/marked inactive — loadProfile signs
+                    them out on its own, this just explains why they're back here. */}
+                {(err || blockedMessage) && <p className="mb-3 text-[13px] font-medium text-gb-red">{err || blockedMessage}</p>}
                 <Button type="submit" variant="primary" size="lg" fullWidth loading={loading} className="min-h-12">
                   {loading ? 'A entrar...' : 'Entrar'}
                 </Button>

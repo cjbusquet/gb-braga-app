@@ -9,7 +9,7 @@ export const supabase = createClient(
   { auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true } }
 );
 
-// true quando as variáveis reais estão no Vercel
+// true quando há credenciais reais (hosted *.supabase.co ou local/self-hosted)
 export const isConfigured =
-  SUPABASE_URL.includes('supabase.co') &&
+  /^https?:\/\//.test(SUPABASE_URL) &&
   SUPABASE_ANON.length > 20;

@@ -571,6 +571,7 @@ function Pendente({ ficha, contrato, plano, registerMode, onVoltar }: {
           planoId:   plano?.id   ?? null,
           planoNome: plano?.nome ?? null,
           status:    'inativo',
+          metodoPagamento: 'numerario',
         });
         alunoId = alunoData?.id ?? null;
       } catch (e) { console.warn('criarAluno (pendente) error:', e); }

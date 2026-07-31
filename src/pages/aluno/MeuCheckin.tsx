@@ -38,17 +38,17 @@ export default function MeuCheckin() {
   const { user } = useAuth();
   const { data: alunos } = useAlunos();
   const { data: turmas } = useTurmas();
-  const { data: presencas } = usePresencas();
+  const { data: presencas, refetch: refetchPresencas } = usePresencas();
 
   const aluno = alunos.find((a) => a.email === user?.email) || alunos[0];
 
   // Presenças de hoje deste aluno
   const hoje_ = hoje();
-  const jaFezCheckinHoje = presencas.some(
-    (p) => p.alunoId === aluno?.id && p.data === hoje_,
-  );
   const presencasHoje = presencas.filter(
     (p) => p.alunoId === aluno?.id && p.data === hoje_,
+  );
+  const turmaIdsJaChecados = new Set(
+    presencasHoje.filter((p) => p.turmaId).map((p) => p.turmaId),
   );
 
   // Turmas de hoje (por dia da semana)
@@ -120,9 +120,13 @@ export default function MeuCheckin() {
     );
   }, [fence]);
 
-  // Pré-selecionar turma se só há uma hoje
+  // Pré-selecionar turma se só há uma hoje — mas não se já fizeste
+  // check-in nela, para não pré-selecionar uma opção bloqueada.
   useEffect(() => {
-    if (turmasHoje.length === 1) setTurmaId(turmasHoje[0].id);
+    if (turmasHoje.length === 1 && !turmaIdsJaChecados.has(turmasHoje[0].id)) {
+      setTurmaId(turmasHoje[0].id);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [turmas, turmasHoje]);
 
   const handleCheckin = async () => {
@@ -141,9 +145,19 @@ export default function MeuCheckin() {
         gpsLng: userPos?.longitude ?? null,
         gpsDist: gpsDist ?? null,
       });
+      await refetchPresencas();
       setDone(true);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Erro ao registar presença.');
+      // 23505 = unique_violation — the DB-level guard against a duplicate
+      // check-in in the same turma on the same day (e.g. a second tab, or
+      // the picker's disabled state being bypassed some other way).
+      const code = (e as { code?: string } | null)?.code;
+      if (code === '23505') {
+        setErr('Já fizeste check-in nesta aula hoje.');
+        await refetchPresencas();
+      } else {
+        setErr(e instanceof Error ? e.message : 'Erro ao registar presença.');
+      }
     }
     setChecking(false);
   };
@@ -236,10 +250,15 @@ export default function MeuCheckin() {
               </div>
             ) : (
               <div className="flex flex-col gap-2">
-                {turmasHoje.map((t) => (
+                {turmasHoje.map((t) => {
+                  const jaChecada = turmaIdsJaChecados.has(t.id);
+                  return (
                   <label
                     key={t.id}
-                    className="flex gap-3 items-center py-2.5 px-3.5 rounded-lg border-[1.5px] cursor-pointer transition-colors duration-200"
+                    className={[
+                      'flex gap-3 items-center py-2.5 px-3.5 rounded-lg border-[1.5px] transition-colors duration-200',
+                      jaChecada ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+                    ].join(' ')}
                     style={{
                       background: turmaId === t.id ? `${t.cor || GB.red}18` : 'var(--bg-elevated)',
                       borderColor: turmaId === t.id ? t.cor || GB.red : 'var(--border)',
@@ -250,6 +269,7 @@ export default function MeuCheckin() {
                       name="turma"
                       value={t.id}
                       checked={turmaId === t.id}
+                      disabled={jaChecada}
                       onChange={() => setTurmaId(t.id)}
                       className="outline-none accent-gb-red focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
                     />
@@ -258,11 +278,12 @@ export default function MeuCheckin() {
                         {t.nome}
                       </div>
                       <div className="text-[11px] text-muted">
-                        {t.horario}
+                        {jaChecada ? 'Já fizeste check-in hoje' : t.horario}
                       </div>
                     </div>
                   </label>
-                ))}
+                  );
+                })}
 
                 {/* Opção "Treino livre" */}
                 <label
@@ -341,17 +362,19 @@ export default function MeuCheckin() {
           {/* Botão check-in */}
           <button
             onClick={handleCheckin}
-            disabled={checking}
+            disabled={checking || (turmaId !== '' && turmaIdsJaChecados.has(turmaId))}
             className={[
               'py-3.5 w-full min-h-11 sm:min-h-0 text-xs text-white rounded-sm border-none transition-all duration-200',
               'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-              checking ? 'cursor-not-allowed bg-neutral-400' : 'cursor-pointer bg-gb-red hover:bg-gb-red-dark active:scale-[0.98]',
+              checking || (turmaId !== '' && turmaIdsJaChecados.has(turmaId))
+                ? 'cursor-not-allowed bg-neutral-400'
+                : 'cursor-pointer bg-gb-red hover:bg-gb-red-dark active:scale-[0.98]',
             ].join(' ')}
           >
-            {checking
-              ? 'A registar...'
-              : jaFezCheckinHoje
-                ? 'Fazer check-in novamente'
+            {turmaId !== '' && turmaIdsJaChecados.has(turmaId)
+              ? 'Já fizeste check-in nesta aula'
+              : checking
+                ? 'A registar...'
                 : 'Fazer Check-in'}
           </button>
         </Card>

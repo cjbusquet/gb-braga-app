@@ -5,6 +5,7 @@ import { beltConfig } from '../../lib/gbBrand';
 import { Ico, ArrowLeftIcon, ArrowRightIcon, CheckIcon } from '../../lib/icons';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
+import BeltBadge from '../../components/common/BeltBadge';
 
 const FAIXAS = [
   'branca',
@@ -302,7 +303,7 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
               ['Telefone',    telefone || '—'],
               ['NIF',         nif || '—'],
               ['Nascimento',  dataNasc ? `${dataNasc}${idade !== null ? ` (${idade} anos)` : ''}` : '—'],
-              ['Faixa',       `${faixa.charAt(0).toUpperCase() + faixa.slice(1)} · Grau ${grau}`],
+              ['Faixa',       <BeltBadge faixa={faixa} grau={parseInt(grau) || 0} size="md" />],
               ['Plano',       planoSel?.nome || '—'],
               ['Mensalidade', `€${planoSel?.valor || 0}/mês`],
             ].map(([k, v]) => (

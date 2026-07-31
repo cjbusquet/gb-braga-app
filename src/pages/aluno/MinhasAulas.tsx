@@ -5,6 +5,7 @@ import PortalPageHeader from './PortalPageHeader';
 import { useAuth } from '../../lib/auth';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
+import { SkeletonList } from '../../components/common/Skeleton';
 
 const DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 const DIAS_FULL = [
@@ -23,6 +24,8 @@ export default function MinhasAulas() {
   const { data: alunos } = useAlunos();
   const { user } = useAuth();
   const aluno = alunos.find((a) => a.email === user?.email) || alunos[0];
+  if (!aluno) return <SkeletonList rows={4} />;
+
   const minhasTurmas = turmas.slice(0, 2);
   const minhasPresencas = presencas.filter((p) => p.alunoId === aluno.id);
 
@@ -164,7 +167,7 @@ export default function MinhasAulas() {
                 </div>
                 <div className="flex-1">
                   <div className="text-[12.5px] font-medium text-primary">
-                    {p.turmaNome}
+                    {p.turmaNome || 'Treino livre'}
                   </div>
                   <div className="text-[10.5px] text-muted">
                     {p.data} · {p.hora}

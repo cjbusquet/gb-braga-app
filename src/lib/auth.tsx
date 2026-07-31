@@ -7,7 +7,7 @@ import { supabase, isConfigured } from './supabaseClient';
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ ok: boolean; message?: string }>;
   register: (email: string, password: string, nome: string) => Promise<{ ok: boolean; confirmEmail: boolean; message: string }>;
   logout: () => void;
   switchRole: (role: UserRole) => void;
@@ -16,6 +16,10 @@ interface AuthContextType {
   /** True when user clicked a staff invite recovery link and must set their password */
   pendingPasswordSetup: boolean;
   completePasswordSetup: (newPassword: string) => Promise<{ ok: boolean; message: string }>;
+  /** Set when a session (e.g. one already open in this tab) belongs to a
+   * since-suspended/inactive aluno — loadProfile signs them out and
+   * surfaces this instead of leaving the login screen unexplained. */
+  blockedMessage: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -24,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser]                         = useState<User | null>(null);
   const [loading, setLoading]                   = useState(isConfigured);
   const [pendingPasswordSetup, setPending]      = useState(false);
+  const [blockedMessage, setBlockedMessage]     = useState<string | null>(null);
 
   const mapProfile = (data: any, email: string): User => ({
     id:               data.id,
@@ -36,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     createdAt:        data.created_at,
   });
 
-  const loadProfile = useCallback(async (id: string, email: string) => {
+  const loadProfile = useCallback(async (id: string, email: string): Promise<{ blocked?: string }> => {
     try {
       // ── 1. Try to read existing profile ──────────────────────────
       const { data } = await supabase
@@ -46,8 +51,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (data) {
+        // Suspenso/inativo: alunos.status is DB-enforced (banned_until
+        // sync + RLS on my_aluno_id()) — this is UX only, catching a
+        // session that was already open when staff changed the status,
+        // since its access_token is still valid until it expires.
+        if (data.role === 'aluno') {
+          const { data: alunoRow } = await supabase
+            .from('alunos')
+            .select('status')
+            .eq('email', email)
+            .maybeSingle();
+          if (alunoRow && alunoRow.status !== 'ativo') {
+            const message = alunoRow.status === 'suspenso'
+              ? 'A tua conta foi suspensa. Contacta a academia para mais informações.'
+              : 'A tua conta está inativa. Contacta a academia para mais informações.';
+            await supabase.auth.signOut();
+            setUser(null);
+            setBlockedMessage(message);
+            return { blocked: message };
+          }
+        }
+        setBlockedMessage(null);
         setUser(mapProfile(data, email));
-        return;
+        return {};
       }
 
       // ── 2. Profile missing — trigger may not exist or failed.
@@ -63,18 +89,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (created) {
         setUser(mapProfile(created, email));
-      } else {
-        // Self-create also failed (e.g. INSERT policy not yet applied).
-        // Log and use a local fallback so the app at least loads.
-        console.error('Profile self-create failed:', createErr?.message,
-          '— run supabase/patches/02_profile_self_create.sql');
-        setUser({ id, nome: email.split('@')[0], email, role: 'aluno',
-                  matriculaCompleta: false, createdAt: new Date().toISOString() });
+        return {};
       }
+
+      // Self-create also failed — most likely an orphaned session: this
+      // auth.users id has no profile, but its email now belongs to a
+      // different, current account (e.g. the underlying user was deleted
+      // and recreated). There's no safe row to fall back to here.
+      // Fabricating a fake local profile used to leave people stranded in
+      // the enrollment flow with no way back — sign out cleanly instead
+      // so the login screen is reachable again.
+      console.error('Profile self-create failed, signing out orphaned session:', createErr?.message);
+      await supabase.auth.signOut();
+      setUser(null);
+      return {};
     } catch (e) {
-      console.error('loadProfile error:', e);
-      setUser({ id, nome: email.split('@')[0], email, role: 'aluno',
-                matriculaCompleta: false, createdAt: new Date().toISOString() });
+      console.error('loadProfile error, signing out orphaned session:', e);
+      await supabase.auth.signOut();
+      setUser(null);
+      return {};
     } finally {
       setLoading(false);
     }
@@ -121,29 +154,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, [loadProfile]);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{ ok: boolean; message?: string }> => {
     // Demo mode — no Supabase
     if (!isConfigured) {
       const found = mockUsers.find(u => u.email === email);
-      if (found) { setUser(found); return true; }
-      return false;
+      if (found) { setUser(found); return { ok: true }; }
+      return { ok: false };
     }
 
     // Supabase login
     try {
+      setBlockedMessage(null);
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         console.error('Login error:', error.message);
-        return false;
+        // GoTrue rejects a banned_until user before issuing any session
+        // ("User is banned") — this is the alunos.status='suspenso'/
+        // 'inativo' sync from sincronizar_ban_aluno() kicking in.
+        if (error.message.toLowerCase().includes('banned')) {
+          return { ok: false, message: 'A tua conta está bloqueada. Contacta a academia para mais informações.' };
+        }
+        return { ok: false };
       }
       if (data?.user) {
-        await loadProfile(data.user.id, data.user.email!);
-        return true;
+        const result = await loadProfile(data.user.id, data.user.email!);
+        if (result.blocked) return { ok: false, message: result.blocked };
+        return { ok: true };
       }
-      return false;
+      return { ok: false };
     } catch (e) {
       console.error('Login exception:', e);
-      return false;
+      return { ok: false };
     }
   };
 
@@ -208,7 +249,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, switchRole, refreshProfile, loading, pendingPasswordSetup, completePasswordSetup }}>
+    <AuthContext.Provider value={{ user, login, register, logout, switchRole, refreshProfile, loading, pendingPasswordSetup, completePasswordSetup, blockedMessage }}>
       {loading ? (
         <div style={{ height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#fff' }}>
           <div style={{ textAlign:'center' }}>

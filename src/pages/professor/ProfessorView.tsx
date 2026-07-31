@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { useTurmas, useAlunos, usePresencas, useGraduacoes, useProfessorCheckins, db } from '../../lib/useData';
+import { useTurmas, useAlunos, usePresencas, useProfessorCheckins, db } from '../../lib/useData';
 import { useAuth } from '../../lib/auth';
 import { beltConfig } from '../../lib/gbBrand';
 import type { Belt } from '../../types';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
-import { Ico, type HeroIcon, Squares2X2Icon, PlayCircleIcon, CalendarDaysIcon, UsersIcon, CheckIcon, MedalIcon, MartialArtsIcon, CircleIcon, MapPinIcon, ArrowRightIcon } from '../../lib/icons';
+import { Ico, type HeroIcon, Squares2X2Icon, PlayCircleIcon, CheckIcon, MartialArtsIcon, CircleIcon, MapPinIcon } from '../../lib/icons';
 
 const DAYS_ABR = ['Seg','Ter','Qua','Qui','Sex','Sáb'];
 const DAYS_FULL = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
@@ -17,10 +17,9 @@ export default function ProfessorView() {
   const { data: turmas } = useTurmas();
   const { data: alunos } = useAlunos();
   const { data: presencas } = usePresencas();
-  const { data: graduacoes } = useGraduacoes();
   const { user } = useAuth();
   const { data: meuCheckins, refetch: refetchCheckins } = useProfessorCheckins(user?.id);
-  const [tab, setTab] = useState<'overview'|'classes'|'students'|'attendance'|'graduation'|'darAula'>('overview');
+  const [tab, setTab] = useState<'overview'|'darAula'>('overview');
   const [checkinLoading, setCheckinLoading] = useState<string | null>(null);
 
   const nome = user?.nome || 'Professor';
@@ -51,13 +50,14 @@ export default function ProfessorView() {
     }
   };
 
+  // Gestão completa de Turmas/Alunos/Presenças/Graduação vive nas páginas
+  // dedicadas da Sidebar (TurmasPage, AlunosPage, CheckinPage,
+  // GraduacaoPage — o professor já tem acesso direto a todas). Este
+  // Dashboard fica só com resumo (Visão Geral) e a ação diária que não
+  // existe em mais lado nenhum (Dar Aula).
   const TABS: { id: string; icon: HeroIcon; label: string }[] = [
     { id: 'overview',    icon: Squares2X2Icon,  label: 'Visão Geral' },
     { id: 'darAula',     icon: PlayCircleIcon,  label: 'Dar Aula'     },
-    { id: 'classes',     icon: CalendarDaysIcon,label: 'Turmas'       },
-    { id: 'students',    icon: UsersIcon,       label: 'Alunos'       },
-    { id: 'attendance',  icon: CheckIcon,       label: 'Presenças'    },
-    { id: 'graduation',  icon: MedalIcon,       label: 'Graduação'    },
   ];
 
   return (
@@ -277,232 +277,6 @@ export default function ProfessorView() {
               ))}
             </div>
           </Card>
-        </div>
-      )}
-
-      {/* ── CLASSES ── */}
-      {tab === 'classes' && (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3.5">
-          {turmas.map(t => {
-            const ocupacao = Math.round((t.inscritos / t.capacidade) * 100);
-            return (
-              <Card key={t.id} padding="lg">
-                <div className="mb-1 text-sm font-bold text-primary">{t.nome}</div>
-                <div className="inline-flex gap-1.5 items-center mb-3.5 text-[11.5px] text-muted"><Ico icon={MapPinIcon} sm />{t.sala}</div>
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div className="py-2 px-2.5 rounded-sm bg-elevated">
-                    <div className="mb-0.5 text-[9.5px] text-muted">HORÁRIO</div>
-                    <div className="font-mono text-xs font-bold text-primary">{t.horario}</div>
-                  </div>
-                  <div className="py-2 px-2.5 rounded-sm bg-elevated">
-                    <div className="mb-0.5 text-[9.5px] text-muted">ALUNOS</div>
-                    <div className="text-xs font-bold text-primary">{t.inscritos}/{t.capacidade}</div>
-                  </div>
-                </div>
-                <div className="mb-2 text-[11px] text-muted">{t.diaSemana.join(' · ')}</div>
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-[10.5px] text-muted">Ocupação</span>
-                    <span className={['text-[10.5px] font-bold', ocupacao >= 90 ? 'text-red-500' : 'text-green-600'].join(' ')}>{ocupacao}%</span>
-                  </div>
-                  <div className="overflow-hidden h-[5px] rounded-full bg-elevated">
-                    <div className={['h-full', ocupacao >= 90 ? 'bg-red-500' : 'bg-green-600'].join(' ')} style={{ width: `${ocupacao}%` }}/>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ── STUDENTS ── */}
-      {tab === 'students' && (
-        <Card padding="none">
-          <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-border-subtle bg-elevated">
-                {['Aluno', 'Faixa / Grau', 'Frequência', 'Estado', 'Grad. Possível'].map(h => (
-                  <th key={h} className={TH_CLASS}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {allAlunos.map(a => {
-                const bc = beltConfig[a.faixa];
-                const podeGraduar = a.frequencia >= 70 && a.grau < 4;
-                return (
-                  <tr key={a.id} className="border-b border-border-subtle hover:bg-elevated">
-                    <td className={[TD_CLASS, 'py-2.5'].join(' ')}>
-                      <div className="flex gap-2 items-center">
-                        <div className="flex justify-center items-center w-8 h-8 text-xs font-bold rounded-full shrink-0" style={{ background: (bc?.bg || '#888') + '20', color: bc?.bg === '#F0EEFF' ? '#888' : (bc?.bg || 'var(--gb-red)') }}>{a.nome.charAt(0)}</div>
-                        <div>
-                          <div className="text-[13px] font-semibold text-primary">{a.nome}</div>
-                          <div className="text-[11px] text-muted">{a.dataMatricula}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className={TD_CLASS}>
-                      <div className="flex gap-1.5 items-center">
-                        <div className="w-5 h-[7px] rounded-sm" style={{ background: bc?.bg || '#888', border: a.faixa === 'branca' ? '1px solid var(--border-strong)' : 'none' }}/>
-                        <span className="text-xs capitalize text-secondary">{bc?.label} · {a.grau}° grau</span>
-                      </div>
-                    </td>
-                    <td className={TD_CLASS}>
-                      <div className="flex gap-2 items-center">
-                        <div className="overflow-hidden w-[60px] h-[5px] rounded-full bg-elevated">
-                          <div className={['h-full', a.frequencia >= 80 ? 'bg-green-600' : a.frequencia >= 60 ? 'bg-amber-600' : 'bg-gb-red'].join(' ')} style={{ width: `${a.frequencia}%` }}/>
-                        </div>
-                        <span className={['text-xs font-bold', a.frequencia >= 80 ? 'text-green-600' : a.frequencia >= 60 ? 'text-amber-600' : 'text-gb-red'].join(' ')}>{a.frequencia}%</span>
-                      </div>
-                    </td>
-                    <td className={TD_CLASS}>
-                      <Badge color={a.status === 'ativo' ? 'success' : 'danger'}>{a.status}</Badge>
-                    </td>
-                    <td className={TD_CLASS}>
-                      {podeGraduar
-                        ? <Badge color="brand"><Ico icon={CheckIcon} sm />Elegível</Badge>
-                        : <span className="text-[11px] text-muted">—</span>}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          </div>
-        </Card>
-      )}
-
-      {/* ── ATTENDANCE ── */}
-      {tab === 'attendance' && (
-        <div>
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            {[
-              { label: 'Total este mês',    value: allPresencas.length },
-              { label: 'Média por aula',    value: Math.round(allPresencas.length / 5) || 12 },
-              { label: 'Taxa de presença',  value: '78%' },
-            ].map(s => (
-              <div key={s.label} className="py-3.5 px-4 rounded-md border shadow-xs border-border bg-card">
-                <div className="mb-1 text-[10.5px] text-muted">{s.label}</div>
-                <div className="text-2xl font-extrabold text-primary">{s.value}</div>
-              </div>
-            ))}
-          </div>
-          <Card padding="none">
-            <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b border-border-subtle bg-elevated">
-                  {['Aluno', 'Turma', 'Data', 'Hora', 'Método'].map(h => (
-                    <th key={h} className={TH_CLASS}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {allPresencas.map(p => (
-                  <tr key={p.id} className="border-b border-border-subtle hover:bg-elevated">
-                    <td className={[TD_CLASS, 'text-[13px] font-semibold text-primary'].join(' ')}>{p.alunoNome}</td>
-                    <td className={[TD_CLASS, 'text-xs text-secondary'].join(' ')}>{p.turmaNome}</td>
-                    <td className={[TD_CLASS, 'font-mono text-xs text-muted'].join(' ')}>{p.data}</td>
-                    <td className={[TD_CLASS, 'font-mono text-xs text-muted'].join(' ')}>{p.hora}</td>
-                    <td className={TD_CLASS}>
-                      <span className="py-0.5 px-1.5 text-[10.5px] font-semibold rounded bg-elevated text-secondary">{p.metodo}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* ── GRADUATION ── */}
-      {tab === 'graduation' && (
-        <div>
-          <div className="flex gap-2.5 items-center py-3 px-4 mb-4 rounded-md border border-violet-600/20 bg-violet-600/[0.06]">
-            <span className="text-violet-600"><Ico icon={MedalIcon} lg /></span>
-            <div>
-              <div className="text-[13px] font-bold text-violet-600">Próxima Cerimónia de Graduação</div>
-              <div className="text-xs text-muted">{candidatosGraduacao.length} alunos elegíveis (frequência ≥ 70%)</div>
-            </div>
-          </div>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3">
-            {candidatosGraduacao.map(a => {
-              const bc = beltConfig[a.faixa];
-              const belts = ['branca','cinza','amarela','laranja','verde','azul','roxa','marrom','preta'];
-              const nextFaixa = a.grau >= 4 ? (belts[belts.indexOf(a.faixa)+1] || a.faixa) : a.faixa;
-              const nextGrau = a.grau >= 4 ? 1 : a.grau + 1;
-              const nextBc = beltConfig[nextFaixa];
-              return (
-                <Card key={a.id} padding="lg">
-                  <div className="flex gap-2.5 items-center mb-3">
-                    <div className="flex justify-center items-center w-9 h-9 text-sm font-bold rounded-full shrink-0" style={{ background: (bc?.bg || '#888') + '20', color: bc?.bg === '#F0EEFF' ? '#888' : (bc?.bg || 'var(--gb-red)') }}>{a.nome.charAt(0)}</div>
-                    <div>
-                      <div className="text-[13px] font-semibold text-primary">{a.nome}</div>
-                      <div className="text-[11px] text-muted">Frequência: {a.frequencia}%</div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2.5 items-center py-2.5 px-3 mb-3 rounded-sm bg-elevated">
-                    <div className="flex-1 text-center">
-                      <div className="mb-1 text-[9px] tracking-[1px] uppercase text-muted">ATUAL</div>
-                      <div className="mx-auto w-7 h-2 rounded-sm" style={{ background: bc?.bg || '#888', border: a.faixa === 'branca' ? '1px solid var(--border-strong)' : 'none' }}/>
-                      <div className="mt-1 text-[10px] capitalize text-muted">{bc?.label} G{a.grau}</div>
-                    </div>
-                    <span className="text-sm text-muted"><Ico icon={ArrowRightIcon} sm /></span>
-                    <div className="flex-1 text-center">
-                      <div className="mb-1 text-[9px] tracking-[1px] text-green-600 uppercase">PRÓXIMA</div>
-                      <div className="mx-auto w-7 h-2 rounded-sm" style={{ background: nextBc?.bg || '#888', border: nextFaixa === 'branca' ? '1px solid var(--border-strong)' : 'none' }}/>
-                      <div className="mt-1 text-[10px] font-semibold capitalize text-green-600">{nextBc?.label} G{nextGrau}</div>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-
-          {/* Graduation history */}
-          <div className="mt-5">
-            <div className="mb-3 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Histórico de Graduações</div>
-            <Card padding="none">
-              <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b border-border-subtle bg-elevated">
-                    {['Aluno', 'De', 'Para', 'Data', 'Observação'].map(h => (
-                      <th key={h} className={TH_CLASS}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {graduacoes.map(g => {
-                    const bcA = beltConfig[g.faixaAnterior];
-                    const bcN = beltConfig[g.faixaNova];
-                    return (
-                      <tr key={g.id} className="border-b border-border-subtle">
-                        <td className={[TD_CLASS, 'text-[13px] font-semibold text-primary'].join(' ')}>{g.alunoNome}</td>
-                        <td className={TD_CLASS}>
-                          <div className="flex gap-1.5 items-center">
-                            <div className="w-4 h-1.5 rounded-sm" style={{ background: bcA?.bg || '#888', border: g.faixaAnterior === 'branca' ? '1px solid var(--border-strong)' : 'none' }}/>
-                            <span className="text-[11px] capitalize text-muted">{bcA?.label} G{g.grauAnterior}</span>
-                          </div>
-                        </td>
-                        <td className={TD_CLASS}>
-                          <div className="flex gap-1.5 items-center">
-                            <div className="w-4 h-1.5 rounded-sm" style={{ background: bcN?.bg || '#888', border: g.faixaNova === 'branca' ? '1px solid var(--border-strong)' : 'none' }}/>
-                            <span className="text-[11px] font-semibold capitalize text-green-600">{bcN?.label} G{g.grauNovo}</span>
-                          </div>
-                        </td>
-                        <td className={[TD_CLASS, 'font-mono text-xs text-muted'].join(' ')}>{g.data}</td>
-                        <td className={[TD_CLASS, 'text-[11px] italic text-muted'].join(' ')}>{g.observacao || '—'}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              </div>
-            </Card>
-          </div>
         </div>
       )}
     </div>

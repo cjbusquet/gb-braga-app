@@ -1,5 +1,6 @@
 import {
   ArrowDownTrayIcon,
+  ArrowPathIcon,
   CalendarIcon,
   ChatBubbleLeftRightIcon,
   CheckIcon,
@@ -19,6 +20,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { GB, beltConfig } from '../../lib/gbBrand';
 import {
+  db,
   useAlunos,
   useContratos,
   usePagamentos,
@@ -30,6 +32,8 @@ import { exportContratoPDF } from '../../services/pdf';
 import { useAuth } from '../../lib/auth';
 import { useState } from 'react';
 import Card from '../../components/common/Card';
+import { Skeleton, SkeletonList } from '../../components/common/Skeleton';
+import BeltBar from '../../components/common/BeltBar';
 
 const BELT_PATH: Belt[] = [
   'branca',
@@ -88,20 +92,161 @@ function NavCard({
   );
 }
 
+const EDIT_FIELD_CLASS = 'box-border w-full py-2.5 px-3 min-h-11 sm:min-h-0 text-[13px] rounded-sm border outline-none transition-all duration-200 border-border bg-elevated text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25';
+const EDIT_LABEL_CLASS = 'block mb-1 text-[10.5px] font-semibold tracking-[0.8px] uppercase text-muted';
+
+function EditPerfilModal({
+  aluno,
+  onClose,
+  onSaved,
+}: {
+  aluno: { id: string; nome: string; email: string; telefone: string; whatsapp?: string };
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [nome, setNome] = useState(aluno.nome || '');
+  const [telefone, setTelefone] = useState(aluno.telefone || '');
+  const [whatsapp, setWhatsapp] = useState(aluno.whatsapp || '');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [err, setErr] = useState('');
+
+  const handleSave = async () => {
+    if (!nome.trim()) { setErr('O nome não pode estar vazio.'); return; }
+    setErr('');
+    setSaving(true);
+    try {
+      await db.atualizarAluno(aluno.id, {
+        nome: nome.trim(),
+        telefone: telefone.trim(),
+        whatsapp: whatsapp.trim(),
+      });
+      onSaved();
+      setSaved(true);
+      setTimeout(onClose, 900);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Erro ao guardar. Tenta novamente.');
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      onClick={onClose}
+      className="flex fixed inset-0 z-[1000] justify-center items-center p-5 bg-black/50"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="p-7 w-full max-w-[500px] rounded-lg border shadow-lg border-border bg-card"
+      >
+        <div className="flex justify-between mb-5">
+          <div className="text-[15px] font-extrabold text-primary">
+            Editar Dados Pessoais
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Fechar"
+            className="flex justify-center items-center p-2 -m-2 bg-none rounded-full border-none cursor-pointer text-muted transition-colors duration-200 hover:text-primary hover:bg-elevated active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
+          >
+            <Ico icon={XMarkIcon} />
+          </button>
+        </div>
+
+        <div className="mb-3">
+          <label className={EDIT_LABEL_CLASS}>Nome completo</label>
+          <input value={nome} onChange={(e) => setNome(e.target.value)} className={EDIT_FIELD_CLASS} />
+        </div>
+        <div className="mb-3">
+          <label className={EDIT_LABEL_CLASS}>Email</label>
+          <input value={aluno.email} disabled className={[EDIT_FIELD_CLASS, 'opacity-50 cursor-not-allowed'].join(' ')} />
+          <div className="mt-1 text-[10.5px] text-muted">O email não pode ser alterado aqui.</div>
+        </div>
+        <div className="mb-3">
+          <label className={EDIT_LABEL_CLASS}>Telefone</label>
+          <input value={telefone} onChange={(e) => setTelefone(e.target.value)} className={EDIT_FIELD_CLASS} />
+        </div>
+        <div className="mb-3">
+          <label className={EDIT_LABEL_CLASS}>WhatsApp</label>
+          <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className={EDIT_FIELD_CLASS} />
+        </div>
+
+        {err && (
+          <div className="inline-flex gap-1.5 items-center mb-1 text-[11.5px] font-semibold text-gb-red">
+            <Ico icon={ExclamationTriangleIcon} sm />
+            {err}
+          </div>
+        )}
+
+        <div className="flex gap-2.5 mt-[18px]">
+          <button
+            onClick={onClose}
+            disabled={saving}
+            className="flex flex-1 justify-center items-center h-11 sm:h-10 text-[13px] rounded-sm border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card hover:text-primary active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || saved}
+            className={[
+              'flex flex-[2] justify-center items-center h-11 sm:h-10 text-[13px] font-bold text-white rounded-sm border-none cursor-pointer transition-all duration-200 hover:bg-gb-red-dark active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
+              saved ? '!bg-green-500' : 'bg-gb-red',
+            ].join(' ')}
+          >
+            {saved ? (
+              <span className="inline-flex gap-1.5 items-center">
+                <Ico icon={CheckIcon} sm />
+                Guardado!
+              </span>
+            ) : saving ? (
+              <span className="inline-flex gap-1.5 items-center">
+                <Ico icon={ArrowPathIcon} sm />
+                A guardar...
+              </span>
+            ) : (
+              <span className="inline-flex gap-1.5 items-center">
+                <Ico icon={SaveIcon} sm />
+                Guardar
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PortalAluno({
   onNavigate,
 }: {
   onNavigate?: (page: string) => void;
 }) {
-  const { data: alunos } = useAlunos();
+  const { data: alunos, refetch: refetchAlunos } = useAlunos();
   const { data: pagamentos } = usePagamentos();
   const { data: presencas } = usePresencas();
   const { data: contratos } = useContratos();
   const [showEditPerfil, setShowEditPerfil] = useState(false);
   const [showContrato, setShowContrato] = useState(false);
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const aluno = alunos.find((a) => a.email === user?.email) || alunos[0];
-  const meuContrato = contratos.find((c) => c.alunoId === aluno?.id);
+
+  // alunos starts empty until useAlunos() resolves — render a placeholder
+  // instead of crashing on aluno.* below.
+  if (!aluno) {
+    return (
+      <div>
+        <Skeleton className="mb-4 h-[220px] rounded-lg" />
+        <div className="grid grid-cols-3 gap-2 mb-4 md:gap-3">
+          <Skeleton className="h-[70px] rounded-lg" />
+          <Skeleton className="h-[70px] rounded-lg" />
+          <Skeleton className="h-[70px] rounded-lg" />
+        </div>
+        <SkeletonList rows={4} />
+      </div>
+    );
+  }
+
+  const meuContrato = contratos.find((c) => c.alunoId === aluno.id);
   const minhasPresencas = presencas.filter((p) => p.alunoId === aluno.id);
   const hoje = new Date();
   const diasTreinoMes = new Set(
@@ -129,61 +274,17 @@ export default function PortalAluno({
     <div>
       {/* Edit Profile Modal */}
       {showEditPerfil && (
-        <div
-          onClick={() => setShowEditPerfil(false)}
-          className="flex fixed inset-0 z-[1000] justify-center items-center p-5 bg-black/50"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="p-7 w-full max-w-[500px] rounded-lg border shadow-lg border-border bg-card"
-          >
-            <div className="flex justify-between mb-5">
-              <div className="text-[15px] font-extrabold text-primary">
-                Editar Dados Pessoais
-              </div>
-              <button
-                onClick={() => setShowEditPerfil(false)}
-                aria-label="Fechar"
-                className="flex justify-center items-center p-2 -m-2 bg-none rounded-full border-none cursor-pointer text-muted transition-colors duration-200 hover:text-primary hover:bg-elevated active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
-              >
-                <Ico icon={XMarkIcon} />
-              </button>
-            </div>
-            {[
-              ['Nome completo', aluno.nome],
-              ['Email', aluno.email],
-              ['Telefone', aluno.telefone],
-              ['WhatsApp', aluno.whatsapp || ''],
-            ].map(([k, v]) => (
-              <div key={k} className="mb-3">
-                <label className="block mb-1 text-[10.5px] font-semibold tracking-[0.8px] uppercase text-muted">
-                  {k}
-                </label>
-                <input
-                  defaultValue={v}
-                  className="box-border w-full py-2.5 px-3 min-h-11 sm:min-h-0 text-[13px] rounded-sm border outline-none transition-all duration-200 border-border bg-elevated text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25"
-                />
-              </div>
-            ))}
-            <div className="flex gap-2.5 mt-[18px]">
-              <button
-                onClick={() => setShowEditPerfil(false)}
-                className="flex-1 py-2.5 min-h-11 sm:min-h-0 text-[13px] rounded-sm border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card hover:text-primary active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => setShowEditPerfil(false)}
-                className="flex-[2] py-2.5 min-h-11 sm:min-h-0 text-[13px] font-bold text-white rounded-sm border-none cursor-pointer bg-gb-red transition-all duration-200 hover:bg-gb-red-dark active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
-              >
-                <span className="inline-flex gap-1.5 items-center">
-                  <Ico icon={SaveIcon} sm />
-                  Guardar
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
+        <EditPerfilModal
+          aluno={aluno}
+          onClose={() => setShowEditPerfil(false)}
+          onSaved={() => {
+            refetchAlunos();
+            // alunos.nome writes trickle down to profiles.nome via a DB
+            // trigger, but the AuthContext user object (sidebar, header,
+            // etc.) only reflects that once refreshProfile() re-reads it.
+            refreshProfile();
+          }}
+        />
       )}
       {/* Contract Modal */}
       {showContrato && (
@@ -306,13 +407,7 @@ export default function PortalAluno({
             </div>
 
             <div className="flex flex-wrap gap-2.5 items-center mt-4">
-              <div
-                className="w-12 h-[11px] rounded-[3px] shrink-0"
-                style={{
-                  background: bc?.bg || '#888',
-                  border: aluno.faixa === 'branca' || aluno.faixa === 'preta' ? '1px solid #555' : 'none',
-                }}
-              />
+              <BeltBar belt={aluno.faixa as Belt} degrees={aluno.grau} size="sm" />
               <span className="text-[13px] font-bold capitalize text-white">
                 {bc?.label} ·{' '}
                 {aluno.grau > 0 ? `${aluno.grau}° Grau` : 'Nenhum Grau'}
@@ -508,7 +603,7 @@ export default function PortalAluno({
               </div>
               <div className="flex-1">
                 <div className="text-[13px] font-medium text-primary">
-                  {p.turmaNome}
+                  {p.turmaNome || 'Treino livre'}
                 </div>
                 <div className="text-[11px] text-muted">
                   {p.data} às {p.hora}

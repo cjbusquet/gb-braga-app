@@ -58,6 +58,22 @@ src/
 - Treat the client SDK as **publicly exposed**. All data security MUST be enforced at the PostgreSQL layer via **RLS policies**, not frontend filters.
 - For elevated permissions or third-party webhooks (Stripe, TOConline), execute logic in **Supabase Edge Functions** or `/api/` Vercel endpoints using service role keys.
 
+### Data Modeling & Mutability (Avoiding Desync Bugs)
+1. **Single Source of Truth:**
+   - NEVER duplicate identity/profile columns (e.g. `nome`, `email`, `avatar_url`) between the user/profile table (`profiles`) and domain tables (e.g. `alunos`, `professores`).
+   - If a field belongs to the user, store it **exclusively** on `profiles` and JOIN or use a view to read it elsewhere.
+   - If duplicating a column is strictly necessary for performance or readability:
+     - Immediately add **bidirectional sync triggers** in PostgreSQL, guarded against infinite loops with `IS DISTINCT FROM`.
+     - Ship a **backfill** migration to reconcile any rows that already drifted before the trigger existed.
+
+2. **RLS Permission Audit (Security Definer vs. Invoker):**
+   - When writing a trigger/function that syncs data across tables, explicitly check which roles can trigger that mutation.
+   - If a role (e.g. staff/atendimento) can edit table A but is NOT covered by table B's RLS policies, the sync trigger MUST run as `SECURITY DEFINER` (or the policy gap must be closed directly) — otherwise the cascading write silently affects 0 rows and produces a "phantom" desync that looks fixed for admins but is still broken for that role.
+
+3. **Frontend Mutation Architecture:**
+   - When building a profile/personal-data edit form, NEVER assume the frontend is responsible for manually updating two tables in separate calls.
+   - Centralize the mutation into a single API/RPC call or a database transaction so the write is atomic.
+
 ### TypeScript & Types
 - Explicit return types are preferred on exported functions, hooks, and services.
 - Never use `any`. Use `unknown` with type guards if types are unpredictable.

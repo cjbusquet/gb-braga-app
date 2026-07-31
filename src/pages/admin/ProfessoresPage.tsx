@@ -3,21 +3,7 @@ import { useProfessores, useProfessorCheckins } from '../../lib/useData';
 import { beltConfig } from '../../lib/gbBrand';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
-
-function BeltBadge({ faixa, grau }: { faixa: string; grau: number }) {
-  const cfg = (beltConfig as Record<string, { bg: string; text: string; label: string }>)[faixa] || { bg: '#888', text: '#fff', label: faixa };
-  return (
-    <span className="inline-flex gap-1.5 items-center">
-      <span
-        className="py-0.5 px-[9px] text-[10.5px] font-bold whitespace-nowrap rounded-full"
-        style={{ background: cfg.bg, color: cfg.text, border: faixa === 'branca' ? '1px solid #ccc' : 'none' }}
-      >
-        {cfg.label}
-      </span>
-      {grau > 0 && <span className="text-[10px] font-bold text-muted">G{grau}</span>}
-    </span>
-  );
-}
+import BeltBadge from '../../components/common/BeltBadge';
 
 function duracao(inicio: string, fim?: string): string {
   if (!fim) return '—';

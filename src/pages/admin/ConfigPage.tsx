@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { GB, beltConfig } from '../../lib/gbBrand';
+import { GB } from '../../lib/gbBrand';
 import { defaultTocConfig } from '../../data/mockData';
 import { supabase, isConfigured } from '../../lib/supabaseClient';
 import { useAuth } from '../../lib/auth';
@@ -12,6 +12,7 @@ import { inviteStaff } from '../../services/api/edgeFunctions';
 import { haversineDistanceMeters } from '../../services/geo';
 import type { TocConfig } from '../../types';
 import PageHeader from '../../components/common/PageHeader';
+import BeltBadge from '../../components/common/BeltBadge';
 import {
   Ico,
   type HeroIcon,
@@ -625,7 +626,6 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
   };
 
   const badge     = ROLE_BADGE[d.role] ?? ROLE_BADGE['atendimento'];
-  const faixaCfg  = beltConfig[d.faixa] ?? null;
 
   return (
     <div
@@ -652,14 +652,7 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
           <div className="overflow-hidden text-[13.5px] font-bold whitespace-nowrap text-ellipsis text-primary">{d.nome}</div>
           <div className="flex flex-wrap gap-1.5 items-center text-[11px] text-muted">
             <span className="overflow-hidden whitespace-nowrap text-ellipsis">{d.email}</span>
-            {faixaCfg && (
-              <span
-                className="py-px px-1.5 text-[9.5px] font-bold rounded-full shrink-0"
-                style={{ background: faixaCfg.bg, color: faixaCfg.text, border: d.faixa === 'branca' ? '1px solid #ccc' : 'none' }}
-              >
-                <Ico icon={MartialArtsIcon} sm className="mr-1 inline-block align-[-2px]" />{faixaCfg.label}
-              </span>
-            )}
+            {d.faixa && <BeltBadge faixa={d.faixa} grau={0} size="sm" />}
           </div>
         </div>
 

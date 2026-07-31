@@ -22,9 +22,9 @@ const SIZE_CLASSES: Record<ButtonSize, string> = {
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary:
-    'font-display font-bold uppercase tracking-wide text-white bg-gb-red shadow-red ' +
-    'hover:bg-gb-red-dark active:bg-gb-red-dark active:shadow-none ' +
-    'focus-visible:ring-gb-red disabled:bg-neutral-400 disabled:shadow-none',
+    'font-display font-bold uppercase tracking-wide text-white bg-gb-red ' +
+    'hover:bg-gb-red-dark active:bg-gb-red-dark ' +
+    'focus-visible:ring-gb-red disabled:bg-neutral-400',
   secondary:
     'font-medium text-secondary bg-transparent border border-border ' +
     'hover:bg-elevated hover:border-border-strong active:bg-elevated ' +

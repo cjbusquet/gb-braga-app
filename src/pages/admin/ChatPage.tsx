@@ -6,6 +6,7 @@ import { useMobile } from '../../lib/useMobile';
 import type { Aluno } from '../../types';
 import PageHeader from '../../components/common/PageHeader';
 import Badge from '../../components/common/Badge';
+import BeltBadge from '../../components/common/BeltBadge';
 import {
   Ico,
   CommentIcon,
@@ -249,11 +250,8 @@ export default function ChatPage() {
             <div className="flex-1 min-w-0">
               <div className="overflow-hidden text-sm font-bold whitespace-nowrap text-ellipsis text-primary">{aluno.nome}</div>
               <div className="flex gap-1.5 items-center mt-px">
-                <div
-                  className="w-3 h-1 rounded-sm shrink-0"
-                  style={{ background: beltConfig[aluno.faixa]?.bg || '#888', border: aluno.faixa === 'branca' ? '1px solid var(--border-strong)' : 'none' }}
-                />
-                <span className="overflow-hidden text-[11px] capitalize whitespace-nowrap text-ellipsis text-muted">{beltConfig[aluno.faixa]?.label}{!isMobile && ` · ${aluno.plano}`}</span>
+                <BeltBadge faixa={aluno.faixa} grau={aluno.grau || 0} size="sm" />
+                {!isMobile && <span className="overflow-hidden text-[11px] whitespace-nowrap text-ellipsis text-muted">· {aluno.plano}</span>}
               </div>
             </div>
             <div className="flex gap-1.5 shrink-0">

@@ -1,6 +1,6 @@
 import {
-  AcademicCapIcon,
   ArrowPathIcon,
+  ArrowRightOnRectangleIcon,
   CameraIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
@@ -14,72 +14,12 @@ import { roleThemes } from '../lib/gbBrand';
 import { isConfigured, supabase } from '../lib/supabaseClient';
 import { useEffect, useRef, useState } from 'react';
 
-import type { Belt } from '../types';
 import type { HeroIcon } from '../lib/icons';
 import type React from 'react';
 import { useAuth } from '../lib/auth';
 import { useProfileAvatarQuery, useUpdateProfile, useUploadAvatar } from '../hooks/useProfile';
 import { useAlunoInfoByEmailQuery } from '../hooks/useAlunoInfo';
-
-// ─── Belt metadata (derived from gbBrand beltConfig) ─────────────────────────
-// Mapped to the Belt type keys — bicolor belts use CSS gradients as bg
-const BELT_META: Record<Belt, { label: string; bg: string; color: string }> = {
-  // Adulto
-  branca: { label: 'Branca', bg: '#E5E7EB', color: '#111111' },
-  azul: { label: 'Azul', bg: '#2563EB', color: '#ffffff' },
-  roxa: { label: 'Roxa', bg: '#7C3AED', color: '#ffffff' },
-  marrom: { label: 'Marrom', bg: '#92400E', color: '#ffffff' },
-  preta: { label: 'Preta', bg: '#111827', color: '#ffffff' },
-  vermelha: { label: 'Vermelha', bg: '#C8102E', color: '#ffffff' },
-  // Infantil — cinza
-  'cinza-branca': {
-    label: 'Cinza/Branca',
-    bg: 'linear-gradient(to right,#888888 55%,#E5E7EB 55%)',
-    color: '#333333',
-  },
-  cinza: { label: 'Cinza', bg: '#888888', color: '#ffffff' },
-  'cinza-preta': {
-    label: 'Cinza/Preta',
-    bg: 'linear-gradient(to right,#888888 55%,#111827 55%)',
-    color: '#ffffff',
-  },
-  // Infantil — amarela
-  'amarela-branca': {
-    label: 'Amarela/Branca',
-    bg: 'linear-gradient(to right,#EAB308 55%,#E5E7EB 55%)',
-    color: '#333333',
-  },
-  amarela: { label: 'Amarela', bg: '#EAB308', color: '#111111' },
-  'amarela-preta': {
-    label: 'Amarela/Preta',
-    bg: 'linear-gradient(to right,#EAB308 55%,#111827 55%)',
-    color: '#111111',
-  },
-  // Infantil — laranja
-  'laranja-branca': {
-    label: 'Laranja/Branca',
-    bg: 'linear-gradient(to right,#EA580C 55%,#E5E7EB 55%)',
-    color: '#ffffff',
-  },
-  laranja: { label: 'Laranja', bg: '#F97316', color: '#ffffff' },
-  'laranja-preta': {
-    label: 'Laranja/Preta',
-    bg: 'linear-gradient(to right,#EA580C 55%,#111827 55%)',
-    color: '#ffffff',
-  },
-  // Infantil — verde
-  'verde-branca': {
-    label: 'Verde/Branca',
-    bg: 'linear-gradient(to right,#16A34A 55%,#E5E7EB 55%)',
-    color: '#ffffff',
-  },
-  verde: { label: 'Verde', bg: '#16A34A', color: '#ffffff' },
-  'verde-preta': {
-    label: 'Verde/Preta',
-    bg: 'linear-gradient(to right,#16A34A 55%,#111827 55%)',
-    color: '#ffffff',
-  },
-};
+import BeltBadge from '../components/common/BeltBadge';
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 const INP_CLASS = 'block box-border w-full py-2.5 px-3 min-h-11 sm:min-h-0 font-ui text-[13px] rounded-sm border outline-none transition-all duration-200 border-border bg-elevated text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25';
@@ -133,7 +73,7 @@ function SaveBtn({
         onClick={onClick}
         disabled={saving || disabled}
         className={[
-          'py-2 px-[22px] min-h-11 sm:min-h-0 text-[13px] font-bold text-white rounded-sm border-none transition-all duration-200',
+          'flex items-center justify-center px-[22px] h-11 sm:h-10 text-[13px] font-bold text-white rounded-sm border-none transition-all duration-200',
           'outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
           saving || disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:brightness-90 active:scale-[0.98]',
           disabled && !saving ? 'opacity-50' : 'opacity-100',
@@ -456,8 +396,6 @@ function AlunoSection() {
     );
   }
 
-  const belt = BELT_META[info.faixa] || BELT_META.branca;
-  const graus = Array.from({ length: 4 }, (_, i) => i < info.grau);
   const dataFmt = info.data_matricula
     ? new Date(info.data_matricula).toLocaleDateString('pt-PT', {
         day: '2-digit',
@@ -473,31 +411,7 @@ function AlunoSection() {
         <div className="mb-2.5 text-[10px] font-bold tracking-[0.8px] uppercase text-muted">
           Faixa
         </div>
-        <div
-          className="inline-flex gap-2 items-center py-1.5 px-3.5 text-[13px] font-bold rounded-md"
-          style={{ background: belt.bg, color: belt.color, border: info.faixa === 'branca' ? '1px solid var(--border)' : 'none' }}
-        >
-          <Ico icon={AcademicCapIcon} sm /> {belt.label}
-        </div>
-      </div>
-
-      {/* Grau */}
-      <div className="py-3.5 px-4 rounded-sm border border-border bg-elevated">
-        <div className="mb-2.5 text-[10px] font-bold tracking-[0.8px] uppercase text-muted">
-          Grau
-        </div>
-        <div className="flex gap-1.5 items-center">
-          {graus.map((filled, i) => (
-            <div
-              key={i}
-              className="w-3.5 h-3.5 rounded-full border-2"
-              style={{ background: filled ? belt.bg : 'var(--bg-card)', borderColor: filled ? belt.bg : 'var(--border)' }}
-            />
-          ))}
-          <span className="ml-1 text-[11px] text-muted">
-            {info.grau}/4
-          </span>
-        </div>
+        <BeltBadge faixa={info.faixa} grau={info.grau} size="md" />
       </div>
 
       {/* Plano */}
@@ -579,7 +493,7 @@ export default function PerfilPage() {
           onClick={logout}
           className="flex gap-2 justify-center items-center py-3 w-full text-[13px] font-semibold text-muted bg-transparent rounded-lg border border-border transition-colors duration-200 cursor-pointer hover:border-gb-red hover:text-gb-red active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
         >
-          <span className="text-[15px]">⎋</span>
+          <Ico icon={ArrowRightOnRectangleIcon} sm />
           Terminar sessão
         </button>
       </div>

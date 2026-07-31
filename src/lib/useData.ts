@@ -25,7 +25,12 @@ function useQuery<T>(
       setData((rows as T[]) ?? fallback);
       setError(null);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
+      // Supabase/PostgREST errors are plain objects ({message, details,
+      // hint, code}), not Error instances — String(e) on those just gives
+      // "[object Object]" and hides the actual message.
+      const msg = e instanceof Error ? e.message
+        : (typeof e === 'object' && e !== null && 'message' in e) ? String((e as { message: unknown }).message)
+        : String(e);
       console.warn(`[${key}] Supabase error:`, msg);
       setError(msg);
       setData(fallback);
@@ -118,6 +123,7 @@ export function usePresencas(alunoId?: string, limit = 100) {
         .from('presencas')
         .select('id, aluno_id, aluno_nome, turma_id, turma_nome, data, hora, tipo, metodo, created_at')
         .order('data', { ascending: false })
+        .order('hora', { ascending: false })
         .limit(limit);
       if (alunoId) q = q.eq('aluno_id', alunoId);
       const res = await q;
@@ -303,6 +309,7 @@ export const db = {
       cod_postal:      dados.codPostal    || null,
       data_nascimento: dados.dataNasc     || null,
       status:          dados.status       || 'ativo',
+      metodo_pagamento: dados.metodoPagamento || 'stripe',
       data_matricula:  new Date().toISOString().split('T')[0],
     }).select().single();
     if (error) throw error;
@@ -313,8 +320,11 @@ export const db = {
     if (!isConfigured) return null;
     const map: any = {};
     if (campos.nome)      map.nome      = campos.nome;
-    if (campos.email)     map.email     = campos.email;
+    // email is intentionally not editable here — it's the login credential
+    // in auth.users, and the alunos.email column is locked at the DB layer
+    // (restringir_update_aluno trigger) since RLS matches rows on it.
     if (campos.telefone)  map.telefone  = campos.telefone;
+    if (campos.whatsapp !== undefined) map.whatsapp = campos.whatsapp || null;
     if (campos.nif)       map.nif       = campos.nif;
     if (campos.status)    map.status    = campos.status;
     if (campos.faixa)     map.faixa     = campos.faixa;
@@ -374,22 +384,20 @@ export const db = {
     return data;
   },
 
+  // Regista o histórico e atualiza alunos.faixa/grau numa única transação
+  // no servidor (função registrar_graduacao) — evitar duas chamadas REST
+  // separadas, que podiam deixar o histórico e o aluno dessincronizados
+  // se a segunda falhasse. O professor autenticado é resolvido no
+  // servidor (auth.uid()), não é enviado pelo cliente.
   registarGraduacao: async (dados: any) => {
     if (!isConfigured) return null;
-    const { data, error } = await supabase.from('graduacoes').insert({
-      aluno_id:       dados.alunoId,
-      aluno_nome:     dados.alunoNome,
-      faixa_anterior: dados.faixaAnterior,
-      grau_anterior:  dados.grauAnterior,
-      faixa_nova:     dados.faixaNova,
-      grau_novo:      dados.grauNovo,
-      data:           new Date().toISOString().split('T')[0],
-      professor_nome: dados.professorNome,
-      observacao:     dados.observacao || null,
-    }).select().single();
+    const { data, error } = await supabase.rpc('registrar_graduacao', {
+      p_aluno_id: dados.alunoId,
+      p_faixa_nova: dados.faixaNova,
+      p_grau_novo: dados.grauNovo,
+      p_observacao: dados.observacao || null,
+    });
     if (error) throw error;
-    // Actualizar faixa do aluno
-    await supabase.from('alunos').update({ faixa: dados.faixaNova, grau: dados.grauNovo }).eq('id', dados.alunoId);
     return data;
   },
 

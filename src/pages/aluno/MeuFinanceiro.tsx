@@ -5,12 +5,15 @@ import { CreditCardIcon, ExclamationTriangleIcon, Ico } from '../../lib/icons';
 import PortalPageHeader from './PortalPageHeader';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
+import { SkeletonList } from '../../components/common/Skeleton';
 
 export default function MeuFinanceiro() {
   const { data: pagamentos } = usePagamentos();
   const { data: alunos } = useAlunos();
   const { user } = useAuth();
   const aluno = alunos.find(a => a.email === user?.email) || alunos[0];
+  if (!aluno) return <SkeletonList rows={4} />;
+
   const pags = pagamentos.filter(p => p.alunoId === aluno.id);
   const faturas = mockTocDocumentos.filter(d => d.alunoNome === aluno.nome);
   const proximo = pags.find(p => p.status === 'pendente' || p.status === 'vencido');

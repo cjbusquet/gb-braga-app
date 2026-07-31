@@ -1,25 +1,27 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useResponsaveis, db } from '../../lib/useData';
 import { useAlunosQuery, useInvalidateAlunos } from '../../lib/queries';
+import { useAuth } from '../../lib/auth';
 import { beltConfig } from '../../lib/gbBrand';
+import { FAIXAS_PROGRESSAO, isMatriculaPendente } from '../../lib/alunoDomain';
 import NovaMatriculaModal from './NovaMatriculaModal';
-import { Ico, PencilIcon, CheckCircleIcon, XCircleIcon, ArrowLeftIcon, PlusIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, AdjustmentsHorizontalIcon, CheckIcon, SaveIcon, CircleIcon, BanIcon } from '../../lib/icons';
+import { Ico, PencilIcon, CheckCircleIcon, XCircleIcon, XMarkIcon, ArrowPathIcon, ArrowLeftIcon, PlusIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, AdjustmentsHorizontalIcon, CheckIcon, SaveIcon, CircleIcon, BanIcon, ClockIcon } from '../../lib/icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
 import PageHeader from '../../components/common/PageHeader';
 import Badge from '../../components/common/Badge';
+import { SkeletonList } from '../../components/common/Skeleton';
+import BeltBadge from '../../components/common/BeltBadge';
 
 const PAGE_SIZE = 20;
 
-const FAIXAS_ORDER = [
-  'branca','cinza-branca','cinza','cinza-preta',
-  'amarela-branca','amarela','amarela-preta',
-  'laranja-branca','laranja','laranja-preta',
-  'verde-branca','verde','verde-preta',
-  'azul','roxa','marrom','preta',
-];
+const FAIXAS_ORDER = FAIXAS_PROGRESSAO;
+
+/** Estado apresentado na UI — sobrepõe o status da BD com "pendente" enquanto a matrícula não é confirmada. */
+function statusEfetivo(a: any): string {
+  return isMatriculaPendente(a) ? 'pendente' : a.status;
+}
 
 // ── Utilitários de idade ────────────────────────────────────────────────────
 
@@ -54,7 +56,7 @@ const LABEL_CLASS = 'block mb-1 text-[10.5px] font-semibold tracking-[0.8px] upp
 
 function EditAlunoModal({ aluno, onClose }: { aluno: any; onClose: () => void }) {
   const [nome, setNome]           = useState(aluno.nome || '');
-  const [email, setEmail]         = useState(aluno.email || '');
+  const email                     = aluno.email || '';
   const [telefone, setTel]        = useState(aluno.telefone || '');
   const [nif, setNif]             = useState(aluno.nif || '');
   const [dataNasc, setDataNasc]   = useState(aluno.dataNascimento || '');
@@ -69,7 +71,7 @@ function EditAlunoModal({ aluno, onClose }: { aluno: any; onClose: () => void })
     if (!dataNasc || precisaResp) return;
     setSaving(true);
     try {
-      await db.atualizarAluno(aluno.id, { nome, email, telefone, nif, dataNascimento: dataNasc });
+      await db.atualizarAluno(aluno.id, { nome, telefone, nif, dataNascimento: dataNasc });
       setSaved(true);
       setTimeout(onClose, 1000);
     } catch(e) {
@@ -79,61 +81,103 @@ function EditAlunoModal({ aluno, onClose }: { aluno: any; onClose: () => void })
   };
 
   return (
-    <Modal onClose={onClose} title={`Editar — ${aluno.nome}`} maxWidth={500}>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="col-span-full">
-          <label className={LABEL_CLASS}>Nome completo</label>
-          <input value={nome} onChange={e => setNome(e.target.value)} className={FIELD_CLASS} />
+    <div
+      onClick={onClose}
+      className="flex fixed inset-0 z-[1000] justify-center items-center p-5 bg-black/50"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="p-7 w-full max-w-[500px] rounded-lg border shadow-lg border-border bg-card"
+      >
+        <div className="flex justify-between mb-5">
+          <div className="text-[15px] font-extrabold text-primary">
+            Editar — {aluno.nome}
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Fechar"
+            className="flex justify-center items-center p-2 -m-2 bg-none rounded-full border-none cursor-pointer text-muted transition-colors duration-200 hover:text-primary hover:bg-elevated active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
+          >
+            <Ico icon={XMarkIcon} />
+          </button>
         </div>
-        <div>
-          <label className={LABEL_CLASS}>Email</label>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={FIELD_CLASS} />
-        </div>
-        <div>
-          <label className={LABEL_CLASS}>Telefone</label>
-          <input value={telefone} onChange={e => setTel(e.target.value)} className={FIELD_CLASS} />
-        </div>
-        <div>
-          <label className={LABEL_CLASS}>NIF</label>
-          <input value={nif} onChange={e => setNif(e.target.value)} className={FIELD_CLASS} />
-        </div>
-        <div>
-          <label className={LABEL_CLASS}>Data de Nascimento *</label>
-          <input type="date" value={dataNasc} onChange={e => setDataNasc(e.target.value)}
-            className={[FIELD_CLASS, !dataNasc ? 'border-gb-red/50' : ''].join(' ')} />
-          {!dataNasc && <div className="mt-1 text-[11px] text-gb-red">Obrigatório</div>}
-          {idade !== null && (
-            <div className={['mt-1 text-[11px]', idade < 18 ? 'text-amber-600' : 'text-muted'].join(' ')}>
-              {idade} anos{idade < 18 ? (idade >= 12 ? ' · Menor · Check-in autónomo' : ' · Menor · Requer responsável') : ' · Adulto'}
-            </div>
-          )}
-        </div>
-      </div>
 
-      {precisaResp && (
-        <div className="p-2.5 px-3.5 mt-3.5 rounded-lg border border-amber-600/30 bg-amber-600/[0.08]">
-          <div className="text-xs font-semibold text-amber-600">Encarregado de Educação obrigatório</div>
-          <div className="mt-1 text-[11.5px] text-amber-800">
-            Este aluno é menor de 18 anos. Fecha esta janela e adiciona um responsável no perfil do aluno antes de guardar.
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="col-span-full">
+            <label className={LABEL_CLASS}>Nome completo</label>
+            <input value={nome} onChange={e => setNome(e.target.value)} className={FIELD_CLASS} />
+          </div>
+          <div>
+            <label className={LABEL_CLASS}>Email</label>
+            <input type="email" value={email} disabled className={[FIELD_CLASS, 'opacity-50 cursor-not-allowed'].join(' ')} />
+            <div className="mt-1 text-[10.5px] text-muted">O email é a credencial de login e não pode ser alterado aqui.</div>
+          </div>
+          <div>
+            <label className={LABEL_CLASS}>Telefone</label>
+            <input value={telefone} onChange={e => setTel(e.target.value)} className={FIELD_CLASS} />
+          </div>
+          <div>
+            <label className={LABEL_CLASS}>NIF</label>
+            <input value={nif} onChange={e => setNif(e.target.value)} className={FIELD_CLASS} />
+          </div>
+          <div>
+            <label className={LABEL_CLASS}>Data de Nascimento *</label>
+            <input type="date" value={dataNasc} onChange={e => setDataNasc(e.target.value)}
+              className={[FIELD_CLASS, !dataNasc ? 'border-gb-red/50' : ''].join(' ')} />
+            {!dataNasc && <div className="mt-1 text-[11px] text-gb-red">Obrigatório</div>}
+            {idade !== null && (
+              <div className={['mt-1 text-[11px]', idade < 18 ? 'text-amber-600' : 'text-muted'].join(' ')}>
+                {idade} anos{idade < 18 ? (idade >= 12 ? ' · Menor · Check-in autónomo' : ' · Menor · Requer responsável') : ' · Adulto'}
+              </div>
+            )}
           </div>
         </div>
-      )}
 
-      <div className="flex gap-2.5 mt-[18px]">
-        <Button variant="secondary" className="flex-1" onClick={onClose}>
-          Cancelar
-        </Button>
-        <Button
-          variant="primary" className={['flex-[2]', saved ? '!bg-green-500' : ''].join(' ')}
-          disabled={saving || saved || !dataNasc || precisaResp}
-          onClick={handleSave}
-        >
-          {saved
-            ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Guardado!</span>
-            : saving ? 'A guardar...' : <span className="inline-flex gap-1.5 items-center"><Ico icon={SaveIcon} sm />Guardar</span>}
-        </Button>
+        {precisaResp && (
+          <div className="p-2.5 px-3.5 mt-3.5 rounded-lg border border-amber-600/30 bg-amber-600/[0.08]">
+            <div className="text-xs font-semibold text-amber-600">Encarregado de Educação obrigatório</div>
+            <div className="mt-1 text-[11.5px] text-amber-800">
+              Este aluno é menor de 18 anos. Fecha esta janela e adiciona um responsável no perfil do aluno antes de guardar.
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-2.5 mt-[18px]">
+          <button
+            onClick={onClose}
+            disabled={saving}
+            className="flex flex-1 justify-center items-center h-11 sm:h-10 text-[13px] rounded-sm border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card hover:text-primary active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || saved || !dataNasc || precisaResp}
+            className={[
+              'flex flex-[2] justify-center items-center h-11 sm:h-10 text-[13px] font-bold text-white rounded-sm border-none cursor-pointer transition-all duration-200 hover:bg-gb-red-dark active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
+              saved ? '!bg-green-500' : 'bg-gb-red',
+            ].join(' ')}
+          >
+            {saved ? (
+              <span className="inline-flex gap-1.5 items-center">
+                <Ico icon={CheckIcon} sm />
+                Guardado!
+              </span>
+            ) : saving ? (
+              <span className="inline-flex gap-1.5 items-center">
+                <Ico icon={ArrowPathIcon} sm />
+                A guardar...
+              </span>
+            ) : (
+              <span className="inline-flex gap-1.5 items-center">
+                <Ico icon={SaveIcon} sm />
+                Guardar
+              </span>
+            )}
+          </button>
+        </div>
       </div>
-    </Modal>
+    </div>
   );
 }
 
@@ -337,14 +381,28 @@ function ResponsaveisSection({ aluno }: { aluno: any }) {
 // ── AlunosPage ──────────────────────────────────────────────────────────────
 
 export default function AlunosPage() {
+  const { user } = useAuth();
+  // restringir_update_aluno() (trigger na BD) só deixa admin/superadmin/
+  // atendimento mudar alunos.status — um professor consegue clicar,
+  // recebe 200, mas o valor é revertido para OLD.status ainda dentro do
+  // trigger. Sem esta gate, os botões pareciam "funcionar por um
+  // instante" (update optimista) e depois reverter sozinhos assim que
+  // o refetch trazia o status verdadeiro (nunca mudou).
+  const podeAlterarStatus = user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'atendimento';
   const { data: alunos = [], isLoading: alunosLoading } = useAlunosQuery();
   const invalidate = useInvalidateAlunos();
+  const [searchInput, setSearchInput]   = useState('');
   const [search, setSearch]             = useState('');
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [filtroFaixa, setFiltroFaixa]   = useState('todas');
   const [soGraduaveis, setSoGraduaveis] = useState(false);
   const [sortBy, setSortBy]             = useState<'nome-az' | 'nome-za' | 'faixa-asc' | 'faixa-desc' | 'freq-desc'>('nome-az');
   const [page, setPage]                 = useState(1);
+  // Debounce: só filtra 300ms depois do utilizador parar de escrever.
+  useEffect(() => {
+    const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
   const [selected, setSelected]         = useState<any>(null);
   const [editModal, setEditModal]       = useState(false);
   const [showMatricula, setShowMatricula] = useState(false);
@@ -373,12 +431,12 @@ export default function AlunosPage() {
   // Faixas únicas presentes nos alunos (para o filtro de faixa)
   const faixasDisponiveis = useMemo(() =>
     [...new Set(alunos.map((a: any) => a.faixa).filter(Boolean))]
-      .sort((a, b) => FAIXAS_ORDER.indexOf(a as string) - FAIXAS_ORDER.indexOf(b as string)),
+      .sort((a, b) => FAIXAS_ORDER.indexOf(a as any) - FAIXAS_ORDER.indexOf(b as any)),
   [alunos]);
 
   const filtered = useMemo(() => {
     let result = [...alunos] as any[];
-    if (filtroStatus !== 'todos') result = result.filter(a => a.status === filtroStatus);
+    if (filtroStatus !== 'todos') result = result.filter(a => statusEfetivo(a) === filtroStatus);
     if (filtroFaixa !== 'todas') result = result.filter(a => a.faixa === filtroFaixa);
     if (soGraduaveis) result = result.filter(a => (a.frequencia || 0) >= 70);
     if (search) {
@@ -391,8 +449,8 @@ export default function AlunosPage() {
       switch (sortBy) {
         case 'nome-az':   return (a.nome || '').localeCompare(b.nome || '');
         case 'nome-za':   return (b.nome || '').localeCompare(a.nome || '');
-        case 'faixa-asc': return FAIXAS_ORDER.indexOf(a.faixa) - FAIXAS_ORDER.indexOf(b.faixa);
-        case 'faixa-desc':return FAIXAS_ORDER.indexOf(b.faixa) - FAIXAS_ORDER.indexOf(a.faixa);
+        case 'faixa-asc': return FAIXAS_ORDER.indexOf(a.faixa) - FAIXAS_ORDER.indexOf(b.faixa) || (a.grau || 0) - (b.grau || 0);
+        case 'faixa-desc':return FAIXAS_ORDER.indexOf(b.faixa) - FAIXAS_ORDER.indexOf(a.faixa) || (b.grau || 0) - (a.grau || 0);
         case 'freq-desc': return (b.frequencia || 0) - (a.frequencia || 0);
         default: return 0;
       }
@@ -407,7 +465,7 @@ export default function AlunosPage() {
   const setFilter = (setter: (v: any) => void) => (v: any) => { setter(v); setPage(1); };
 
   const statusBadgeColor = (status: string) =>
-    status === 'ativo' ? 'success' : status === 'suspenso' ? 'warning' : 'neutral';
+    status === 'ativo' ? 'success' : status === 'pendente' ? 'warning' : status === 'suspenso' ? 'warning' : 'neutral';
 
   // ── Perfil do aluno seleccionado ────────────────────────────
   const renderPerfil = () => {
@@ -453,36 +511,41 @@ export default function AlunosPage() {
 
             {/* Botões de acção */}
             <div className="flex flex-wrap gap-2">
-              <button onClick={() => setEditModal(true)}
-                className="flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+              <button onClick={() => { if (!isMatriculaPendente(selected)) setEditModal(true); }}
+                disabled={isMatriculaPendente(selected)}
+                title={isMatriculaPendente(selected) ? 'Matrícula pendente de confirmação — ação bloqueada até à aprovação do pagamento.' : undefined}
+                className="flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-elevated">
                 <Ico icon={PencilIcon} sm /> Editar
               </button>
-              {(selected.status === 'suspenso' || selected.status === 'inativo') && (
-                <button onClick={() => changeStatus('ativo')} disabled={statusLoading}
+              {podeAlterarStatus && (selected.status === 'suspenso' || selected.status === 'inativo') && (
+                <button onClick={() => changeStatus('ativo')} disabled={statusLoading || isMatriculaPendente(selected)}
+                  title={isMatriculaPendente(selected) ? 'Matrícula pendente de confirmação — ação bloqueada até à aprovação do pagamento.' : undefined}
                   className={[
                     'flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] text-green-600 rounded-sm border cursor-pointer transition-colors duration-200 border-green-500/35 bg-green-500/10 hover:bg-green-500/20 active:bg-green-500/20',
                     'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
-                    statusLoading ? 'opacity-50' : 'opacity-100',
+                    statusLoading || isMatriculaPendente(selected) ? 'opacity-50' : 'opacity-100',
                   ].join(' ')}>
                   <Ico icon={CheckCircleIcon} sm /> Reativar
                 </button>
               )}
-              {selected.status !== 'suspenso' && (
-                <button onClick={() => changeStatus('suspenso')} disabled={statusLoading}
+              {podeAlterarStatus && selected.status !== 'suspenso' && (
+                <button onClick={() => changeStatus('suspenso')} disabled={statusLoading || isMatriculaPendente(selected)}
+                  title={isMatriculaPendente(selected) ? 'Matrícula pendente de confirmação — ação bloqueada até à aprovação do pagamento.' : undefined}
                   className={[
                     'flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] text-amber-600 rounded-sm border cursor-pointer transition-colors duration-200 border-amber-600/30 bg-amber-600/10 hover:bg-amber-600/20 active:bg-amber-600/20',
                     'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
-                    statusLoading ? 'opacity-50' : 'opacity-100',
+                    statusLoading || isMatriculaPendente(selected) ? 'opacity-50' : 'opacity-100',
                   ].join(' ')}>
                   <Ico icon={XCircleIcon} sm /> Suspender
                 </button>
               )}
-              {selected.status !== 'inativo' && (
-                <button onClick={() => changeStatus('inativo')} disabled={statusLoading}
+              {podeAlterarStatus && selected.status !== 'inativo' && (
+                <button onClick={() => changeStatus('inativo')} disabled={statusLoading || isMatriculaPendente(selected)}
+                  title={isMatriculaPendente(selected) ? 'Matrícula pendente de confirmação — ação bloqueada até à aprovação do pagamento.' : undefined}
                   className={[
                     'flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] text-neutral-500 rounded-sm border cursor-pointer transition-colors duration-200 border-neutral-500/25 bg-neutral-500/[0.08] hover:bg-neutral-500/[0.16] active:bg-neutral-500/[0.16]',
                     'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
-                    statusLoading ? 'opacity-50' : 'opacity-100',
+                    statusLoading || isMatriculaPendente(selected) ? 'opacity-50' : 'opacity-100',
                   ].join(' ')}>
                   <Ico icon={XCircleIcon} sm /> Tornar Inativo
                 </button>
@@ -497,7 +560,7 @@ export default function AlunosPage() {
             ['Nascimento', selected.dataNascimento ? `${selected.dataNascimento}${idade !== null ? ` (${idade} anos)` : ''}` : '—'],
             ['Matrícula',  selected.dataMatricula || '—'],
             ['Plano',      selected.plano || '—'],
-            ['Faixa',      `${selected.faixa} · Grau ${selected.grau}`],
+            ['Faixa',      <BeltBadge faixa={selected.faixa} grau={selected.grau} size="md" />],
             ['Frequência', `${selected.frequencia || 0}%`],
           ].map(([k, v]) => (
             <div key={k} className="flex justify-between py-2 border-b border-border-subtle">
@@ -509,8 +572,10 @@ export default function AlunosPage() {
           {/* Status */}
           <div className="flex justify-between items-center py-2">
             <span className="text-[12.5px] text-muted">Status</span>
-            <Badge color={statusBadgeColor(selected.status)}>
-              {selected.status === 'ativo'
+            <Badge color={statusBadgeColor(statusEfetivo(selected))}>
+              {isMatriculaPendente(selected)
+                ? <><Ico icon={ClockIcon} sm />Pendente</>
+                : selected.status === 'ativo'
                 ? <><Ico icon={CircleIcon} sm className="text-green-500" />Ativo</>
                 : selected.status === 'suspenso'
                   ? <><Ico icon={BanIcon} sm />Suspenso</>
@@ -554,7 +619,7 @@ export default function AlunosPage() {
         <div className="flex flex-wrap gap-2.5 mb-2.5">
           <div className="flex relative flex-1 items-center min-w-[180px]">
             <Ico icon={FunnelIcon} sm className="absolute left-2.5 pointer-events-none text-muted" />
-            <input value={search} onChange={e => { setFilter(setSearch)(e.target.value); }} placeholder="Pesquisar por nome ou email..."
+            <input value={searchInput} onChange={e => setSearchInput(e.target.value)} placeholder="Pesquisar por nome ou email..."
               className="box-border py-2 pr-3 pl-8 w-full min-h-11 sm:min-h-0 text-[12.5px] rounded-sm border outline-none transition-all duration-200 border-border bg-card text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25" />
           </div>
           <div className="flex gap-1.5 items-center">
@@ -572,7 +637,7 @@ export default function AlunosPage() {
 
         {/* Linha 2: Status + Faixa + Graduáveis */}
         <div className="flex flex-wrap gap-2 items-center">
-          {['todos','ativo','suspenso','inativo'].map(f => (
+          {['todos','ativo','pendente','suspenso','inativo'].map(f => (
             <button key={f} onClick={() => setFilter(setFiltroStatus)(f)}
               className={[
                 'py-1 px-3 min-h-11 sm:min-h-0 text-xs capitalize rounded-sm border cursor-pointer transition-colors duration-200',
@@ -606,7 +671,7 @@ export default function AlunosPage() {
         <div>
           <div className="flex flex-col gap-2">
             {alunosLoading ? (
-              <div className="p-10 text-[13px] text-center text-muted">A carregar alunos...</div>
+              <SkeletonList rows={6} />
             ) : paginated.length === 0 ? (
               <div className="p-10 text-center text-muted">
                 {search || filtroFaixa !== 'todas' || filtroStatus !== 'todos' || soGraduaveis
@@ -614,7 +679,6 @@ export default function AlunosPage() {
                   : 'Ainda não há alunos. Clica em "+ Nova Matrícula".'}
               </div>
             ) : paginated.map((a: any) => {
-              const beltCfg = beltConfig[a.faixa] || { bg: '#888', text: '#fff' };
               const idade   = calcularIdade(a.dataNascimento);
               const menor   = eMenor(a.dataNascimento);
               return (
@@ -635,13 +699,8 @@ export default function AlunosPage() {
                     <div className="overflow-hidden text-xs whitespace-nowrap text-ellipsis text-muted">{a.email} · {a.plano || '—'}</div>
                   </div>
                   <div className="flex gap-2 items-center shrink-0">
-                    <span
-                      className="py-0.5 px-2 text-[10.5px] font-bold rounded-full"
-                      style={{ background: beltCfg.bg, color: beltCfg.text, border: a.faixa === 'branca' ? '1px solid #ccc' : 'none' }}
-                    >
-                      {(beltConfig[a.faixa]?.label) || a.faixa}
-                    </span>
-                    <Badge color={statusBadgeColor(a.status)}>{a.status}</Badge>
+                    <BeltBadge faixa={a.faixa} grau={a.grau} size="sm" />
+                    <Badge color={statusBadgeColor(statusEfetivo(a))}>{statusEfetivo(a)}</Badge>
                     <FontAwesomeIcon icon={ChevronRightIcon} className="w-4 h-4 text-muted" />
                   </div>
                 </button>

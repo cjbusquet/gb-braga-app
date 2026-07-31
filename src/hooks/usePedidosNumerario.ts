@@ -42,10 +42,11 @@ async function fetchPedidosNumerario(): Promise<PedidoNumerario[]> {
   return (data ?? []).map(mapPedido);
 }
 
-export function usePedidosNumerarioQuery() {
+export function usePedidosNumerarioQuery(opts?: { enabled?: boolean }) {
   return useQuery({
     queryKey: PEDIDOS_NUMERARIO_QUERY_KEYS.list(),
     queryFn: fetchPedidosNumerario,
+    enabled: opts?.enabled ?? true,
   });
 }
 

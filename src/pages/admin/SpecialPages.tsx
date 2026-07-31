@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { useKPIs, useAlunos, usePagamentos } from '../../lib/useData';
 import { revenueHistory } from '../../data/mockData';
+import { beltConfig } from '../../lib/gbBrand';
 import { exportRelatorioFinanceiro, exportRelatorioAlunos, exportCSV } from '../../services/pdf';
 import Card from '../../components/common/Card';
 import PageHeader from '../../components/common/PageHeader';
@@ -285,8 +286,6 @@ export function RelatoriosPage() {
     {id:'retencao',  label:'Retenção',    icon:ArrowPathIcon},
   ];
 
-  const BELT_BG: Record<string,string> = { branca:'#E8E7FF', cinza:'#6B7280', amarela:'#EAB308', laranja:'#EA580C', verde:'#16A34A', azul:'#1D4ED8', roxa:'#7C3AED', marrom:'#7C4A35', preta:'#111' };
-
   return (
     <div>
       <div className="flex flex-wrap gap-3 justify-between items-start mb-5 sm:items-end">
@@ -406,7 +405,8 @@ export function RelatoriosPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Card padding="none" className="py-5 px-[22px]">
               <SectionLabel>Distribuição de Faixas</SectionLabel>
-              {Object.entries(BELT_BG).map(([faixa, bg]) => {
+              {Object.keys(beltConfig).map((faixa) => {
+                const bg = beltConfig[faixa]?.bg ?? '#888';
                 const count = alunos.filter(a => a.faixa === faixa).length;
                 if (!count) return null;
                 const pct = Math.round((count/alunos.length)*100);
@@ -423,7 +423,7 @@ export function RelatoriosPage() {
                       </div>
                     </div>
                     <div className="overflow-hidden h-[5px] rounded-full bg-elevated">
-                      <div className="h-full" style={{ background: bg==='#E8E7FF' ? '#888' : bg, width: `${pct}%` }}/>
+                      <div className="h-full" style={{ background: faixa==='branca' ? '#888' : bg, width: `${pct}%` }}/>
                     </div>
                   </div>
                 );

@@ -152,13 +152,14 @@ supabase link --project-ref yrfdxocwhztokadzxtto
 # Deploy all functions
 supabase functions deploy invite-staff
 supabase functions deploy send-email
-
-# Set secrets for Edge Functions
-supabase secrets set SMTP_HOST=smtp.example.com
-supabase secrets set SMTP_PORT=587
-supabase secrets set SMTP_USER=noreply@gbbraga.com
-supabase secrets set SMTP_PASS=your-smtp-password
 ```
+
+No `supabase secrets set` step is needed for email — `send-email` reads its
+SMTP/Resend credentials from the `configuracoes` table (`secao='email'`) at
+request time, not from function secrets/env vars. Configure them via
+**Admin → Config → Email** in the app after deploying (see §5.2 below). This
+means the same deployed function works without redeploying if credentials
+change — just update the row in the DB.
 
 ---
 

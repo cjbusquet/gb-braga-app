@@ -43,6 +43,8 @@ export interface Aluno {
   frequencia: number; // percentage
   proximaGraduacao?: string;
   stripeCustomerId?: string;
+  metodoPagamento?: 'stripe' | 'numerario' | 'transferencia';
+  numerarioAprovado?: boolean;
 }
 
 export interface Professor {

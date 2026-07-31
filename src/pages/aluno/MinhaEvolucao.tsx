@@ -6,6 +6,8 @@ import type { Belt } from '../../types';
 import PortalPageHeader from './PortalPageHeader';
 import { useAuth } from '../../lib/auth';
 import Card from '../../components/common/Card';
+import { SkeletonList } from '../../components/common/Skeleton';
+import BeltBadge from '../../components/common/BeltBadge';
 
 const BELT_PATH_KIDS: Belt[] = [
   'branca',
@@ -42,6 +44,8 @@ export default function MinhaEvolucao() {
   const { data: presencas } = usePresencas();
   const { user } = useAuth();
   const aluno = alunos.find((a) => a.email === user?.email) || alunos[0];
+  if (!aluno) return <SkeletonList rows={4} />;
+
   const historico = graduacoes.filter((g) => g.alunoId === aluno.id);
   const minhasPresencas = presencas.filter((p) => p.alunoId === aluno.id);
   const diasTreino = new Set(minhasPresencas.map((p) => p.data)).size;
@@ -207,6 +211,9 @@ export default function MinhaEvolucao() {
           <div className="mb-4 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">
             Estatísticas
           </div>
+          <div className="mb-3">
+            <BeltBadge faixa={aluno.faixa} grau={aluno.grau} size="sm" />
+          </div>
           {[
             { label: 'Membro desde', value: aluno.dataMatricula },
             idade !== null ? { label: 'Idade', value: `${idade} anos` } : null,
@@ -251,10 +258,8 @@ export default function MinhaEvolucao() {
                     <Ico icon={CheckCircleIcon} />
                   </div>
                   <div className="flex-1">
-                    <div className="text-[12.5px] font-semibold capitalize text-primary">
-                      {bcN?.label} {g.grauNovo}° Grau
-                    </div>
-                    <div className="text-[10.5px] text-muted">
+                    <BeltBadge faixa={g.faixaNova} grau={g.grauNovo} size="sm" />
+                    <div className="mt-0.5 text-[10.5px] text-muted">
                       {g.data} · {g.professorNome}
                     </div>
                   </div>
