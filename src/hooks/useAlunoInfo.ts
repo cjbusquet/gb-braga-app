@@ -7,6 +7,7 @@ export const ALUNO_INFO_QUERY_KEYS = {
 };
 
 export interface AlunoInfo {
+  id: string;
   faixa: Belt;
   grau: number;
   plano: string;
@@ -16,13 +17,16 @@ export interface AlunoInfo {
 
 async function fetchAlunoInfoByEmail(email: string): Promise<AlunoInfo | null> {
   if (!isConfigured) return null;
+  // alunos has no "plano" column — the plan name is stored as plano_nome.
   const { data, error } = await supabase
     .from('alunos')
-    .select('faixa, grau, plano, data_matricula, status')
+    .select('id, faixa, grau, plano_nome, data_matricula, status')
     .eq('email', email)
     .maybeSingle();
   if (error) throw error;
-  return (data as AlunoInfo | null) ?? null;
+  if (!data) return null;
+  const { plano_nome, ...rest } = data;
+  return { ...rest, plano: plano_nome ?? '' } as AlunoInfo;
 }
 
 /** The logged-in aluno's belt/plan/matrícula summary, by profile email. */

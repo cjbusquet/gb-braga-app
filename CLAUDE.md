@@ -32,18 +32,19 @@ This project separates **data/business logic** from **presentation components**.
 Maintain strict layer separation. UI components must never query Supabase directly; all data operations flow through custom hooks or API client wrappers.
 
 src/
-├── api/             # Low-level REST/Edge Function/Supabase SDK calls
-├── assets/          # Static assets (images, global SVGs)
-├── components/      # UI components (pure presentation)
-│   ├── common/      # Reusable UI primitives (buttons, modals, inputs)
-│   └── features/    # Feature-scoped components (e.g., contracts, billing)
-├── context/         # React Context (Auth, Global App State ONLY)
-├── hooks/           # Custom React hooks & TanStack Query wrappers
-├── lib/             # Third-party SDK client setups (supabase.ts, stripe.ts)
-├── pages/           # Route views / page-level layout wrappers
-├── services/        # Isolated business logic, PDF generation (jsPDF), parsers
-├── types/           # Global TypeScript definitions & Supabase generated types
-└── utils/           # Pure, side-effect-free helper functions
+├── api/             # Low-level REST/Edge Function/Supabase SDK calls (scaffolded)
+├── components/
+│   ├── common/      # Reusable UI primitives (Button, Card, Modal, Badge, ...)
+│   ├── features/    # Feature-scoped components (scaffolded)
+│   └── layout/      # App shell (Layout.tsx: sidebar, bottom nav)
+├── data/            # Static/demo data (mockData.ts — used in Demo Mode)
+├── hooks/           # Custom React hooks (useProfile, useConfiguracoes, ...)
+├── lib/             # Auth context, Supabase client, brand constants, data hooks
+├── pages/           # Route views, grouped by role (admin/, aluno/, professor/, matricula/, public/)
+├── services/
+│   ├── api/         # TOConline, Edge Function wrappers
+│   └── pdf/         # jsPDF contract/report/CSV generation
+└── types/           # Global TypeScript definitions & Supabase generated types
 
 ---
 
@@ -51,7 +52,7 @@ src/
 
 ### Business Logic vs. UI
 - **Components (`/components`, `/pages`):** Focus on markup, styling, and basic UI state (e.g., modal visibility). Never contain direct database queries or complex data transformations.
-- **Data Fetching (`/hooks`):** Wrap TanStack Query (`useQuery`, `useMutation`) in dedicated custom hooks. Handle caching, invalidation keys, and optimistic updates here.
+- **Data Fetching (`/hooks`, `/lib`):** Wrap TanStack Query (`useQuery`, `useMutation`) in dedicated custom hooks. Handle caching, invalidation keys, and optimistic updates here. New data hooks belong in `/hooks`; `src/lib` currently also holds established data-fetching hooks (`useData.ts`) and context providers (`auth.tsx`, `useModulos.tsx`) — there is no separate `/context` folder, so new global providers should follow that existing `/lib` pattern rather than introducing one.
 - **Services (`/services`):** Place complex domain calculations, document generation (e.g., `jsPDF`), and integration adapters here as pure TypeScript modules.
 
 ### Supabase & Row Level Security (RLS)
@@ -82,7 +83,7 @@ src/
 ### React 19 & State
 - Prefer TanStack Query for server state; avoid duplicating server state in React `useState` or `useContext`.
 - Keep component props minimal and typed explicitly using `interface Props { ... }`.
-- Icons: Use `Heroicons` exclusively for UI consistency.
+- Icons: Use `FontAwesome` (`@fortawesome/react-fontawesome`) exclusively for UI consistency.
 
 ---
 
@@ -96,5 +97,5 @@ src/
 
 ## 6. Testing Strategy & Roadmaps (Planned)
 - No test runner is currently installed.
-- **Planned:** `Vitest` for unit testing services/utils, `Playwright` for end-to-end integration workflows.
-- Write pure, decoupled functions in `/services` and `/utils` now to ensure seamless unit testing adoption later.
+- **Planned:** `Vitest` for unit testing services/hooks, `Playwright` for end-to-end integration workflows.
+- Write pure, decoupled functions in `/services` and `/lib` now to ensure seamless unit testing adoption later.

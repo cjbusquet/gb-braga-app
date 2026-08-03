@@ -10,7 +10,7 @@
 - **Project ID:** `yrfdxocwhztokadzxtto`
 - **RLS:** Enabled on all user-facing tables
 - **Extensions:** `uuid-ossp`
-- **Tables:** 13 main tables + 1 join table + 1 view
+- **Tables:** 14 main tables + 1 join table (`inscricoes_turma`) + 1 view
 - **Functions:** 4 SECURITY DEFINER functions + 2 triggers
 
 ---
@@ -427,7 +427,7 @@ Dashboard KPI aggregation view:
 | Enum | Values |
 |---|---|
 | `user_role` | superadmin, admin, atendimento, professor, aluno |
-| `belt_type` | branca, cinza, amarela, laranja, verde, azul, roxa, marrom, preta |
+| `belt_type` | branca, azul, roxa, marrom, preta, vermelha, cinza-branca, cinza, cinza-preta, amarela-branca, amarela, amarela-preta, laranja-branca, laranja, laranja-preta, verde-branca, verde, verde-preta |
 | `payment_status` | pago, pendente, vencido, cancelado |
 | `payment_method` | stripe, numerario, transferencia |
 | `aluno_status` | ativo, inativo, suspenso |
@@ -437,7 +437,7 @@ Dashboard KPI aggregation view:
 | `msg_status` | enviado, pendente, erro, lido |
 | `contrato_status` | ativo, cancelado, expirado |
 
-> **Note:** The TypeScript `Belt` type includes full kids progression variants (e.g. `cinza-branca`, `cinza-preta`) that are not yet in the `belt_type` enum. The DB enum and TypeScript type are **out of sync** — a migration to expand the enum is required before storing kids belt grades directly in the `alunos` table.
+> **Note:** The `belt_type` enum was expanded in `supabase/patches/16_fix_graduacao.sql` to include the full kids bicolor progression, matching the TypeScript `Belt` type in `src/types/index.ts`.
 
 ---
 

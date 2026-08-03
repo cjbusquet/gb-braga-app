@@ -370,17 +370,4 @@ Clicar no avatar (canto superior) → **Perfil**
 
 ## 14. Perguntas Frequentes
 
-**P: Um aluno não consegue fazer login. O que fazer?**  
-R: Verificar se a conta existe em Alunos → pesquisar por email. Se não existe, criar a conta. Se existe, verificar o status (deve ser "ativo"). Enviar reset de password se necessário.
-
-**P: Os emails não estão a ser entregues.**  
-R: Verificar Config → Email. A password deve ser uma chave Resend (começa com `re_`). Verificar se o domínio está verificado em resend.com.
-
-**P: O check-in GPS não funciona para um aluno.**  
-R: Verificar se o GPS da academia está configurado (Config → Academia → GPS). Confirmar que o aluno tem a permissão de localização ativada no browser.
-
-**P: Como apago um aluno do sistema?**  
-R: Por regulamento RGPD, os dados devem ser mantidos durante o período legal. Mudar o status para "Inativo" em vez de apagar. Para apagamento completo, contactar o Super-Administrador.
-
-**P: Posso desativar o módulo de chat sem afetar outros módulos?**  
-R: Sim. Menu → Módulos → toggle do Chat para desligado. Afeta apenas a visibilidade do Chat — todos os outros módulos ficam inalterados.
+Ver `documentation/20-FAQ.md` → secção "Para Administradores".

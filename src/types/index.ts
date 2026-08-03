@@ -152,12 +152,35 @@ export interface KPIs {
 
 export interface Notificacao {
   id: string;
+  profileId: string;
   titulo: string;
   corpo: string;
   tipo: 'info' | 'sucesso' | 'aviso' | 'erro';
   lida: boolean;
-  data: string;
+  /** Page id for Layout.tsx's onNavigate — not a URL. */
   link?: string;
+  createdAt: string;
+}
+
+/** Direct 1:1 chat message between a staff member and an aluno (mensagens_chat). */
+export interface MensagemChat {
+  id: string;
+  alunoId: string;
+  remetenteId: string | null;
+  remetenteRole: UserRole;
+  corpo: string;
+  lida: boolean;
+  lidaEm?: string | null;
+  createdAt: string;
+}
+
+/** One entry in the staff-side chat contact list (ChatPage.tsx sidebar). */
+export interface ConversaChat {
+  alunoId: string;
+  alunoNome: string;
+  ultimaMensagem?: string;
+  ultimaData?: string;
+  naoLidas: number;
 }
 
 export interface Contrato {

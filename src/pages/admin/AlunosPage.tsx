@@ -3,6 +3,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useResponsaveis, db } from '../../lib/useData';
 import { useAlunosQuery, useInvalidateAlunos } from '../../lib/queries';
 import { useAuth } from '../../lib/auth';
+import { useToast } from '../../components/common/Toast';
 import { beltConfig } from '../../lib/gbBrand';
 import { FAIXAS_PROGRESSAO, isMatriculaPendente } from '../../lib/alunoDomain';
 import NovaMatriculaModal from './NovaMatriculaModal';
@@ -382,6 +383,7 @@ function ResponsaveisSection({ aluno }: { aluno: any }) {
 
 export default function AlunosPage() {
   const { user } = useAuth();
+  const toast = useToast();
   // restringir_update_aluno() (trigger na BD) só deixa admin/superadmin/
   // atendimento mudar alunos.status — um professor consegue clicar,
   // recebe 200, mas o valor é revertido para OLD.status ainda dentro do
@@ -422,7 +424,7 @@ export default function AlunosPage() {
       invalidate();
     } catch (e) {
       console.error('Erro ao alterar status:', e);
-      alert('Erro ao alterar o estado do aluno. Tente novamente.');
+      toast.error('Erro ao alterar o estado do aluno. Tente novamente.');
     } finally {
       setStatusLoading(false);
     }

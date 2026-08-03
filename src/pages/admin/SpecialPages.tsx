@@ -7,6 +7,7 @@ import { beltConfig } from '../../lib/gbBrand';
 import { exportRelatorioFinanceiro, exportRelatorioAlunos, exportCSV } from '../../services/pdf';
 import Card from '../../components/common/Card';
 import PageHeader from '../../components/common/PageHeader';
+import { useToast } from '../../components/common/Toast';
 import {
   Ico,
   XMarkIcon,
@@ -255,6 +256,7 @@ export function SuperAdminDashboard({ onNavigate }: { onNavigate?: (page: string
 type RTab = 'financeiro' | 'alunos' | 'frequencia' | 'retencao';
 
 export function RelatoriosPage() {
+  const toast = useToast();
   const { data: kpis } = useKPIs();
   const { data: alunos } = useAlunos();
   const { data: pagamentos } = usePagamentos();
@@ -343,7 +345,7 @@ export function RelatoriosPage() {
               pagamentos.map(p => [p.alunoNome, p.plano, `€${p.valor}`, p.vencimento, p.status]),
               'GB_Pagamentos'
             ))} color="#16A34A"/>
-            <ExportBtn icon={ReceiptPercentIcon} label="SAF-T TOConline" onClick={() => alert('SAF-T gerado via TOConline API')} color="#635BFF"/>
+            <ExportBtn icon={ReceiptPercentIcon} label="SAF-T TOConline" onClick={() => toast.success('SAF-T gerado via TOConline API')} color="#635BFF"/>
           </div>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
             <Card padding="none" className="py-5 px-[22px]">
@@ -524,7 +526,7 @@ export function RelatoriosPage() {
                 { label:'Relatório de Alunos — PDF',         icon:DocumentTextIcon, fn: () => exportRelatorioAlunos(alunos as any) },
                 { label:'Pagamentos — CSV (Excel)',           icon:ChartBarIcon, fn: () => exportCSV(['Aluno','Valor','Estado','Data'],pagamentos.map(p=>[p.alunoNome,p.valor,p.status,p.vencimento]),'Pagamentos') },
                 { label:'Alunos — CSV (Excel)',               icon:ChartBarIcon, fn: () => exportCSV(['Nome','Faixa','Plano','Freq'],alunos.map(a=>[a.nome,a.faixa,a.plano,a.frequencia]),'Alunos') },
-                { label:'SAF-T PT — TOConline',               icon:ReceiptPercentIcon, fn: () => alert('SAF-T exportado via TOConline') },
+                { label:'SAF-T PT — TOConline',               icon:ReceiptPercentIcon, fn: () => toast.success('SAF-T exportado via TOConline') },
               ].map(r => (
                 <button key={r.label} onClick={() => doExport(r.label, r.fn)}
                   className="flex gap-2.5 items-center py-2.5 px-3.5 min-h-11 text-[13px] font-medium text-left rounded-sm border cursor-pointer transition-all duration-200 border-border bg-elevated text-primary hover:border-gb-red hover:text-gb-red active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"

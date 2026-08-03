@@ -31,6 +31,7 @@ import type { ReactNode } from 'react';
 import type { UserRole } from '../../types';
 import { useAuth } from '../../lib/auth';
 import { useModulos } from '../../lib/useModulos';
+import NotificationBell from './NotificationBell';
 
 interface NavItem {
   Icon: HeroIcon;
@@ -467,19 +468,23 @@ export default function Layout({
             <div className="overflow-hidden text-xs font-semibold tracking-[0.5px] uppercase truncate text-muted">
               {visibleNav.find((n) => n.id === currentPage)?.label || ''}
             </div>
-            <button
-              onClick={() => handleNav('perfil')}
-              title="Ver perfil"
-              className={['shrink-0 rounded-full cursor-pointer transition-transform duration-200 active:scale-95', FOCUS_RING].join(' ')}
-            >
-              <Avatar user={user} accent={rt.accent} size={38} />
-            </button>
+            <div className="flex gap-3 items-center shrink-0">
+              <NotificationBell onNavigate={handleNav} accent={rt.accent} />
+              <button
+                onClick={() => handleNav('perfil')}
+                title="Ver perfil"
+                className={['shrink-0 rounded-full cursor-pointer transition-transform duration-200 active:scale-95', FOCUS_RING].join(' ')}
+              >
+                <Avatar user={user} accent={rt.accent} size={38} />
+              </button>
+            </div>
           </div>
         )}
 
         {/* Desktop top bar */}
         {!isMobile && (
-          <div className="flex shrink-0 justify-end items-center py-0 px-6 h-14 border-b border-border bg-card">
+          <div className="flex gap-4 shrink-0 justify-end items-center py-0 px-6 h-14 border-b border-border bg-card">
+            <NotificationBell onNavigate={handleNav} accent={rt.accent} />
             <button
               onClick={() => handleNav('perfil')}
               title="Ver perfil"

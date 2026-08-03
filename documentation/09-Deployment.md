@@ -2,6 +2,8 @@
 
 **Gracie Barra Braga — Production Deployment**
 
+Custo mensal estimado: €0–15/mês até 500 alunos. Tempo estimado para ir ao ar (projeto novo): 1 dia técnico + 1 dia de configuração.
+
 ---
 
 ## 1. Architecture
@@ -216,16 +218,13 @@ Admin → Config → Email:
 - [ ] Run `npm run typecheck` — 0 errors
 - [ ] Run `npm run build` — successful
 - [ ] All environment variables set in Vercel
-- [ ] Supabase schema fully applied (including all patches)
-- [ ] RLS fixes applied (SEC-004, SEC-005)
-- [ ] `turmas` and `configuracoes` tables have RLS
+- [ ] Supabase schema fully applied (including all patches in `supabase/patches/`, in order)
 - [ ] Avatars bucket created with correct policies
 - [ ] Edge Functions deployed: `invite-staff`, `send-email`
 - [ ] Stripe webhook registered
 - [ ] Resend domain verified + API key configured in Config
 - [ ] Custom domain configured and SSL active
 - [ ] Supabase Auth redirect URL set to production URL
-- [ ] `src/src/` duplicate directory removed
 
 ### Post-deployment Validation
 

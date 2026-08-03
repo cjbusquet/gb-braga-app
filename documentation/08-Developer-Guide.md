@@ -18,22 +18,7 @@
 
 ## 2. Local Setup
 
-```bash
-# 1. Clone the repository
-git clone https://github.com/cjbusquet/gb-braga-app.git
-cd gb-braga-app
-
-# 2. Install dependencies
-npm install
-
-# 3. Configure environment
-cp .env.example .env.local
-# Edit .env.local with your Supabase credentials
-
-# 4. Start development server
-npm run dev
-# Opens at http://localhost:5173
-```
+See the root `README.md` "Instalação rápida" section for clone/install/env/run-locally steps.
 
 ---
 
@@ -65,37 +50,7 @@ VITE_SUPABASE_ANON=<your-anon-key>
 
 ## 5. Project Structure
 
-```
-src/
-├── App.tsx              # Root: routing, role guards, history management
-├── main.tsx             # React entry point
-├── index.css            # Global styles + CSS variables
-├── components/
-│   ├── GBLogo.tsx       # Brand logo SVG
-│   └── layout/
-│       └── Layout.tsx   # App shell: sidebar (desktop), bottom nav (mobile)
-├── data/
-│   └── mockData.ts      # Demo users (superadmin, admin, professor, atendimento, aluno)
-├── lib/
-│   ├── auth.tsx         # AuthContext, useAuth hook
-│   ├── gbBrand.ts       # Belt colors, brand constants
-│   ├── reportExport.ts  # PDF generation (jsPDF)
-│   ├── supabaseClient.ts# Supabase singleton client + isConfigured flag
-│   ├── toconline.ts     # TOConline OAuth + API calls
-│   ├── useData.ts       # All data fetching hooks (useAlunos, useTurmas, etc.)
-│   ├── useMobile.ts     # Responsive: returns true if screen < 768px
-│   └── useModulos.tsx   # Module enable/disable context
-├── pages/
-│   ├── LoginPage.tsx
-│   ├── PerfilPage.tsx
-│   ├── admin/           # All staff-facing pages
-│   ├── aluno/           # Student portal pages
-│   ├── matricula/       # Enrollment wizard
-│   ├── professor/       # Professor-specific pages
-│   └── public/          # Public enrollment page
-└── types/
-    └── index.ts         # All TypeScript interfaces and type aliases
-```
+See `documentation/01-Architecture.md` §9 for the full annotated folder tree, and `CLAUDE.md` for the folder conventions new code should follow (`hooks/` for new data hooks, `services/` for PDF/API integration logic, etc.).
 
 ---
 
@@ -134,7 +89,7 @@ export default function PageName() {
 
 ### 6.2 Styling
 
-All styling uses **inline styles** (`style={{}}`). No external CSS library is used. The brand colors are:
+Styling uses **Tailwind CSS** utility classes (`className="..."`). Older pages still carry some inline styles (`style={{}}`) from before the Tailwind migration — prefer Tailwind classes for new code. The brand colors are:
 
 ```typescript
 // src/lib/gbBrand.ts
@@ -303,7 +258,7 @@ serve(async (req) => {
 |---|---|---|
 | Blank screen after login | RLS policy missing or profile not created | Check Supabase Auth logs, run patch 02 |
 | Module toggle not propagating | Realtime subscription not connected | Check browser WS connection to Supabase |
-| GPS check-in fails silently | Aluno INSERT policy missing on presencas | Apply SEC-004 fix |
+| GPS check-in fails silently | Aluno lacks INSERT policy on presencas | Check `supabase/patches/17_fix_checkin.sql` is applied |
 | Email not sending | SMTP/SPF block | Use Resend API key instead |
 | Belt shows wrong color | Old beltConfig cached | Hard refresh (Ctrl+Shift+R) |
 
@@ -343,11 +298,7 @@ fix/*         ← bug fix branches
 
 | Item | Priority | Effort |
 |---|---|---|
-| Remove `src/src/` duplicate directory | Critical | 5 min |
-| Expand `belt_type` enum in Supabase | Critical | 10 min |
-| Add presencas INSERT policy for alunos | High | 5 min |
-| Add RLS to turmas and configuracoes | High | 15 min |
 | Add pagination to data hooks | Medium | 2-4 hours |
-| Generate Supabase TypeScript types | Medium | 1 hour |
-| Add test suite | Medium | 2-3 days |
-| Migrate inline styles to CSS modules | Low | 1-2 weeks |
+| Generate Supabase TypeScript types (`supabase gen types typescript`) | Medium | 1 hour |
+| Add test suite (Vitest/Playwright — see CLAUDE.md §6) | Medium | 2-3 days |
+| Finish migrating remaining inline styles to Tailwind classes | Low | ongoing |

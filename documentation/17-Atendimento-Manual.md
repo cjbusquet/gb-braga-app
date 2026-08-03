@@ -100,11 +100,4 @@ Quando um aluno quer pagar em dinheiro:
 
 ## 7. Perguntas Frequentes
 
-**P: Um aluno diz que não consegue fazer login.**  
-R: Pesquisar o aluno em Alunos. Se a conta existir, verificar se o status é "Ativo". Se não existir conta, criar uma nova matrícula. Pode contactar o admin para enviar reset de password.
-
-**P: Um aluno quer alterar o plano.**  
-R: Na ficha do aluno, campo Plano → selecionar novo plano → guardar. Informar o administrador para ajustar a faturação.
-
-**P: Como cancelo uma matrícula?**  
-R: Na ficha do aluno, alterar o Status para "Inativo". Informar o administrador para cancelar a subscrição Stripe se aplicável.
+Ver `documentation/20-FAQ.md` → secção "Para Atendimento".

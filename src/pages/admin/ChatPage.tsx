@@ -1,6 +1,16 @@
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useAlunos } from '../../lib/useData';
+import { useAuth } from '../../lib/auth';
+import { useToast } from '../../components/common/Toast';
+import {
+  useConversasQuery,
+  useChatMensagensQuery,
+  useEnviarChatMensagem,
+  useMarcarChatLida,
+  useChatRealtime,
+} from '../../hooks/useChat';
+import { useMarcarNotificacoesPorLinkLidas } from '../../hooks/useNotificacoes';
 import { beltConfig } from '../../lib/gbBrand';
 import { useMobile } from '../../lib/useMobile';
 import type { Aluno } from '../../types';
@@ -14,65 +24,25 @@ import {
   MagnifyingGlassIcon,
   CheckIcon,
   BoltIcon,
-  type HeroIcon,
+  ArrowPathIcon,
 } from '../../lib/icons';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface ChatMsg {
-  id: string;
-  remetente: 'admin' | 'aluno';
-  texto: string;
-  hora: string;
-  canal: 'interno' | 'whatsapp' | 'sms';
-  lida: boolean;
-}
-
-interface Conversa {
-  alunoId: string;
-  msgs: ChatMsg[];
-  ultimaMsg: string;
-  naoLidas: number;
-}
-
-// ─── Mock conversations ───────────────────────────────────────────────────────
-const CONVERSAS_INIT: Record<string, Conversa> = {
-  a2: {
-    alunoId: 'a2', ultimaMsg: '10:32', naoLidas: 2,
-    msgs: [
-      { id: 'm1', remetente: 'admin', texto: 'Olá Maria! A tua mensalidade de Maio vence em 3 dias. Valor: €62.', hora: '10:28', canal: 'interno', lida: true },
-      { id: 'm2', remetente: 'aluno', texto: 'Obrigada pelo aviso! Vou pagar já hoje.', hora: '10:31', canal: 'interno', lida: false },
-      { id: 'm3', remetente: 'aluno', texto: 'Posso pagar por transferência?', hora: '10:32', canal: 'interno', lida: false },
-    ]
-  },
-  a4: {
-    alunoId: 'a4', ultimaMsg: '09:15', naoLidas: 0,
-    msgs: [
-      { id: 'm4', remetente: 'admin', texto: 'Ana, a tua mensalidade de Abril está vencida há 16 dias. Por favor regulariza a situação.', hora: '09:10', canal: 'interno', lida: true },
-      { id: 'm5', remetente: 'aluno', texto: 'Peço desculpa, tive uma situação familiar. Posso pagar na sexta?', hora: '09:15', canal: 'interno', lida: true },
-    ]
-  },
-  a1: {
-    alunoId: 'a1', ultimaMsg: 'ontem', naoLidas: 0,
-    msgs: [
-      { id: 'm6', remetente: 'aluno', texto: 'Bom dia! Posso faltar à aula de amanhã? Tenho uma reunião de trabalho.', hora: 'ontem 18:44', canal: 'interno', lida: true },
-      { id: 'm7', remetente: 'admin', texto: 'Claro Lucas, sem problema! Podes compensar sábado no Open Mat.', hora: 'ontem 19:02', canal: 'interno', lida: true },
-    ]
-  },
-  a6: {
-    alunoId: 'a6', ultimaMsg: '08:50', naoLidas: 1,
-    msgs: [
-      { id: 'm8', remetente: 'aluno', texto: 'Olá! Queria saber se é possível mudar para o plano Família para incluir o meu marido.', hora: '08:50', canal: 'interno', lida: false },
-    ]
-  },
-};
 
 const TEMPLATES = [
   'A tua mensalidade vence em 3 dias. Paga aqui: gbbraga.com/central-de-pagamento/',
-  'Lembrete: aula hoje às {hora}. Não faltes! Oss! 🥋',
-  'Parabéns pela graduação! Oss! 🎖️',
+  'Lembrete: aula hoje às {hora}. Não faltes! Oss!',
+  'Parabéns pela graduação! Oss!',
   'Bem-vindo(a) à Gracie Barra Braga! A tua conta está ativa.',
   'A tua mensalidade está em atraso. Por favor regulariza urgentemente.',
 ];
+
+function formatHora(iso: string): string {
+  const d = new Date(iso);
+  const hoje = new Date();
+  const mesmodia = d.toDateString() === hoje.toDateString();
+  return mesmodia
+    ? d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
+}
 
 // ─── Components ───────────────────────────────────────────────────────────────
 function AlunoAvatar({ aluno, size = 38 }: { aluno: Aluno; size?: number }) {
@@ -94,16 +64,26 @@ function AlunoAvatar({ aluno, size = 38 }: { aluno: Aluno; size?: number }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ChatPage() {
+  const { user } = useAuth();
+  const toast = useToast();
   const { data: alunos } = useAlunos();
   const { isMobile } = useMobile();
-  const [conversas, setConversas] = useState(CONVERSAS_INIT);
-  const [alunoAtivo, setAlunoAtivo] = useState<string>('a2');
+  const { data: conversas = [] } = useConversasQuery();
+  const [alunoAtivo, setAlunoAtivo] = useState<string>('');
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   const [texto, setTexto] = useState('');
-  const [canal, setCanal] = useState<'interno' | 'whatsapp' | 'sms'>('interno');
   const [showTemplates, setShowTemplates] = useState(false);
   const [busca, setBusca] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const { data: mensagens = [], isLoading: loadingMsgs } = useChatMensagensQuery(alunoAtivo || undefined);
+  const enviarMutation = useEnviarChatMensagem();
+  const marcarLidaMutation = useMarcarChatLida();
+  const marcarNotificacoesLidas = useMarcarNotificacoesPorLinkLidas();
+  useChatRealtime(alunoAtivo || undefined);
+
+  // Opening the Chat page itself clears the bell badge for chat notifications
+  useEffect(() => { marcarNotificacoesLidas.mutate('chat'); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectAluno = (id: string) => {
     setAlunoAtivo(id);
@@ -111,64 +91,36 @@ export default function ChatPage() {
   };
 
   const aluno = alunos.find(a => a.id === alunoAtivo);
-  const conversa = conversas[alunoAtivo] || { alunoId: alunoAtivo, msgs: [], ultimaMsg: '—', naoLidas: 0 };
 
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [alunoAtivo, conversas]);
+  }, [alunoAtivo, mensagens]);
 
-  // Mark as read when opening
+  // Mark as read when opening a conversation — the RPC no-ops if there's nothing unread
   useEffect(() => {
-    if (alunoAtivo && conversas[alunoAtivo]?.naoLidas > 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setConversas(prev => ({
-        ...prev,
-        [alunoAtivo]: { ...prev[alunoAtivo], naoLidas: 0, msgs: prev[alunoAtivo].msgs.map(m => ({ ...m, lida: true })) }
-      }));
-    }
+    if (alunoAtivo) marcarLidaMutation.mutate(alunoAtivo);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [alunoAtivo]);
 
   const enviar = () => {
-    if (!texto.trim()) return;
-    const newMsg: ChatMsg = {
-      id: `m${Date.now()}`,
-      remetente: 'admin',
-      texto: texto.trim(),
-      hora: new Date().toTimeString().slice(0, 5),
-      canal,
-      lida: true,
-    };
-    setConversas(prev => ({
-      ...prev,
-      [alunoAtivo]: {
-        ...(prev[alunoAtivo] || { alunoId: alunoAtivo, naoLidas: 0 }),
-        msgs: [...(prev[alunoAtivo]?.msgs || []), newMsg],
-        ultimaMsg: newMsg.hora,
-      }
-    }));
+    if (!texto.trim() || !alunoAtivo || !user) return;
+    const corpo = texto.trim();
     setTexto('');
     setShowTemplates(false);
+    enviarMutation.mutate(
+      { alunoId: alunoAtivo, remetenteId: user.id, remetenteRole: user.role, corpo },
+      { onError: (e) => toast.error(e instanceof Error ? e.message : 'Erro ao enviar a mensagem. Tenta novamente.') }
+    );
   };
 
-  const totalNaoLidas = Object.values(conversas).reduce((s, c) => s + c.naoLidas, 0);
+  const totalNaoLidas = conversas.reduce((s, c) => s + c.naoLidas, 0);
 
   const alunosFiltrados = alunos.filter(a =>
     a.status === 'ativo' && a.nome.toLowerCase().includes(busca.toLowerCase())
   );
 
-  const CANAL_CONFIG: Record<'interno' | 'whatsapp' | 'sms', { icon: HeroIcon; label: string; color: string }> = {
-    interno: { icon: CommentIcon, label: 'Chat interno', color: 'var(--gb-red)' },
-    whatsapp: { icon: DeviceMobileIcon, label: 'WhatsApp', color: '#25D366' },
-    sms:      { icon: DeviceMobileIcon, label: 'SMS', color: '#3B82F6' },
-  };
-
   // ── shared height ─────────────────────────────────────────────────────────────
-  // Desktop: fixed-height panels inside the scrollable layout column
-  // Mobile: the window scrolls naturally; chat window fills the viewport
-  //         (body scroll lets Chrome auto-hide the address bar — the list is
-  //          just a normal list; chat view stretches to 100dvh via position:fixed)
   const chatH = 'calc(100vh - 160px)';
 
   // ── reusable contact list ──────────────────────────────────────────────────
@@ -183,9 +135,8 @@ export default function ChatPage() {
       </div>
       <div className="overflow-y-auto flex-1">
         {alunosFiltrados.map(a => {
-          const conv = conversas[a.id];
+          const conv = conversas.find(c => c.alunoId === a.id);
           const naoLidas = conv?.naoLidas || 0;
-          const ultimaMsg = conv?.msgs?.[conv.msgs.length - 1];
           const isActive = !isMobile && a.id === alunoAtivo;
           return (
             <button key={a.id} onClick={() => selectAluno(a.id)}
@@ -207,10 +158,10 @@ export default function ChatPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-center mb-1">
                   <span className={['overflow-hidden whitespace-nowrap text-ellipsis text-primary', isMobile ? 'text-sm' : 'text-[13px]', naoLidas > 0 ? 'font-bold' : 'font-medium'].join(' ')}>{a.nome}</span>
-                  {conv && <span className="ml-1.5 text-[10.5px] shrink-0 text-muted">{conv.ultimaMsg}</span>}
+                  {conv?.ultimaData && <span className="ml-1.5 text-[10.5px] shrink-0 text-muted">{formatHora(conv.ultimaData)}</span>}
                 </div>
                 <div className={['overflow-hidden text-xs whitespace-nowrap text-ellipsis', naoLidas > 0 ? 'font-semibold text-secondary' : 'font-normal text-muted'].join(' ')}>
-                  {ultimaMsg ? (ultimaMsg.remetente === 'admin' ? '↩ ' : '') + ultimaMsg.texto : 'Iniciar conversa...'}
+                  {conv?.ultimaMensagem || 'Iniciar conversa...'}
                 </div>
               </div>
               {isMobile && <span className="text-base shrink-0 text-muted">›</span>}
@@ -222,7 +173,6 @@ export default function ChatPage() {
   );
 
   // ── reusable chat window ───────────────────────────────────────────────────
-  // On mobile: position fixed so it covers the full screen (sits above body scroll)
   const chatWindow = (
     <div
       className={[
@@ -275,16 +225,19 @@ export default function ChatPage() {
 
           {/* Messages */}
           <div className={['flex overflow-y-auto flex-col flex-1 gap-2', isMobile ? 'py-3 px-3.5' : 'py-4 px-[18px]'].join(' ')}>
-            {conversa.msgs.length === 0 ? (
+            {loadingMsgs ? (
+              <div className="flex flex-1 justify-center items-center text-muted">
+                <Ico icon={ArrowPathIcon} />
+              </div>
+            ) : mensagens.length === 0 ? (
               <div className="flex flex-col flex-1 justify-center items-center p-10 text-muted">
                 <FontAwesomeIcon icon={CommentIcon} className="mb-3 w-9 h-9 opacity-30" />
                 <div className="text-sm">Inicia a conversa com {aluno.nome.split(' ')[0]}</div>
                 <div className="mt-1 text-xs">Usa um template ou escreve uma mensagem</div>
               </div>
             ) : (
-              conversa.msgs.map(msg => {
-                const isAdmin = msg.remetente === 'admin';
-                const cCfg = CANAL_CONFIG[msg.canal];
+              mensagens.map(msg => {
+                const isAdmin = msg.remetenteRole !== 'aluno';
                 return (
                   <div key={msg.id} className={['flex', isAdmin ? 'justify-end' : 'justify-start'].join(' ')}>
                     <div className={isMobile ? 'max-w-[85%]' : 'max-w-[72%]'}>
@@ -295,11 +248,10 @@ export default function ChatPage() {
                           borderRadius: isAdmin ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
                         }}
                       >
-                        <p className={['m-0 text-sm leading-[1.5]', isAdmin ? 'text-white' : 'text-primary'].join(' ')}>{msg.texto}</p>
+                        <p className={['m-0 text-sm leading-[1.5]', isAdmin ? 'text-white' : 'text-primary'].join(' ')}>{msg.corpo}</p>
                       </div>
                       <div className={['flex gap-1.5 items-center mt-1', isAdmin ? 'justify-end' : 'justify-start'].join(' ')}>
-                        <span className="font-mono text-[10px] text-muted">{msg.hora}</span>
-                        {msg.canal !== 'interno' && <Ico icon={cCfg.icon} sm style={{ color: cCfg.color }} />}
+                        <span className="font-mono text-[10px] text-muted">{formatHora(msg.createdAt)}</span>
                         {isAdmin && (
                           <span className={['flex items-center', msg.lida ? 'text-[#25D366]' : 'text-muted'].join(' ')}>
                             <Ico icon={CheckIcon} sm />
@@ -338,21 +290,7 @@ export default function ChatPage() {
               isMobile ? 'py-2.5 px-3 pb-[calc(env(safe-area-inset-bottom)+10px)]' : 'py-3 px-3.5',
             ].join(' ')}
           >
-            {/* Canal + templates row */}
             <div className="flex gap-1.5 items-center mb-2">
-              {(Object.entries(CANAL_CONFIG) as [typeof canal, typeof CANAL_CONFIG[typeof canal]][]).map(([id, cfg]) => (
-                <button key={id} onClick={() => setCanal(id)}
-                  className={[
-                    'flex items-center min-h-11 sm:min-h-0 rounded-sm border cursor-pointer transition-colors duration-200',
-                    'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-                    isMobile ? 'gap-0 py-1.5 px-2.5 text-base' : 'gap-1.5 py-1 px-2.5 text-[11.5px]',
-                    canal === id ? 'font-bold' : 'font-normal border-border bg-elevated text-muted hover:bg-border-subtle active:bg-border-subtle',
-                  ].join(' ')}
-                  style={canal === id ? { background: cfg.color + '15', borderColor: cfg.color, color: cfg.color } : undefined}
-                >
-                  <Ico icon={cfg.icon} sm />{!isMobile && ` ${cfg.label}`}
-                </button>
-              ))}
               <div className="flex-1"/>
               <button onClick={() => setShowTemplates(!showTemplates)}
                 className={[
@@ -368,18 +306,18 @@ export default function ChatPage() {
             {/* Textarea + send */}
             <div className="flex gap-2 items-end">
               <textarea value={texto} onChange={e => setTexto(e.target.value)}
-                placeholder={`Mensagem via ${CANAL_CONFIG[canal].label}...`}
+                placeholder="Escreve uma mensagem..."
                 rows={isMobile ? 1 : 2}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); }}}
                 className="flex-1 py-2.5 px-3.5 font-ui text-sm leading-[1.5] rounded-md border outline-none transition-all duration-200 resize-none border-border bg-elevated text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25"
               />
-              <button onClick={enviar} disabled={!texto.trim()}
+              <button onClick={enviar} disabled={!texto.trim() || enviarMutation.isPending}
                 className={[
                   'flex justify-center items-center w-11 h-11 text-xl rounded-md border-none shrink-0 transition-colors duration-200',
                   'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
                   texto.trim() ? 'text-white shadow-red cursor-pointer bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark' : 'bg-elevated text-muted',
                 ].join(' ')}>
-                ↑
+                {enviarMutation.isPending ? <Ico icon={ArrowPathIcon} /> : '↑'}
               </button>
             </div>
             {!isMobile && <div className="mt-1.5 text-[10.5px] text-muted">Enter para enviar · Shift+Enter para nova linha</div>}

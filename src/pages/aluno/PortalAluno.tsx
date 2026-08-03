@@ -32,6 +32,7 @@ import { exportContratoPDF } from '../../services/pdf';
 import { useAuth } from '../../lib/auth';
 import { useState } from 'react';
 import Card from '../../components/common/Card';
+import { useToast } from '../../components/common/Toast';
 import { Skeleton, SkeletonList } from '../../components/common/Skeleton';
 import BeltBar from '../../components/common/BeltBar';
 
@@ -221,6 +222,7 @@ export default function PortalAluno({
 }: {
   onNavigate?: (page: string) => void;
 }) {
+  const toast = useToast();
   const { data: alunos, refetch: refetchAlunos } = useAlunos();
   const { data: pagamentos } = usePagamentos();
   const { data: presencas } = usePresencas();
@@ -364,9 +366,7 @@ export default function PortalAluno({
                       'Cancelar subscrição?\n\nA tua conta ficará inativa no fim do período pago. Tens a certeza?',
                     )
                   ) {
-                    alert(
-                      'Pedido de cancelamento registado. Entraremos em contacto.',
-                    );
+                    toast.success('Pedido de cancelamento registado. Entraremos em contacto.');
                     setShowContrato(false);
                   }
                 }}

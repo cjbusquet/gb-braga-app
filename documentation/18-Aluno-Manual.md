@@ -220,23 +220,7 @@ Para terminar a sessão:
 
 ## 11. Perguntas Frequentes
 
-**P: Esqueci a minha password. O que fazer?**  
-R: Na página de login, clica em "Esqueci a password". Recebes um email com link para repor. Verifica a pasta de spam se não receberes em 5 minutos.
-
-**P: A app não funciona offline?**  
-R: A app carrega os dados quando tens internet e guarda-os temporariamente. Em modo offline, podes ver dados já carregados mas não podes fazer check-in (requer verificação GPS).
-
-**P: O meu check-in não aparece no histórico.**  
-R: Se o check-in foi manual (feito pelo staff), pode demorar alguns minutos. Se fizeste GPS check-in e não aparece, contacta a receção.
-
-**P: Posso fazer check-in antes de sair de casa?**  
-R: Não — o GPS valida que estás fisicamente na academia. O check-in só funciona dentro do raio configurado (tipicamente 100m da academia).
-
-**P: A minha faixa está errada na app.**  
-R: A faixa é atualizada pelo staff após cada graduação. Contacta a receção se houver um erro.
-
-**P: Consigo usar a app noutro telemóvel?**  
-R: Sim — o teu perfil está guardado na cloud. Faz login com o mesmo email e password em qualquer dispositivo.
+Ver `documentation/20-FAQ.md` → secção "Para Atletas".
 
 ---
 

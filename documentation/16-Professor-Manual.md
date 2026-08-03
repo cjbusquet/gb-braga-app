@@ -101,11 +101,4 @@ Pode editar:
 
 ## 6. Perguntas Frequentes
 
-**P: Não vejo um aluno na lista do check-in.**  
-R: O aluno pode não estar inscrito na turma. Pede ao staff para verificar as inscrições, ou pesquisa o aluno pelo nome.
-
-**P: Fiz uma graduação com o grau errado. Posso corrigir?**  
-R: Contacta o administrador — apenas admin/superadmin pode editar graduações existentes.
-
-**P: Posso ver o histórico de presenças de um aluno específico?**  
-R: Sim — no Check-in, seleciona a turma e vês as presenças. Para histórico detalhado, pede ao admin para consultar em Alunos → ficha do aluno.
+Ver `documentation/20-FAQ.md` → secção "Para Professores".

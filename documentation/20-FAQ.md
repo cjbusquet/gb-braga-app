@@ -29,6 +29,15 @@ R:
 - **iPhone (Safari):** Abrir app.gbbraga.com → tocar ↑ → "Adicionar ao Início"  
 - **Android (Chrome):** Abrir app.gbbraga.com → menu ⋮ → "Adicionar ao início"
 
+**P: A app não funciona offline?**  
+R: A app carrega os dados quando tens internet e guarda-os temporariamente. Em modo offline, podes ver dados já carregados mas não podes fazer check-in (requer verificação GPS).
+
+**P: O meu check-in não aparece no histórico.**  
+R: Se o check-in foi manual (feito pelo staff), pode demorar alguns minutos. Se fizeste GPS check-in e não aparece, contacta a receção.
+
+**P: Posso fazer check-in antes de sair de casa?**  
+R: Não — o GPS valida que estás fisicamente na academia. O check-in só funciona dentro do raio configurado (tipicamente 100m da academia).
+
 ---
 
 ## Para Administradores
@@ -56,6 +65,29 @@ R: Verifica se o webhook está registado no Stripe Dashboard (Developer → Webh
 
 **P: Como faço backup da base de dados?**  
 R: A Supabase faz backup diário automático. Para export manual: Supabase Dashboard → Database → Backups. Para schema: `supabase db dump` via CLI.
+
+---
+
+## Para Professores
+
+**P: Não vejo um aluno na lista do check-in.**  
+R: O aluno pode não estar inscrito na turma. Pede ao staff para verificar as inscrições, ou pesquisa o aluno pelo nome.
+
+**P: Fiz uma graduação com o grau errado. Posso corrigir?**  
+R: Contacta o administrador — apenas admin/superadmin pode editar graduações existentes.
+
+**P: Posso ver o histórico de presenças de um aluno específico?**  
+R: Sim — no Check-in, seleciona a turma e vês as presenças. Para histórico detalhado, pede ao admin para consultar em Alunos → ficha do aluno.
+
+---
+
+## Para Atendimento
+
+**P: Um aluno quer alterar o plano.**  
+R: Na ficha do aluno, campo Plano → selecionar novo plano → guardar. Informar o administrador para ajustar a faturação.
+
+**P: Como cancelo uma matrícula?**  
+R: Na ficha do aluno, alterar o Status para "Inativo". Informar o administrador para cancelar a subscrição Stripe se aplicável.
 
 ---
 
@@ -90,9 +122,9 @@ R: `npx supabase gen types typescript --project-id yrfdxocwhztokadzxtto > src/ty
 |---|---|---|
 | Ecrã branco depois do login | Perfil não criado | Verificar trigger `on_auth_user_created` no Supabase |
 | "Erro ao carregar dados" | RLS bloqueando | Verificar políticas RLS na tabela relevante |
-| Check-in GPS falha silenciosamente | Policy INSERT em presencas | Aplicar BLOCK-3 fix (ver Launch Report) |
+| Check-in GPS falha silenciosamente | Policy INSERT em presencas para aluno em falta | Confirmar que `supabase/patches/17_fix_checkin.sql` foi aplicado |
 | Emails chegam com remetente errado | SMTP mal configurado | Usar chave Resend em vez de SMTP |
 | Módulo não aparece no sidebar | Módulo desativado | Super-Admin → Módulos → verificar toggle |
 | App não instala como PWA | HTTPS necessário | Verificar que o domínio tem SSL ativo |
-| Faixas kids não guardam | belt_type enum incompleto | Aplicar BLOCK-4 fix (ver Launch Report) |
+| Faixas kids não guardam | `belt_type` enum incompleto | Confirmar que `supabase/patches/16_fix_graduacao.sql` foi aplicado |
 | Avatars não carregam | Bucket não criado | Criar bucket 'avatars' no Supabase Storage |

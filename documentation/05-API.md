@@ -76,7 +76,7 @@ Body: { faixa, grau, status, plano_id, ... }
 ```
 GET /turmas?select=*&eq.ativa=true&order=horario.asc
 ```
-**Authorization:** Any authenticated user (no RLS — to be fixed)
+**Authorization:** Any authenticated user (RLS: `auth.uid() IS NOT NULL`)
 
 #### List by day
 ```
@@ -97,7 +97,7 @@ Body: {
   gps_lat, gps_lng, gps_dist_m
 }
 ```
-**Authorization:** admin, superadmin, professor, atendimento (or own aluno — fix pending)
+**Authorization:** admin, superadmin, professor, atendimento, or own aluno (self-check-in, via the `presencas` INSERT policy added in `supabase/patches/17_fix_checkin.sql`)
 
 #### Get student attendance
 ```
@@ -171,14 +171,14 @@ Body: { para_id, para_nome, canal, assunto, corpo, status, remetente, enviado_em
 ```
 GET /configuracoes?secao=eq.academia&select=dados
 ```
-**Authorization:** admin, superadmin (to be restricted with RLS)
+**Authorization:** Any authenticated user can SELECT; only admin/superadmin can INSERT/UPDATE (RLS)
 
 #### Upsert configuration
 ```
 POST /configuracoes (onConflict: secao)
 Body: { secao, dados: {...}, updated_at, updated_by }
 ```
-**Authorization:** superadmin (to be restricted with RLS)
+**Authorization:** admin, superadmin (RLS)
 
 ---
 

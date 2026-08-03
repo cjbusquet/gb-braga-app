@@ -11,7 +11,7 @@ App web de gestão completa da academia: alunos, pagamentos automáticos (Stripe
 
 | Camada | Tecnologia |
 |--------|------------|
-| Frontend | React 18 + TypeScript + Vite |
+| Frontend | React 19 + TypeScript + Vite 8 + Tailwind CSS 4 |
 | Base de dados | Supabase (PostgreSQL + Auth + RLS) |
 | Hosting | Vercel (CDN + Edge Functions) |
 | Pagamentos | Stripe (subscrições recorrentes) |
@@ -23,15 +23,15 @@ App web de gestão completa da academia: alunos, pagamentos automáticos (Stripe
 ## Instalação rápida
 
 ### 1. Pré-requisitos
-- Node.js ≥ 18
+- Node.js ≥ 20
 - Git
 - Conta Supabase (gratuita)
 - Conta Vercel (gratuita)
 
 ### 2. Clonar e instalar
 ```bash
-git clone https://github.com/SEU-USER/gbbraga-app.git
-cd gbbraga-app
+git clone git@github.com:cjbusquet/gb-braga-app.git
+cd gb-braga-app
 npm install
 ```
 
@@ -39,7 +39,9 @@ npm install
 ```bash
 cp .env.example .env.local
 # Editar .env.local com as tuas chaves
+node scripts/validate-env.js  # opcional: valida as variáveis
 ```
+Referência completa de variáveis: `documentation/07-Environment.md`.
 
 ### 4. Criar a base de dados
 ```bash
@@ -54,12 +56,14 @@ npm run typecheck  # verificar TypeScript
 npm run build      # build de produção
 ```
 
+Sem `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON` configurados, a app arranca automaticamente em **Demo Mode** (dados de `src/data/mockData.ts`, sem base de dados).
+
 ### 6. Deploy para produção
 ```bash
 git push origin main  # Vercel faz deploy automático
 ```
 
-Para o guia completo passo a passo, consulta **guia_instalacao_gbbraga.docx**.
+Para o guia de deployment completo, consulta `documentation/09-Deployment.md`.
 
 ---
 
@@ -88,9 +92,8 @@ Para o guia completo passo a passo, consulta **guia_instalacao_gbbraga.docx**.
 
 ## Documentação
 
-- `manual_utilizador_gbbraga.docx` — Manual por perfil de utilizador
-- `documentacao_tecnica_gbbraga.docx` — Arquitectura, DB, integrações, segurança
-- `guia_instalacao_gbbraga.docx` — Deployment passo a passo
+- `CLAUDE.md` — Regras de arquitetura e convenções de código (dev/IA)
+- `documentation/` — Documentação funcional e técnica (arquitetura, base de dados, API, manuais por perfil de utilizador, deployment)
 - `supabase/schema.sql` — Schema completo com RLS e seeds
 - `api/stripe-webhook.ts` — Handler dos webhooks Stripe
 

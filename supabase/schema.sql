@@ -341,6 +341,41 @@ CREATE TABLE IF NOT EXISTS templates_mensagem (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ── CHAT DIRETO (aluno ↔ staff) ──────────────────────────────
+-- Distinto de `mensagens` (log de campanhas/broadcast para
+-- segmentos) — esta é uma conversa 1:1 por aluno, usada por
+-- ChatPage.tsx (staff) e pages/aluno/Mensagens.tsx (aluno).
+CREATE TABLE IF NOT EXISTS mensagens_chat (
+  id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  aluno_id       UUID NOT NULL REFERENCES alunos(id) ON DELETE CASCADE,
+  remetente_id   UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  remetente_role user_role NOT NULL,
+  corpo          TEXT NOT NULL CHECK (length(trim(corpo)) > 0),
+  lida           BOOLEAN NOT NULL DEFAULT FALSE,
+  lida_em        TIMESTAMPTZ,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_mensagens_chat_aluno   ON mensagens_chat(aluno_id, created_at);
+CREATE INDEX idx_mensagens_chat_remetente ON mensagens_chat(remetente_id);
+
+-- ── NOTIFICAÇÕES IN-APP ──────────────────────────────────────
+-- Uma linha por destinatário (fan-out feito por trigger, não pelo
+-- frontend) — mantém a policy de SELECT/UPDATE trivial: "é minha ou
+-- não é".
+CREATE TABLE IF NOT EXISTS notificacoes (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  profile_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  titulo     TEXT NOT NULL,
+  corpo      TEXT NOT NULL,
+  tipo       TEXT NOT NULL DEFAULT 'info' CHECK (tipo IN ('info','sucesso','aviso','erro')),
+  link       TEXT,
+  lida       BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_notificacoes_profile ON notificacoes(profile_id, lida, created_at DESC);
+
 -- ── CONFIGURAÇÕES ────────────────────────────────────────────
 -- Referenciada por useConfiguracoes.ts e useModulos.tsx (secao
 -- 'modulos') — nunca tinha sido criada, o que quebrava o toggle de
@@ -469,6 +504,8 @@ ALTER TABLE professor_checkins ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contratos         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE graduacoes        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mensagens         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mensagens_chat    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notificacoes      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE templates_mensagem ENABLE ROW LEVEL SECURITY;
 ALTER TABLE configuracoes     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE responsaveis      ENABLE ROW LEVEL SECURITY;
@@ -796,6 +833,32 @@ CREATE POLICY "Ver templates" ON templates_mensagem FOR SELECT USING ((SELECT pr
 CREATE POLICY "Staff insere templates" ON templates_mensagem FOR INSERT WITH CHECK ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento'));
 CREATE POLICY "Staff apaga templates" ON templates_mensagem FOR DELETE USING ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento'));
 
+-- MENSAGENS_CHAT policies
+-- Sem policy de UPDATE/DELETE — "marcar como lida" passa só pela RPC
+-- marcar_chat_lida() (SECURITY DEFINER), nunca por UPDATE direto do
+-- cliente (ver função mais abaixo).
+CREATE POLICY "Ver conversa" ON mensagens_chat FOR SELECT USING (
+  aluno_id = (SELECT private.my_aluno_id())
+  OR (SELECT private.auth_role()) IN ('admin','superadmin','atendimento')
+);
+CREATE POLICY "Enviar mensagem de chat" ON mensagens_chat FOR INSERT WITH CHECK (
+  remetente_id = (SELECT auth.uid())
+  AND (
+    ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento') AND remetente_role = (SELECT private.auth_role())::user_role)
+    OR (aluno_id = (SELECT private.my_aluno_id()) AND remetente_role = 'aluno')
+  )
+);
+
+-- NOTIFICACOES policies
+-- Sem policy de INSERT: as linhas só são criadas pelo trigger
+-- notificar_nova_mensagem_chat() (SECURITY DEFINER) — um aluno pode
+-- inserir em mensagens_chat mas não tem (nem deve ter) permissão
+-- direta de escrever notificações para outros perfis (ex.: staff).
+CREATE POLICY "Ver próprias notificações" ON notificacoes FOR SELECT USING (profile_id = (SELECT auth.uid()));
+CREATE POLICY "Marcar própria notificação como lida" ON notificacoes FOR UPDATE
+  USING (profile_id = (SELECT auth.uid()))
+  WITH CHECK (profile_id = (SELECT auth.uid()));
+
 -- CONFIGURACOES policies — SELECT tem de ser amplo (qualquer
 -- utilizador autenticado) porque ModulosProvider envolve a app
 -- inteira e todos os papéis precisam de saber que módulos estão
@@ -868,6 +931,68 @@ CREATE TRIGGER trg_sync_profile_nome AFTER UPDATE OF nome ON profiles FOR EACH R
 
 REVOKE EXECUTE ON FUNCTION sync_aluno_nome_to_profile()   FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION sync_profile_nome_to_aluno()   FROM PUBLIC;
+
+-- ── CHAT: marcar como lida (RPC, não UPDATE direto) ──────────
+-- Centraliza a mutação num único RPC em vez de dar ao cliente uma
+-- policy de UPDATE em mensagens_chat: evita ter de restringir, via
+-- RLS, QUAIS colunas podem mudar (RLS só controla linhas, não
+-- colunas) — o RPC só toca lida/lida_em, nunca o corpo da mensagem.
+-- Marca como lidas as mensagens do "outro lado" da conversa: staff
+-- marca as do aluno, o aluno marca as do staff.
+CREATE OR REPLACE FUNCTION marcar_chat_lida(p_aluno_id UUID)
+RETURNS VOID AS $$
+BEGIN
+  IF (SELECT private.auth_role()) IN ('admin','superadmin','atendimento') THEN
+    UPDATE mensagens_chat SET lida = TRUE, lida_em = NOW()
+    WHERE aluno_id = p_aluno_id AND remetente_role = 'aluno' AND lida = FALSE;
+  ELSIF p_aluno_id = (SELECT private.my_aluno_id()) THEN
+    UPDATE mensagens_chat SET lida = TRUE, lida_em = NOW()
+    WHERE aluno_id = p_aluno_id AND remetente_role != 'aluno' AND lida = FALSE;
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+REVOKE EXECUTE ON FUNCTION marcar_chat_lida(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION marcar_chat_lida(UUID) TO authenticated;
+
+-- ── CHAT → NOTIFICAÇÕES (fan-out) ────────────────────────────
+-- Um aluno pode inserir em mensagens_chat mas NÃO tem policy de
+-- INSERT em notificacoes (nem deveria — teria de escrever para
+-- perfis de staff que não são o seu). SECURITY DEFINER é
+-- obrigatório aqui pelo mesmo motivo do sync de nome acima: sem
+-- bypassar RLS, o fan-out para staff a partir de uma mensagem
+-- enviada por um aluno afetaria silenciosamente 0 linhas.
+CREATE OR REPLACE FUNCTION notificar_nova_mensagem_chat()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_aluno_nome TEXT;
+  v_snippet    TEXT;
+BEGIN
+  SELECT nome INTO v_aluno_nome FROM alunos WHERE id = NEW.aluno_id;
+  v_snippet := left(NEW.corpo, 80);
+
+  -- link guarda o id de página usado por Layout.tsx/onNavigate (ver
+  -- NAV_ITEMS em src/components/layout/Layout.tsx), não um URL —
+  -- esta app navega por id de página, não por rota.
+  IF NEW.remetente_role = 'aluno' THEN
+    INSERT INTO notificacoes (profile_id, titulo, corpo, tipo, link)
+    SELECT id, 'Nova mensagem de ' || COALESCE(v_aluno_nome, 'aluno'), v_snippet, 'info', 'chat'
+    FROM profiles WHERE role IN ('admin','superadmin','atendimento');
+  ELSE
+    INSERT INTO notificacoes (profile_id, titulo, corpo, tipo, link)
+    SELECT profile_id, 'Nova mensagem da academia', v_snippet, 'info', 'mensagens'
+    FROM alunos WHERE id = NEW.aluno_id AND profile_id IS NOT NULL;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+CREATE TRIGGER trg_notificar_nova_mensagem_chat
+  AFTER INSERT ON mensagens_chat
+  FOR EACH ROW EXECUTE FUNCTION notificar_nova_mensagem_chat();
+
+REVOKE EXECUTE ON FUNCTION notificar_nova_mensagem_chat() FROM PUBLIC;
 
 -- ── VIEW: KPIs dashboard ─────────────────────────────────────
 CREATE OR REPLACE VIEW v_kpis WITH (security_invoker = true) AS
@@ -982,6 +1107,10 @@ GRANT EXECUTE ON FUNCTION private.my_aluno_id() TO anon, authenticated;
 -- postgres_changes subscription on "configuracoes" would silently
 -- never fire without this, even though .subscribe() itself succeeds.
 ALTER PUBLICATION supabase_realtime ADD TABLE configuracoes;
+-- ChatPage.tsx / aluno Mensagens.tsx (mensagens_chat) and the header
+-- notification bell (notificacoes) both rely on postgres_changes.
+ALTER PUBLICATION supabase_realtime ADD TABLE mensagens_chat;
+ALTER PUBLICATION supabase_realtime ADD TABLE notificacoes;
 
 -- ── STORAGE: avatars ─────────────────────────────────────────
 -- useUploadAvatar (src/hooks/useProfile.ts) uploads to a bucket that
@@ -1000,6 +1129,6 @@ CREATE POLICY "Utilizador substitui o próprio avatar" ON storage.objects FOR UP
   USING (bucket_id = 'avatars' AND (SELECT auth.uid())::text = (storage.foldername(name))[1]);
 
 -- ============================================================
--- Schema completo: 19 tabelas, RLS em todas, 3 views, 3 funções
+-- Schema completo: 21 tabelas, RLS em todas, 3 views, 5 funções
 -- Pronto para produção GB Braga
 -- ============================================================

@@ -93,25 +93,7 @@ Email settings are **not** stored in environment variables but in the `configura
 
 ---
 
-## 6. Local Development Setup
-
-```bash
-# 1. Copy example file
-cp .env.example .env.local
-
-# 2. Fill in values
-nano .env.local
-
-# 3. Validate (optional)
-node scripts/validate-env.js
-
-# 4. Start dev server
-npm run dev
-```
-
----
-
-## 7. Demo Mode
+## 6. Demo Mode
 
 If `VITE_SUPABASE_URL` or `VITE_SUPABASE_ANON` is missing/placeholder, the app automatically enters **Demo Mode**:
 - Uses `mockData.ts` for user accounts
@@ -123,7 +105,7 @@ This is checked via `isConfigured` in `supabaseClient.ts`.
 
 ---
 
-## 8. Production Checklist
+## 7. Production Checklist
 
 - [ ] `VITE_SUPABASE_URL` set to production project URL
 - [ ] `VITE_SUPABASE_ANON` set to production anon key

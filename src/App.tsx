@@ -30,6 +30,7 @@ import PerfilPage from './pages/PerfilPage';
 import ModulosPage from './pages/admin/ModulosPage';
 import ProfessoresPage from './pages/admin/ProfessoresPage';
 import { ModulosProvider, useModulos } from './lib/useModulos';
+import { ToastProvider } from './components/common/Toast';
 import { Ico, ArrowPathIcon, CheckCircleIcon, ClockIcon, KeyIcon } from './lib/icons';
 import { usePedidosNumerarioQuery, type PedidoNumerario } from './hooks/usePedidosNumerario';
 
@@ -372,11 +373,13 @@ function AppContent() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ModulosProvider>
-          <AppContent />
-        </ModulosProvider>
-      </AuthProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <ModulosProvider>
+            <AppContent />
+          </ModulosProvider>
+        </AuthProvider>
+      </ToastProvider>
     </QueryClientProvider>
   );
 }

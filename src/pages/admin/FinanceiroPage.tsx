@@ -6,6 +6,7 @@ import { Ico, ChatBubbleLeftRightIcon, DocumentTextIcon, ArrowUpTrayIcon, CheckI
 import Card from '../../components/common/Card';
 import Badge, { type BadgeColor } from '../../components/common/Badge';
 import PageHeader from '../../components/common/PageHeader';
+import { useToast } from '../../components/common/Toast';
 
 type Tab = 'cobranças' | 'planos' | 'toconline';
 
@@ -17,6 +18,7 @@ const STATUS_CFG: Record<string, { color: BadgeColor; label: string }> = {
 };
 
 export default function FinanceiroPage() {
+  const toast = useToast();
   const { data: pagamentos, refetch } = usePagamentos();
   const { data: planos }              = usePlanos();
   const { data: alunos }              = useAlunos();
@@ -125,13 +127,13 @@ export default function FinanceiroPage() {
                               </button>
                             )}
                             {p.status !== 'pago' && (
-                              <button onClick={() => alert(`Lembrete enviado para ${p.alunoNome}!`)}
+                              <button onClick={() => toast.success(`Lembrete enviado para ${p.alunoNome}!`)}
                                 className="flex gap-1 items-center py-1 px-2.5 text-[11px] font-semibold text-[#25D366] whitespace-nowrap rounded border cursor-pointer border-[#25D366]/20 bg-[#25D366]/10 transition-colors duration-200 hover:bg-[#25D366]/20 active:bg-[#25D366]/25 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
                                 <Ico icon={ChatBubbleLeftRightIcon} sm /> Lembrete
                               </button>
                             )}
                             {p.status === 'pago' && (
-                              <button onClick={() => alert(`Recibo gerado para ${p.alunoNome} · €${p.valor}`)}
+                              <button onClick={() => toast.success(`Recibo gerado para ${p.alunoNome} · €${p.valor}`)}
                                 className="flex gap-1 items-center py-1 px-2.5 text-[11px] font-semibold text-[#635BFF] whitespace-nowrap rounded border cursor-pointer border-[#635BFF]/20 bg-[#635BFF]/[0.08] transition-colors duration-200 hover:bg-[#635BFF]/20 active:bg-[#635BFF]/25 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
                                 <Ico icon={DocumentTextIcon} sm /> Recibo
                               </button>
@@ -188,7 +190,7 @@ export default function FinanceiroPage() {
                 <div className="text-[13px] font-bold text-primary">SAF-T PT — Exportação Mensal</div>
                 <div className="text-[11px] text-muted">XML para entrega à AT</div>
               </div>
-              <button onClick={() => alert('SAF-T XML gerado!\nFicheiro: SAF-T_GBBraga.xml')}
+              <button onClick={() => toast.success('SAF-T XML gerado! Ficheiro: SAF-T_GBBraga.xml')}
                 className="flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-xs font-bold text-white rounded border-none cursor-pointer bg-[#635BFF] transition-colors duration-200 hover:bg-[#5147e0] active:bg-[#4038c9] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
                 <Ico icon={ArrowUpTrayIcon} sm /> Exportar SAF-T
               </button>

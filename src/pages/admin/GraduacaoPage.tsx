@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useAlunos, useGraduacoes, db } from '../../lib/useData';
 import { useAuth } from '../../lib/auth';
+import { useToast } from '../../components/common/Toast';
 import { useInvalidateAlunos } from '../../lib/queries';
 import { beltConfig } from '../../lib/gbBrand';
 import { FAIXAS_PROGRESSAO, getBeltSystemForAge, isMatriculaPendente } from '../../lib/alunoDomain';
@@ -28,6 +29,7 @@ type Tab = 'candidatos' | 'registar' | 'historico';
 
 export default function GraduacaoPage() {
   const { user } = useAuth();
+  const toast = useToast();
   const { data: alunos, refetch: refetchAlunos }         = useAlunos();
   const { data: graduacoesDB, refetch: refetchGraduacoes } = useGraduacoes();
   const invalidateAlunosCache = useInvalidateAlunos();
@@ -140,7 +142,7 @@ export default function GraduacaoPage() {
                 </div>
               </div>
             </div>
-            <button onClick={() => alert(`WhatsApp enviado para ${candidatos.length} alunos!`)}
+            <button onClick={() => toast.success(`WhatsApp enviado para ${candidatos.length} alunos!`)}
               className="flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-xs font-bold text-white rounded-[7px] border-none cursor-pointer bg-[#25D366] transition-colors duration-200 hover:bg-[#1fb658] active:bg-[#1aa04d] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
               <Ico icon={ChatBubbleLeftRightIcon} sm /> Notificar todos
             </button>
