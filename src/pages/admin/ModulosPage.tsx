@@ -30,7 +30,7 @@ function ModuleRow({ mod }: { mod: ModuleDef }) {
       {/* Icon */}
       <div
         className={[
-          'flex justify-center items-center w-10 h-10 text-lg rounded-[10px] border shrink-0 transition-all',
+          'flex justify-center items-center w-10 h-10 text-lg rounded-md border shrink-0 transition-all',
           active ? 'grayscale-0 border-gb-red/20 bg-gb-red/8' : 'grayscale border-border bg-base',
         ].join(' ')}
       >

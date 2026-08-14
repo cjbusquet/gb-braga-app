@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useKPIs, useAlunos, usePagamentos, usePresencas, useTurmas } from '../../lib/useData';
+import { useAlunos, usePagamentos, usePresencas, useTurmas } from '../../lib/useData';
+import { useKPIs } from '../../hooks/useKPIs';
 import { GB } from '../../lib/gbBrand';
 import Card from '../../components/common/Card';
+import { SkeletonCard } from '../../components/common/Skeleton';
 import { Ico, CheckIcon } from '../../lib/icons';
 
 function KpiCard({ label, value, sub, color = GB.red }: any) {
@@ -13,6 +15,8 @@ function KpiCard({ label, value, sub, color = GB.red }: any) {
     </Card>
   );
 }
+
+const KPI_GRID_CLASS = 'grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 mb-6';
 
 export default function Dashboard() {
   const { data: kpis }      = useKPIs();
@@ -37,15 +41,23 @@ export default function Dashboard() {
         </h1>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 mb-6">
-        <KpiCard label="Alunos Ativos"    value={kpis.alunosAtivos || alunos.filter((a:any)=>a.status==='ativo').length} sub="total activos" color="#22C55E"/>
-        <KpiCard label="Receita Mensal"   value={`€${(kpis.receitaMensal||0).toFixed(0)}`} sub="mês corrente" color={GB.red}/>
-        <KpiCard label="Check-ins Hoje"   value={checkinsHoje.length} sub="presenças hoje" color="#3B82F6"/>
-        <KpiCard label="Inadimplentes"    value={vencidos.length} sub="pagamentos vencidos" color="#F59E0B"/>
-        <KpiCard label="Pendente"         value={`€${pendentes.reduce((s,p)=>s+(p.valor||0),0).toFixed(0)}`} sub="a receber" color="#7C3AED"/>
-        <KpiCard label="Turmas Activas"   value={turmas.length} sub="turmas" color="#06B6D4"/>
-      </div>
+      {/* KPIs — kpis is undefined only during the initial fetch; show
+          placeholders instead of the demo/mock numbers flashing before the
+          real values arrive. */}
+      {!kpis ? (
+        <div className={KPI_GRID_CLASS}>
+          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} className="h-[76px]" />)}
+        </div>
+      ) : (
+        <div className={KPI_GRID_CLASS}>
+          <KpiCard label="Alunos Ativos"    value={kpis.alunosAtivos || alunos.filter((a:any)=>a.status==='ativo').length} sub="total activos" color="#22C55E"/>
+          <KpiCard label="Receita Mensal"   value={`€${(kpis.receitaMensal||0).toFixed(0)}`} sub="mês corrente" color={GB.red}/>
+          <KpiCard label="Check-ins Hoje"   value={checkinsHoje.length} sub="presenças hoje" color={GB.red}/>
+          <KpiCard label="Inadimplentes"    value={vencidos.length} sub="pagamentos vencidos" color="#F59E0B"/>
+          <KpiCard label="Pendente"         value={`€${pendentes.reduce((s,p)=>s+(p.valor||0),0).toFixed(0)}`} sub="a receber" color="#F59E0B"/>
+          <KpiCard label="Turmas Activas"   value={turmas.length} sub="turmas" color={GB.red}/>
+        </div>
+      )}
 
       {/* Recent activity */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

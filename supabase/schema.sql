@@ -40,6 +40,15 @@ CREATE TABLE IF NOT EXISTS profiles (
   telefone           TEXT,
   matricula_completa BOOLEAN NOT NULL DEFAULT FALSE,
   avatar_url         TEXT,
+  -- Campos de equipa (staff) — geridos em Config. > Equipa
+  -- (src/hooks/useProfile.ts, src/pages/admin/ConfigPage.tsx StaffCard).
+  -- Nunca chegaram a esta tabela apesar do frontend já os usar, o que
+  -- fazia a lista de equipa falhar sempre com "column profiles.nif
+  -- does not exist" e nunca sair de "A carregar equipa...".
+  nif                TEXT,
+  morada             TEXT,
+  faixa              belt_type,
+  ativo              BOOLEAN NOT NULL DEFAULT TRUE,
   created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

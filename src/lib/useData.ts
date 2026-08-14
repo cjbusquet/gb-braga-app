@@ -235,52 +235,9 @@ export function useMensagens(limit = 100) {
 }
 
 // ── KPIs ──────────────────────────────────────────────────────
-export function useKPIs() {
-  const [data, setData]       = useState(mock.mockKPIs);
-  const [loading, setLoading] = useState(isConfigured);
-
-  const refetch = useCallback(async () => {
-    if (!isConfigured) { setLoading(false); return; }
-    try {
-      // Calculate KPIs from real data
-      const [alunosRes, pagRes] = await Promise.all([
-        supabase.from('alunos').select('id, status, data_matricula'),
-        supabase.from('pagamentos').select('aluno_id, valor, status, data_pagamento, vencimento'),
-      ]);
-
-      const alunos    = alunosRes.data || [];
-      const pags      = pagRes.data    || [];
-      const now       = new Date();
-      const mesAtual  = now.toISOString().slice(0, 7);
-
-      const ativos    = alunos.filter(a => a.status === 'ativo').length;
-      const novos     = alunos.filter(a => a.data_matricula?.startsWith(mesAtual)).length;
-      const pagMes    = pags.filter(p => p.status === 'pago' && p.data_pagamento?.startsWith(mesAtual));
-      const receita   = pagMes.reduce((s, p) => s + (parseFloat(p.valor) || 0), 0);
-      const inadimp   = new Set(pags.filter(p => p.status === 'vencido').map(p => p.aluno_id)).size;
-
-      setData({
-        totalAlunos:    alunos.length,
-        alunosAtivos:   ativos,
-        receitaMensal:  receita,
-        receitaPrevista: pags.filter(p => p.status === 'pendente').reduce((s,p) => s + (parseFloat(p.valor)||0), 0),
-        inadimplentes:  inadimp,
-        taxaFrequencia: 0,
-        novosAlunos:    novos,
-        cancelamentos:  alunos.filter(a => a.status === 'inativo').length,
-        taxaRetencao:   ativos > 0 ? Math.round((ativos / alunos.length) * 100) : 0,
-      });
-    } catch (e) {
-      console.warn('useKPIs error:', e);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { refetch(); }, [refetch]);
-  return { data, loading, refetch };
-}
+// useKPIs moved to src/hooks/useKPIs.ts — real TanStack Query (useQuery)
+// instead of this file's hand-rolled fetch shim, so callers can gate on
+// `!kpis` the same way AlunosPage/PortalAluno already gate on their data.
 
 // ── MUTATIONS ─────────────────────────────────────────────────
 export const db = {

@@ -87,7 +87,7 @@ export default function Mensagens() {
                 <div key={msg.id} className={['flex', isMine ? 'justify-end' : 'justify-start'].join(' ')}>
                   <div className="max-w-[85%] sm:max-w-[72%]">
                     <div
-                      className="py-2.5 px-3.5 shadow-xs"
+                      className="py-2.5 px-3.5"
                       style={{
                         background: isMine ? 'var(--gb-red)' : 'var(--bg-elevated)',
                         borderRadius: isMine ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
@@ -119,7 +119,7 @@ export default function Mensagens() {
               className={[
                 'flex justify-center items-center w-11 h-11 text-xl rounded-md border-none shrink-0 transition-colors duration-200',
                 'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
-                texto.trim() ? 'text-white shadow-red cursor-pointer bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark' : 'bg-elevated text-muted',
+                texto.trim() ? 'text-white cursor-pointer bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark' : 'bg-elevated text-muted',
               ].join(' ')}>
               {enviarMutation.isPending ? <Ico icon={ArrowPathIcon} /> : '↑'}
             </button>

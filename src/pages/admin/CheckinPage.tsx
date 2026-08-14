@@ -3,32 +3,42 @@ import { useState } from 'react';
 import { usePresencas, useAlunos, useTurmas, db } from '../../lib/useData';
 import { Ico, type HeroIcon, ArrowDownTrayIcon, MapPinIcon, CheckIcon, PlusIcon, XMarkIcon, CircleIcon } from '../../lib/icons';
 import PageHeader from '../../components/common/PageHeader';
-
-const ACADEMIA_LAT = 41.5484, ACADEMIA_LNG = -8.4259;
-
-function distanciaM(lat1: number, lng1: number, lat2: number, lng2: number) {
-  const R = 6371000, dLat = (lat2-lat1)*Math.PI/180, dLng = (lng2-lng1)*Math.PI/180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
+import Button from '../../components/common/Button';
+import Select from '../../components/common/Select';
+import Tabs from '../../components/common/Tabs';
+import { useConfiguracaoSecaoQuery } from '../../hooks/useConfiguracoes';
+import { haversineDistanceMeters } from '../../services/geo';
+import KioskMode from './KioskMode';
 
 export default function CheckinPage() {
   const { data: alunos }   = useAlunos();
   const { data: turmas }   = useTurmas();
   const { data: presencasDB, refetch } = usePresencas();
   const checkIns = presencasDB ?? [];
+
+  // Reference point comes from the same 'academia' config section the aluno
+  // check-in page reads (ConfigPage > Academia > GPS Fence) — this used to be
+  // a hardcoded fallback coordinate here, which is why distances shown to
+  // staff didn't match the real address once the academia's point was set.
+  const { data: academiaConfig } = useConfiguracaoSecaoQuery('academia');
+  const cfg = (academiaConfig as Record<string, string> | null) ?? {};
+  const academiaLat = parseFloat(cfg['GPS Latitude'] ?? '');
+  const academiaLng = parseFloat(cfg['GPS Longitude'] ?? '');
+  const academiaConfigurada = !isNaN(academiaLat) && !isNaN(academiaLng);
+
   const [tab, setTab]           = useState<'gps'|'manual'|'live'>('live');
   const [gpsStatus, setGpsStatus] = useState<'idle'|'checking'|'inside'|'outside'|'denied'>('idle');
   const [gpsDist, setGpsDist]   = useState<number|null>(null);
-  const [fenceRadius, setFenceRadius] = useState(100);
-  const [, setKioskMode] = useState(false);
-  const [, setTurmaFilter] = useState('');
+  const [fenceRadius, setFenceRadius] = useState(parseInt(cfg['GPS Raio (m)'] ?? '100') || 100);
+  const [kioskMode, setKioskMode] = useState(false);
+  const [turmaFilter, setTurmaFilter] = useState('');
 
   const checkGPS = () => {
+    if (!academiaConfigurada) return;
     setGpsStatus('checking');
     navigator.geolocation.getCurrentPosition(
       pos => {
-        const dist = distanciaM(pos.coords.latitude, pos.coords.longitude, ACADEMIA_LAT, ACADEMIA_LNG);
+        const dist = haversineDistanceMeters(pos.coords.latitude, pos.coords.longitude, academiaLat, academiaLng);
         setGpsDist(Math.round(dist));
         setGpsStatus(dist <= fenceRadius ? 'inside' : 'outside');
       },
@@ -68,34 +78,34 @@ export default function CheckinPage() {
   const gpsLabel = { idle:'Verificar GPS', checking:'A verificar...', inside:'Dentro do perímetro', outside:`Fora (${gpsDist}m)`, denied:'GPS negado' }[gpsStatus];
   const gpsLabelIcon: HeroIcon | null = { idle: null, checking: null, inside: CheckIcon, outside: XMarkIcon, denied: null }[gpsStatus];
 
+  if (kioskMode) {
+    return <KioskMode onExit={() => setKioskMode(false)} />;
+  }
+
   return (
     <div>
       <PageHeader
         eyebrow="Academia"
         title="Check-in"
         actions={<>
-          <button onClick={exportCSV} className="flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] rounded-sm border cursor-pointer border-border bg-card text-secondary transition-colors duration-200 hover:bg-elevated active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+          <Button variant="secondary" onClick={exportCSV}>
             <Ico icon={ArrowDownTrayIcon} sm /> Export CSV
-          </button>
-          <button onClick={() => setKioskMode(true)} className="py-2.5 px-[18px] min-h-11 sm:min-h-0 text-[13px] font-bold text-white rounded-sm border-none shadow-red cursor-pointer bg-gb-red transition-colors duration-200 hover:bg-gb-red-dark active:bg-gb-red-dark outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+          </Button>
+          <Button variant="primary" onClick={() => setKioskMode(true)}>
             Kiosk
-          </button>
+          </Button>
         </>}
       />
 
-      {/* Tabs */}
-      <div className="flex overflow-x-auto gap-1 mb-5 border-b border-border">
-        {([['live','Live'],['gps','GPS Fence'],['manual','Manual']] as const).map(([id,label]) => (
-          <button key={id} onClick={() => setTab(id)}
-            className={[
-              'flex gap-1 items-center py-2 px-4 -mb-px min-h-11 sm:min-h-0 text-[13px] bg-none border-none border-b-2 cursor-pointer whitespace-nowrap transition-colors duration-200',
-              'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-              tab === id ? 'font-bold border-gb-red text-gb-red' : 'font-normal border-transparent text-muted hover:text-secondary active:text-secondary',
-            ].join(' ')}>
-            {id === 'live' && <Ico icon={CircleIcon} className="w-2 h-2 text-green-500" />}{label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        tabs={[
+          { id: 'live', label: 'Live', icon: <Ico icon={CircleIcon} className="w-2 h-2 text-green-500" /> },
+          { id: 'gps', label: 'GPS Fence' },
+          { id: 'manual', label: 'Manual' },
+        ]}
+        active={tab}
+        onChange={setTab}
+      />
 
       {/* LIVE */}
       {tab === 'live' && (
@@ -122,6 +132,11 @@ export default function CheckinPage() {
       {/* GPS */}
       {tab === 'gps' && (
         <div className="max-w-[500px]">
+          {!academiaConfigurada && (
+            <div className="flex gap-2 items-center py-2.5 px-3.5 mb-4 text-[12.5px] rounded-sm border border-amber-600/30 bg-amber-600/[0.08] text-amber-600">
+              <Ico icon={MapPinIcon} sm /> Ponto de referência da academia por definir em Config. → Academia → GPS Fence.
+            </div>
+          )}
           <div className="p-6 mb-4 rounded-lg border border-border bg-card">
             <div className="mb-5 text-center">
               <div
@@ -134,29 +149,25 @@ export default function CheckinPage() {
               {gpsDist !== null && <div className="mt-1 text-xs text-muted">{gpsDist}m da academia</div>}
             </div>
             <div className="flex flex-wrap gap-2 justify-center mb-4">
-              <button onClick={checkGPS} disabled={gpsStatus==='checking'}
-                className="flex gap-1.5 items-center py-2.5 px-5 min-h-11 sm:min-h-0 text-[13px] font-bold text-white rounded-sm border-none cursor-pointer bg-gb-red transition-colors duration-200 hover:bg-gb-red-dark active:bg-gb-red-dark outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60">
+              <Button variant="primary" disabled={gpsStatus==='checking' || !academiaConfigurada} onClick={checkGPS}>
                 <Ico icon={MapPinIcon} sm /> Verificar GPS
-              </button>
-              <button onClick={demoGPS}
-                className="py-2.5 px-4 min-h-11 sm:min-h-0 text-[12.5px] rounded-sm border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+              </Button>
+              <Button variant="secondary" onClick={demoGPS}>
                 Demo
-              </button>
+              </Button>
             </div>
             <div className="mb-3">
               <label className="text-[11px] font-semibold text-muted">Raio: {fenceRadius}m</label>
               <input type="range" min={30} max={500} value={fenceRadius} onChange={e => setFenceRadius(parseInt(e.target.value))}
                 className="w-full accent-gb-red"/>
             </div>
-            <button onClick={() => gpsStatus==='inside' && doCheckin('me','Utilizador Actual')}
+            <Button
+              variant="primary" fullWidth
               disabled={gpsStatus !== 'inside'}
-              className={[
-                'flex gap-1.5 justify-center items-center py-2.5 w-full min-h-11 sm:min-h-0 text-[13px] font-bold text-white rounded-sm border-none transition-colors duration-200',
-                'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-                gpsStatus==='inside' ? 'cursor-pointer bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark' : 'cursor-not-allowed bg-neutral-400',
-              ].join(' ')}>
+              onClick={() => gpsStatus==='inside' && doCheckin('me','Utilizador Actual')}
+            >
               <Ico icon={CheckIcon} sm /> Check-in Pessoal
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -165,16 +176,20 @@ export default function CheckinPage() {
       {tab === 'manual' && (
         <div>
           <div className="mb-3">
-            <select onChange={e => setTurmaFilter(e.target.value)} className="py-2 px-3 min-h-11 sm:min-h-0 text-[13px] rounded-sm border cursor-pointer border-border bg-card text-primary transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
-              <option value="">Todas as turmas</option>
+            {/* Alunos not linked to a turma in the data model yet, so this can't
+                filter the roster below — it tags the resulting check-in record
+                with the chosen turma instead (doCheckin's turmaId/turmaNome). */}
+            <Select variant="sm" value={turmaFilter} onChange={e => setTurmaFilter(e.target.value)}>
+              <option value="">Sem turma associada</option>
               {turmas.map((t: any) => <option key={t.id} value={t.id}>{t.nome}</option>)}
-            </select>
+            </Select>
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-[repeat(auto-fill,minmax(240px,1fr))]">
             {alunos.filter((a: any) => a.status === 'ativo').map((a: any) => {
               const jaFez = checkIns.some(p => p.alunoId === a.id && p.data === new Date().toISOString().split('T')[0]);
+              const turmaSel = turmas.find((t: any) => t.id === turmaFilter);
               return (
-                <button key={a.id} onClick={() => !jaFez && doCheckin(a.id, a.nome)}
+                <button key={a.id} onClick={() => !jaFez && doCheckin(a.id, a.nome, turmaSel?.id, turmaSel?.nome)}
                   disabled={jaFez}
                   className={[
                     'flex justify-between items-center py-3 px-3.5 min-h-11 text-left rounded-sm border transition-colors duration-200',

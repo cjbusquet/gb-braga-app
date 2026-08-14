@@ -13,7 +13,7 @@ export default function Modal({ onClose, title, eyebrow, children, maxWidth = 52
   return (
     <div className="flex overflow-y-auto fixed inset-0 z-[1000] justify-center items-center p-5 bg-black/55">
       <div
-        className="overflow-x-hidden w-full max-h-[90vh] overflow-y-auto rounded-lg border border-border bg-card p-5 sm:p-7 shadow-[0_20px_60px_rgba(0,0,0,0.3)]"
+        className="overflow-x-hidden w-full max-h-[90vh] overflow-y-auto rounded-lg border border-border bg-card p-5 sm:p-7"
         style={{ maxWidth }}
       >
         {(title || eyebrow) && (

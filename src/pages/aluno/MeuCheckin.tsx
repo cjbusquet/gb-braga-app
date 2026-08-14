@@ -8,6 +8,7 @@ import { useConfiguracaoSecaoQuery } from '../../hooks/useConfiguracoes';
 import { haversineDistanceMeters } from '../../services/geo';
 import PortalPageHeader from './PortalPageHeader';
 import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const hoje = () => new Date().toISOString().split('T')[0];
@@ -360,23 +361,17 @@ export default function MeuCheckin() {
           )}
 
           {/* Botão check-in */}
-          <button
-            onClick={handleCheckin}
+          <Button
+            variant="primary" fullWidth
             disabled={checking || (turmaId !== '' && turmaIdsJaChecados.has(turmaId))}
-            className={[
-              'py-3.5 w-full min-h-11 sm:min-h-0 text-xs text-white rounded-sm border-none transition-all duration-200',
-              'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-              checking || (turmaId !== '' && turmaIdsJaChecados.has(turmaId))
-                ? 'cursor-not-allowed bg-neutral-400'
-                : 'cursor-pointer bg-gb-red hover:bg-gb-red-dark active:scale-[0.98]',
-            ].join(' ')}
+            onClick={handleCheckin}
           >
             {turmaId !== '' && turmaIdsJaChecados.has(turmaId)
               ? 'Já fizeste check-in nesta aula'
               : checking
                 ? 'A registar...'
                 : 'Fazer Check-in'}
-          </button>
+          </Button>
         </Card>
       )}
 

@@ -2,6 +2,11 @@ import { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import PageHeader from '../../components/common/PageHeader';
 import Card from '../../components/common/Card';
+import { useToast } from '../../components/common/Toast';
+import Tabs from '../../components/common/Tabs';
+import Button from '../../components/common/Button';
+import Badge, { type BadgeColor } from '../../components/common/Badge';
+import { exportCSV } from '../../services/pdf';
 import {
   Ico,
   type HeroIcon,
@@ -66,20 +71,14 @@ const TOC_FLOW_STEPS: { icon: HeroIcon | '→'; label: string; desc: string }[] 
   { icon: EnvelopeIcon, label: 'Email + PDF', desc: 'Fatura enviada ao aluno' },
 ];
 
-const STATUS_COLOR: Record<WebhookStatus, string> = { ok: '#16A34A', warn: '#D97706', error: '#C8102E', idle: '#9896A4' };
+const STATUS_BADGE: Record<WebhookStatus, BadgeColor> = { ok: 'success', warn: 'warning', error: 'danger', idle: 'neutral' };
 const STATUS_LABEL: Record<WebhookStatus, string> = { ok: 'Ativo', warn: 'Aviso', error: 'Erro', idle: 'Inativo' };
 
 function StatusDot({ status }: { status: WebhookStatus }) {
-  const c = STATUS_COLOR[status];
-  return (
-    <div className="flex gap-1.5 items-center">
-      <div className="w-2 h-2 rounded-full" style={{ background: c, boxShadow: status === 'ok' ? `0 0 6px ${c}66` : 'none' }}/>
-      <span className="text-[11px] font-semibold" style={{ color: c }}>{STATUS_LABEL[status]}</span>
-    </div>
-  );
+  return <Badge color={STATUS_BADGE[status]}>{STATUS_LABEL[status]}</Badge>;
 }
 
-const LOG_LEVEL_COLOR: Record<LogLevel, string> = { success: '#16A34A', info: '#2563EB', error: '#C8102E', warn: '#D97706' };
+const LOG_LEVEL_COLOR: Record<LogLevel, string> = { success: '#16A34A', info: '#6B7280', error: '#C8102E', warn: '#D97706' };
 
 function LogRow({ log }: { log: WebhookLog }) {
   const [expanded, setExpanded] = useState(false);
@@ -92,14 +91,14 @@ function LogRow({ log }: { log: WebhookLog }) {
         <span className="w-14 font-mono text-[11px] shrink-0 text-muted">{log.time}</span>
         <span className="flex-1 font-mono text-[12.5px] text-primary truncate">{log.event}</span>
         <span
-          className="py-0.5 px-[7px] font-mono text-[11px] font-bold rounded shrink-0"
+          className="py-0.5 px-2 font-mono text-[11px] font-bold rounded shrink-0"
           style={{ background: log.status === 200 ? 'rgba(22,163,74,0.08)' : 'rgba(200,16,46,0.08)', color: log.status === 200 ? '#16A34A' : '#C8102E' }}
         >{log.status}</span>
         <span className="w-[50px] font-mono text-[11px] text-right shrink-0 text-muted">{log.duration}</span>
         <span className="ml-1 text-xs shrink-0 text-muted">{expanded ? '▾' : '▸'}</span>
       </button>
       {expanded && (
-        <div className="py-2 px-3.5 pb-3 pl-[34px]">
+        <div className="py-2 px-3.5 pb-3 pl-8.5">
           <div className="py-2.5 px-3 font-mono text-[11.5px] leading-[1.6] rounded-sm bg-elevated text-secondary">
             {log.payload}
           </div>
@@ -111,7 +110,8 @@ function LogRow({ log }: { log: WebhookLog }) {
 
 const ROW_CLASS = 'flex justify-between py-2 border-b border-border-subtle';
 
-export default function IntegracoesPage() {
+export default function IntegracoesPage({ onNavigate }: { onNavigate?: (page: string) => void }) {
+  const toast = useToast();
   const [tab, setTab] = useState<'stripe' | 'toconline' | 'logs' | 'fluxo'>('fluxo');
   const [testingStripe, setTestingStripe] = useState(false);
   const [testingToc, setTestingToc] = useState(false);
@@ -132,13 +132,6 @@ export default function IntegracoesPage() {
     setTestingToc(false);
   };
 
-  const TABS: { id: string; label: string; icon: HeroIcon }[] = [
-    { id: 'fluxo',    label: 'Fluxo de Pagamento', icon: BoltIcon },
-    { id: 'stripe',   label: 'Stripe',              icon: CreditCardIcon },
-    { id: 'toconline',label: 'TOConline',            icon: ReceiptPercentIcon },
-    { id: 'logs',     label: 'Webhook Logs',        icon: ClipboardDocumentIcon },
-  ];
-
   return (
     <div>
       <PageHeader eyebrow="Sistema" title="Integrações" subtitle="Stripe · TOConline · Webhooks · AT Certificado" />
@@ -151,7 +144,7 @@ export default function IntegracoesPage() {
           { label: 'Webhooks', status: 'ok' as WebhookStatus, sub: '3 endpoints' },
           { label: 'AT / e-fatura', status: 'warn' as WebhookStatus, sub: 'Aguarda produção' },
         ].map(s => (
-          <div key={s.label} className="flex gap-2.5 py-2.5 px-3.5 rounded-sm border shadow-xs border-border bg-card">
+          <div key={s.label} className="flex gap-2.5 py-2.5 px-3.5 rounded-sm border border-border bg-card">
             <StatusDot status={s.status}/>
             <div className="ml-1">
               <div className="text-[12.5px] font-semibold text-primary">{s.label}</div>
@@ -161,19 +154,17 @@ export default function IntegracoesPage() {
         ))}
       </div>
 
-      {/* Tab bar */}
-      <div className="flex overflow-x-auto gap-0.5 mb-[18px] border-b border-border">
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id as typeof tab)}
-            className={[
-              'flex gap-1.5 items-center py-2.5 px-3.5 -mb-px min-h-11 sm:min-h-0 text-[13px] whitespace-nowrap bg-none border-none border-b-2 cursor-pointer transition-colors duration-200',
-              'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-              tab === t.id ? 'font-bold border-gb-red text-primary' : 'font-normal border-transparent text-muted hover:text-primary active:text-primary',
-            ].join(' ')}>
-            <FontAwesomeIcon icon={t.icon} className="w-3.5 h-3.5" />{t.label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        tabs={[
+          { id: 'fluxo', label: 'Fluxo de Pagamento', icon: <Ico icon={BoltIcon} sm /> },
+          { id: 'stripe', label: 'Stripe', icon: <Ico icon={CreditCardIcon} sm /> },
+          { id: 'toconline', label: 'TOConline', icon: <Ico icon={ReceiptPercentIcon} sm /> },
+          { id: 'logs', label: 'Webhook Logs', icon: <Ico icon={ClipboardDocumentIcon} sm /> },
+        ]}
+        active={tab}
+        onChange={setTab}
+        className="mb-4.5"
+      />
 
       {/* ── FLUXO ── */}
       {tab === 'fluxo' && (
@@ -195,13 +186,13 @@ export default function IntegracoesPage() {
           </Card>
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             {[
-              { titulo: 'Pagamento confirmado',      icon: CheckIcon, desc: 'Stripe recebe o pagamento e emite payment_intent.succeeded', color: '#16A34A' },
-              { titulo: 'Webhook disparado',          icon: BoltIcon, desc: 'Servidor GB recebe o evento e valida a assinatura (whsec_)', color: '#2563EB' },
-              { titulo: 'Fatura emitida (FR)',        icon: ReceiptPercentIcon, desc: 'TOConline cria o documento fiscal e comunica à AT automaticamente', color: '#635BFF' },
-              { titulo: 'Notificação ao aluno',      icon: ChatBubbleLeftRightIcon, desc: 'Email com PDF da fatura + WhatsApp de confirmação de pagamento', color: '#25D366' },
+              { titulo: 'Pagamento confirmado',      icon: CheckIcon, desc: 'Stripe recebe o pagamento e emite payment_intent.succeeded' },
+              { titulo: 'Webhook disparado',          icon: BoltIcon, desc: 'Servidor GB recebe o evento e valida a assinatura (whsec_)' },
+              { titulo: 'Fatura emitida (FR)',        icon: ReceiptPercentIcon, desc: 'TOConline cria o documento fiscal e comunica à AT automaticamente' },
+              { titulo: 'Notificação ao aluno',      icon: ChatBubbleLeftRightIcon, desc: 'Email com PDF da fatura + WhatsApp de confirmação de pagamento' },
             ].map(c => (
-              <div key={c.titulo} className="flex gap-3 py-4 px-[18px] rounded-md border shadow-xs border-border bg-card">
-                <div className="flex justify-center items-center w-9 h-9 rounded-sm shrink-0" style={{ background: c.color + '14' }}><FontAwesomeIcon icon={c.icon} className="w-4 h-4" style={{ color: c.color }} /></div>
+              <div key={c.titulo} className="flex gap-3 py-4 px-[18px] rounded-md border border-border bg-card">
+                <div className="flex justify-center items-center w-9 h-9 rounded-sm shrink-0 bg-gb-red-glow"><FontAwesomeIcon icon={c.icon} className="w-4 h-4 text-gb-red" /></div>
                 <div>
                   <div className="mb-1 text-[13px] font-bold text-primary">{c.titulo}</div>
                   <div className="text-xs leading-[1.5] text-muted">{c.desc}</div>
@@ -217,7 +208,7 @@ export default function IntegracoesPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Card padding="lg">
             <div className="flex gap-3 items-center mb-5">
-              <div className="flex justify-center items-center w-11 h-11 text-lg font-extrabold text-white rounded-[10px] bg-[#635BFF]">S</div>
+              <div className="flex justify-center items-center w-11 h-11 text-lg font-extrabold text-white rounded-md bg-[#635BFF]">S</div>
               <div>
                 <div className="text-[15px] font-bold text-primary">Stripe</div>
                 <div className="text-[11px] text-muted">Pagamentos e subscrições recorrentes</div>
@@ -276,7 +267,7 @@ export default function IntegracoesPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Card padding="lg">
             <div className="flex gap-3 items-center mb-5">
-              <div className="flex justify-center items-center w-11 h-11 text-xl rounded-[10px] bg-[#0E2D52]">🇵🇹</div>
+              <div className="flex justify-center items-center w-11 h-11 rounded-md bg-gb-red-glow"><FontAwesomeIcon icon={ReceiptPercentIcon} className="w-5 h-5 text-gb-red" /></div>
               <div>
                 <div className="text-[15px] font-bold text-primary">TOConline</div>
                 <div className="text-[11px] text-muted">Faturação certificada AT · Portugal</div>
@@ -312,9 +303,9 @@ export default function IntegracoesPage() {
                   ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />OK</span>
                   : 'Testar'}
               </button>
-              <button className="flex-[2] py-2.5 min-h-11 sm:min-h-0 text-xs font-bold text-white rounded-sm border-none cursor-pointer transition-colors duration-200 bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
-                <span className="inline-flex gap-1.5 items-center"><Ico icon={Cog6ToothIcon} sm />Configurar → Config.</span>
-              </button>
+              <Button variant="primary" size="sm" className="flex-[2]" onClick={() => onNavigate?.('config')}>
+                <Ico icon={Cog6ToothIcon} sm />Configurar → Config.
+              </Button>
             </div>
           </Card>
 
@@ -347,11 +338,15 @@ export default function IntegracoesPage() {
           <div className="flex flex-wrap gap-2 justify-between items-center mb-3">
             <div className="text-xs text-muted">Últimos 24h · {MOCK_LOGS.length} eventos</div>
             <div className="flex gap-2">
-              <button className="flex gap-1.5 items-center py-1.5 px-3 min-h-11 sm:min-h-0 text-[11.5px] rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"><Ico icon={ArrowPathIcon} sm />Refresh</button>
-              <button className="flex gap-1.5 items-center py-1.5 px-3 min-h-11 sm:min-h-0 text-[11.5px] rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"><Ico icon={ArrowDownTrayIcon} sm />Exportar</button>
+              <button onClick={() => toast.success('Logs atualizados')} className="flex gap-1.5 items-center py-1.5 px-3 min-h-11 sm:min-h-0 text-[11.5px] rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"><Ico icon={ArrowPathIcon} sm />Refresh</button>
+              <button onClick={() => exportCSV(
+                ['Hora','Evento','Status','Duração','Nível'],
+                MOCK_LOGS.map(l => [l.time, l.event, l.status, l.duration, l.level]),
+                'GB_Webhook_Logs'
+              )} className="flex gap-1.5 items-center py-1.5 px-3 min-h-11 sm:min-h-0 text-[11.5px] rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"><Ico icon={ArrowDownTrayIcon} sm />Exportar</button>
             </div>
           </div>
-          <div className="overflow-hidden rounded-lg border shadow-xs border-border bg-card">
+          <div className="overflow-hidden rounded-lg border border-border bg-card">
             <div className="overflow-x-auto">
             <div className="min-w-[480px] grid grid-cols-[20px_56px_1fr_52px_50px_20px] gap-3 py-2.5 px-3.5 text-[10px] font-semibold tracking-[0.5px] uppercase border-b border-border bg-elevated text-muted">
               <div/>

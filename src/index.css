@@ -64,7 +64,11 @@
 
   --font-ui:      'DM Sans', system-ui, -apple-system, sans-serif;
   --font-display: 'Arial Black', 'Arial Bold', sans-serif;
-  --font-mono:    'DM Mono', 'Courier New', monospace;
+  /* Was 'DM Mono' — its slashed/dotted zero was disliked across the app's
+     numeric displays (KPIs, prices, tables). Same font as --font-ui now, so
+     every existing `font-mono` class (~400 numeric spots) reads normally
+     without touching each call site individually. */
+  --font-mono:    'DM Sans', system-ui, -apple-system, sans-serif;
 
   --shadow-xs:  0 1px 4px rgba(0,0,0,0.06);
   --shadow-sm:  0 2px 8px rgba(0,0,0,0.08);
@@ -144,4 +148,13 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+}
+
+/* Kill the focus ring app-wide. Deliberately unlayered (not @layer base) so it
+   sits above Tailwind's utility layer in the cascade and overrides every
+   `focus-visible:ring-*` / `focus:ring-*` utility class without touching each
+   of the ~500 call sites individually. */
+:focus, :focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
 }

@@ -10,7 +10,7 @@ import {
 import type { Notificacao } from '../../types';
 
 const TIPO_DOT: Record<Notificacao['tipo'], string> = {
-  info: '#3B82F6',
+  info: '#6B7280',
   sucesso: '#22C55E',
   aviso: '#F59E0B',
   erro: 'var(--gb-red)',
@@ -74,7 +74,7 @@ export default function NotificationBell({ onNavigate, accent }: NotificationBel
       </button>
 
       {open && (
-        <div className="overflow-hidden absolute right-0 top-full z-[300] mt-2 w-[min(340px,88vw)] rounded-lg border shadow-[0_12px_32px_rgba(0,0,0,0.18)] border-border bg-card">
+        <div className="overflow-hidden absolute right-0 top-full z-[300] mt-2 w-[min(340px,88vw)] rounded-lg border border-border bg-card">
           <div className="flex justify-between items-center py-2.5 px-3.5 border-b border-border">
             <span className="text-[12.5px] font-bold text-primary">Notificações</span>
             {naoLidas > 0 && (

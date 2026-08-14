@@ -50,9 +50,9 @@ const FAIXAS = ['Branca','Cinza e Branca','Cinza','Cinza e Preta','Amarela e Bra
 const CATEGORIAS: { id: string; label: string; icon: HeroIcon }[] = [{id:'adulto',label:'Adulto',icon:MartialArtsIcon},{id:'kids',label:'Kids',icon:StarIcon},{id:'familia',label:'Família',icon:UsersIcon},{id:'fundador',label:'Sócio Fundador',icon:TrophyIcon}];
 
 const INP_CLASS = 'block box-border w-full py-2.5 px-3.5 min-h-11 sm:min-h-0 font-inherit text-sm rounded-lg border-[1.5px] outline-none transition-all duration-200 border-border bg-white text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25';
-const BTN_CLASS = 'py-3.5 px-8 min-h-11 sm:min-h-0 font-display text-[15px] font-extrabold text-white rounded-[10px] border-none shadow-[0_4px_14px_rgba(200,16,46,0.3)] cursor-pointer bg-gb-red transition-all duration-200 hover:bg-gb-red-dark active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2';
-const BTN2_CLASS = 'py-3.5 px-6 min-h-11 sm:min-h-0 font-inherit text-sm rounded-[10px] border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2';
-const CARD_CLASS = 'p-7 mb-5 rounded-2xl border shadow-[0_1px_4px_rgba(0,0,0,0.06)] border-border bg-white';
+const BTN_CLASS = 'py-3.5 px-8 min-h-11 sm:min-h-0 font-display text-[15px] font-extrabold text-white rounded-md border-none cursor-pointer bg-gb-red transition-all duration-200 hover:bg-gb-red-dark active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2';
+const BTN2_CLASS = 'py-3.5 px-6 min-h-11 sm:min-h-0 font-inherit text-sm rounded-md border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2';
+const CARD_CLASS = 'p-7 mb-5 rounded-2xl border border-border bg-white';
 const LBL_CLASS = 'block mb-1.5 text-[11px] font-bold tracking-[0.8px] uppercase text-secondary';
 const SEC_CLASS = 'pb-2 mb-3.5 text-[15px] font-bold border-b-2 text-primary border-border';
 
@@ -358,7 +358,7 @@ function ContratoAssinatura({ ficha, onNext, onBack }: { ficha:FichaData; onNext
         </div>
       </div>
 
-      <div className="p-[22px] px-[26px] mb-[22px] text-[13.5px] leading-[1.8] rounded-xl border text-[#333] border-border bg-base">
+      <div className="p-5.5 px-6.5 mb-5.5 text-[13.5px] leading-[1.8] rounded-xl border text-[#333] border-border bg-base">
         <p className="mb-3">
           O presente contrato é celebrado entre <strong>Tribo Laurada Lda.</strong> (NIF 518948471), proprietária da escola de Jiu-Jitsu <strong>Gracie Barra Braga</strong>, com sede na Rua Nova de Santa Cruz, 11 – 4710-409 Braga, e o(a) aluno(a){' '}
           <strong>{ficha.nomeAluno||'_______________'}</strong>, NIF <strong>{ficha.nif||'_________'}</strong>,{' '}
@@ -497,13 +497,13 @@ function EscolhaPagamento({ ficha, onNext, onBack }: { ficha:FichaData; onNext:(
         <button className={BTN2_CLASS} onClick={onBack}>← Voltar</button>
         <button
           className={[
-            'py-3.5 px-8 min-h-11 sm:min-h-0 font-display text-[15px] font-extrabold text-white rounded-[10px] border-none transition-all duration-200',
+            'py-3.5 px-8 min-h-11 sm:min-h-0 font-display text-[15px] font-extrabold text-white rounded-md border-none transition-all duration-200',
             'outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
             planoId ? 'cursor-pointer opacity-100 hover:brightness-90 active:scale-[0.98]' : 'cursor-not-allowed opacity-40',
           ].join(' ')}
           style={{
             background: metodo==='numerario' ? '#D97706' : '#C8102E',
-            boxShadow: metodo==='numerario' ? '0 4px 14px rgba(217,119,6,0.3)' : '0 4px 14px rgba(200,16,46,0.3)',
+            boxShadow: 'none',
             ['--tw-ring-color' as string]: metodo==='numerario' ? '#D97706' : '#C8102E',
           }}
           onClick={()=>{ if(planoId) onNext(planoId,metodo); }}>
@@ -691,7 +691,7 @@ function Pendente({ ficha, contrato, plano, registerMode, onVoltar }: {
       {/* Back to login button — always shown in registerMode */}
       {registerMode && onVoltar && (
         <button onClick={onVoltar}
-          className="py-3 px-7 min-h-11 sm:min-h-0 font-inherit text-sm font-semibold rounded-[10px] border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+          className="py-3 px-7 min-h-11 sm:min-h-0 font-inherit text-sm font-semibold rounded-md border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
           ← Voltar ao Login
         </button>
       )}
@@ -966,7 +966,7 @@ export default function FluxoMatricula({ embedded = false, registerMode = false,
 
   return (
     <div className="min-h-screen font-ui bg-base">
-      <header className="flex sticky top-0 z-[100] justify-between items-center py-0 px-6 h-16 border-b shadow-[0_1px_4px_rgba(0,0,0,0.06)] border-border bg-white">
+      <header className="flex sticky top-0 z-[100] justify-between items-center py-0 px-6 h-16 border-b border-border bg-white">
         <GBLogoFull size={50}/>
         <div className="text-xs text-right text-secondary">
           Rua Nova Santa Cruz 11, Braga<br/>+351 927 773 854

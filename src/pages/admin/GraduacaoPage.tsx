@@ -7,13 +7,16 @@ import { useToast } from '../../components/common/Toast';
 import { useInvalidateAlunos } from '../../lib/queries';
 import { beltConfig } from '../../lib/gbBrand';
 import { FAIXAS_PROGRESSAO, getBeltSystemForAge, isMatriculaPendente } from '../../lib/alunoDomain';
-import { Ico, TrophyIcon, ChatBubbleLeftRightIcon, BoltIcon, MartialArtsIcon, MedalIcon, CheckIcon, ExclamationTriangleIcon } from '../../lib/icons';
+import { Ico, TrophyIcon, ChatBubbleLeftRightIcon, MartialArtsIcon, MedalIcon, CheckIcon, ExclamationTriangleIcon } from '../../lib/icons';
 import type { Belt } from '../../types';
 import PageHeader from '../../components/common/PageHeader';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import Badge from '../../components/common/Badge';
 import BeltBar from '../../components/common/BeltBar';
 import BeltBadge from '../../components/common/BeltBadge';
+import Tabs from '../../components/common/Tabs';
+import Select from '../../components/common/Select';
 
 function proxFaixaGrau(faixa: string, grau: number, progressao: readonly string[] = FAIXAS_PROGRESSAO): { faixa: string; grau: number } {
   if (grau < 4) return { faixa, grau: grau + 1 };
@@ -114,38 +117,30 @@ export default function GraduacaoPage() {
     <div>
       <PageHeader eyebrow="Academia" title="Graduação" />
 
-      {/* Tabs */}
-      <div className="flex overflow-x-auto gap-1 mb-5 border-b border-border">
-        {([['candidatos','Candidatos'],['registar','Registar'],['historico','Histórico']] as const).map(([id, label]) => (
-          <button key={id} onClick={() => setTab(id)}
-            className={[
-              'py-2 px-4 -mb-px min-h-11 sm:min-h-0 text-[13px] bg-none border-none border-b-2 cursor-pointer whitespace-nowrap transition-colors duration-200',
-              'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-              tab === id ? 'font-bold border-gb-red text-gb-red' : 'font-normal border-transparent text-muted hover:text-secondary active:text-secondary',
-            ].join(' ')}>
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        tabs={[
+          { id: 'candidatos', label: 'Candidatos' },
+          { id: 'registar', label: 'Registar' },
+          { id: 'historico', label: 'Histórico' },
+        ]}
+        active={tab}
+        onChange={setTab}
+      />
 
       {/* CANDIDATOS */}
       {tab === 'candidatos' && (
         <div>
-          <div className="flex flex-col gap-3 justify-between items-start py-3 px-4 mb-4 rounded-[10px] border border-amber-500/20 bg-amber-500/[0.07] sm:flex-row sm:items-center">
+          <div className="flex flex-col gap-3 justify-between items-start py-3 px-4 mb-4 rounded-md border border-border bg-card sm:flex-row sm:items-center">
             <div className="flex gap-2.5 items-center">
-              <Ico icon={BoltIcon} lg className="text-amber-500" />
-              <div>
-                <div className="text-[13px] font-bold text-amber-500">{candidatos.length} alunos elegíveis</div>
-                <div className="text-xs text-muted">
-                  Frequência ≥ 70%
-                  {candidatosOcultos > 0 && ` · ${candidatosOcultos} com matrícula pendente não listado${candidatosOcultos > 1 ? 's' : ''}`}
-                </div>
+              <Badge color="brand">{candidatos.length} elegíveis</Badge>
+              <div className="text-xs text-muted">
+                Frequência ≥ 70%
+                {candidatosOcultos > 0 && ` · ${candidatosOcultos} com matrícula pendente não listado${candidatosOcultos > 1 ? 's' : ''}`}
               </div>
             </div>
-            <button onClick={() => toast.success(`WhatsApp enviado para ${candidatos.length} alunos!`)}
-              className="flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-xs font-bold text-white rounded-[7px] border-none cursor-pointer bg-[#25D366] transition-colors duration-200 hover:bg-[#1fb658] active:bg-[#1aa04d] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+            <Button variant="secondary" size="sm" onClick={() => toast.success(`WhatsApp enviado para ${candidatos.length} alunos!`)}>
               <Ico icon={ChatBubbleLeftRightIcon} sm /> Notificar todos
-            </button>
+            </Button>
           </div>
 
           {candidatos.length === 0 ? (
@@ -172,10 +167,12 @@ export default function GraduacaoPage() {
                     </div>
                   </div>
                 </div>
-                <button onClick={() => { setAlunoSel(aluno.id); setNovaFaixa(prox.faixa); setNovoGrau(prox.grau); setTab('registar'); }}
-                  className="flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-xs font-bold text-white rounded-[7px] border-none shadow-red cursor-pointer shrink-0 bg-gb-red transition-colors duration-200 hover:bg-gb-red-dark active:bg-gb-red-dark outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+                <Button
+                  variant="primary" size="sm" className="shrink-0"
+                  onClick={() => { setAlunoSel(aluno.id); setNovaFaixa(prox.faixa); setNovoGrau(prox.grau); setTab('registar'); }}
+                >
                   <Ico icon={TrophyIcon} sm /> Registar
-                </button>
+                </Button>
               </div>
             );
           })}
@@ -188,15 +185,14 @@ export default function GraduacaoPage() {
           <Card padding="lg">
 
             <div className="mb-3.5">
-              <label className={LABEL_CLASS}>Aluno *</label>
-              <select value={alunoSel} onChange={e => setAlunoSel(e.target.value)} className={FIELD_CLASS}>
-                <option value="">— Seleccionar aluno —</option>
+              <Select label="Aluno *" value={alunoSel} onChange={e => setAlunoSel(e.target.value)}>
+                <option value="">Seleccionar aluno</option>
                 {alunos.map((a: any) => (
                   <option key={a.id} value={a.id} disabled={isMatriculaPendente(a)}>
                     {a.nome} · {a.faixa} G{a.grau}{isMatriculaPendente(a) ? ' (matrícula pendente)' : ''}
                   </option>
                 ))}
-              </select>
+              </Select>
               {alunos.length === 0 && (
                 <div className="mt-1 text-[11px] text-muted">Nenhum aluno encontrado. Adiciona alunos primeiro.</div>
               )}
@@ -218,10 +214,9 @@ export default function GraduacaoPage() {
 
             <div className="grid grid-cols-1 gap-3 mb-3.5 sm:grid-cols-2">
               <div>
-                <label className={LABEL_CLASS}>Nova Faixa</label>
-                <select value={novaFaixa} onChange={e => setNovaFaixa(e.target.value)} className={FIELD_CLASS}>
+                <Select label="Nova Faixa" value={novaFaixa} onChange={e => setNovaFaixa(e.target.value)}>
                   {faixasValidas.map(f => <option key={f} value={f}>{(beltConfig[f]?.label) || f}</option>)}
-                </select>
+                </Select>
               </div>
               <div>
                 <label className={LABEL_CLASS}>Novo Grau</label>

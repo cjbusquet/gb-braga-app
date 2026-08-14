@@ -5,6 +5,7 @@ import { beltConfig } from '../../lib/gbBrand';
 import type { Belt } from '../../types';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
+import Button from '../../components/common/Button';
 import { Ico, type HeroIcon, Squares2X2Icon, PlayCircleIcon, CheckIcon, MartialArtsIcon, CircleIcon, MapPinIcon } from '../../lib/icons';
 
 const DAYS_ABR = ['Seg','Ter','Qua','Qui','Sex','Sáb'];
@@ -63,10 +64,7 @@ export default function ProfessorView() {
   return (
     <div>
       {/* Profile header — no financial data */}
-      <div
-        className="flex flex-wrap gap-3 justify-between items-center py-4 px-[18px] mb-5 rounded-lg border shadow-xs border-border md:py-[22px] md:px-6"
-        style={{ background: 'linear-gradient(135deg, rgba(200,16,46,0.06) 0%, transparent 60%)' }}
-      >
+      <div className="flex flex-wrap gap-3 justify-between items-center py-4 px-4.5 mb-5 rounded-lg border border-border md:py-5.5 md:px-6">
         <div>
           <div className="mb-1 text-[10.5px] tracking-[1px] uppercase text-muted">Painel do Professor</div>
           <h1 className="m-0 font-display text-[22px] font-extrabold uppercase text-primary">
@@ -143,17 +141,13 @@ export default function ProfessorView() {
                   ) : jaFezCheckin ? (
                     <Badge color="neutral"><Ico icon={CheckIcon} sm />Concluída hoje</Badge>
                   ) : (
-                    <button
-                      onClick={() => handleCheckin(t.id, t.nome)}
+                    <Button
+                      variant="primary" fullWidth size="sm"
                       disabled={!!checkinLoading || !!checkinAtivo}
-                      className={[
-                        'py-1.5 px-3.5 w-full min-h-11 sm:min-h-0 text-xs font-bold text-white rounded-sm border-none bg-gb-red transition-all duration-200',
-                        'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-                        (checkinLoading || checkinAtivo) ? 'cursor-not-allowed opacity-50' : 'cursor-pointer opacity-100 hover:bg-gb-red-dark active:scale-[0.98]',
-                      ].join(' ')}
+                      onClick={() => handleCheckin(t.id, t.nome)}
                     >
                       {checkinLoading === t.id ? 'A registar...' : 'Iniciar aula'}
-                    </button>
+                    </Button>
                   )}
                 </Card>
               );
@@ -203,11 +197,11 @@ export default function ProfessorView() {
           <div className="grid grid-cols-2 gap-3 mb-[18px] md:grid-cols-4">
             {[
               { label: 'Minhas Turmas',     value: turmas.length,           accent: 'var(--gb-red)' },
-              { label: 'Alunos Ativos',     value: allAlunos.length,            accent: '#2563EB' },
+              { label: 'Alunos Ativos',     value: allAlunos.length,            accent: 'var(--gb-red)' },
               { label: 'Check-ins (mês)',   value: allPresencas.length,         accent: '#16A34A' },
-              { label: 'Candidatos Grad.', value: candidatosGraduacao.length,  accent: '#7C3AED' },
+              { label: 'Candidatos Grad.', value: candidatosGraduacao.length,  accent: 'var(--gb-red)' },
             ].map(s => (
-              <div key={s.label} className="py-3.5 px-4 rounded-md border shadow-xs border-border bg-card">
+              <div key={s.label} className="py-3.5 px-4 rounded-md border border-border bg-card">
                 <div className="mb-1 text-[10.5px] text-muted">{s.label}</div>
                 <div className="text-2xl font-extrabold text-primary">{s.value}</div>
               </div>

@@ -152,7 +152,7 @@ export default function PendentesNumerario() {
             const st = STATUS_CFG[ped.status];
 
             return (
-              <div key={ped.id} className="flex flex-col gap-4 items-start p-[18px_20px] rounded-lg border shadow-xs border-border bg-card sm:flex-row sm:items-center">
+              <div key={ped.id} className="flex flex-col gap-4 items-start p-[18px_20px] rounded-lg border border-border bg-card sm:flex-row sm:items-center">
                 <div className="flex justify-center items-center w-11 h-11 text-base font-bold rounded-full shrink-0 bg-elevated text-secondary">
                   {ped.nomeAluno.charAt(0)}
                 </div>
@@ -167,10 +167,9 @@ export default function PendentesNumerario() {
                 <div className="text-right shrink-0">
                   <div className="mb-1.5 font-mono text-[11px] text-muted">{ped.dataPedido}</div>
                   {ped.status === 'pendente' && (
-                    <button onClick={() => { setModalId(ped.id); setNota(''); }}
-                      className="py-1.5 px-4 min-h-11 sm:min-h-0 text-xs font-bold text-white rounded-sm border-none shadow-red cursor-pointer bg-gb-red transition-colors duration-200 hover:bg-gb-red-dark active:bg-gb-red-dark outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+                    <Button variant="primary" size="sm" onClick={() => { setModalId(ped.id); setNota(''); }}>
                       Rever →
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>

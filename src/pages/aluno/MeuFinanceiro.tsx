@@ -1,5 +1,5 @@
 import { usePagamentos, useAlunos } from '../../lib/useData';
-import { mockTocDocumentos } from '../../data/mockData';
+import { ACADEMIA, mockTocDocumentos } from '../../data/mockData';
 import { useAuth } from '../../lib/auth';
 import { CreditCardIcon, ExclamationTriangleIcon, Ico } from '../../lib/icons';
 import PortalPageHeader from './PortalPageHeader';
@@ -42,9 +42,13 @@ export default function MeuFinanceiro() {
             <div className="font-mono text-2xl font-extrabold text-primary">€{proximo.valor.toFixed(2)}</div>
             <div className="mt-1 text-xs text-muted">{proximo.plano} · Vence: {proximo.vencimento}</div>
           </div>
-          <button className="py-3 px-[22px] text-[13px] font-bold text-white rounded-md border-none cursor-pointer shadow-[0_0_16px_rgba(99,91,255,0.3)] bg-[#635BFF] transition-all duration-200 hover:bg-[#5851E6] active:scale-[0.98] active:shadow-none outline-none focus-visible:ring-2 focus-visible:ring-[#635BFF] focus-visible:ring-offset-2">
-            <span className="inline-flex gap-1.5 items-center"><Ico icon={CreditCardIcon} sm />Pagar agora</span>
-          </button>
+          <a
+            href={`https://wa.me/${ACADEMIA.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá! Gostava de regularizar o pagamento de €${proximo.valor.toFixed(2)} (${proximo.plano}, venc. ${proximo.vencimento}).`)}`}
+            target="_blank" rel="noreferrer"
+            className="inline-flex gap-1.5 items-center py-3 px-[22px] text-[13px] font-bold text-white no-underline rounded-md border-none cursor-pointer bg-[#635BFF] transition-all duration-200 hover:bg-[#5851E6] active:scale-[0.98] active:shadow-none outline-none focus-visible:ring-2 focus-visible:ring-[#635BFF] focus-visible:ring-offset-2"
+          >
+            <Ico icon={CreditCardIcon} sm />Pagar agora
+          </a>
         </div>
       )}
 
@@ -86,8 +90,8 @@ export default function MeuFinanceiro() {
             <p className="mt-5 text-[13px] text-center text-muted">Nenhuma fatura emitida ainda</p>
           )}
 
-          <div className="p-2.5 px-3 mt-4 rounded-sm border border-blue-500/15 bg-blue-500/[0.06]">
-            <div className="mb-0.5 text-[11px] font-semibold text-blue-500">ℹ️ Faturas certificadas AT</div>
+          <div className="p-2.5 px-3 mt-4 rounded-sm border border-border bg-elevated">
+            <div className="mb-0.5 text-[11px] font-semibold text-secondary">Faturas certificadas AT</div>
             <div className="text-[11px] leading-[1.5] text-muted">As faturas são emitidas automaticamente via TOConline após confirmação do pagamento Stripe.</div>
           </div>
         </Card>

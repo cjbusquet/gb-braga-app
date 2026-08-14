@@ -108,7 +108,7 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
                   'inline-flex flex-1 gap-1.5 justify-center items-center py-2.5 min-h-11 sm:min-h-0',
                   'border-none font-ui text-[13.5px] transition-all duration-200',
                   'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-                  tab === t ? 'rounded-[calc(var(--radius-md)-2px)] bg-white text-primary font-bold shadow-xs' : 'rounded-none bg-transparent text-muted font-normal hover:text-primary active:text-primary',
+                  tab === t ? 'rounded-[calc(var(--radius-md)-2px)] bg-white text-primary font-bold' : 'rounded-none bg-transparent text-muted font-normal hover:text-primary active:text-primary',
                   'cursor-pointer',
                 ].join(' ')}>
                 {t === 'login'

@@ -10,6 +10,10 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      // We register the SW manually (src/main.tsx via `virtual:pwa-register`)
+      // so an update can force a one-time reload instead of silently leaving
+      // an open tab running a stale bundle until the next navigation.
+      injectRegister: false,
 
       // Assets to pre-cache alongside the app shell
       includeAssets: ['favicon.svg', 'logo.png', 'icons.svg'],

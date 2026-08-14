@@ -18,7 +18,7 @@ export default function Toggle({ checked, onChange, disabled }: ToggleProps) {
       ].join(' ')}
     >
       <span
-        className="block absolute top-[3px] w-[18px] h-[18px] bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.2)] transition-[left] duration-200"
+        className="block absolute top-[3px] w-[18px] h-[18px] bg-white rounded-full transition-[left] duration-200"
         style={{ left: checked ? 23 : 3 }}
       />
     </button>

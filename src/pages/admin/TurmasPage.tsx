@@ -5,6 +5,7 @@ import { GB } from '../../lib/gbBrand';
 import { useMobile } from '../../lib/useMobile';
 import { Ico, type HeroIcon, ArrowLeftIcon, PlusIcon, CheckIcon, ClockIcon, MapPinIcon, CalendarIcon, Bars3Icon } from '../../lib/icons';
 import Modal from '../../components/common/Modal';
+import Select from '../../components/common/Select';
 import Button from '../../components/common/Button';
 import PageHeader from '../../components/common/PageHeader';
 import Card from '../../components/common/Card';
@@ -63,8 +64,8 @@ function NovaTurmaModal({ onClose, onSave }: { onClose: ()=>void; onSave: ()=>vo
         <div><label className={LABEL_CLASS}>Horário *</label><input value={horario} onChange={e=>setHorario(e.target.value)} placeholder="18:30" className={FIELD_CLASS}/></div>
         <div><label className={LABEL_CLASS}>Sala</label><input value={sala} onChange={e=>setSala(e.target.value)} placeholder="Tatame 1" className={FIELD_CLASS}/></div>
         <div><label className={LABEL_CLASS}>Capacidade</label><input type="number" value={capacidade} onChange={e=>setCapacidade(parseInt(e.target.value)||20)} className={FIELD_CLASS}/></div>
-        <div><label className={LABEL_CLASS}>Tipo</label><select value={tipo} onChange={e=>setTipo(e.target.value)} className={[FIELD_CLASS, 'cursor-pointer'].join(' ')}>{TIPOS.map(t=><option key={t} value={t}>{t.toUpperCase()}</option>)}</select></div>
-        <div><label className={LABEL_CLASS}>Nível</label><select value={nivel} onChange={e=>setNivel(e.target.value)} className={[FIELD_CLASS, 'cursor-pointer'].join(' ')}>{NIVEIS.map(n=><option key={n} value={n}>{n}</option>)}</select></div>
+        <div><Select label="Tipo" value={tipo} onChange={e=>setTipo(e.target.value)}>{TIPOS.map(t=><option key={t} value={t}>{t.toUpperCase()}</option>)}</Select></div>
+        <div><Select label="Nível" value={nivel} onChange={e=>setNivel(e.target.value)}>{NIVEIS.map(n=><option key={n} value={n}>{n}</option>)}</Select></div>
       </div>
       <div className="mb-4">
         <label className={LABEL_CLASS}>Dias da Semana</label>
@@ -350,7 +351,7 @@ export default function TurmasPage() {
             {([['calendar', CalendarIcon],['list', Bars3Icon]] as [string, HeroIcon][]).map(([v, icon]) => (
               <button key={v} onClick={() => setView(v as any)}
                 className={[
-                  'py-2 px-3.5 min-h-11 sm:min-h-0 text-sm border-none cursor-pointer transition-colors duration-200',
+                  'py-3 px-3.5 min-h-11 sm:min-h-0 text-sm border-none cursor-pointer transition-colors duration-200',
                   'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-inset',
                   view===v ? 'text-white bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark' : 'bg-transparent text-muted hover:bg-border-subtle active:bg-border-subtle',
                 ].join(' ')}>
@@ -398,9 +399,8 @@ export default function TurmasPage() {
             const cor = turma.cor || GB.red;
             return (
               <button key={turma.id} onClick={() => setSelected(turma)}
-                className="p-[18px] w-full text-left rounded-lg border cursor-pointer transition-shadow duration-200 border-border bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
-                onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 4px 16px ${cor}33`)}
-                onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}>
+                className="p-4.5 w-full text-left rounded-lg border cursor-pointer transition-colors duration-200 border-border bg-card hover:border-border-strong outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
+              >
                 <div className="flex gap-2 justify-between mb-2">
                   <div className="text-[13px] font-bold leading-tight text-primary">{turma.nome}</div>
                   <span

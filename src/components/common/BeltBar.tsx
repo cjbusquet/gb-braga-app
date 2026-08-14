@@ -34,7 +34,7 @@ export default function BeltBar({ belt, degrees, size = 'md', className = '' }: 
     >
       <div className="flex-1 h-full" style={{ background: cfg.bg, border: belt === 'branca' ? '1px solid #d8d6d2' : 'none' }} />
       <div
-        className="flex gap-[3px] sm:gap-[2px] justify-center items-center h-full shrink-0"
+        className="flex gap-0.5 justify-center items-center h-full shrink-0"
         style={{ width: Math.round(width * 0.28), background: tipColor }}
       >
         {Array.from({ length: 4 }, (_, i) => (

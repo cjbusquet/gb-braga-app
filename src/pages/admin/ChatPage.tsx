@@ -63,7 +63,7 @@ function AlunoAvatar({ aluno, size = 38 }: { aluno: Aluno; size?: number }) {
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-export default function ChatPage() {
+export default function ChatPage({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const { user } = useAuth();
   const toast = useToast();
   const { data: alunos } = useAlunos();
@@ -125,7 +125,7 @@ export default function ChatPage() {
 
   // ── reusable contact list ──────────────────────────────────────────────────
   const contactList = (
-    <div className={['flex overflow-hidden flex-col rounded-lg border shadow-sm border-border bg-card', isMobile ? '' : 'h-full'].join(' ')}>
+    <div className={['flex overflow-hidden flex-col rounded-lg border border-border bg-card', isMobile ? '' : 'h-full'].join(' ')}>
       <div className="py-3 px-3.5 border-b border-border">
         <div className="relative">
           <Ico icon={MagnifyingGlassIcon} sm className="absolute top-1/2 left-2.5 text-muted -translate-y-1/2 pointer-events-none" />
@@ -176,7 +176,7 @@ export default function ChatPage() {
   const chatWindow = (
     <div
       className={[
-        'flex overflow-hidden flex-col shadow-sm bg-card',
+        'flex overflow-hidden flex-col bg-card',
         isMobile ? 'fixed inset-0 z-[150]' : 'h-full rounded-lg border border-border',
       ].join(' ')}
     >
@@ -216,7 +216,7 @@ export default function ChatPage() {
                 </a>
               )}
               {!isMobile && (
-                <button className="py-1.5 px-3 text-xs rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+                <button onClick={() => onNavigate?.('alunos')} className="py-1.5 px-3 text-xs rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
                   Ver perfil →
                 </button>
               )}
@@ -242,7 +242,7 @@ export default function ChatPage() {
                   <div key={msg.id} className={['flex', isAdmin ? 'justify-end' : 'justify-start'].join(' ')}>
                     <div className={isMobile ? 'max-w-[85%]' : 'max-w-[72%]'}>
                       <div
-                        className="py-2.5 px-3.5 shadow-xs"
+                        className="py-2.5 px-3.5"
                         style={{
                           background: isAdmin ? 'var(--gb-red)' : 'var(--bg-elevated)',
                           borderRadius: isAdmin ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
@@ -315,7 +315,7 @@ export default function ChatPage() {
                 className={[
                   'flex justify-center items-center w-11 h-11 text-xl rounded-md border-none shrink-0 transition-colors duration-200',
                   'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
-                  texto.trim() ? 'text-white shadow-red cursor-pointer bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark' : 'bg-elevated text-muted',
+                  texto.trim() ? 'text-white cursor-pointer bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark' : 'bg-elevated text-muted',
                 ].join(' ')}>
                 {enviarMutation.isPending ? <Ico icon={ArrowPathIcon} /> : '↑'}
               </button>

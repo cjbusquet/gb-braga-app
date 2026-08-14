@@ -32,6 +32,7 @@ import { exportContratoPDF } from '../../services/pdf';
 import { useAuth } from '../../lib/auth';
 import { useState } from 'react';
 import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
 import { useToast } from '../../components/common/Toast';
 import { Skeleton, SkeletonList } from '../../components/common/Skeleton';
 import BeltBar from '../../components/common/BeltBar';
@@ -138,7 +139,7 @@ function EditPerfilModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="p-7 w-full max-w-[500px] rounded-lg border shadow-lg border-border bg-card"
+        className="p-7 w-full max-w-[500px] rounded-lg border border-border bg-card"
       >
         <div className="flex justify-between mb-5">
           <div className="text-[15px] font-extrabold text-primary">
@@ -178,39 +179,23 @@ function EditPerfilModal({
           </div>
         )}
 
-        <div className="flex gap-2.5 mt-[18px]">
-          <button
-            onClick={onClose}
-            disabled={saving}
-            className="flex flex-1 justify-center items-center h-11 sm:h-10 text-[13px] rounded-sm border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card hover:text-primary active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+        <div className="flex gap-2.5 mt-4.5">
+          <Button variant="secondary" className="flex-1" disabled={saving} onClick={onClose}>
             Cancelar
-          </button>
-          <button
-            onClick={handleSave}
+          </Button>
+          <Button
+            variant="primary" className={['flex-[2]', saved ? '!bg-green-500' : ''].join(' ')}
             disabled={saving || saved}
-            className={[
-              'flex flex-[2] justify-center items-center h-11 sm:h-10 text-[13px] font-bold text-white rounded-sm border-none cursor-pointer transition-all duration-200 hover:bg-gb-red-dark active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
-              saved ? '!bg-green-500' : 'bg-gb-red',
-            ].join(' ')}
+            onClick={handleSave}
           >
             {saved ? (
-              <span className="inline-flex gap-1.5 items-center">
-                <Ico icon={CheckIcon} sm />
-                Guardado!
-              </span>
+              <><Ico icon={CheckIcon} sm /> Guardado!</>
             ) : saving ? (
-              <span className="inline-flex gap-1.5 items-center">
-                <Ico icon={ArrowPathIcon} sm />
-                A guardar...
-              </span>
+              <><Ico icon={ArrowPathIcon} sm /> A guardar...</>
             ) : (
-              <span className="inline-flex gap-1.5 items-center">
-                <Ico icon={SaveIcon} sm />
-                Guardar
-              </span>
+              <><Ico icon={SaveIcon} sm /> Guardar</>
             )}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -296,7 +281,7 @@ export default function PortalAluno({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="overflow-y-auto p-7 w-full max-w-[560px] max-h-[85vh] rounded-lg border shadow-lg border-border bg-card"
+            className="overflow-y-auto p-7 w-full max-w-[560px] max-h-[85vh] rounded-lg border border-border bg-card"
           >
             <div className="flex justify-between mb-5">
               <div className="text-[15px] font-extrabold text-primary">
@@ -310,7 +295,7 @@ export default function PortalAluno({
                 <Ico icon={XMarkIcon} />
               </button>
             </div>
-            <div className="py-4 px-5 mb-[18px] text-[13px] leading-[1.8] rounded-[10px] border border-border bg-elevated text-secondary">
+            <div className="py-4 px-5 mb-[18px] text-[13px] leading-[1.8] rounded-md border border-border bg-elevated text-secondary">
               <p>
                 <strong>Tribo Laurada Lda.</strong> (NIF 518948471) · Gracie
                 Barra Braga
@@ -519,6 +504,7 @@ export default function PortalAluno({
             </div>
             <div className="flex gap-3 items-center">
               <button
+                onClick={() => onNavigate?.('meu-financeiro')}
                 className="py-2 px-4 min-h-11 sm:min-h-0 text-xs text-white whitespace-nowrap rounded-sm border-none cursor-pointer transition-all duration-200 hover:brightness-90 active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                 style={{
                   background: proximoPagamento.status === 'vencido' ? GB.red : '#F59E0B',
@@ -540,14 +526,14 @@ export default function PortalAluno({
           Icon={CalendarIcon}
           label="Minhas Aulas"
           desc="Horários e presenças"
-          accent="#3B82F6"
+          accent="#6B7280"
           onClick={() => onNavigate?.('minhas-aulas')}
         />
         <NavCard
           Icon={TrophyIcon}
           label="Minha Evolução"
           desc="Faixa e graduações"
-          accent="#A78BFA"
+          accent="#D97706"
           onClick={() => onNavigate?.('evolucao')}
         />
         <NavCard
@@ -582,7 +568,7 @@ export default function PortalAluno({
           Icon={DocumentIcon}
           label="Meu Contrato"
           desc="Ver contrato completo"
-          accent="#7C3AED"
+          accent="#6B7280"
           onClick={() => setShowContrato(true)}
         />
       </div>

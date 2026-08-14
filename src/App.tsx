@@ -31,6 +31,7 @@ import ModulosPage from './pages/admin/ModulosPage';
 import ProfessoresPage from './pages/admin/ProfessoresPage';
 import { ModulosProvider, useModulos } from './lib/useModulos';
 import { ToastProvider } from './components/common/Toast';
+import Button from './components/common/Button';
 import { Ico, ArrowPathIcon, CheckCircleIcon, ClockIcon, KeyIcon } from './lib/icons';
 import { usePedidosNumerarioQuery, type PedidoNumerario } from './hooks/usePedidosNumerario';
 
@@ -101,23 +102,20 @@ function SetPasswordScreen() {
 
   if (done) return (
     <div className="flex justify-center items-center py-8 px-4 min-h-screen bg-base">
-      <div className="p-8 w-full max-w-[400px] text-center rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.08)] bg-white">
+      <div className="p-8 w-full max-w-[400px] text-center rounded-2xl border border-border bg-white">
         <div className="mb-4 text-green-500"><Ico icon={CheckCircleIcon} style={{ width: 48, height: 48 }} /></div>
         <h2 className="mb-2 font-display text-lg font-extrabold uppercase text-primary">Password definida!</h2>
         <p className="mb-6 text-sm text-secondary">A tua conta está pronta. Bem-vindo à equipa Gracie Barra Braga.</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="py-3 px-8 min-h-11 text-sm font-bold text-white rounded-[10px] border-none outline-none transition-all duration-200 cursor-pointer bg-gb-red hover:bg-gb-red-dark active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
-        >
+        <Button variant="primary" onClick={() => window.location.reload()}>
           Entrar na plataforma →
-        </button>
+        </Button>
       </div>
     </div>
   );
 
   return (
     <div className="flex justify-center items-center py-8 px-4 min-h-screen bg-base">
-      <div className="p-6 w-full max-w-[420px] rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.08)] sm:p-10 bg-white">
+      <div className="p-6 w-full max-w-[420px] rounded-2xl border border-border sm:p-10 bg-white">
         <div className="flex gap-3 items-center mb-6">
           <div className="flex justify-center items-center w-11 h-11 text-white rounded-xl shrink-0 bg-gb-red">
             <Ico icon={KeyIcon} style={{ width: 20, height: 20 }} />
@@ -139,20 +137,12 @@ function SetPasswordScreen() {
           <input type="password" value={pw2} onChange={e => setPw2(e.target.value)} placeholder="Repete a password" className={FIELD_CLASS} />
         </div>
         {err && <div className="mb-3.5 text-xs font-semibold text-gb-red">{err}</div>}
-        <button
-          onClick={handle}
-          disabled={saving}
-          className={[
-            'py-3.5 w-full min-h-11 font-display text-sm font-extrabold tracking-wide text-white uppercase rounded-[10px] border-none outline-none transition-all duration-200',
-            'focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-            saving ? 'cursor-not-allowed bg-neutral-400 shadow-none' : 'cursor-pointer bg-gb-red shadow-[0_4px_14px_rgba(200,16,46,0.3)] hover:bg-gb-red-dark active:scale-[0.98]',
-          ].join(' ')}
-        >
+        <Button variant="primary" fullWidth loading={saving} onClick={handle}>
           {saving ? 'A guardar...' : 'Confirmar Password →'}
-        </button>
+        </Button>
         <button
           onClick={() => logout()}
-          className="py-2.5 mt-2.5 w-full min-h-11 text-sm bg-transparent rounded-[10px] border outline-none transition-colors duration-200 cursor-pointer border-border text-muted hover:bg-elevated hover:text-secondary focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 active:bg-elevated"
+          className="py-2.5 mt-2.5 w-full min-h-11 text-sm bg-transparent rounded-md border outline-none transition-colors duration-200 cursor-pointer border-border text-muted hover:bg-elevated hover:text-secondary focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 active:bg-elevated"
         >
           Cancelar
         </button>
@@ -175,7 +165,7 @@ function AguardandoConfirmacaoScreen({ pedido }: { pedido: PedidoNumerario }) {
 
   return (
     <div className="flex justify-center items-center py-8 px-4 min-h-screen bg-base">
-      <div className="p-8 w-full max-w-[440px] text-center rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.08)] bg-white">
+      <div className="p-8 w-full max-w-[440px] text-center rounded-2xl border border-border bg-white">
         <div className="flex justify-center items-center mx-auto mb-4 w-14 h-14 text-amber-500 rounded-full bg-amber-500/10">
           <Ico icon={ClockIcon} style={{ width: 26, height: 26 }} />
         </div>
@@ -186,23 +176,13 @@ function AguardandoConfirmacaoScreen({ pedido }: { pedido: PedidoNumerario }) {
         <p className="mb-6 text-sm leading-[1.6] text-secondary">
           A equipa da academia vai confirmar o pagamento em breve e a tua conta será ativada automaticamente. Não é necessário preencher a ficha novamente.
         </p>
-        <button
-          onClick={handleVerificar}
-          disabled={checking}
-          className={[
-            'py-3 px-8 mb-2.5 w-full min-h-11 text-sm font-bold text-white rounded-[10px] border-none outline-none transition-all duration-200',
-            'focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-            checking ? 'cursor-not-allowed bg-neutral-400' : 'cursor-pointer bg-gb-red hover:bg-gb-red-dark active:scale-[0.98]',
-          ].join(' ')}
-        >
-          <span className="inline-flex gap-1.5 items-center justify-center">
-            <Ico icon={ArrowPathIcon} sm className={checking ? 'animate-spin' : undefined} />
-            {checking ? 'A verificar...' : 'Verificar novamente'}
-          </span>
-        </button>
+        <Button variant="primary" fullWidth className="mb-2.5" disabled={checking} onClick={handleVerificar}>
+          <Ico icon={ArrowPathIcon} sm className={checking ? 'animate-spin' : undefined} />
+          {checking ? 'A verificar...' : 'Verificar novamente'}
+        </Button>
         <button
           onClick={() => logout()}
-          className="py-2.5 w-full min-h-11 text-sm bg-transparent rounded-[10px] border outline-none transition-colors duration-200 cursor-pointer border-border text-muted hover:bg-elevated hover:text-secondary focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 active:bg-elevated"
+          className="py-2.5 w-full min-h-11 text-sm bg-transparent rounded-md border outline-none transition-colors duration-200 cursor-pointer border-border text-muted hover:bg-elevated hover:text-secondary focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 active:bg-elevated"
         >
           Terminar sessão
         </button>
@@ -349,10 +329,10 @@ function AppContent() {
       case 'financeiro':   return <FinanceiroPage />;
       case 'graduacao':    return <GraduacaoPage />;
       case 'comunicacao':  return <ComunicacaoPage />;
-      case 'chat':         return <ChatPage />;
+      case 'chat':         return <ChatPage onNavigate={handleNavigate} />;
       case 'contratos':    return <ContratosPage />;
       case 'relatorios':   return <RelatoriosPage />;
-      case 'integracoes':  return <IntegracoesPage />;
+      case 'integracoes':  return <IntegracoesPage onNavigate={handleNavigate} />;
       case 'config':       return <ConfigPage />;
       case 'numerario':    return <PendentesNumerario />;
       case 'professores':  return <ProfessoresPage />;

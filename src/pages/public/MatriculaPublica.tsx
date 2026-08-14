@@ -34,8 +34,8 @@ const BENEFITS = [
 const CATEGORIAS = [
   { id: 'adulto',   icon: MartialArtsIcon, label: 'Adulto',          desc: 'A partir de 14 anos',                  color: '#C8102E' },
   { id: 'kids',     icon: StarIcon, label: 'Kids',             desc: 'Crianças até 13 anos',                 color: '#D97706' },
-  { id: 'familia',  icon: UsersIcon, label: 'Família',          desc: '2, 3 ou 4 membros da família',         color: '#2563EB' },
-  { id: 'fundador', icon: TrophyIcon, label: 'Sócio Fundador',  desc: 'Preço especial para membros fundadores',color: '#7C3AED' },
+  { id: 'familia',  icon: UsersIcon, label: 'Família',          desc: '2, 3 ou 4 membros da família',         color: '#16A34A' },
+  { id: 'fundador', icon: TrophyIcon, label: 'Sócio Fundador',  desc: 'Preço especial para membros fundadores',color: '#6B7280' },
 ];
 
 const TESTIMONIALS = [
@@ -58,7 +58,7 @@ function StepBar({ step }: { step: Step }) {
   );
 }
 
-const FIELD_CLASS = 'block w-full py-[11px] px-3.5 min-h-11 sm:min-h-0 text-[15px] font-ui rounded-lg border-[1.5px] outline-none transition-all duration-200 border-border bg-white text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25';
+const FIELD_CLASS = 'block w-full py-3 px-3.5 min-h-11 sm:min-h-0 text-[15px] font-ui rounded-lg border-[1.5px] outline-none transition-all duration-200 border-border bg-white text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25';
 
 export default function MatriculaPublica() {
   const { data: planos } = usePlanos();
@@ -87,7 +87,7 @@ export default function MatriculaPublica() {
     <div className="min-h-screen font-ui bg-base">
 
       {/* Header */}
-      <header className="flex sticky top-0 z-[100] gap-2 justify-between items-center py-0 px-4 h-[66px] border-b shadow-[0_1px_3px_rgba(0,0,0,0.06)] border-border bg-white sm:px-6">
+      <header className="flex sticky top-0 z-[100] gap-2 justify-between items-center py-0 px-4 h-[66px] border-b border-border bg-white sm:px-6">
         <a href="https://gbbraga.com" className="flex gap-2.5 items-center no-underline shrink-0">
           <GBLogoFull size={48}/>
         </a>
@@ -103,7 +103,7 @@ export default function MatriculaPublica() {
       {/* INTRO */}
       {step === 'intro' && (
         <>
-          <div className="py-[72px] px-6 pb-20 text-center" style={{ background: 'linear-gradient(135deg, #0D0508 0%, #1A0208 60%, #2A0510 100%)' }}>
+          <div className="py-18 px-6 pb-20 text-center" style={{ background: 'linear-gradient(135deg, #0D0508 0%, #1A0208 60%, #2A0510 100%)' }}>
             <div className="inline-block py-1.5 px-[18px] mb-[22px] rounded-full border border-gb-red/35 bg-gb-red/[0.18]">
               <span className="inline-flex gap-1.5 items-center text-xs font-bold tracking-[2px] text-[#FF7A95] uppercase"><Ico icon={TrophyIcon} sm />Gracie Barra Braga · gbbraga.com</span>
             </div>
@@ -115,10 +115,10 @@ export default function MatriculaPublica() {
               <strong className="text-white/90">Primeira aula completamente gratuita.</strong>
             </p>
             <div className="flex flex-wrap gap-3 justify-center">
-              <button onClick={() => setStep('categoria')} className="py-[15px] px-9 min-h-11 sm:min-h-0 font-display text-[17px] font-extrabold text-white rounded-[10px] border-none shadow-[0_4px_20px_rgba(200,16,46,0.45)] cursor-pointer bg-gb-red transition-all duration-200 hover:bg-gb-red-dark active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+              <button onClick={() => setStep('categoria')} className="py-[15px] px-9 min-h-11 sm:min-h-0 font-display text-[17px] font-extrabold text-white rounded-md border-none cursor-pointer bg-gb-red transition-all duration-200 hover:bg-gb-red-dark active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
                 INSCREVER AGORA
               </button>
-              <a href="https://gbbraga.com/formulario-aula-teste-gratuita/" className="inline-flex items-center py-[15px] px-6 min-h-11 sm:min-h-0 text-[15px] text-white no-underline rounded-[10px] border transition-colors duration-200 border-white/20 bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.14] outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2">
+              <a href="https://gbbraga.com/formulario-aula-teste-gratuita/" className="inline-flex items-center py-[15px] px-6 min-h-11 sm:min-h-0 text-[15px] text-white no-underline rounded-md border transition-colors duration-200 border-white/20 bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.14] outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2">
                 Aula gratuita →
               </a>
             </div>
@@ -140,7 +140,7 @@ export default function MatriculaPublica() {
           </div>
 
           {/* Planos preview */}
-          <div className="mx-auto py-[60px] px-6 pb-12 max-w-[960px]">
+          <div className="mx-auto py-15 px-6 pb-12 max-w-[960px]">
             <h2 className="mb-3 font-display font-black text-center uppercase" style={{ fontSize: 'clamp(22px,3vw,36px)' }}>Planos e Preços</h2>
             <p className="mb-9 text-[15px] text-center text-secondary">Mensalidade debitada automaticamente. Cancele a qualquer momento.</p>
 
@@ -151,9 +151,9 @@ export default function MatriculaPublica() {
                 const minPrice = catPlanos.length ? Math.min(...catPlanos.map(p => p.valor)) : 0;
                 return (
                   <div key={cat.id} onClick={() => { setCategoria(cat.id); setStep('plano'); }}
-                    className="py-[22px] px-[18px] text-center rounded-2xl border shadow-[0_1px_3px_rgba(0,0,0,0.05)] cursor-pointer transition-all border-border bg-white"
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = cat.color; e.currentTarget.style.boxShadow = `0 4px 14px ${cat.color}20`; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E0DB'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'; }}
+                    className="py-[22px] px-[18px] text-center rounded-2xl border cursor-pointer transition-all border-border bg-white"
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = cat.color; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E0DB'; }}
                   >
                     <div className="flex justify-center mb-2.5"><FontAwesomeIcon icon={cat.icon} className="w-8 h-8" style={{ color: cat.color }} /></div>
                     <div className="mb-1 text-base font-extrabold text-primary">{cat.label}</div>
@@ -181,9 +181,9 @@ export default function MatriculaPublica() {
           </div>
 
           {/* Testimonials */}
-          <div className="py-[52px] px-6 border-t border-border bg-white">
+          <div className="py-13 px-6 border-t border-border bg-white">
             <div className="mx-auto max-w-[900px]">
-              <h2 className="mb-[30px] font-display text-2xl font-black text-center uppercase">O que dizem os nossos alunos</h2>
+              <h2 className="mb-7.5 font-display text-2xl font-black text-center uppercase">O que dizem os nossos alunos</h2>
               <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-3.5">
                 {TESTIMONIALS.map(t => (
                   <div key={t.nome} className="p-5 rounded-xl border border-border bg-base">
@@ -202,10 +202,10 @@ export default function MatriculaPublica() {
           </div>
 
           {/* CTA */}
-          <div className="py-[52px] px-6 text-center bg-gb-red">
+          <div className="py-13 px-6 text-center bg-gb-red">
             <h2 className="mb-3.5 font-display text-[34px] font-black text-white uppercase">Pronto para começar?</h2>
             <p className="mb-6 text-[15px] text-white/80">Primeira aula gratuita · Sem compromisso</p>
-            <button onClick={() => setStep('categoria')} className="py-3.5 px-9 min-h-11 sm:min-h-0 font-display text-[17px] font-black text-gb-red bg-white rounded-[10px] border-none cursor-pointer transition-all duration-200 hover:bg-white/90 active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-gb-red">INSCREVER AGORA →</button>
+            <button onClick={() => setStep('categoria')} className="py-3.5 px-9 min-h-11 sm:min-h-0 font-display text-[17px] font-black text-gb-red bg-white rounded-md border-none cursor-pointer transition-all duration-200 hover:bg-white/90 active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-gb-red">INSCREVER AGORA →</button>
           </div>
         </>
       )}
@@ -215,16 +215,16 @@ export default function MatriculaPublica() {
         <div className="mx-auto py-12 px-6 max-w-[680px]">
           <StepBar step={step}/>
           <h2 className="mb-1.5 font-display text-2xl font-black text-center uppercase">Quem se vai inscrever?</h2>
-          <p className="mb-[30px] text-sm text-center text-muted">Escolhe a categoria para ver os planos disponíveis</p>
+          <p className="mb-7.5 text-sm text-center text-muted">Escolhe a categoria para ver os planos disponíveis</p>
           <div className="grid grid-cols-1 gap-3 mb-5 sm:grid-cols-2">
             {CATEGORIAS.map(cat => {
               const catPlanos = planos.filter(p => p.ativo && (p as any).categoria === cat.id);
               const minPrice = Math.min(...catPlanos.map(p => p.valor));
               return (
                 <button key={cat.id} onClick={() => { setCategoria(cat.id); setStep('plano'); }}
-                  className="py-6 px-5 text-center rounded-2xl border-2 shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition-all duration-200 cursor-pointer border-border bg-white active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = cat.color; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 6px 18px ${cat.color}25`; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E0DB'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'; }}
+                  className="py-6 px-5 text-center rounded-2xl border-2 transition-all duration-200 cursor-pointer border-border bg-white active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = cat.color; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E0DB'; e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
                   <div className="flex justify-center mb-2.5"><FontAwesomeIcon icon={cat.icon} className="w-9 h-9" style={{ color: cat.color }} /></div>
                   <div className="mb-1 text-[17px] font-extrabold text-primary">{cat.label}</div>
@@ -259,7 +259,7 @@ export default function MatriculaPublica() {
                 style={{
                   background: planoId === p.id ? 'rgba(200,16,46,0.04)' : '#fff',
                   borderColor: planoId === p.id ? '#C8102E' : '#E2E0DB',
-                  boxShadow: planoId === p.id ? '0 0 0 4px rgba(200,16,46,0.07)' : '0 1px 3px rgba(0,0,0,0.04)',
+                  boxShadow: planoId === p.id ? '0 0 0 4px rgba(200,16,46,0.07)' : 'none',
                 }}>
                 <div>
                   <div className="mb-1 text-[15px] font-bold text-primary">{p.nome}</div>
@@ -278,7 +278,7 @@ export default function MatriculaPublica() {
               className={[
                 'flex-[2] py-2.5 min-h-11 sm:min-h-0 font-display text-[15px] font-extrabold rounded-lg border-none transition-all duration-200',
                 'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-                planoId ? 'text-white shadow-[0_4px_14px_rgba(200,16,46,0.3)] cursor-pointer bg-gb-red hover:bg-gb-red-dark active:scale-[0.98]' : 'cursor-not-allowed text-muted bg-border',
+                planoId ? 'text-white cursor-pointer bg-gb-red hover:bg-gb-red-dark active:scale-[0.98]' : 'cursor-not-allowed text-muted bg-border',
               ].join(' ')}>
               CONTINUAR{planoSel ? ` — €${planoSel.valor}/mês` : ''}
             </button>
@@ -291,8 +291,8 @@ export default function MatriculaPublica() {
         <div className="mx-auto py-12 px-6 max-w-[540px]">
           <StepBar step={step}/>
           <h2 className="mb-1.5 font-display text-[26px] font-black text-center uppercase">Os teus dados</h2>
-          <p className="mb-[26px] text-sm text-center text-muted">Entraremos em contacto em menos de 24h</p>
-          <div className="p-[26px] rounded-2xl border shadow-[0_1px_3px_rgba(0,0,0,0.08)] border-border bg-white">
+          <p className="mb-6.5 text-sm text-center text-muted">Entraremos em contacto em menos de 24h</p>
+          <div className="p-6.5 rounded-2xl border border-border bg-white">
             {/* Summary */}
             <div className="flex justify-between items-center py-2.5 px-3.5 mb-5 rounded-lg border border-gb-red/15 bg-gb-red/5">
               <div>
@@ -326,7 +326,7 @@ export default function MatriculaPublica() {
                 className={[
                   'flex-[2] py-2.5 min-h-11 sm:min-h-0 font-display text-[15px] font-extrabold rounded-lg border-none transition-all duration-200',
                   'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-                  nome&&email&&tel ? 'text-white shadow-[0_4px_14px_rgba(200,16,46,0.3)] cursor-pointer bg-gb-red hover:bg-gb-red-dark active:scale-[0.98]' : 'cursor-not-allowed text-muted bg-border',
+                  nome&&email&&tel ? 'text-white cursor-pointer bg-gb-red hover:bg-gb-red-dark active:scale-[0.98]' : 'cursor-not-allowed text-muted bg-border',
                 ].join(' ')}>
                 {submitting ? <span className="inline-flex gap-1.5 justify-center items-center"><Ico icon={ArrowPathIcon} sm className="animate-spin" />A enviar...</span> : 'ENVIAR INSCRIÇÃO'}
               </button>
@@ -353,14 +353,14 @@ export default function MatriculaPublica() {
             ))}
           </div>
           <div className="flex gap-2.5 justify-center">
-            <a href="https://wa.me/351927773854" className="inline-flex gap-1.5 items-center py-3 px-[22px] min-h-11 sm:min-h-0 text-sm font-bold text-white no-underline rounded-[10px] bg-[#25D366] transition-colors duration-200 hover:bg-[#1FB157] active:bg-[#1FB157] outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2"><Ico icon={CommentIcon} sm /> WhatsApp</a>
-            <button onClick={() => { setStep('intro'); setPlanoId(''); setNome(''); setEmail(''); setTel(''); }} className="py-3 px-[22px] min-h-11 sm:min-h-0 text-sm rounded-[10px] border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">Voltar ao início</button>
+            <a href="https://wa.me/351927773854" className="inline-flex gap-1.5 items-center py-3 px-[22px] min-h-11 sm:min-h-0 text-sm font-bold text-white no-underline rounded-md bg-[#25D366] transition-colors duration-200 hover:bg-[#1FB157] active:bg-[#1FB157] outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2"><Ico icon={CommentIcon} sm /> WhatsApp</a>
+            <button onClick={() => { setStep('intro'); setPlanoId(''); setNome(''); setEmail(''); setTel(''); }} className="py-3 px-[22px] min-h-11 sm:min-h-0 text-sm rounded-md border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">Voltar ao início</button>
           </div>
           <p className="flex gap-1.5 justify-center items-center mt-[22px] text-[13px] text-[#B8B7C3]"><Ico icon={MartialArtsIcon} sm />OSS! Bem-vindo(a) à família Gracie Barra Braga</p>
         </div>
       )}
 
-      <footer className="py-[26px] px-6 text-center bg-[#111]">
+      <footer className="py-6.5 px-6 text-center bg-[#111]">
         <div className="text-xs text-white/35">
           © 2025 Gracie Barra Braga · Rua Nova Santa Cruz 11, 4710-409 Braga · +351 927 773 854 · atendimento@gbbraga.com
         </div>

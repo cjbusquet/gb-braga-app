@@ -18,7 +18,7 @@ export default function Card({ padding = 'md', className = '', children, ...rest
   return (
     <div
       className={[
-        'rounded-lg border border-border bg-card shadow-xs',
+        'rounded-lg border border-border bg-card',
         PADDING_CLASSES[padding],
         className,
       ].filter(Boolean).join(' ')}

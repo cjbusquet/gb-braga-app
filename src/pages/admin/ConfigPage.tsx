@@ -13,6 +13,9 @@ import { haversineDistanceMeters } from '../../services/geo';
 import type { TocConfig } from '../../types';
 import PageHeader from '../../components/common/PageHeader';
 import BeltBadge from '../../components/common/BeltBadge';
+import Select from '../../components/common/Select';
+import Button from '../../components/common/Button';
+import Badge from '../../components/common/Badge';
 import {
   Ico,
   type HeroIcon,
@@ -97,7 +100,7 @@ function SaveBar({ onSave, saved, saving = false }: { onSave: () => void; saved:
           'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
           saving ? 'opacity-70' : 'cursor-pointer opacity-100 hover:brightness-90 active:brightness-90',
         ].join(' ')}
-        style={{ background: saved ? '#22C55E' : GB.red, boxShadow: `0 0 16px ${saved ? 'rgba(34,197,94,0.2)' : GB.redGlow}` }}
+        style={{ background: saved ? '#22C55E' : GB.red }}
       >
         {saving
           ? <span className="inline-flex gap-1.5 items-center"><Ico icon={ArrowPathIcon} sm />A guardar...</span>
@@ -132,7 +135,7 @@ function TocSection() {
       {/* Left: form */}
       <Card>
         <div className="flex gap-2.5 items-center pb-4 mb-5 border-b border-border-subtle">
-          <div className="flex justify-center items-center w-10 h-10 text-xl rounded-[10px] bg-[#0E2D52]">🇵🇹</div>
+          <div className="flex justify-center items-center w-10 h-10 rounded-md bg-gb-red-glow"><FontAwesomeIcon icon={ReceiptPercentIcon} className="w-5 h-5 text-gb-red" /></div>
           <div>
             <div className="text-[15px] font-bold text-primary">TOConline</div>
             <div className="text-[11px] text-muted">Faturação certificada pela Autoridade Tributária</div>
@@ -225,9 +228,7 @@ function TocSection() {
           ].map(s => (
             <div key={s.label} className="flex justify-between items-center py-1.5 border-b border-border-subtle">
               <span className="text-xs text-secondary">{s.label}</span>
-              {s.ok
-                ? <span className="inline-flex gap-1 items-center py-0.5 px-2 text-[11px] font-semibold text-green-500 rounded-full bg-green-500/10"><Ico icon={CheckIcon} sm />OK</span>
-                : <span className="py-0.5 px-2 text-[11px] font-semibold text-amber-500 rounded-full bg-amber-500/10">Pendente</span>}
+              <Badge color={s.ok ? 'success' : 'warning'}>{s.ok ? 'OK' : 'Pendente'}</Badge>
             </div>
           ))}
         </Card>
@@ -251,7 +252,7 @@ function TocSection() {
             </div>
           ))}
           <a href="https://api-docs.toconline.pt" target="_blank" rel="noreferrer"
-            className="block py-2 mt-1 min-h-11 sm:min-h-0 text-xs font-semibold text-center text-blue-500 no-underline rounded-sm border transition-colors duration-200 border-blue-500/20 bg-blue-500/[0.08] hover:bg-blue-500/[0.16] active:bg-blue-500/[0.16] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+            className="block py-2 mt-1 min-h-11 sm:min-h-0 text-xs font-semibold text-center no-underline rounded-sm border transition-colors duration-200 border-border bg-elevated text-secondary hover:border-gb-red hover:text-gb-red active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
             <span className="inline-flex gap-1.5 items-center"><Ico icon={BookIcon} sm />Documentação API TOConline →</span>
           </a>
         </Card>
@@ -346,7 +347,7 @@ function StripeSection() {
       {/* Keys card */}
       <Card>
         <div className="flex gap-2.5 items-center pb-3.5 mb-[18px] border-b border-border-subtle">
-          <div className="flex justify-center items-center w-[38px] h-[38px] text-[15px] font-extrabold text-white rounded-[10px] bg-[#635BFF]">S</div>
+          <div className="flex justify-center items-center w-[38px] h-[38px] text-[15px] font-extrabold text-white rounded-md bg-[#635BFF]">S</div>
           <div className="flex-1">
             <div className="text-sm font-bold text-primary">Stripe API</div>
             <div className="text-[11px] text-muted">Pagamentos e subscrições recorrentes</div>
@@ -473,7 +474,7 @@ function WhatsAppSection() {
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <Card>
         <div className="flex gap-2.5 items-center pb-4 mb-[18px] border-b border-border-subtle">
-          <div className="flex justify-center items-center w-10 h-10 text-xl rounded-[10px] bg-[#075E54]"><FontAwesomeIcon icon={ChatBubbleLeftRightIcon} className="w-5 h-5 text-white" /></div>
+          <div className="flex justify-center items-center w-10 h-10 text-xl rounded-md bg-[#075E54]"><FontAwesomeIcon icon={ChatBubbleLeftRightIcon} className="w-5 h-5 text-white" /></div>
           <div>
             <div className="text-[15px] font-bold text-primary">WhatsApp Business API</div>
             <div className="text-[11px] text-muted">Meta Cloud API</div>
@@ -497,7 +498,7 @@ function WhatsAppSection() {
         ].map(t => (
           <div key={t.nome} className="flex justify-between py-2 border-b border-border-subtle">
             <span className="font-mono text-xs text-secondary">{t.nome}</span>
-            <span className={['text-[11px] font-semibold', t.status === 'aprovado' ? 'text-green-500' : 'text-amber-500'].join(' ')}>{t.status}</span>
+            <Badge color={t.status === 'aprovado' ? 'success' : 'warning'}>{t.status}</Badge>
           </div>
         ))}
       </Card>
@@ -506,11 +507,10 @@ function WhatsAppSection() {
 }
 
 // ─── Generic placeholder sections ────────────────────────────────────────────
-function SimpleSection({ secao, title, icon, bg, fields }: {
+function SimpleSection({ secao, title, icon, fields }: {
   secao: string;
   title: string;
   icon: HeroIcon;
-  bg: string;
   fields: { label: string; placeholder: string; type?: string }[];
 }) {
   const { data: vals, setData: setVals, loading, saving, saved, save } = useConfiguracaoSection<Record<string, string>>(secao, {});
@@ -521,7 +521,7 @@ function SimpleSection({ secao, title, icon, bg, fields }: {
     <div className="max-w-[560px]">
       <Card>
         <div className="flex gap-2.5 items-center pb-4 mb-5 border-b border-border-subtle">
-          <div className="flex justify-center items-center w-10 h-10 text-xl rounded-[10px]" style={{ background: bg }}><FontAwesomeIcon icon={icon} className="w-5 h-5 text-white" /></div>
+          <div className="flex justify-center items-center w-10 h-10 rounded-md bg-gb-red-glow"><FontAwesomeIcon icon={icon} className="w-5 h-5 text-gb-red" /></div>
           <div className="text-[15px] font-bold text-primary">{title}</div>
         </div>
         {fields.map(f => (
@@ -549,8 +549,8 @@ const STAFF_ROLES: { value: StaffRole; label: string; desc: string }[] = [
 ];
 
 const ROLE_BADGE: Record<string, { label: string; color: string; bg: string }> = {
-  superadmin:  { label: 'Superadmin',     color: '#7C3AED', bg: 'rgba(124,58,237,0.10)' },
-  admin:       { label: 'Administrador',  color: '#1D4ED8', bg: 'rgba(29,78,216,0.10)'  },
+  superadmin:  { label: 'Superadmin',     color: 'var(--gb-red)', bg: 'rgba(200,16,46,0.10)' },
+  admin:       { label: 'Administrador',  color: 'var(--text-primary)', bg: 'var(--bg-elevated)'  },
   professor:   { label: 'Professor',      color: '#EA580C', bg: 'rgba(234,88,12,0.10)'  },
   atendimento: { label: 'Atendimento',    color: '#16A34A', bg: 'rgba(22,163,74,0.10)'  },
 };
@@ -659,9 +659,7 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
         {/* Badges */}
         <div className="flex flex-col gap-1 items-end shrink-0">
           <span className="py-0.5 px-1.5 text-[10px] font-bold rounded-full" style={{ background: badge.bg, color: badge.color }}>{badge.label}</span>
-          <span className={['py-px px-1.5 text-[9.5px] font-bold rounded-full', d.ativo ? 'text-green-600 bg-green-600/[0.12]' : 'text-neutral-500 bg-neutral-500/[0.12]'].join(' ')}>
-            {d.ativo ? 'Ativo' : 'Inativo'}
-          </span>
+          <Badge color={d.ativo ? 'success' : 'neutral'}>{d.ativo ? 'Ativo' : 'Inativo'}</Badge>
         </div>
         <span className="ml-1 text-sm text-muted">{open ? '▲' : '▼'}</span>
       </button>
@@ -690,13 +688,11 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
 
             {/* Faixa */}
             <div>
-              <label className={STAFF_LBL}>Faixa</label>
-              <select value={d.faixa} onChange={e => setD(p => ({ ...p, faixa: e.target.value }))}
-                className={[STAFF_INP, 'cursor-pointer'].join(' ')}>
+              <Select variant="sm" label="Faixa" value={d.faixa} onChange={e => setD(p => ({ ...p, faixa: e.target.value }))}>
                 {STAFF_FAIXAS.map(f => (
                   <option key={f.value} value={f.value}>{f.label}</option>
                 ))}
-              </select>
+              </Select>
             </div>
 
             {/* Status ativo/inativo */}
@@ -814,16 +810,14 @@ function EquipaSection() {
             <div className="text-[15px] font-bold text-primary">Equipa</div>
             <div className="text-[11.5px] text-muted">{staff.length} membro{staff.length !== 1 ? 's' : ''}</div>
           </div>
-          <button onClick={() => { setShowInvite(s => !s); setResult(null); setErr(''); }}
-            className={[
-              'py-2 px-4 min-h-11 sm:min-h-0 text-[12.5px] font-bold rounded-sm border cursor-pointer transition-colors duration-200',
-              'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-              showInvite ? 'border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle' : 'text-white border-none bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark',
-            ].join(' ')}>
+          <Button
+            variant={showInvite ? 'secondary' : 'primary'} size="sm"
+            onClick={() => { setShowInvite(s => !s); setResult(null); setErr(''); }}
+          >
             {showInvite
-              ? <span className="inline-flex gap-1.5 items-center"><Ico icon={XMarkIcon} sm />Fechar</span>
-              : <span className="inline-flex gap-1.5 items-center"><Ico icon={PlusIcon} sm />Convidar membro</span>}
-          </button>
+              ? <><Ico icon={XMarkIcon} sm />Fechar</>
+              : <><Ico icon={PlusIcon} sm />Convidar membro</>}
+          </Button>
         </div>
 
         {loadingList ? (
@@ -844,7 +838,7 @@ function EquipaSection() {
         <div>
           <Card className={result ? 'mb-4' : 'mb-0'}>
             <div className="flex gap-3 items-center pb-3.5 mb-[18px] border-b border-border-subtle">
-              <div className="flex justify-center items-center w-[38px] h-[38px] text-lg rounded-[10px] bg-gb-red"><FontAwesomeIcon icon={EnvelopeIcon} className="w-4 h-4 text-white" /></div>
+              <div className="flex justify-center items-center w-[38px] h-[38px] text-lg rounded-md bg-gb-red"><FontAwesomeIcon icon={EnvelopeIcon} className="w-4 h-4 text-white" /></div>
               <div>
                 <div className="text-sm font-bold text-primary">Convidar Membro</div>
                 <div className="text-[11px] text-muted">O convidado define a sua própria password</div>
@@ -878,7 +872,7 @@ function EquipaSection() {
               className={[
                 'py-2.5 w-full min-h-11 text-[13px] font-bold text-white rounded-sm border-none transition-colors duration-200',
                 'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-                inviting ? 'cursor-not-allowed bg-neutral-400 shadow-none' : 'cursor-pointer bg-gb-red shadow-red hover:bg-gb-red-dark active:bg-gb-red-dark',
+                inviting ? 'cursor-not-allowed bg-neutral-400' : 'cursor-pointer bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark',
               ].join(' ')}>
               {inviting
                 ? 'A criar conta...'
@@ -983,7 +977,7 @@ function AcademiaSection() {
       {/* Dados básicos */}
       <Card>
         <div className="flex gap-2.5 items-center pb-3.5 mb-5 border-b border-border-subtle">
-          <div className="flex justify-center items-center w-10 h-10 text-xl rounded-[10px] bg-[#1A1A1A]"><FontAwesomeIcon icon={SchoolIcon} className="w-5 h-5 text-white" /></div>
+          <div className="flex justify-center items-center w-10 h-10 rounded-md bg-gb-red-glow"><FontAwesomeIcon icon={SchoolIcon} className="w-5 h-5 text-gb-red" /></div>
           <div className="text-[15px] font-bold text-primary">Academia</div>
         </div>
         {[
@@ -1007,7 +1001,7 @@ function AcademiaSection() {
       {/* GPS Fence */}
       <Card className="mt-4">
         <div className="flex gap-2.5 items-center pb-3.5 mb-5 border-b border-border-subtle">
-          <div className="flex justify-center items-center w-10 h-10 text-xl rounded-[10px] bg-[#064E3B]"><FontAwesomeIcon icon={MapPinIcon} className="w-5 h-5 text-white" /></div>
+          <div className="flex justify-center items-center w-10 h-10 rounded-md bg-gb-red-glow"><FontAwesomeIcon icon={MapPinIcon} className="w-5 h-5 text-gb-red" /></div>
           <div>
             <div className="text-[15px] font-bold text-primary">GPS Fence — Check-in</div>
             <div className="text-[11px] text-muted">Ponto de referência para validar presenças</div>
@@ -1138,14 +1132,14 @@ function ConfigPageInner() {
       case 'toconline':  return <TocSection />;
       case 'stripe':     return <StripeSection />;
       case 'whatsapp':   return <WhatsAppSection />;
-      case 'email':      return <SimpleSection secao="email" title="Email / SMTP" icon={EnvelopeIcon} bg="#1E3A5F" fields={[
+      case 'email':      return <SimpleSection secao="email" title="Email / SMTP" icon={EnvelopeIcon} fields={[
         { label: 'Servidor SMTP', placeholder: 'smtp.gmail.com' },
         { label: 'Porta', placeholder: '587' },
         { label: 'Email remetente', placeholder: 'noreply@graciebarra.pt' },
         { label: 'Password', placeholder: '••••••••', type: 'password' },
       ]}/>;
       case 'academia':   return <AcademiaSection />;
-      case 'compliance': return <SimpleSection secao="compliance" title="IPDJ / RGPD" icon={ClipboardDocumentIcon} bg="#2D1B69" fields={[
+      case 'compliance': return <SimpleSection secao="compliance" title="IPDJ / RGPD" icon={ClipboardDocumentIcon} fields={[
         { label: 'Número alvará IPDJ', placeholder: 'AL-XXXXX' },
         { label: 'DPO (Responsável RGPD)', placeholder: 'Nome do responsável' },
         { label: 'Email RGPD', placeholder: 'rgpd@graciebarra.pt' },
@@ -1185,9 +1179,7 @@ function ConfigPageInner() {
               <div className="text-[12.5px] leading-none" style={{ color: active === s.id ? GB.red : 'var(--text-primary)', fontWeight: active === s.id ? 700 : 500 }}>{s.label}</div>
               <div className="mt-0.5 text-[10.5px] text-muted">{s.desc}</div>
             </div>
-            {s.id === 'toconline' && (
-              <span className="py-px px-[5px] ml-auto text-[9px] font-bold text-amber-500 rounded bg-amber-500/15">PT</span>
-            )}
+            {s.id === 'toconline' && <Badge color="neutral" className="ml-auto">PT</Badge>}
           </button>
         ))}
       </div>

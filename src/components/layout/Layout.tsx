@@ -2,6 +2,7 @@ import {
   AcademicCapIcon,
   ArrowRightOnRectangleIcon,
   BanknotesIcon,
+  Bars3Icon,
   CalendarDaysIcon,
   ChartBarIcon,
   ChatBubbleLeftRightIcon,
@@ -147,6 +148,12 @@ const NAV_ITEMS: NavItem[] = [
     id: 'minhas-aulas',
     roles: ['aluno'],
   },
+  {
+    Icon: EnvelopeIcon,
+    label: 'Mensagens',
+    id: 'mensagens',
+    roles: ['aluno'],
+  },
 ];
 
 // Bottom nav items per role (max 4 + "Mais")
@@ -284,7 +291,7 @@ export default function Layout({
         isMobile
           ? [
               'fixed inset-y-0 left-0 z-[200] w-[min(280px,88vw)] transition-transform duration-250 ease-out',
-              mobileOpen ? 'translate-x-0 shadow-[4px_0_32px_rgba(0,0,0,0.25)]' : '-translate-x-full shadow-none',
+              mobileOpen ? 'translate-x-0' : '-translate-x-full',
             ].join(' ')
           : '',
       ].join(' ')}
@@ -395,7 +402,7 @@ export default function Layout({
 
   /* ── Bottom tab bar (mobile only) ────────────────── */
   const bottomTabBar = isMobile && (
-    <div className="flex fixed right-0 bottom-0 left-0 z-[190] items-stretch pb-[env(safe-area-inset-bottom)] border-t shadow-[0_-2px_12px_rgba(0,0,0,0.08)] border-border bg-card">
+    <div className="flex fixed right-0 bottom-0 left-0 z-[190] items-stretch pb-[env(safe-area-inset-bottom)] border-t border-border bg-card">
       {bottomItems.map((item) => {
         const active = currentPage === item.id;
         return (
@@ -403,8 +410,18 @@ export default function Layout({
             key={item.id}
             onClick={() => handleNav(item.id)}
             className={['flex relative flex-col flex-1 gap-0.5 justify-center items-center py-2 px-1 pb-2.5 min-h-14 bg-none border-none transition-all duration-200 cursor-pointer active:bg-elevated', 'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-inset'].join(' ')}
-            style={{ borderTop: `2px solid ${active ? rt.accent : 'transparent'}` }}
           >
+            {/* Accent indicator lives on its own element — a color-bearing
+                inline style directly on the <button> would trip index.css's
+                button[style*="rgb(200, 16, 46)"] legacy-CTA override for any
+                role whose accent happens to be GB red (admin/superadmin),
+                forcing that role's active tab into different padding/radius
+                than every other role. */}
+            <span
+              aria-hidden="true"
+              className="absolute inset-x-0 top-0 h-0.5"
+              style={{ background: active ? rt.accent : 'transparent' }}
+            />
             <FontAwesomeIcon
               icon={item.Icon}
               className="w-[22px] h-[22px]"
@@ -456,15 +473,24 @@ export default function Layout({
       >
         {/* Mobile top bar — position:fixed so window can scroll freely */}
         {isMobile && (
-          <div className="flex fixed inset-x-0 top-0 z-[100] justify-between items-center py-0 px-4 pt-[env(safe-area-inset-top)] min-h-14 border-b shadow-xs border-border bg-card">
-            <button
-              onClick={() =>
-                handleNav(user.role === 'aluno' ? 'portal' : 'dashboard')
-              }
-              className={['flex p-0 bg-none border-none rounded-md cursor-pointer transition-transform duration-200 active:scale-95', FOCUS_RING].join(' ')}
-            >
-              <GBLogoFull size={36} />
-            </button>
+          <div className="flex fixed inset-x-0 top-0 z-[100] justify-between items-center py-0 px-4 pt-[env(safe-area-inset-top)] min-h-14 border-b border-border bg-card">
+            <div className="flex gap-1 items-center shrink-0">
+              <button
+                onClick={() => setMobileOpen(true)}
+                title="Abrir menu"
+                className={['flex justify-center items-center min-h-11 min-w-11 -ml-2 bg-none border-none rounded-lg cursor-pointer transition-colors duration-200 text-secondary hover:bg-elevated active:bg-elevated', FOCUS_RING].join(' ')}
+              >
+                <FontAwesomeIcon icon={Bars3Icon} className="w-[18px] h-[18px]" />
+              </button>
+              <button
+                onClick={() =>
+                  handleNav(user.role === 'aluno' ? 'portal' : 'dashboard')
+                }
+                className={['flex p-0 bg-none border-none rounded-md cursor-pointer transition-transform duration-200 active:scale-95', FOCUS_RING].join(' ')}
+              >
+                <GBLogoFull size={36} />
+              </button>
+            </div>
             <div className="overflow-hidden text-xs font-semibold tracking-[0.5px] uppercase truncate text-muted">
               {visibleNav.find((n) => n.id === currentPage)?.label || ''}
             </div>

@@ -59,8 +59,8 @@ export default function Conteudo() {
           const isPlaying = playing === v.id;
           return (
             <div key={v.id}
-              className="overflow-hidden rounded-lg border cursor-pointer transition-shadow duration-200 shadow-xs hover:shadow-md"
-              style={{ borderColor: isPlaying ? GB.red + '50' : 'var(--border)', boxShadow: isPlaying ? `0 0 20px ${GB.redGlow}` : undefined }}
+              className="overflow-hidden rounded-lg border cursor-pointer border-border"
+              style={{ borderColor: isPlaying ? GB.red + '50' : 'var(--border)' }}
               onClick={() => setPlaying(isPlaying ? null : v.id)}>
               {/* Thumbnail */}
               <div
@@ -73,7 +73,7 @@ export default function Conteudo() {
                 >
                   {isPlaying ? '⏸' : '▶'}
                 </div>
-                <div className="absolute top-2.5 right-2.5 py-0.5 px-[7px] rounded bg-black/60">
+                <div className="absolute top-2.5 right-2.5 py-0.5 px-2 rounded bg-black/60">
                   <span className="font-mono text-[10.5px] text-white">{v.duracao}</span>
                 </div>
                 <div className="absolute right-0 bottom-0 left-0 h-[3px]" style={{ background: bc?.bg || '#888' }}/>

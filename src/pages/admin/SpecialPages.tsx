@@ -1,20 +1,25 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { useKPIs, useAlunos, usePagamentos } from '../../lib/useData';
+import { useAlunos, usePagamentos } from '../../lib/useData';
+import { useKPIs } from '../../hooks/useKPIs';
+import type { KPIs } from '../../types';
 import { revenueHistory } from '../../data/mockData';
 import { beltConfig } from '../../lib/gbBrand';
 import { exportRelatorioFinanceiro, exportRelatorioAlunos, exportCSV } from '../../services/pdf';
 import Card from '../../components/common/Card';
 import PageHeader from '../../components/common/PageHeader';
+import { SkeletonCard } from '../../components/common/Skeleton';
 import { useToast } from '../../components/common/Toast';
+import Tabs from '../../components/common/Tabs';
+import Button from '../../components/common/Button';
+import Badge from '../../components/common/Badge';
 import {
   Ico,
   XMarkIcon,
   ExclamationTriangleIcon,
   StarIcon,
   MartialArtsIcon,
-  CheckIcon,
   MoneyBagIcon,
   UsersIcon,
   ChartBarIcon,
@@ -40,12 +45,10 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return <div className="mb-3.5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">{children}</div>;
 }
 
-function ExportBtn({ label, icon, onClick, color = 'var(--gb-red)' }: { label: string; icon: HeroIcon; onClick: () => void; color?: string }) {
+function ExportBtn({ label, icon, onClick }: { label: string; icon: HeroIcon; onClick: () => void }) {
   return (
     <button onClick={onClick}
-      className="flex gap-2 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] font-medium rounded-sm border cursor-pointer transition-all duration-200 border-border bg-elevated text-primary outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 active:bg-border-subtle"
-      onMouseEnter={e => { e.currentTarget.style.borderColor = color; e.currentTarget.style.color = color; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+      className="flex gap-2 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] font-medium rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-primary hover:border-gb-red hover:text-gb-red active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
     >
       <Ico icon={icon} sm />{label}
     </button>
@@ -85,7 +88,7 @@ function NovaAcademiaModal({ onClose, onAdd }: { onClose: () => void; onAdd: (a:
 
   return (
     <div className="flex fixed inset-0 z-[9999] justify-center items-center p-5 bg-black/60" onClick={onClose}>
-      <div className="p-7 w-full max-w-[400px] rounded-lg border shadow-lg border-border bg-card" onClick={e => e.stopPropagation()}>
+      <div className="p-7 w-full max-w-[400px] rounded-lg border border-border bg-card" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-5">
           <div>
             <div className="mb-1 text-[10px] font-bold tracking-[1px] uppercase text-muted">Rede Gracie Barra Portugal</div>
@@ -113,14 +116,12 @@ function NovaAcademiaModal({ onClose, onAdd }: { onClose: () => void; onAdd: (a:
           </div>
 
           <div className="flex gap-2.5">
-            <button type="button" onClick={onClose}
-              className="flex-1 py-2.5 min-h-11 sm:min-h-0 text-[13px] font-semibold rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+            <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>
               Cancelar
-            </button>
-            <button type="submit"
-              className="flex-[2] py-2.5 min-h-11 sm:min-h-0 text-[13px] font-extrabold text-white rounded-sm border-none shadow-red cursor-pointer transition-colors duration-200 bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+            </Button>
+            <Button type="submit" variant="primary" className="flex-[2]">
               Adicionar Academia
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -129,7 +130,6 @@ function NovaAcademiaModal({ onClose, onAdd }: { onClose: () => void; onAdd: (a:
 }
 
 export function SuperAdminDashboard({ onNavigate }: { onNavigate?: (page: string) => void }) {
-  useKPIs();
   useAlunos();
   usePagamentos();
   const [academias, setAcademias] = useState<Academia[]>(ACADEMIAS);
@@ -149,8 +149,8 @@ export function SuperAdminDashboard({ onNavigate }: { onNavigate?: (page: string
         <Stat label="Total Alunos"  value={totalAlunos}                        accent="var(--gb-red)"   sub={`${academias.length} academias`}/>
         <Stat label="Receita Mensal" value={`€${totalReceita.toLocaleString()}`} accent="#16A34A"        delta="↑ +11% vs ant."/>
         <Stat label="Inadimplentes" value={totalInadimp}                        accent="#D97706"        sub="toda a rede"/>
-        <Stat label="Freq. Média"   value="81%"                                 accent="#2563EB"/>
-        <Stat label="NPS Rede"      value={<span className="flex gap-1 items-center">4.8<Ico icon={StarIcon} sm /></span>} accent="#7C3AED"        sub="últimos 30 dias"/>
+        <Stat label="Freq. Média"   value="81%"                                 accent="#16A34A"/>
+        <Stat label="NPS Rede"      value={<span className="flex gap-1 items-center">4.8<Ico icon={StarIcon} sm /></span>} accent="#16A34A"        sub="últimos 30 dias"/>
       </div>
 
       <div className="grid grid-cols-1 gap-4 mb-4 lg:grid-cols-[1.8fr_1fr]">
@@ -163,13 +163,16 @@ export function SuperAdminDashboard({ onNavigate }: { onNavigate?: (page: string
             {REDE_12M.map((r,i) => {
               const last = i === REDE_12M.length-1;
               return (
-                <div key={i} className="flex flex-col flex-1 gap-1 items-center">
+                <div key={i} className="flex relative flex-col flex-1 gap-1 items-center group">
                   {last && <span className="text-[9px] font-extrabold text-gb-red">€{(r.v/1000).toFixed(0)}k</span>}
                   <div
-                    className={['w-full rounded-t-[3px] transition-opacity', last ? 'shadow-red bg-gb-red' : 'bg-gb-red/[0.18]'].join(' ')}
+                    className={['w-full rounded-t-[3px] transition-colors', last ? 'bg-gb-red' : 'bg-gb-red/[0.18] group-hover:bg-gb-red/40'].join(' ')}
                     style={{ height: `${(r.v/maxR)*110}px` }}
                   />
                   <span className={['text-[9.5px]', last ? 'font-bold text-primary' : 'font-normal text-muted'].join(' ')}>{r.m}</span>
+                  <div className="absolute bottom-full left-1/2 z-10 mb-1.5 py-1 px-2 text-[10.5px] font-semibold whitespace-nowrap rounded-sm border opacity-0 -translate-x-1/2 transition-opacity duration-150 pointer-events-none border-border bg-card text-primary group-hover:opacity-100">
+                    {r.m} · €{r.v.toLocaleString()}
+                  </div>
                 </div>
               );
             })}
@@ -194,7 +197,7 @@ export function SuperAdminDashboard({ onNavigate }: { onNavigate?: (page: string
       <Card padding="none">
         <div className="flex justify-between items-center py-3.5 px-[18px] border-b border-border">
           <SectionLabel>Academias da Rede</SectionLabel>
-          <button onClick={() => setShowNova(true)} className="py-1.5 px-3.5 min-h-11 sm:min-h-0 text-xs font-bold text-white rounded-sm border-none shadow-red cursor-pointer transition-colors duration-200 bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">+ Nova Academia</button>
+          <Button variant="primary" size="sm" onClick={() => setShowNova(true)}>+ Nova Academia</Button>
         </div>
         <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
         <table className="w-full border-collapse" style={{ minWidth: 600 }}>
@@ -210,7 +213,7 @@ export function SuperAdminDashboard({ onNavigate }: { onNavigate?: (page: string
               <tr key={a.id} className="cursor-pointer border-b border-border-subtle hover:bg-elevated">
                 <td className="py-3 px-3.5">
                   <div className="flex gap-2 items-center">
-                    <div className="flex justify-center items-center w-[30px] h-[30px] rounded-[7px] bg-gb-red"><Ico icon={MartialArtsIcon} sm className="text-white" /></div>
+                    <div className="flex justify-center items-center w-[30px] h-[30px] rounded-md bg-gb-red"><Ico icon={MartialArtsIcon} sm className="text-white" /></div>
                     <span className="text-[13px] font-bold text-primary">{a.nome}</span>
                   </div>
                 </td>
@@ -232,7 +235,7 @@ export function SuperAdminDashboard({ onNavigate }: { onNavigate?: (page: string
                   <span className={['text-[13px] font-bold', a.inadimp > 5 ? 'text-amber-600' : 'text-green-600'].join(' ')}>{a.inadimp}</span>
                 </td>
                 <td className="py-3 px-3.5">
-                  <span className={['py-0.5 px-2 text-[10.5px] font-bold uppercase rounded-full', a.status==='nova' ? 'text-violet-600 bg-violet-600/[0.08]' : 'text-green-600 bg-green-600/[0.08]'].join(' ')}>
+                  <span className={['py-0.5 px-2 text-[10.5px] font-bold uppercase rounded-full', a.status==='nova' ? 'text-amber-600 bg-amber-600/[0.08]' : 'text-green-600 bg-green-600/[0.08]'].join(' ')}>
                     {a.status}
                   </span>
                 </td>
@@ -255,6 +258,59 @@ export function SuperAdminDashboard({ onNavigate }: { onNavigate?: (page: string
 // ─── RELATÓRIOS ───────────────────────────────────────────────────────────────
 type RTab = 'financeiro' | 'alunos' | 'frequencia' | 'retencao';
 
+const KPI_STRIP_CLASS = 'grid grid-cols-2 gap-2.5 mb-5 sm:grid-cols-3 lg:grid-cols-6';
+
+// Presentational — RelatoriosPage fetches kpis once and passes it down here
+// (it's also needed for the financeiro/alunos tab content further below).
+function KpiStrip({ kpis }: { kpis: KPIs }) {
+  const kpiRows = [
+    { label:'Taxa de Retenção',   value:`${kpis.taxaRetencao}%`,  target:'≥ 90%', ok: kpis.taxaRetencao >= 85 },
+    { label:'Frequência Média',   value:`${kpis.taxaFrequencia}%`, target:'≥ 80%', ok: kpis.taxaFrequencia >= 70 },
+    { label:'Inadimplência',      value:`${Math.round((kpis.inadimplentes/kpis.alunosAtivos)*100)}%`, target:'< 5%', ok: kpis.inadimplentes <= 1 },
+    { label:'Novos Alunos/Mês',   value:kpis.novosAlunos,         target:'≥ 5',   ok: kpis.novosAlunos >= 3 },
+    { label:'Cancelamentos/Mês',  value:kpis.cancelamentos,       target:'< 3',   ok: kpis.cancelamentos <= 2 },
+    { label:'Receita vs Prevista',value:`${Math.round((kpis.receitaMensal/kpis.receitaPrevista)*100)}%`, target:'≥ 95%', ok: kpis.receitaMensal >= kpis.receitaPrevista*0.9 },
+  ];
+
+  return (
+    <div className={KPI_STRIP_CLASS}>
+      {kpiRows.map(k => (
+        <div key={k.label} className="py-3 px-3.5 rounded-md border border-border bg-card">
+          <div className="mb-1 text-[9.5px] leading-[1.3] text-muted">{k.label}</div>
+          <div className="text-xl font-extrabold text-primary">{k.value}</div>
+          <div className="flex gap-1.5 items-center mt-1">
+            <span className="text-[9.5px] text-muted">{k.target}</span>
+            <Badge color={k.ok ? 'success' : 'warning'} className="ml-auto">{k.ok ? 'OK' : 'Atenção'}</Badge>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RelatoriosHeader({ periodo, setPeriodo }: { periodo: string; setPeriodo: (p: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-3 justify-between items-start mb-5 sm:items-end">
+      <div>
+        <div className="mb-1 text-[10.5px] tracking-[1px] uppercase text-muted">Analytics</div>
+        <h1 className="font-display text-[22px] font-extrabold uppercase text-primary">Relatórios</h1>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {['semana','mes','trimestre','ano'].map(p => (
+          <button key={p} onClick={() => setPeriodo(p)}
+            className={[
+              'py-1.5 px-3 min-h-11 sm:min-h-0 text-[11.5px] capitalize rounded-sm border cursor-pointer transition-colors duration-200',
+              'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+              periodo===p ? 'font-bold text-white bg-gb-red border-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark' : 'font-normal text-secondary bg-card border-border hover:bg-elevated active:bg-elevated',
+            ].join(' ')}>
+            {p}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function RelatoriosPage() {
   const toast = useToast();
   const { data: kpis } = useKPIs();
@@ -272,80 +328,50 @@ export function RelatoriosPage() {
     setTimeout(() => setExporting(null), 1000);
   };
 
-  const kpiRows = [
-    { label:'Taxa de Retenção',   value:`${kpis.taxaRetencao}%`,  target:'≥ 90%', ok: kpis.taxaRetencao >= 85 },
-    { label:'Frequência Média',   value:`${kpis.taxaFrequencia}%`, target:'≥ 80%', ok: kpis.taxaFrequencia >= 70 },
-    { label:'Inadimplência',      value:`${Math.round((kpis.inadimplentes/kpis.alunosAtivos)*100)}%`, target:'< 5%', ok: kpis.inadimplentes <= 1 },
-    { label:'Novos Alunos/Mês',   value:kpis.novosAlunos,         target:'≥ 5',   ok: kpis.novosAlunos >= 3 },
-    { label:'Cancelamentos/Mês',  value:kpis.cancelamentos,       target:'< 3',   ok: kpis.cancelamentos <= 2 },
-    { label:'Receita vs Prevista',value:`${Math.round((kpis.receitaMensal/kpis.receitaPrevista)*100)}%`, target:'≥ 95%', ok: kpis.receitaMensal >= kpis.receitaPrevista*0.9 },
-  ];
-
-  const TABS: {id: RTab; label: string; icon: HeroIcon}[] = [
-    {id:'financeiro',label:'Financeiro',  icon:MoneyBagIcon},
-    {id:'alunos',    label:'Alunos',      icon:UsersIcon},
-    {id:'frequencia',label:'Frequência',  icon:ChartBarIcon},
-    {id:'retencao',  label:'Retenção',    icon:ArrowPathIcon},
-  ];
+  // kpis is undefined only during the initial fetch, and every tab here
+  // reads from it (KPI strip, financeiro's Receita Mensal total, alunos'
+  // Atividade de Matrículas) — so gate the whole page on it, same as the
+  // `!aluno` guard in PortalAluno.tsx.
+  if (!kpis) {
+    return (
+      <div>
+        <RelatoriosHeader periodo={periodo} setPeriodo={setPeriodo} />
+        <div className={KPI_STRIP_CLASS}>
+          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} className="h-[68px]" />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
-      <div className="flex flex-wrap gap-3 justify-between items-start mb-5 sm:items-end">
-        <div>
-          <div className="mb-1 text-[10.5px] tracking-[1px] uppercase text-muted">Analytics</div>
-          <h1 className="font-display text-[22px] font-extrabold uppercase text-primary">Relatórios</h1>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {['semana','mes','trimestre','ano'].map(p => (
-            <button key={p} onClick={() => setPeriodo(p)}
-              className={[
-                'py-1.5 px-3 min-h-11 sm:min-h-0 text-[11.5px] capitalize rounded-sm border cursor-pointer transition-colors duration-200',
-                'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-                periodo===p ? 'font-bold text-white bg-gb-red border-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark' : 'font-normal text-secondary bg-card border-border hover:bg-elevated active:bg-elevated',
-              ].join(' ')}>
-              {p}
-            </button>
-          ))}
-        </div>
-      </div>
+      <RelatoriosHeader periodo={periodo} setPeriodo={setPeriodo} />
 
       {/* KPI strip */}
-      <div className="grid grid-cols-2 gap-2.5 mb-5 sm:grid-cols-3 lg:grid-cols-6">
-        {kpiRows.map(k => (
-          <div key={k.label} className="py-3 px-3.5 rounded-md border border-border bg-card">
-            <div className="mb-1 text-[9.5px] leading-[1.3] text-muted">{k.label}</div>
-            <div className="text-xl font-extrabold text-primary">{k.value}</div>
-            <div className="mt-0.5 text-[9.5px] text-muted">{k.target}</div>
-            <div className={['flex gap-1 items-center mt-1 text-[10px] font-bold', k.ok ? 'text-green-600' : 'text-amber-600'].join(' ')}>{k.ok ? <><Ico icon={CheckIcon} sm />OK</> : <><Ico icon={ExclamationTriangleIcon} sm />Atenção</>}</div>
-          </div>
-        ))}
-      </div>
+      <KpiStrip kpis={kpis} />
 
-      {/* Tabs */}
-      <div className="flex overflow-x-auto gap-0.5 mb-4 border-b border-border">
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            className={[
-              'flex gap-1.5 items-center py-2.5 px-3.5 -mb-px min-h-11 sm:min-h-0 text-[13px] whitespace-nowrap bg-none border-none border-b-2 cursor-pointer transition-colors duration-200',
-              'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-              tab===t.id ? 'font-bold border-gb-red text-primary' : 'font-normal border-transparent text-muted hover:text-primary active:text-primary',
-            ].join(' ')}>
-            <Ico icon={t.icon} sm /> {t.label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        tabs={[
+          { id: 'financeiro', label: 'Financeiro', icon: <Ico icon={MoneyBagIcon} sm /> },
+          { id: 'alunos', label: 'Alunos', icon: <Ico icon={UsersIcon} sm /> },
+          { id: 'frequencia', label: 'Frequência', icon: <Ico icon={ChartBarIcon} sm /> },
+          { id: 'retencao', label: 'Retenção', icon: <Ico icon={ArrowPathIcon} sm /> },
+        ]}
+        active={tab}
+        onChange={setTab}
+      />
 
       {tab === 'financeiro' && (
         <div>
           {/* Export actions */}
           <div className="flex gap-2 mb-4">
-            <ExportBtn icon={DocumentTextIcon} label={exporting==='pdf-fin' ? '⟳ A gerar PDF...' : 'Exportar PDF'} onClick={() => doExport('pdf-fin', () => exportRelatorioFinanceiro(pagamentos as any))} color="var(--gb-red)"/>
+            <ExportBtn icon={DocumentTextIcon} label={exporting==='pdf-fin' ? '⟳ A gerar PDF...' : 'Exportar PDF'} onClick={() => doExport('pdf-fin', () => exportRelatorioFinanceiro(pagamentos as any))}/>
             <ExportBtn icon={ChartBarIcon} label={exporting==='csv-fin' ? '⟳ A gerar CSV...' : 'Exportar CSV'} onClick={() => doExport('csv-fin', () => exportCSV(
               ['Aluno','Plano','Valor','Vencimento','Estado'],
               pagamentos.map(p => [p.alunoNome, p.plano, `€${p.valor}`, p.vencimento, p.status]),
               'GB_Pagamentos'
-            ))} color="#16A34A"/>
-            <ExportBtn icon={ReceiptPercentIcon} label="SAF-T TOConline" onClick={() => toast.success('SAF-T gerado via TOConline API')} color="#635BFF"/>
+            ))}/>
+            <ExportBtn icon={ReceiptPercentIcon} label="SAF-T TOConline" onClick={() => toast.success('SAF-T gerado via TOConline API')}/>
           </div>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
             <Card padding="none" className="py-5 px-[22px]">
@@ -360,13 +386,16 @@ export function RelatoriosPage() {
                 {revenueHistory.map((r,i) => {
                   const last = i === revenueHistory.length-1;
                   return (
-                    <div key={i} className="flex flex-col flex-1 gap-1.5 items-center">
+                    <div key={i} className="flex relative flex-col flex-1 gap-1.5 items-center group">
                       <span className={['text-[9.5px]', last ? 'font-extrabold text-gb-red' : 'font-normal text-muted'].join(' ')}>€{(r.valor/1000).toFixed(1)}k</span>
                       <div
-                        className={['w-full rounded-t transition-opacity', last ? 'shadow-red bg-gb-red' : 'bg-gb-red/[0.18]'].join(' ')}
+                        className={['w-full rounded-t transition-colors', last ? 'bg-gb-red' : 'bg-gb-red/[0.18] group-hover:bg-gb-red/40'].join(' ')}
                         style={{ height: `${(r.valor/maxR)*115}px` }}
                       />
                       <span className={['text-[10.5px]', last ? 'font-bold text-primary' : 'font-normal text-muted'].join(' ')}>{r.mes}</span>
+                      <div className="absolute bottom-full left-1/2 z-10 mb-1.5 py-1 px-2 text-[10.5px] font-semibold whitespace-nowrap rounded-sm border opacity-0 -translate-x-1/2 transition-opacity duration-150 pointer-events-none border-border bg-card text-primary group-hover:opacity-100">
+                        {r.mes} · €{r.valor.toLocaleString()}
+                      </div>
                     </div>
                   );
                 })}
@@ -397,12 +426,12 @@ export function RelatoriosPage() {
       {tab === 'alunos' && (
         <div>
           <div className="flex gap-2 mb-4">
-            <ExportBtn icon={DocumentTextIcon} label={exporting==='pdf-alu' ? '⟳ A gerar...' : 'Exportar PDF'} onClick={() => doExport('pdf-alu', () => exportRelatorioAlunos(alunos as any))} color="var(--gb-red)"/>
+            <ExportBtn icon={DocumentTextIcon} label={exporting==='pdf-alu' ? '⟳ A gerar...' : 'Exportar PDF'} onClick={() => doExport('pdf-alu', () => exportRelatorioAlunos(alunos as any))}/>
             <ExportBtn icon={ChartBarIcon} label={exporting==='csv-alu' ? '⟳ A gerar...' : 'Exportar CSV'} onClick={() => doExport('csv-alu', () => exportCSV(
               ['Nome','Faixa','Grau','Plano','Frequência','Status','Matrícula'],
               alunos.map(a => [a.nome, a.faixa, a.grau, a.plano, `${a.frequencia}%`, a.status, a.dataMatricula]),
               'GB_Alunos'
-            ))} color="#16A34A"/>
+            ))}/>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Card padding="none" className="py-5 px-[22px]">
@@ -456,7 +485,7 @@ export function RelatoriosPage() {
           <Card padding="none" className="py-5 px-[22px]">
             <div className="flex justify-between items-center mb-3.5">
               <SectionLabel>Frequência por Aluno</SectionLabel>
-              <ExportBtn icon={ChartBarIcon} label="CSV" onClick={() => exportCSV(['Nome','Frequência','Status'],alunos.map(a=>[a.nome,`${a.frequencia}%`,a.status]),'GB_Frequencia')} color="#16A34A"/>
+              <ExportBtn icon={ChartBarIcon} label="CSV" onClick={() => exportCSV(['Nome','Frequência','Status'],alunos.map(a=>[a.nome,`${a.frequencia}%`,a.status]),'GB_Frequencia')}/>
             </div>
             {alunos.filter(a => a.status==='ativo').sort((a,b) => b.frequencia-a.frequencia).map(a => (
               <div key={a.id} className="flex gap-2.5 items-center mb-2">

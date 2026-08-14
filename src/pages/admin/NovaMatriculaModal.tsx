@@ -6,6 +6,7 @@ import { Ico, ArrowLeftIcon, ArrowRightIcon, CheckIcon } from '../../lib/icons';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
 import BeltBadge from '../../components/common/BeltBadge';
+import Select from '../../components/common/Select';
 
 const FAIXAS = [
   'branca',
@@ -154,7 +155,7 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
               {planos.map((p: any) => (
                 <button key={p.id} onClick={() => setPlanoId(p.id)}
                   className={[
-                    'flex justify-between items-center py-3 px-4 min-h-11 text-left rounded-[10px] border-2 cursor-pointer transition-colors duration-200',
+                    'flex justify-between items-center py-3 px-4 min-h-11 text-left rounded-md border-2 cursor-pointer transition-colors duration-200',
                     'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
                     planoId === p.id ? 'border-gb-red bg-gb-red/5 hover:bg-gb-red/10 active:bg-gb-red/10' : 'border-border bg-elevated hover:bg-border-subtle active:bg-border-subtle',
                   ].join(' ')}>
@@ -211,16 +212,14 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
               )}
             </div>
             <div>
-              <label className={LABEL_CLASS}>Faixa actual</label>
-              <select value={faixa} onChange={e => setFaixa(e.target.value)} className={[FIELD_CLASS, 'cursor-pointer'].join(' ')}>
+              <Select label="Faixa actual" value={faixa} onChange={e => setFaixa(e.target.value)}>
                 {FAIXAS.map(f => <option key={f} value={f}>{beltConfig[f]?.label || f}</option>)}
-              </select>
+              </Select>
             </div>
             <div>
-              <label className={LABEL_CLASS}>Grau</label>
-              <select value={grau} onChange={e => setGrau(e.target.value)} className={[FIELD_CLASS, 'cursor-pointer'].join(' ')}>
+              <Select label="Grau" value={grau} onChange={e => setGrau(e.target.value)}>
                 {[0,1,2,3,4].map(g => <option key={g} value={g}>{g}</option>)}
-              </select>
+              </Select>
             </div>
           </div>
           <div className="flex justify-between mt-5">
@@ -265,10 +264,9 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
               <input type="email" value={respEmail} onChange={e => setRespEmail(e.target.value)} placeholder="email@exemplo.com" className={FIELD_CLASS} />
             </div>
             <div>
-              <label className={LABEL_CLASS}>Relação</label>
-              <select value={respRelacao} onChange={e => setRespRelacao(e.target.value)} className={[FIELD_CLASS, 'cursor-pointer'].join(' ')}>
+              <Select label="Relação" value={respRelacao} onChange={e => setRespRelacao(e.target.value)}>
                 {RELACAO_OPTS.map(r => <option key={r} value={r}>{RELACAO_LABELS[r]}</option>)}
-              </select>
+              </Select>
             </div>
           </div>
 

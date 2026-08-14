@@ -6,6 +6,7 @@ import { Ico, ChatBubbleLeftRightIcon, DocumentTextIcon, ArrowUpTrayIcon, CheckI
 import Card from '../../components/common/Card';
 import Badge, { type BadgeColor } from '../../components/common/Badge';
 import PageHeader from '../../components/common/PageHeader';
+import Tabs from '../../components/common/Tabs';
 import { useToast } from '../../components/common/Toast';
 
 type Tab = 'cobranças' | 'planos' | 'toconline';
@@ -59,19 +60,15 @@ export default function FinanceiroPage() {
         ))}
       </div>
 
-      {/* Tabs */}
-      <div className="flex overflow-x-auto gap-1 mb-5 border-b border-border">
-        {(['cobranças','planos','toconline'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={[
-              'py-2 px-4 -mb-px min-h-11 sm:min-h-0 text-[13px] capitalize bg-none border-none border-b-2 cursor-pointer whitespace-nowrap transition-colors duration-200',
-              'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-              tab === t ? 'font-bold border-gb-red text-gb-red' : 'font-normal border-transparent text-muted hover:text-secondary active:text-secondary',
-            ].join(' ')}>
-            {t}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        tabs={[
+          { id: 'cobranças', label: 'Cobranças' },
+          { id: 'planos', label: 'Planos' },
+          { id: 'toconline', label: 'TOConline' },
+        ]}
+        active={tab}
+        onChange={setTab}
+      />
 
       {/* COBRANÇAS */}
       {tab === 'cobranças' && (

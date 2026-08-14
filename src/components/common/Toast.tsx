@@ -32,7 +32,7 @@ const TOAST_CONFIG: Record<ToastType, { icon: HeroIcon; color: string; border: s
   sucesso: { icon: CheckCircleIcon,        color: '#22C55E',      border: 'rgba(34,197,94,0.25)' },
   erro:    { icon: XCircleIcon,            color: 'var(--gb-red)', border: 'rgba(200,16,30,0.2)' },
   aviso:   { icon: ExclamationTriangleIcon, color: '#F59E0B',      border: 'rgba(245,158,11,0.25)' },
-  info:    { icon: InformationCircleIcon,  color: '#3B82F6',      border: 'rgba(59,130,246,0.25)' },
+  info:    { icon: InformationCircleIcon,  color: '#6B7280',      border: 'rgba(107,114,128,0.25)' },
 };
 
 const AUTO_DISMISS_MS = 5000;
@@ -70,7 +70,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <div
               key={item.id}
               role="status"
-              className="flex gap-2.5 items-start py-3 px-3.5 rounded-lg border shadow-[0_8px_24px_rgba(0,0,0,0.15)] pointer-events-auto bg-card"
+              className="flex gap-2.5 items-start py-3 px-3.5 rounded-lg border pointer-events-auto bg-card"
               style={{ borderColor: cfg.border, borderLeftWidth: 3, borderLeftColor: cfg.color }}
             >
               <span className="mt-0.5" style={{ color: cfg.color }}>

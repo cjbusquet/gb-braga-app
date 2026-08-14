@@ -12,6 +12,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Button from '../../components/common/Button';
 import PageHeader from '../../components/common/PageHeader';
 import Badge from '../../components/common/Badge';
+import Select from '../../components/common/Select';
 import { SkeletonList } from '../../components/common/Skeleton';
 import BeltBadge from '../../components/common/BeltBadge';
 
@@ -88,7 +89,7 @@ function EditAlunoModal({ aluno, onClose }: { aluno: any; onClose: () => void })
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="p-7 w-full max-w-[500px] rounded-lg border shadow-lg border-border bg-card"
+        className="p-7 w-full max-w-[500px] rounded-lg border border-border bg-card"
       >
         <div className="flex justify-between mb-5">
           <div className="text-[15px] font-extrabold text-primary">
@@ -143,39 +144,23 @@ function EditAlunoModal({ aluno, onClose }: { aluno: any; onClose: () => void })
           </div>
         )}
 
-        <div className="flex gap-2.5 mt-[18px]">
-          <button
-            onClick={onClose}
-            disabled={saving}
-            className="flex flex-1 justify-center items-center h-11 sm:h-10 text-[13px] rounded-sm border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card hover:text-primary active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+        <div className="flex gap-2.5 mt-4.5">
+          <Button variant="secondary" className="flex-1" disabled={saving} onClick={onClose}>
             Cancelar
-          </button>
-          <button
-            onClick={handleSave}
+          </Button>
+          <Button
+            variant="primary" className={['flex-[2]', saved ? '!bg-green-500' : ''].join(' ')}
             disabled={saving || saved || !dataNasc || precisaResp}
-            className={[
-              'flex flex-[2] justify-center items-center h-11 sm:h-10 text-[13px] font-bold text-white rounded-sm border-none cursor-pointer transition-all duration-200 hover:bg-gb-red-dark active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
-              saved ? '!bg-green-500' : 'bg-gb-red',
-            ].join(' ')}
+            onClick={handleSave}
           >
             {saved ? (
-              <span className="inline-flex gap-1.5 items-center">
-                <Ico icon={CheckIcon} sm />
-                Guardado!
-              </span>
+              <><Ico icon={CheckIcon} sm /> Guardado!</>
             ) : saving ? (
-              <span className="inline-flex gap-1.5 items-center">
-                <Ico icon={ArrowPathIcon} sm />
-                A guardar...
-              </span>
+              <><Ico icon={ArrowPathIcon} sm /> A guardar...</>
             ) : (
-              <span className="inline-flex gap-1.5 items-center">
-                <Ico icon={SaveIcon} sm />
-                Guardar
-              </span>
+              <><Ico icon={SaveIcon} sm /> Guardar</>
             )}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -285,7 +270,7 @@ function ResponsaveisSection({ aluno }: { aluno: any }) {
             </div>
             {/* Badges */}
             <div className="flex gap-1 shrink-0">
-              <span className="py-0.5 px-1.5 text-[10px] font-semibold text-indigo-500 rounded-full bg-indigo-500/10">
+              <span className="py-0.5 px-1.5 text-[10px] font-semibold text-muted rounded-full bg-elevated">
                 {RELACAO_LABELS[v.tipoRelacao] ?? v.tipoRelacao}
               </span>
               {v.podeCheckin && (
@@ -317,7 +302,7 @@ function ResponsaveisSection({ aluno }: { aluno: any }) {
 
       {/* Formulário inline de adição */}
       {adding && (
-        <div className="p-4 mt-2.5 rounded-[10px] border border-gb-red/20 bg-elevated">
+        <div className="p-4 mt-2.5 rounded-md border border-gb-red/20 bg-elevated">
           <div className="mb-3 text-[11px] font-bold tracking-[0.6px] uppercase text-muted">
             Novo Responsável
           </div>
@@ -493,7 +478,7 @@ export default function AlunosPage() {
                 {/* Badge de idade */}
                 {idade !== null && (
                   <div className="flex flex-wrap gap-1.5 mt-1">
-                    <span className={['py-0.5 px-2 text-[10.5px] font-semibold rounded-full', menor ? 'text-amber-600 bg-amber-600/10' : 'text-indigo-500 bg-indigo-500/10'].join(' ')}>
+                    <span className={['py-0.5 px-2 text-[10.5px] font-semibold rounded-full', menor ? 'text-amber-600 bg-amber-600/10' : 'text-muted bg-elevated'].join(' ')}>
                       {idade} anos{menor ? ' · Menor' : ' · Adulto'}
                     </span>
                     {menor && podeCheckinAutonomo(selected.dataNascimento) && (
@@ -626,14 +611,13 @@ export default function AlunosPage() {
           </div>
           <div className="flex gap-1.5 items-center">
             <Ico icon={AdjustmentsHorizontalIcon} sm className="shrink-0 text-muted" />
-            <select value={sortBy} onChange={e => setFilter(setSortBy)(e.target.value as typeof sortBy)}
-              className="py-2 px-3 min-h-11 sm:min-h-0 text-[12.5px] rounded-sm border outline-none transition-all duration-200 border-border bg-card text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25">
+            <Select variant="sm" value={sortBy} onChange={e => setFilter(setSortBy)(e.target.value as typeof sortBy)}>
               <option value="nome-az">Nome A→Z</option>
               <option value="nome-za">Nome Z→A</option>
               <option value="faixa-asc">Faixa ↑</option>
               <option value="faixa-desc">Faixa ↓</option>
               <option value="freq-desc">Frequência ↓</option>
-            </select>
+            </Select>
           </div>
         </div>
 
@@ -651,13 +635,12 @@ export default function AlunosPage() {
           ))}
 
           {faixasDisponiveis.length > 0 && (
-            <select value={filtroFaixa} onChange={e => setFilter(setFiltroFaixa)(e.target.value)}
-              className="py-2 px-3 min-h-11 sm:min-h-0 text-xs rounded-sm border outline-none transition-all duration-200 border-border bg-card text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25">
+            <Select variant="sm" value={filtroFaixa} onChange={e => setFilter(setFiltroFaixa)(e.target.value)}>
               <option value="todas">Todas as faixas</option>
               {faixasDisponiveis.map(f => (
                 <option key={f as string} value={f as string}>{(beltConfig[f as string]?.label) || f}</option>
               ))}
-            </select>
+            </Select>
           )}
 
           <label className="flex gap-1.5 items-center py-1.5 ml-auto cursor-pointer">

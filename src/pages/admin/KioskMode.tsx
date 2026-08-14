@@ -5,17 +5,9 @@ import { ACADEMIA } from '../../data/mockData';
 import { GBLogo } from '../../components/GBLogo';
 import { Ico, MapPinIcon, CheckIcon, MartialArtsIcon, UsersIcon, MagnifyingGlassIcon } from '../../lib/icons';
 import BeltBadge from '../../components/common/BeltBadge';
+import { useConfiguracaoSecaoQuery } from '../../hooks/useConfiguracoes';
+import { haversineDistanceMeters } from '../../services/geo';
 import type { Aluno } from '../../types';
-
-const ACADEMIA_COORDS = { lat: 41.5484, lng: -8.4259, radius: 100 };
-
-function distanciaMetros(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371000;
-  const φ1 = (lat1*Math.PI)/180, φ2 = (lat2*Math.PI)/180;
-  const Δφ = ((lat2-lat1)*Math.PI)/180, Δλ = ((lon2-lon1)*Math.PI)/180;
-  const a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
-  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-}
 
 interface Props { onExit: () => void }
 
@@ -24,6 +16,19 @@ type CheckInState = 'idle' | 'locating' | 'success' | 'outside' | 'error';
 export default function KioskMode({ onExit }: Props) {
   const { data: alunos } = useAlunos();
   const { data: turmas } = useTurmas();
+
+  // Same 'academia' config section ConfigPage.tsx (Academia > GPS Fence) and
+  // MeuCheckin.tsx read — this used to be a hardcoded coordinate here, which
+  // reported wrong distances once the real academia point was configured.
+  const { data: academiaConfig } = useConfiguracaoSecaoQuery('academia');
+  const cfg = (academiaConfig as Record<string, string> | null) ?? {};
+  const ACADEMIA_COORDS = {
+    lat: parseFloat(cfg['GPS Latitude'] ?? ''),
+    lng: parseFloat(cfg['GPS Longitude'] ?? ''),
+    radius: parseInt(cfg['GPS Raio (m)'] ?? '100') || 100,
+  };
+  const academiaConfigurada = !isNaN(ACADEMIA_COORDS.lat) && !isNaN(ACADEMIA_COORDS.lng);
+
   const [state, setState] = useState<CheckInState>('idle');
   const [lastCheckin, setLastCheckin] = useState<{nome:string;faixa:string;grau:number;hora:string;dist:number}|null>(null);
   const [todayCount, setTodayCount] = useState(12);
@@ -54,7 +59,7 @@ export default function KioskMode({ onExit }: Props) {
     if (state !== 'idle') return;
     setState('locating');
 
-    if (!navigator.geolocation) {
+    if (!navigator.geolocation || !academiaConfigurada) {
       // Fallback: allow manual check-in without GPS
       setState('success');
       setLastCheckin({ nome: aluno.nome, faixa: aluno.faixa, grau: aluno.grau || 0, hora: new Date().toTimeString().slice(0,5), dist: 0 });
@@ -64,7 +69,7 @@ export default function KioskMode({ onExit }: Props) {
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const dist = distanciaMetros(pos.coords.latitude, pos.coords.longitude, ACADEMIA_COORDS.lat, ACADEMIA_COORDS.lng);
+        const dist = haversineDistanceMeters(pos.coords.latitude, pos.coords.longitude, ACADEMIA_COORDS.lat, ACADEMIA_COORDS.lng);
         if (dist <= ACADEMIA_COORDS.radius) {
           setState('success');
           setLastCheckin({ nome: aluno.nome, faixa: aluno.faixa, grau: aluno.grau || 0, hora: new Date().toTimeString().slice(0,5), dist: Math.round(dist) });
@@ -86,7 +91,7 @@ export default function KioskMode({ onExit }: Props) {
       },
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
     );
-  }, [state]);
+  }, [state, academiaConfigurada, ACADEMIA_COORDS.lat, ACADEMIA_COORDS.lng, ACADEMIA_COORDS.radius]);
 
   const filteredAlunos = alunos.filter(a =>
     a.status === 'ativo' && a.nome.toLowerCase().includes(search.toLowerCase())
@@ -119,15 +124,19 @@ export default function KioskMode({ onExit }: Props) {
         </div>
       </div>
 
-      {/* Active class banner */}
-      <div className="flex shrink-0 justify-between items-center py-2.5 px-7 bg-gb-red">
-        <div className="flex gap-2.5 items-center">
-          <div className="w-2 h-2 bg-white rounded-full animate-[pulse_1.5s_infinite]"/>
-          <span className="text-[13px] font-bold tracking-[0.5px] text-white uppercase">AULA EM CURSO</span>
+      {/* Active class banner — turmaAtual is undefined when the academia has
+          no turmas registered yet; this used to crash the whole kiosk on
+          .nome access instead of just hiding the banner. */}
+      {turmaAtual && (
+        <div className="flex shrink-0 justify-between items-center py-2.5 px-7 bg-gb-red">
+          <div className="flex gap-2.5 items-center">
+            <div className="w-2 h-2 bg-white rounded-full animate-[pulse_1.5s_infinite]"/>
+            <span className="text-[13px] font-bold tracking-[0.5px] text-white uppercase">AULA EM CURSO</span>
+          </div>
+          <div className="text-sm font-semibold text-white">{turmaAtual.nome}</div>
+          <div className="text-[13px] text-white/70">Prof. {turmaAtual.professorNome} · {turmaAtual.horario}</div>
         </div>
-        <div className="text-sm font-semibold text-white">{turmaAtual.nome}</div>
-        <div className="text-[13px] text-white/70">Prof. {turmaAtual.professorNome} · {turmaAtual.horario}</div>
-      </div>
+      )}
 
       {/* Main content */}
       <div className="flex overflow-y-auto flex-col flex-1 gap-6 justify-center items-center py-8 px-7 lg:flex-row lg:gap-10">
@@ -164,6 +173,12 @@ export default function KioskMode({ onExit }: Props) {
                 <div className="mb-5 max-w-[340px] text-sm leading-[1.6] text-center text-[#6B6B78]">
                   Seleciona o teu nome na lista ao lado.<br/>O GPS confirma automaticamente se estás na academia.
                 </div>
+
+                {!academiaConfigurada && (
+                  <div className="mb-4 max-w-[340px] text-xs leading-[1.6] text-center text-amber-500">
+                    Ponto de referência por definir em Config. → Academia. Check-in a decorrer sem validação de GPS.
+                  </div>
+                )}
 
                 <div className="flex gap-2">
                   <div className="flex gap-1.5 items-center py-2 px-4 rounded-lg border border-[#2A2A32] bg-[#161620]">
@@ -214,7 +229,7 @@ export default function KioskMode({ onExit }: Props) {
 
         {/* Aluno list */}
         <div className={['flex flex-col w-full max-w-[480px]', showManual ? '' : 'lg:w-80'].join(' ')}>
-          <button onClick={() => setShowManual(!showManual)} className="flex gap-2 items-center py-3 px-[18px] min-h-11 mb-3.5 text-[13px] font-semibold rounded-[10px] border cursor-pointer transition-colors duration-200 border-[#2A2A32] bg-[#161620] text-[#9CA3AF] hover:text-white hover:border-[#3A3A44] active:bg-[#1E1E28] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0A0C]">
+          <button onClick={() => setShowManual(!showManual)} className="flex gap-2 items-center py-3 px-[18px] min-h-11 mb-3.5 text-[13px] font-semibold rounded-md border cursor-pointer transition-colors duration-200 border-[#2A2A32] bg-[#161620] text-[#9CA3AF] hover:text-white hover:border-[#3A3A44] active:bg-[#1E1E28] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0A0C]">
             <Ico icon={UsersIcon} sm /> {showManual ? '← Voltar ao GPS' : 'Selecionar Aluno'}
           </button>
 
@@ -222,7 +237,7 @@ export default function KioskMode({ onExit }: Props) {
             <div className="relative mb-3">
               <Ico icon={MagnifyingGlassIcon} sm className="absolute top-1/2 left-3 text-[#6B6B78] -translate-y-1/2 pointer-events-none" />
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Pesquisar..." autoFocus
-                className="py-3 pr-4 pl-9 w-full min-h-11 text-[15px] text-white rounded-[10px] border outline-none transition-colors duration-200 border-[#2A2A32] bg-[#161620] focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25"/>
+                className="py-3 pr-4 pl-9 w-full min-h-11 text-[15px] text-white rounded-md border outline-none transition-colors duration-200 border-[#2A2A32] bg-[#161620] focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25"/>
             </div>
           )}
 
@@ -230,7 +245,7 @@ export default function KioskMode({ onExit }: Props) {
             {(showManual ? filteredAlunos : alunos.filter(a => a.status === 'ativo').slice(0, 6)).map(a => {
               return (
                 <button key={a.id} onClick={() => doCheckin(a)}
-                  className="flex gap-3 items-center py-3 px-3.5 min-h-11 text-left rounded-[10px] border cursor-pointer transition-colors duration-200 border-[#2A2A32] bg-[#161620] hover:border-gb-red active:bg-[#1E1E28] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0A0C]"
+                  className="flex gap-3 items-center py-3 px-3.5 min-h-11 text-left rounded-md border cursor-pointer transition-colors duration-200 border-[#2A2A32] bg-[#161620] hover:border-gb-red active:bg-[#1E1E28] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0A0C]"
                 >
                   <div className="flex justify-center items-center w-[38px] h-[38px] text-[15px] font-extrabold rounded-full shrink-0 text-gb-red bg-gb-red/[0.13]">{a.nome.charAt(0)}</div>
                   <div className="flex-1">

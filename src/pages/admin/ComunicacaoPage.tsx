@@ -8,6 +8,9 @@ import { sendEmail } from '../../services/api/edgeFunctions';
 import Card from '../../components/common/Card';
 import PageHeader from '../../components/common/PageHeader';
 import Badge from '../../components/common/Badge';
+import Select from '../../components/common/Select';
+import Tabs from '../../components/common/Tabs';
+import Button from '../../components/common/Button';
 import {
   Ico,
   type HeroIcon,
@@ -33,27 +36,10 @@ type Canal = 'whatsapp' | 'sms' | 'email' | 'push';
 
 const CANAL: Record<Canal, { icon: HeroIcon; label: string; accent: string; bg: string }> = {
   whatsapp: { icon: ChatBubbleLeftRightIcon, label: 'WhatsApp', accent: '#25D366', bg: 'rgba(37,211,102,0.1)' },
-  sms:      { icon: DeviceMobileIcon,        label: 'SMS',       accent: '#3B82F6', bg: 'rgba(59,130,246,0.1)' },
-  email:    { icon: EnvelopeIcon,            label: 'Email',     accent: '#A78BFA', bg: 'rgba(167,139,250,0.1)' },
+  sms:      { icon: DeviceMobileIcon,        label: 'SMS',       accent: '#6B7280', bg: 'rgba(107,114,128,0.1)' },
+  email:    { icon: EnvelopeIcon,            label: 'Email',     accent: 'var(--gb-red)', bg: 'rgba(200,16,46,0.1)' },
   push:     { icon: BellIcon,                label: 'Push',      accent: '#F59E0B', bg: 'rgba(245,158,11,0.1)' },
 };
-
-function TabBar({ tabs, active, onSelect }: { tabs: { id: string; label: string; icon: HeroIcon }[]; active: string; onSelect: (id: string) => void }) {
-  return (
-    <div className="flex overflow-x-auto gap-0.5 mb-4 border-b border-border">
-      {tabs.map(t => (
-        <button key={t.id} onClick={() => onSelect(t.id)}
-          className={[
-            'flex gap-1.5 items-center py-2.5 px-3.5 -mb-px min-h-11 sm:min-h-0 text-[13px] whitespace-nowrap bg-none border-none border-b-2 cursor-pointer transition-colors duration-200',
-            'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-            active === t.id ? 'font-semibold border-gb-red text-primary' : 'font-normal border-transparent text-muted hover:text-primary active:text-primary',
-          ].join(' ')}>
-          <FontAwesomeIcon icon={t.icon} className="w-3.5 h-3.5" />{t.label}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 const FIELD_CLASS = 'box-border w-full py-2.5 px-3 min-h-11 sm:min-h-0 font-ui text-[13px] rounded-sm border transition-all duration-200 border-border bg-elevated text-primary outline-none focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25';
 const FIELD_LABEL_CLASS = 'block mb-1 text-[10.5px] font-bold tracking-[0.8px] uppercase text-muted';
@@ -101,17 +87,14 @@ function TemplatesTab({ templates, onUse, onRefresh }: {
       {/* Header + novo botão */}
       <div className="flex justify-between items-center mb-3.5">
         <div className="text-xs text-muted">{templates.length} template{templates.length !== 1 ? 's' : ''}</div>
-        <button
+        <Button
+          variant={showForm ? 'secondary' : 'primary'} size="sm"
           onClick={() => { setShowForm(s => !s); setErr(''); }}
-          className={[
-            'py-2 px-4 min-h-11 sm:min-h-0 text-[12.5px] font-bold rounded-sm border cursor-pointer transition-colors duration-200',
-            'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-            showForm ? 'border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle' : 'text-white border-none bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark',
-          ].join(' ')}>
+        >
           {showForm
-            ? <span className="inline-flex gap-1.5 items-center"><Ico icon={XMarkIcon} sm />Cancelar</span>
-            : <span className="inline-flex gap-1.5 items-center"><Ico icon={PlusIcon} sm />Novo Template</span>}
-        </button>
+            ? <><Ico icon={XMarkIcon} sm />Cancelar</>
+            : <><Ico icon={PlusIcon} sm />Novo Template</>}
+        </Button>
       </div>
 
       {/* Formulário de criação */}
@@ -124,13 +107,11 @@ function TemplatesTab({ templates, onUse, onRefresh }: {
               <input value={nome} onChange={e => setNome(e.target.value)} placeholder="ex: Lembrete de pagamento" className={FIELD_CLASS} />
             </div>
             <div>
-              <div className={FIELD_LABEL_CLASS}>Canal</div>
-              <select value={canal} onChange={e => setCanal(e.target.value as Canal)}
-                className={[FIELD_CLASS, 'cursor-pointer'].join(' ')}>
+              <Select label="Canal" value={canal} onChange={e => setCanal(e.target.value as Canal)}>
                 {(Object.entries(CANAL) as [Canal, typeof CANAL[Canal]][]).map(([id, c]) => (
                   <option key={id} value={id}>{c.label}</option>
                 ))}
-              </select>
+              </Select>
             </div>
           </div>
           {canal === 'email' && (
@@ -302,14 +283,14 @@ export default function ComunicacaoPage() {
         ))}
       </div>
 
-      <TabBar
+      <Tabs
         active={tab}
-        onSelect={s => setTab(s as typeof tab)}
+        onChange={s => setTab(s as typeof tab)}
         tabs={[
-          { id: 'enviar', label: 'Nova Mensagem', icon: EnvelopeIcon },
-          { id: 'templates', label: 'Templates', icon: PencilIcon },
-          { id: 'automatizacoes', label: 'Automações', icon: BoltIcon },
-          { id: 'historico', label: 'Histórico', icon: ClipboardDocumentIcon },
+          { id: 'enviar', label: 'Nova Mensagem', icon: <Ico icon={EnvelopeIcon} sm /> },
+          { id: 'templates', label: 'Templates', icon: <Ico icon={PencilIcon} sm /> },
+          { id: 'automatizacoes', label: 'Automações', icon: <Ico icon={BoltIcon} sm /> },
+          { id: 'historico', label: 'Histórico', icon: <Ico icon={ClipboardDocumentIcon} sm /> },
         ]}
       />
 
@@ -333,15 +314,14 @@ export default function ComunicacaoPage() {
             </div>
 
             {/* Destinatário */}
-            <label className={FIELD_LABEL_CLASS}>Destinatário</label>
-            <select value={dest} onChange={e => setDest(e.target.value)} className={[FIELD_CLASS, 'cursor-pointer mb-3.5'].join(' ')}>
+            <Select label="Destinatário" value={dest} onChange={e => setDest(e.target.value)} className="mb-3.5">
               <option value="all">Todos os alunos ativos ({alunos.filter(a => a.status === 'ativo').length})</option>
               <option value="inadimplentes">Inadimplentes</option>
               <option value="aniversariantes">Aniversariantes do mês</option>
               <option value="faixa_branca">Faixa Branca</option>
               <option value="kids">Kids</option>
               {alunos.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
-            </select>
+            </Select>
 
             {/* Assunto (email only) */}
             {canal === 'email' && (
@@ -359,7 +339,7 @@ export default function ComunicacaoPage() {
               className={[FIELD_CLASS, 'resize-none'].join(' ')}/>
             <div className="flex justify-between mt-1 mb-4">
               <span className="text-[10.5px] text-muted">{msg.length} caracteres{canal === 'sms' ? ` · ${Math.ceil(msg.length / 160) || 1} SMS` : ''}</span>
-              <button onClick={() => setTab('templates')} className="py-1 text-[11px] font-semibold text-blue-500 bg-none border-none cursor-pointer transition-colors duration-200 hover:text-blue-600 active:text-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">+ Usar template</button>
+              <button onClick={() => setTab('templates')} className="py-1 text-[11px] font-semibold text-gb-red bg-none border-none cursor-pointer transition-colors duration-200 hover:text-gb-red-dark active:text-gb-red-dark outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">+ Usar template</button>
             </div>
 
             {sent && (
@@ -399,16 +379,16 @@ export default function ComunicacaoPage() {
               <div className="mb-3.5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Pré-visualização da mensagem</div>
 
               {canal === 'whatsapp' && (
-                <div className="p-3.5 min-h-[100px] rounded-[10px] bg-[#111B21]">
-                  <div className="py-2.5 px-3 max-w-[85%] rounded-[8px_8px_8px_0] shadow-[0_1px_3px_rgba(0,0,0,0.3)] bg-[#1F2C34]">
+                <div className="p-3.5 min-h-[100px] rounded-md bg-[#111B21]">
+                  <div className="py-2.5 px-3 max-w-[85%] rounded-[8px_8px_8px_0] bg-[#1F2C34]">
                     <p className="m-0 text-[13px] leading-[1.5] text-[#E9EDF0]">{msg || 'A mensagem aparecerá aqui...'}</p>
                     <p className="flex gap-1 justify-end items-center mt-1 mb-0 text-[10px] text-[#8696A0]">14:32 <FontAwesomeIcon icon={faCheckDouble} className="w-2.5 h-2.5" /></p>
                   </div>
                 </div>
               )}
               {canal === 'sms' && (
-                <div className="p-3.5 min-h-[100px] rounded-[10px] bg-elevated">
-                  <div className="py-2.5 px-3 ml-auto max-w-[85%] rounded-[8px_8px_0_8px] bg-[#3B82F6]">
+                <div className="p-3.5 min-h-[100px] rounded-md bg-elevated">
+                  <div className="py-2.5 px-3 ml-auto max-w-[85%] rounded-[8px_8px_0_8px] bg-[#6B7280]">
                     <p className="m-0 text-[13px] leading-[1.5] text-white">{msg || 'Mensagem SMS...'}</p>
                   </div>
                 </div>
@@ -425,7 +405,7 @@ export default function ComunicacaoPage() {
               {canal === 'push' && (
                 <div className="p-3.5 rounded-2xl border border-[#2C2C2E] bg-[#1C1C1E]">
                   <div className="flex gap-2.5 items-start">
-                    <div className="flex justify-center items-center w-10 h-10 rounded-[10px] shrink-0 bg-gb-red"><FontAwesomeIcon icon={MartialArtsIcon} className="w-5 h-5 text-white" /></div>
+                    <div className="flex justify-center items-center w-10 h-10 rounded-md shrink-0 bg-gb-red"><FontAwesomeIcon icon={MartialArtsIcon} className="w-5 h-5 text-white" /></div>
                     <div>
                       <p className="my-0 mb-0.5 text-xs font-bold text-white">Gracie Barra Braga</p>
                       <p className="m-0 text-xs leading-[1.4] text-[#ADADAD]">{msg || 'Notificação push...'}</p>
