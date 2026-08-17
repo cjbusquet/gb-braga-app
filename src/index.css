@@ -25,6 +25,13 @@
   --gb-red:      #C8102E;
   --gb-red-dark: #A00D24;
   --gb-red-glow: rgba(200,16,46,0.12);
+
+  /* Semantic — success/positive states (frequência, check-ins, pagamentos em
+     dia, ...). A muted forest green instead of Tailwind's default green-500,
+     which read as a bright/neon accent next to the warm off-white base and
+     the red brand colour. */
+  --gb-green:      #2F6B4F;
+  --gb-green-dark: #26563F;
 }
 
 /* ── Tailwind theme ───────────────────────────────────────────
@@ -55,6 +62,9 @@
   --color-gb-red:      var(--gb-red);
   --color-gb-red-dark: var(--gb-red-dark);
   --color-gb-red-glow: var(--gb-red-glow);
+
+  --color-gb-green:      var(--gb-green);
+  --color-gb-green-dark: var(--gb-green-dark);
 
   --radius-xs: 6px;
   --radius-sm: 8px;

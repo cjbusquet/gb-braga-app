@@ -343,7 +343,7 @@ export default function ComunicacaoPage() {
             </div>
 
             {sent && (
-              <div className="inline-flex gap-1.5 items-center py-2.5 px-3.5 mb-3.5 text-xs font-semibold text-green-500 rounded-sm border border-green-500/25 bg-green-500/[0.08]">
+              <div className="inline-flex gap-1.5 items-center py-2.5 px-3.5 mb-3.5 text-xs font-semibold text-gb-green rounded-sm border border-gb-green/25 bg-gb-green/[0.08]">
                 <Ico icon={CheckIcon} sm />{sendResult ? `${sendResult.sent} de ${sendResult.total} email(s) enviado(s)!` : 'Mensagem enviada com sucesso!'}
               </div>
             )}
@@ -468,7 +468,7 @@ export default function ComunicacaoPage() {
                     </div>
                   </div>
                   <div
-                    className={['relative w-9 h-5 rounded-full border shrink-0', a.ativo ? 'border-green-500 bg-green-500' : 'border-border bg-elevated'].join(' ')}
+                    className={['relative w-9 h-5 rounded-full border shrink-0', a.ativo ? 'border-gb-green bg-gb-green' : 'border-border bg-elevated'].join(' ')}
                   >
                     <div className="absolute top-0.5 w-3.5 h-3.5 bg-white rounded-full transition-[left] duration-200" style={{ left: a.ativo ? 18 : 2 }}/>
                   </div>

@@ -81,7 +81,7 @@ export default function ProfessorView() {
           <div>
             <div className="text-sm font-bold text-primary">{nome}</div>
             <div className="mt-px text-[11px] text-muted">Faixa Preta · Gracie Barra</div>
-            <div className="inline-flex gap-1 items-center mt-px text-[11px] font-semibold text-green-600"><Ico icon={CircleIcon} className="w-2 h-2" />Ativo</div>
+            <div className="inline-flex gap-1 items-center mt-px text-[11px] font-semibold text-gb-green"><Ico icon={CircleIcon} className="w-2 h-2" />Ativo</div>
           </div>
         </div>
       </div>
@@ -104,11 +104,11 @@ export default function ProfessorView() {
       {tab === 'darAula' && (
         <div>
           {checkinAtivo && (
-            <div className="flex flex-wrap gap-3 justify-between items-center py-3.5 px-[18px] mb-[18px] rounded-md border-[1.5px] border-green-600/30 bg-green-600/[0.08]">
+            <div className="flex flex-wrap gap-3 justify-between items-center py-3.5 px-[18px] mb-[18px] rounded-md border-[1.5px] border-gb-green/30 bg-gb-green/[0.08]">
               <div className="flex gap-2.5 items-center">
-                <span className="inline-block w-2.5 h-2.5 bg-green-600 rounded-full shrink-0"/>
+                <span className="inline-block w-2.5 h-2.5 bg-gb-green rounded-full shrink-0"/>
                 <div>
-                  <div className="text-[13px] font-bold text-green-600">Aula em curso: {checkinAtivo.turmaNome}</div>
+                  <div className="text-[13px] font-bold text-gb-green">Aula em curso: {checkinAtivo.turmaNome}</div>
                   <div className="mt-px text-[11.5px] text-muted">Início: {checkinAtivo.horaInicio} · {checkinAtivo.data}</div>
                 </div>
               </div>
@@ -116,9 +116,9 @@ export default function ProfessorView() {
                 onClick={() => handleConcluir(checkinAtivo.id)}
                 disabled={checkinLoading === checkinAtivo.id}
                 className={[
-                  'py-2 px-4 min-h-11 sm:min-h-0 text-xs font-bold text-white rounded-sm border-none bg-green-600 transition-all duration-200',
-                  'outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2',
-                  checkinLoading === checkinAtivo.id ? 'cursor-not-allowed opacity-60' : 'cursor-pointer opacity-100 hover:bg-green-700 active:scale-[0.98]',
+                  'py-2 px-4 min-h-11 sm:min-h-0 text-xs font-bold text-white rounded-sm border-none bg-gb-green transition-all duration-200',
+                  'outline-none focus-visible:ring-2 focus-visible:ring-gb-green focus-visible:ring-offset-2',
+                  checkinLoading === checkinAtivo.id ? 'cursor-not-allowed opacity-60' : 'cursor-pointer opacity-100 hover:bg-gb-green-dark active:scale-[0.98]',
                 ].join(' ')}
               >
                 {checkinLoading === checkinAtivo.id ? 'A concluir...' : 'Concluir aula'}
@@ -262,7 +262,7 @@ export default function ProfessorView() {
             <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
               {allPresencas.slice(0, 9).map(p => (
                 <div key={p.id} className="flex gap-2 items-center py-2 px-2.5 rounded-sm bg-elevated">
-                  <div className="flex justify-center items-center w-6 h-6 text-[10px] font-bold text-green-600 rounded-full border shrink-0 border-green-600/20 bg-green-600/10"><Ico icon={CheckIcon} className="w-3 h-3" /></div>
+                  <div className="flex justify-center items-center w-6 h-6 text-[10px] font-bold text-gb-green rounded-full border shrink-0 border-gb-green/20 bg-gb-green/10"><Ico icon={CheckIcon} className="w-3 h-3" /></div>
                   <div className="flex-1 min-w-0">
                     <div className="overflow-hidden text-xs font-medium whitespace-nowrap text-ellipsis text-primary">{p.alunoNome}</div>
                     <div className="text-[10.5px] text-muted">{p.hora}</div>

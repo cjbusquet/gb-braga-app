@@ -172,7 +172,7 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
           )}
           <div className="flex justify-end mt-5">
             <Button variant="primary" disabled={!planoId} onClick={() => planoId && setStep(2)}>
-              Seguinte <Ico icon={ArrowRightIcon} sm />
+              Seguinte <Ico icon={ArrowRightIcon} sm className="transition-transform duration-200 group-hover:translate-x-1" />
             </Button>
           </div>
         </div>
@@ -225,7 +225,7 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
           <div className="flex justify-between mt-5">
             <VoltarButton onClick={() => setStep(1)} />
             <Button variant="primary" disabled={!nome || !email || !dataNasc} onClick={avancarDeStep2}>
-              {eMenor ? 'Seguinte — Responsável' : 'Seguinte'} <Ico icon={ArrowRightIcon} sm />
+              {eMenor ? 'Seguinte — Responsável' : 'Seguinte'} <Ico icon={ArrowRightIcon} sm className="transition-transform duration-200 group-hover:translate-x-1" />
             </Button>
           </div>
         </div>
@@ -285,7 +285,7 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
           <div className="flex justify-between mt-5">
             <VoltarButton onClick={() => setStep(2)} />
             <Button variant="primary" disabled={!respNome.trim()} onClick={() => setStep(4)}>
-              Seguinte <Ico icon={ArrowRightIcon} sm />
+              Seguinte <Ico icon={ArrowRightIcon} sm className="transition-transform duration-200 group-hover:translate-x-1" />
             </Button>
           </div>
         </div>
@@ -320,7 +320,7 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
           </div>
 
           {saved && (
-            <div className="flex gap-1.5 items-center py-2.5 px-4 mb-4 text-[13px] font-semibold text-green-600 rounded-lg border border-green-500/30 bg-green-500/10">
+            <div className="flex gap-1.5 items-center py-2.5 px-4 mb-4 text-[13px] font-semibold text-gb-green rounded-lg border border-gb-green/30 bg-gb-green/10">
               <Ico icon={CheckIcon} sm /> Aluno criado com sucesso!
             </div>
           )}
@@ -330,7 +330,7 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
             <Button
               variant="primary"
               disabled={saving || saved}
-              className={saved ? '!bg-green-500 !shadow-none' : undefined}
+              className={saved ? '!bg-gb-green !shadow-none' : undefined}
               onClick={handleSave}
             >
               {saved

@@ -201,8 +201,8 @@ export default function MeuCheckin() {
 
       {/* Check-ins de hoje (se já fez) */}
       {presencasHoje.length > 0 && (
-        <div className="py-3 px-4 mb-4 rounded-lg border border-green-600/25 bg-green-600/[0.07]">
-          <div className="mb-1.5 text-[12.5px] text-green-600">
+        <div className="py-3 px-4 mb-4 rounded-lg border border-gb-green/25 bg-gb-green/[0.07]">
+          <div className="mb-1.5 text-[12.5px] text-gb-green">
             <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckCircleSolidIcon} sm />Já fizeste check-in hoje</span>
           </div>
           {presencasHoje.map((p, i) => (
@@ -216,8 +216,8 @@ export default function MeuCheckin() {
       {/* Formulário de check-in */}
       {done ? (
         /* ── Confirmação ── */
-        <div className="py-8 px-6 text-center border border-green-600/30 bg-card">
-          <div className="mb-3 text-green-600"><Ico icon={CheckCircleSolidIcon} style={{ width: 52, height: 52 }} /></div>
+        <div className="py-8 px-6 text-center border border-gb-green/30 bg-card">
+          <div className="mb-3 text-gb-green"><Ico icon={CheckCircleSolidIcon} style={{ width: 52, height: 52 }} /></div>
           <div className="mb-1.5 text-[17px] text-primary">
             Presença registada!
           </div>
@@ -319,7 +319,7 @@ export default function MeuCheckin() {
             <div
               className={[
                 'flex gap-2.5 items-center py-2.5 px-3.5 mb-3.5 rounded-lg border',
-                gpsStatus === 'inside' ? 'border-green-600/25 bg-green-600/[0.07]'
+                gpsStatus === 'inside' ? 'border-gb-green/25 bg-gb-green/[0.07]'
                   : gpsStatus === 'outside' ? 'border-gb-red/20 bg-gb-red/[0.06]'
                   : 'border-border bg-elevated',
               ].join(' ')}
@@ -332,7 +332,7 @@ export default function MeuCheckin() {
                 <div
                   className={[
                     'text-[12.5px]',
-                    gpsStatus === 'inside' ? 'text-green-600' : gpsStatus === 'outside' ? 'text-gb-red' : 'text-secondary',
+                    gpsStatus === 'inside' ? 'text-gb-green' : gpsStatus === 'outside' ? 'text-gb-red' : 'text-secondary',
                   ].join(' ')}
                 >
                   {gpsStatus === 'inside'

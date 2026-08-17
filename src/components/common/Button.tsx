@@ -15,16 +15,16 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
    screens; sm: releases the constraint so padding alone drives height in
    denser desktop/tablet layouts (tables, toolbars). */
 const SIZE_CLASSES: Record<ButtonSize, string> = {
-  sm: 'gap-1.5 px-3.5 py-2 rounded-sm text-[13px] min-h-11 sm:min-h-0',
-  md: 'gap-2 px-5 py-3 rounded-sm text-sm min-h-11 sm:min-h-0',
-  lg: 'gap-2 px-6 py-3.5 rounded-sm text-[15px] min-h-11 sm:min-h-0',
+  sm: 'gap-1.5 px-3 py-1.5 rounded-sm text-[11px] min-h-11 sm:min-h-0',
+  md: 'gap-1.5 px-4 py-2.5 rounded-sm text-[12px] min-h-11 sm:min-h-0',
+  lg: 'gap-2 px-5 py-3 rounded-sm text-[13px] min-h-11 sm:min-h-0',
 };
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary:
     'font-display font-bold uppercase tracking-wide text-white bg-gb-red ' +
-    'hover:bg-gb-red-dark active:bg-gb-red-dark ' +
-    'focus-visible:ring-gb-red disabled:bg-neutral-400',
+    'hover:bg-gb-red-dark hover:scale-[0.97] active:bg-gb-red-dark ' +
+    'focus-visible:ring-gb-red disabled:bg-neutral-400 disabled:hover:scale-100',
   secondary:
     'font-medium text-secondary bg-transparent border border-border ' +
     'hover:bg-elevated hover:border-border-strong active:bg-elevated ' +
@@ -49,7 +49,7 @@ export default function Button({
     <button
       disabled={disabled || loading}
       className={[
-        'inline-flex items-center justify-center',
+        'group inline-flex items-center justify-center',
         fullWidth ? 'w-full' : '',
         SIZE_CLASSES[size],
         VARIANT_CLASSES[variant],

@@ -82,7 +82,7 @@ export default function MeuFinanceiro() {
               <div className="flex gap-2 items-center">
                 <span className="font-mono text-[13px] font-bold text-primary">€{f.valorTotal}</span>
                 {f.pdfUrl && (
-                  <a href={f.pdfUrl} target="_blank" rel="noreferrer" className="inline-flex items-center py-1 px-2 text-[11px] font-semibold text-green-500 no-underline rounded border transition-colors duration-200 border-green-500/20 bg-green-500/10 hover:bg-green-500/20 active:bg-green-500/20 outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2">PDF</a>
+                  <a href={f.pdfUrl} target="_blank" rel="noreferrer" className="inline-flex items-center py-1 px-2 text-[11px] font-semibold text-gb-green no-underline rounded border transition-colors duration-200 border-gb-green/20 bg-gb-green/10 hover:bg-gb-green/20 active:bg-gb-green/20 outline-none focus-visible:ring-2 focus-visible:ring-gb-green focus-visible:ring-offset-2">PDF</a>
                 )}
               </div>
             </div>

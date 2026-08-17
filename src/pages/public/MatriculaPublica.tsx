@@ -338,7 +338,7 @@ export default function MatriculaPublica() {
       {/* SUCESSO */}
       {step === 'sucesso' && (
         <div className="mx-auto py-16 px-6 max-w-[520px] text-center">
-          <div className="flex justify-center items-center mx-auto mb-5 w-20 h-20 rounded-full border-[3px] border-green-600/30 bg-green-600/10"><FontAwesomeIcon icon={CheckIcon} className="w-8 h-8 text-green-600" /></div>
+          <div className="flex justify-center items-center mx-auto mb-5 w-20 h-20 rounded-full border-[3px] border-gb-green/30 bg-gb-green/10"><FontAwesomeIcon icon={CheckIcon} className="w-8 h-8 text-gb-green" /></div>
           <h2 className="mb-2.5 font-display text-[34px] font-black uppercase">Inscrição enviada!</h2>
           <p className="mb-7 text-[15px] leading-[1.7] text-secondary">
             Obrigado, <strong>{nome.split(' ')[0]}</strong>!<br/>

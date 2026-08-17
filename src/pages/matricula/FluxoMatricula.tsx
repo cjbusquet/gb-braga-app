@@ -867,8 +867,8 @@ function Completo({ ficha, contrato, plano, isStaff, registerMode, onConcludo }:
 
   return (
     <div className={[CARD_CLASS, 'py-8 px-7 text-center'].join(' ')}>
-      <div className="flex justify-center items-center mx-auto mb-4 w-[68px] h-[68px] rounded-full border-[3px] border-green-600/30 bg-green-600/10"><FontAwesomeIcon icon={CheckIcon} className="w-7 h-7 text-green-600" /></div>
-      <h2 className="mb-2.5 font-display text-xl font-extrabold text-green-600 uppercase"><span className="inline-flex gap-2 justify-center items-center">Bem-vindo à família GB! <Ico icon={MartialArtsIcon} /></span></h2>
+      <div className="flex justify-center items-center mx-auto mb-4 w-[68px] h-[68px] rounded-full border-[3px] border-gb-green/30 bg-gb-green/10"><FontAwesomeIcon icon={CheckIcon} className="w-7 h-7 text-gb-green" /></div>
+      <h2 className="mb-2.5 font-display text-xl font-extrabold text-gb-green uppercase"><span className="inline-flex gap-2 justify-center items-center">Bem-vindo à família GB! <Ico icon={MartialArtsIcon} /></span></h2>
       <p className="mx-auto mb-[22px] max-w-[480px] text-[13.5px] leading-[1.7] text-secondary">
         {isStaff
           ? <><span className="inline-flex gap-1.5 items-center">Ficha e contrato concluídos, <strong>{ficha.nomeAluno.split(' ')[0]}</strong>! O perfil está activo. OSS! <Ico icon={MartialArtsIcon} sm /></span></>
@@ -877,10 +877,10 @@ function Completo({ ficha, contrato, plano, isStaff, registerMode, onConcludo }:
           : <>Inscrição concluída, <strong>{ficha.nomeAluno.split(' ')[0]}</strong>! O débito automático Stripe está ativo. OSS!</>
         }
       </p>
-      <div className="p-4 px-5 mx-auto mb-5 max-w-[400px] text-left rounded-xl border border-green-600/20 bg-green-600/5">
+      <div className="p-4 px-5 mx-auto mb-5 max-w-[400px] text-left rounded-xl border border-gb-green/20 bg-gb-green/5">
         {[['Aluno',ficha.nomeAluno],['Email',ficha.email],['Plano',plano?.nome||'—'],['Mensalidade',plano?`€${plano.valor}/mês`:'—']].map(([k,v])=>(
-          <div key={k} className="flex justify-between py-1.5 border-b border-green-600/10">
-            <span className="text-[12.5px] text-green-600">{k}</span>
+          <div key={k} className="flex justify-between py-1.5 border-b border-gb-green/10">
+            <span className="text-[12.5px] text-gb-green">{k}</span>
             <span className="text-[12.5px] font-semibold text-primary">{v}</span>
           </div>
         ))}

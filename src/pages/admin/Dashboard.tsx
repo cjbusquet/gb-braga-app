@@ -88,7 +88,7 @@ export default function Dashboard() {
             Pagamentos em Atraso
           </div>
           {vencidos.slice(0,6).length === 0 ? (
-            <div className="flex gap-1.5 justify-center items-center p-5 text-xs text-center text-green-500"><Ico icon={CheckIcon} sm />Sem pagamentos em atraso</div>
+            <div className="flex gap-1.5 justify-center items-center p-5 text-xs text-center text-gb-green"><Ico icon={CheckIcon} sm />Sem pagamentos em atraso</div>
           ) : vencidos.slice(0,6).map((p: any) => (
             <div key={p.id} className="flex justify-between py-1.5 border-b border-border-subtle">
               <div>

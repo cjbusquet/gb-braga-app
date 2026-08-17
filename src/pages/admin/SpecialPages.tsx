@@ -26,6 +26,7 @@ import {
   ArrowPathIcon,
   DocumentTextIcon,
   ReceiptPercentIcon,
+  PlusIcon,
   type HeroIcon,
 } from '../../lib/icons';
 
@@ -197,7 +198,9 @@ export function SuperAdminDashboard({ onNavigate }: { onNavigate?: (page: string
       <Card padding="none">
         <div className="flex justify-between items-center py-3.5 px-[18px] border-b border-border">
           <SectionLabel>Academias da Rede</SectionLabel>
-          <Button variant="primary" size="sm" onClick={() => setShowNova(true)}>+ Nova Academia</Button>
+          <Button variant="primary" size="sm" onClick={() => setShowNova(true)}>
+            <Ico icon={PlusIcon} sm /> Nova Academia
+          </Button>
         </div>
         <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
         <table className="w-full border-collapse" style={{ minWidth: 600 }}>
@@ -221,21 +224,21 @@ export function SuperAdminDashboard({ onNavigate }: { onNavigate?: (page: string
                 <td className="py-3 px-3.5 text-[13px] font-bold text-primary">{a.alunos}</td>
                 <td className="py-3 px-3.5 font-mono text-[13px] font-bold text-primary">€{a.receita.toLocaleString()}</td>
                 <td className="py-3 px-3.5">
-                  <span className={['text-xs font-bold', a.crescimento >= 0 ? 'text-green-600' : 'text-amber-600'].join(' ')}>{a.crescimento >= 0 ? '↑' : '↓'} {Math.abs(a.crescimento)}%</span>
+                  <span className={['text-xs font-bold', a.crescimento >= 0 ? 'text-gb-green' : 'text-amber-600'].join(' ')}>{a.crescimento >= 0 ? '↑' : '↓'} {Math.abs(a.crescimento)}%</span>
                 </td>
                 <td className="py-3 px-3.5">
                   <div className="flex gap-1.5 items-center">
                     <div className="overflow-hidden w-12 h-[5px] rounded-full bg-elevated">
-                      <div className={['h-full', a.freq >= 80 ? 'bg-green-600' : 'bg-amber-600'].join(' ')} style={{ width: `${a.freq}%` }}/>
+                      <div className={['h-full', a.freq >= 80 ? 'bg-gb-green' : 'bg-amber-600'].join(' ')} style={{ width: `${a.freq}%` }}/>
                     </div>
                     <span className="text-[11px] text-secondary">{a.freq}%</span>
                   </div>
                 </td>
                 <td className="py-3 px-3.5">
-                  <span className={['text-[13px] font-bold', a.inadimp > 5 ? 'text-amber-600' : 'text-green-600'].join(' ')}>{a.inadimp}</span>
+                  <span className={['text-[13px] font-bold', a.inadimp > 5 ? 'text-amber-600' : 'text-gb-green'].join(' ')}>{a.inadimp}</span>
                 </td>
                 <td className="py-3 px-3.5">
-                  <span className={['py-0.5 px-2 text-[10.5px] font-bold uppercase rounded-full', a.status==='nova' ? 'text-amber-600 bg-amber-600/[0.08]' : 'text-green-600 bg-green-600/[0.08]'].join(' ')}>
+                  <span className={['py-0.5 px-2 text-[10.5px] font-bold uppercase rounded-full', a.status==='nova' ? 'text-amber-600 bg-amber-600/[0.08]' : 'text-gb-green bg-gb-green/[0.08]'].join(' ')}>
                     {a.status}
                   </span>
                 </td>
@@ -379,7 +382,7 @@ export function RelatoriosPage() {
                 <SectionLabel>Receita Mensal</SectionLabel>
                 <div className="text-right">
                   <div className="font-mono text-xl font-extrabold text-primary">€{kpis.receitaMensal.toLocaleString()}</div>
-                  <div className="text-[10.5px] font-semibold text-green-600">↑ +4.2% vs mês ant.</div>
+                  <div className="text-[10.5px] font-semibold text-gb-green">↑ +4.2% vs mês ant.</div>
                 </div>
               </div>
               <div className="flex gap-2.5 items-end h-[130px]">
@@ -493,10 +496,10 @@ export function RelatoriosPage() {
                 <div className="flex-1">
                   <div className="flex justify-between mb-1">
                     <span className="text-xs font-medium text-primary">{a.nome}</span>
-                    <span className={['text-[11px] font-bold', a.frequencia>=80 ? 'text-green-600' : a.frequencia>=60 ? 'text-amber-600' : 'text-gb-red'].join(' ')}>{a.frequencia}%</span>
+                    <span className={['text-[11px] font-bold', a.frequencia>=80 ? 'text-gb-green' : a.frequencia>=60 ? 'text-amber-600' : 'text-gb-red'].join(' ')}>{a.frequencia}%</span>
                   </div>
                   <div className="overflow-hidden h-1 rounded-full bg-elevated">
-                    <div className={['h-full', a.frequencia>=80 ? 'bg-green-600' : a.frequencia>=60 ? 'bg-amber-600' : 'bg-gb-red'].join(' ')} style={{ width: `${a.frequencia}%` }}/>
+                    <div className={['h-full', a.frequencia>=80 ? 'bg-gb-green' : a.frequencia>=60 ? 'bg-amber-600' : 'bg-gb-red'].join(' ')} style={{ width: `${a.frequencia}%` }}/>
                   </div>
                 </div>
               </div>
@@ -517,11 +520,11 @@ export function RelatoriosPage() {
                   <span className="text-xs text-secondary">{t.nome}</span>
                   <div className="flex gap-2.5">
                     <span className="text-[11px] text-muted">{t.checkins} check-ins</span>
-                    <span className={['text-[11px] font-bold', t.freq>=80 ? 'text-green-600' : 'text-amber-600'].join(' ')}>{t.freq}%</span>
+                    <span className={['text-[11px] font-bold', t.freq>=80 ? 'text-gb-green' : 'text-amber-600'].join(' ')}>{t.freq}%</span>
                   </div>
                 </div>
                 <div className="overflow-hidden h-[5px] rounded-full bg-elevated">
-                  <div className={['h-full', t.freq>=80 ? 'bg-green-600' : 'bg-amber-600'].join(' ')} style={{ width: `${t.freq}%` }}/>
+                  <div className={['h-full', t.freq>=80 ? 'bg-gb-green' : 'bg-amber-600'].join(' ')} style={{ width: `${t.freq}%` }}/>
                 </div>
               </div>
             ))}

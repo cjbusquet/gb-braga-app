@@ -79,9 +79,9 @@ export default function MinhasAulas() {
         </div>
       </Card>
 
-      <div className="flex flex-col-reverse gap-4 md:flex-row">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* My classes */}
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col order-2 gap-3 md:order-1">
           {minhasTurmas.map((t) => (
             <Card key={t.id} padding="none" className="p-[18px]">
               <div className="flex justify-between items-start mb-3">
@@ -120,7 +120,7 @@ export default function MinhasAulas() {
           ))}
         </div>
         {/* Attendance history */}
-        <Card padding="lg">
+        <Card padding="lg" className="order-1 md:order-2">
           <div className="mb-3.5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">
             Histórico de Presenças
           </div>
@@ -134,7 +134,7 @@ export default function MinhasAulas() {
               </div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-500">
+              <div className="text-2xl font-bold text-gb-green">
                 {aluno.frequencia}%
               </div>
               <div className="text-[10.5px] text-muted">
@@ -152,7 +152,7 @@ export default function MinhasAulas() {
           </div>
           <div className="overflow-hidden mb-4 h-2 rounded-full bg-elevated">
             <div
-              className={['h-full', aluno.frequencia >= 80 ? 'bg-green-500' : 'bg-gb-red'].join(' ')}
+              className={['h-full', aluno.frequencia >= 80 ? 'bg-gb-green' : 'bg-gb-red'].join(' ')}
               style={{ width: `${Math.min(aluno.frequencia, 100)}%` }}
             />
           </div>
@@ -162,7 +162,7 @@ export default function MinhasAulas() {
                 key={p.id}
                 className="flex gap-2.5 items-center py-2 border-b border-border-subtle"
               >
-                <div className="flex justify-center items-center w-[26px] h-[26px] text-[8px] text-green-500 rounded-full border shrink-0 border-green-500/20 bg-green-500/10">
+                <div className="flex justify-center items-center w-[26px] h-[26px] text-[8px] text-gb-green rounded-full border shrink-0 border-gb-green/20 bg-gb-green/10">
                   <Ico icon={CheckIcon} />
                 </div>
                 <div className="flex-1">

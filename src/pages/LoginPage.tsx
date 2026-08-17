@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useAuth } from '../lib/auth';
 import { roleThemes } from '../lib/gbBrand';
 import { GBLogoFull } from '../components/GBLogo';
-import { supabase, isConfigured } from '../lib/supabaseClient';
+import { supabase, isConfigured, isLocalSupabase } from '../lib/supabaseClient';
 import type { UserRole } from '../types';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
@@ -11,14 +11,19 @@ import Badge from '../components/common/Badge';
 import { Ico, KeyIcon, ClipboardDocumentIcon, PencilIcon, CreditCardIcon, CheckCircleIcon, IdentificationIcon, AcademicCapIcon, ArrowLeftIcon, ArrowPathIcon, ChatBubbleLeftRightIcon, EnvelopeIcon } from '../lib/icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
+// Seeded accounts on the local Supabase stack (`npx supabase start`), one per
+// role — password reset to DEV_PASSWORD below for all of them. Only ever
+// rendered when isLocalSupabase is true (see the gate further down), so this
+// never ships pointed at a real project.
 const DEMO_ROLES: { role: UserRole; email: string; label?: string }[] = [
-  { role: 'superadmin',  email: 'superadmin@gbbraga.com' },
-  { role: 'admin',       email: 'admin@gbbraga.com' },
-  { role: 'atendimento', email: 'recepcao@gbbraga.com' },
-  { role: 'professor',   email: 'joao@gbbraga.com' },
-  { role: 'aluno',       email: 'lucas@gmail.com' },
-  { role: 'aluno',       email: 'novo@gbbraga.com', label: 'Novo Aluno' },
+  { role: 'superadmin',  email: 'superadmin@ginasio.test' },
+  { role: 'admin',       email: 'admin@ginasio.test' },
+  { role: 'atendimento', email: 'atendimento@ginasio.test' },
+  { role: 'professor',   email: 'professor@ginasio.test' },
+  { role: 'aluno',       email: 'aluno1@ginasio.test' },
+  { role: 'aluno',       email: 'aluno2@ginasio.test', label: 'Aluno (2)' },
 ];
+const DEV_PASSWORD = 'DevTest1234!';
 
 const BELT_STRIPE = ['#F0EEFF','#EAB308','#EA580C','#16A34A','#1D4ED8','#7C3AED','#7C4A35','#111'];
 
@@ -64,7 +69,7 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
 
   const quick = async (role: UserRole, em: string) => {
     setActive(em);
-    await login(em, '123');
+    await login(em, isConfigured ? DEV_PASSWORD : '123');
     setActive(null);
   };
 
@@ -129,9 +134,9 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
                   <p className="mb-[22px] text-sm text-secondary">Indica o teu email e enviamos um link para definires uma nova password.</p>
 
                   {resetSent ? (
-                    <div className="p-[16px_18px] text-center rounded-sm border border-green-600/25 bg-green-600/[0.08]">
-                      <div className="mb-2.5 text-green-600"><Ico icon={EnvelopeIcon} style={{ width: 32, height: 32 }} /></div>
-                      <div className="mb-1.5 text-sm font-bold text-green-600">Email enviado!</div>
+                    <div className="p-[16px_18px] text-center rounded-sm border border-gb-green/25 bg-gb-green/[0.08]">
+                      <div className="mb-2.5 text-gb-green"><Ico icon={EnvelopeIcon} style={{ width: 32, height: 32 }} /></div>
+                      <div className="mb-1.5 text-sm font-bold text-gb-green">Email enviado!</div>
                       <div className="text-[13px] leading-[1.6] text-secondary">
                         Verifica a tua caixa de entrada em <strong>{email}</strong>.<br/>O link expira em 24h.
                       </div>
@@ -201,12 +206,17 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
                 </>
               )}
 
-              {/* Demo buttons */}
-              {!isConfigured && !forgotMode && (
+              {/* Demo / dev quick-login buttons. Two safe cases only:
+                  no Supabase configured at all (pure mock demo, no real
+                  credentials involved), or a local Supabase dev stack while
+                  running under Vite's dev server — never in a production
+                  build, and never against a real/hosted project even if
+                  someone runs `vite dev` pointed at one by mistake. */}
+              {(!isConfigured || (import.meta.env.DEV && isLocalSupabase)) && !forgotMode && (
                 <>
                   <div className="flex gap-3 items-center my-5">
                     <div className="flex-1 h-px bg-border" />
-                    <span className="text-[10px] font-semibold tracking-[1px] whitespace-nowrap text-muted uppercase">Demo</span>
+                    <span className="text-[10px] font-semibold tracking-[1px] whitespace-nowrap text-muted uppercase">{isConfigured ? 'Dev' : 'Demo'}</span>
                     <div className="flex-1 h-px bg-border" />
                   </div>
                   <div className="flex flex-col gap-1.5">

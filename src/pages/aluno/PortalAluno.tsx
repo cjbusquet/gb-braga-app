@@ -2,15 +2,18 @@ import {
   ArrowDownTrayIcon,
   ArrowPathIcon,
   CalendarIcon,
+  ChartBarIcon,
   ChatBubbleLeftRightIcon,
   CheckIcon,
-  ChevronRightIcon,
   ClockIcon,
   Cog6ToothIcon,
   CurrencyEuroIcon,
   DocumentIcon,
+  DumbbellIcon,
   ExclamationTriangleIcon,
   Ico,
+  MapPinIcon,
+  QrCodeIcon,
   ArrowDownTrayIcon as SaveIcon,
   TrophyIcon,
   VideoCameraIcon,
@@ -25,9 +28,10 @@ import {
   useContratos,
   usePagamentos,
   usePresencas,
+  useTurmas,
 } from '../../lib/useData';
 
-import type { Belt } from '../../types';
+import type { Belt, Turma } from '../../types';
 import { exportContratoPDF } from '../../services/pdf';
 import { useAuth } from '../../lib/auth';
 import { useState } from 'react';
@@ -49,47 +53,38 @@ const BELT_PATH: Belt[] = [
   'preta',
 ];
 
-function NavCard({
+// Portuguese weekday name -> JS Date#getDay() index (0 = Domingo), used to
+// find how many days away a turma's next occurrence is.
+const WEEKDAY_INDEX: Record<string, number> = {
+  Domingo: 0, Segunda: 1, Terça: 2, Quarta: 3, Quinta: 4, Sexta: 5, Sábado: 6,
+};
+
+// Quick-access button — reads as a real, clickable control (filled icon
+// badge, bordered tile, hover/active feedback) rather than a segmented tab,
+// while staying lighter than the app's full nav tiles.
+function NavChip({
   Icon,
   label,
-  desc,
   accent,
   onClick,
 }: {
   Icon: HeroIcon;
   label: string;
-  desc: string;
   accent: string;
   onClick: () => void;
 }) {
   return (
     <button
       onClick={onClick}
-      className="flex overflow-hidden relative gap-5 items-center w-full min-h-11 text-left rounded-lg border cursor-pointer box-border border-border bg-card transition-colors duration-200 active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = accent + '30';
-        e.currentTarget.style.background = 'var(--bg-elevated)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = 'var(--border)';
-        e.currentTarget.style.background = 'var(--bg-card)';
-      }}
+      className="flex gap-3 items-center p-3.5 w-full text-left rounded-xl border cursor-pointer border-border bg-card transition-all duration-200 hover:border-border-strong hover:shadow-sm active:scale-[0.98] active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
     >
       <div
-        className="flex justify-center items-center w-[100px] h-[100px] text-lg shrink-0"
-        style={{ background: accent + '18' }}
+        className="flex justify-center items-center w-9 h-9 rounded-full shrink-0"
+        style={{ background: accent + '18', color: accent }}
       >
-        <FontAwesomeIcon icon={Icon} className="w-9 h-9" style={{ color: accent }} />
+        <FontAwesomeIcon icon={Icon} className="w-4 h-4" />
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="overflow-hidden mb-px text-sm font-medium whitespace-nowrap text-ellipsis text-black/85">
-          {label}
-        </div>
-        <div className="overflow-hidden text-xs font-medium whitespace-nowrap text-ellipsis text-black/50">
-          {desc}
-        </div>
-      </div>
-      <FontAwesomeIcon icon={ChevronRightIcon} className="mr-3 w-7 h-7 shrink-0 text-muted" />
+      <span className="text-[13px] font-semibold text-primary">{label}</span>
     </button>
   );
 }
@@ -184,7 +179,7 @@ function EditPerfilModal({
             Cancelar
           </Button>
           <Button
-            variant="primary" className={['flex-[2]', saved ? '!bg-green-500' : ''].join(' ')}
+            variant="primary" className={['flex-[2]', saved ? '!bg-gb-green' : ''].join(' ')}
             disabled={saving || saved}
             onClick={handleSave}
           >
@@ -212,6 +207,7 @@ export default function PortalAluno({
   const { data: pagamentos } = usePagamentos();
   const { data: presencas } = usePresencas();
   const { data: contratos } = useContratos();
+  const { data: turmas } = useTurmas();
   const [showEditPerfil, setShowEditPerfil] = useState(false);
   const [showContrato, setShowContrato] = useState(false);
   const { user, refreshProfile } = useAuth();
@@ -256,6 +252,17 @@ export default function PortalAluno({
   const progressoPct =
     (beltIdx / (BELT_PATH.length - 1)) * 60 +
     (aluno.grau / 4) * (60 / BELT_PATH.length);
+
+  // Find the soonest upcoming occurrence of one of the student's classes, so
+  // the portal can lead with "what's next" instead of a flat menu of pages.
+  const minhasTurmas = turmas.slice(0, 2);
+  const todayIdx = hoje.getDay();
+  const proximasAulas = minhasTurmas
+    .flatMap((t) => t.diaSemana.map((diaNome: string) => ({ turma: t, diaNome, idx: WEEKDAY_INDEX[diaNome] })))
+    .filter((c): c is { turma: Turma; diaNome: string; idx: number } => c.idx !== undefined)
+    .map((c) => ({ turma: c.turma, diaNome: c.diaNome, diasAteLa: (c.idx - todayIdx + 7) % 7 }))
+    .sort((a, b) => a.diasAteLa - b.diasAteLa || a.turma.horario.localeCompare(b.turma.horario));
+  const proximaAula = proximasAulas[0];
 
   return (
     <div>
@@ -364,213 +371,209 @@ export default function PortalAluno({
         </div>
       )}
       {/* ── rest of portal ── */}
-      {/* Hero */}
-      <div
-        className="overflow-hidden relative py-6 px-7 mb-4 rounded-lg"
-        style={{ background: `linear-gradient(135deg, #0D0508 0%, ${bc?.bg || '#888'} 100%)` }}
-      >
-        {/* Subtle grid */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage:
-              'linear-gradient(transparent 1px, rgba(255,255,255,0.02) 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)',
-            backgroundSize: '28px 28px',
-          }}
-        />
+      {/* Masthead — identity + belt progress. No card, no background wash:
+          just typography and the belt ring sitting directly on the page.
+          Centred stack on mobile; on larger screens it splits back into a
+          left (identity) / right (rank) row, since centring only reads well
+          within a narrow single column. */}
+      <div className="flex flex-col items-center pt-1 pb-6 mb-6 text-center md:hidden">
+        <div className="mb-1 text-[11px] tracking-[1.5px] uppercase text-muted">
+          Bem-vindo de volta
+        </div>
+        <h1 className="m-0 text-[28px] font-black leading-none text-primary">
+          {aluno.nome}
+        </h1>
+        <div className="mt-1.5 text-xs text-muted">
+          Membro desde {aluno.dataMatricula}
+        </div>
 
-        <div className="flex relative flex-wrap gap-3 justify-between items-start md:flex-nowrap">
-          <div className="flex-1 min-w-0">
-            <div className="mb-1.5 text-[11px] tracking-[1.5px] uppercase text-white/50">
-              Bem-vindo de volta
-            </div>
-            <h1 className="overflow-hidden m-0 text-[22px] font-extrabold leading-none whitespace-nowrap text-ellipsis text-white md:text-2xl">
-              {aluno.nome}
-            </h1>
-            <div className="mt-1.5 text-xs text-white/50">
-              Membro desde {aluno.dataMatricula}
-            </div>
+        {/* Belt progression ring */}
+        <svg className="my-5 w-24 h-24" viewBox="0 0 80 80">
+          <circle cx="40" cy="40" r="34" fill="none" stroke="var(--border-strong)" strokeWidth="6" />
+          <circle
+            cx="40"
+            cy="40"
+            r="34"
+            fill="none"
+            stroke={bc?.bg || GB.red}
+            strokeWidth="6"
+            strokeDasharray={`${(2 * Math.PI * 34 * progressoPct) / 100} ${2 * Math.PI * 34}`}
+            strokeLinecap="round"
+            transform="rotate(-90 40 40)"
+          />
+          <text x="40" y="44" textAnchor="middle" fill="var(--text-primary)" fontSize="12" fontWeight="700" fontFamily="DM Sans, sans-serif">
+            {aluno.grau}/4
+          </text>
+        </svg>
 
-            <div className="flex flex-wrap gap-2.5 items-center mt-4">
-              <BeltBar belt={aluno.faixa as Belt} degrees={aluno.grau} size="sm" />
-              <span className="text-[13px] font-bold capitalize text-white">
-                {bc?.label} ·{' '}
-                {aluno.grau > 0 ? `${aluno.grau}° Grau` : 'Nenhum Grau'}
-              </span>
-            </div>
+        <div className="flex gap-2.5 items-center">
+          <BeltBar belt={aluno.faixa as Belt} degrees={aluno.grau} size="sm" />
+          <span className="text-[13px] font-bold capitalize text-primary">
+            {bc?.label} ·{' '}
+            {aluno.grau > 0 ? `${aluno.grau}° Grau` : 'Nenhum Grau'}
+          </span>
+        </div>
 
-            <div className="mt-3">
-              <span className="py-1 px-3 text-[11.5px] font-semibold text-white/85 rounded-full border border-white/15 bg-white/10">
-                {aluno.plano}
-              </span>
-            </div>
-          </div>
-
-          {/* Belt progression circle */}
-          <div className="my-auto text-center shrink-0">
-            <svg
-              className="w-[68px] h-[68px] md:w-20 md:h-20"
-              viewBox="0 0 80 80"
-            >
-              <circle
-                cx="40"
-                cy="40"
-                r="34"
-                fill="none"
-                stroke="rgba(255,255,255,0.06)"
-                strokeWidth="6"
-              />
-              <circle
-                cx="40"
-                cy="40"
-                r="34"
-                fill="none"
-                stroke="white"
-                strokeWidth="6"
-                strokeDasharray={`${(2 * Math.PI * 34 * progressoPct) / 100} ${2 * Math.PI * 34}`}
-                strokeLinecap="round"
-                transform="rotate(-90 40 40)"
-                style={{ opacity: 0.9 }}
-              />
-              <text
-                x="40"
-                y="44"
-                textAnchor="middle"
-                fill="white"
-                fontSize="12"
-                fontWeight="700"
-                fontFamily="DM Sans, sans-serif"
-              >
-                {aluno.grau}/4
-              </text>
-            </svg>
-          </div>
+        <div className="mt-3">
+          <span
+            className="py-1 px-3 text-[11.5px] font-semibold rounded-full border text-primary"
+            style={{ borderColor: `${bc?.bg || '#888'}40`, background: `${bc?.bg || '#888'}14` }}
+          >
+            {aluno.plano}
+          </span>
         </div>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-3 gap-2 mb-4 md:gap-3">
-        {[
-          { label: 'Dias este mês', value: diasTreinoMes },
-          {
-            label: 'Frequência',
-            value: `${aluno.frequencia}%`,
-          },
-          { label: 'Dias de treino', value: '842' },
-        ].map((s) => (
-          <div
-            key={s.label}
-            className="py-3.5 px-4 rounded-lg border border-border bg-card"
+      {/* Desktop masthead — identity only. Belt rank moved down into the
+          at-a-glance row below, right next to the name instead of floating
+          isolated in a top-right corner. */}
+      <div className="hidden pt-2 pb-7 mb-6 md:block">
+        <div className="mb-1 text-[11px] tracking-[1.5px] uppercase text-muted">
+          Bem-vindo de volta
+        </div>
+        <h1 className="overflow-hidden m-0 text-[34px] font-black leading-none whitespace-nowrap text-ellipsis text-primary">
+          {aluno.nome}
+        </h1>
+        <div className="mt-1.5 text-xs text-muted">
+          Membro desde {aluno.dataMatricula}
+        </div>
+        <div className="mt-3">
+          <span
+            className="py-1 px-3 text-[11.5px] font-semibold rounded-full border text-primary"
+            style={{ borderColor: `${bc?.bg || '#888'}40`, background: `${bc?.bg || '#888'}14` }}
           >
-            <div className="mb-1 text-[10.5px] text-muted">
-              {s.label}
-            </div>
-            <div className="text-2xl font-extrabold text-primary">
-              {s.value}
+            {aluno.plano}
+          </span>
+        </div>
+      </div>
+
+      {/* At-a-glance stats — its own section (not folded into the masthead
+          above), closed off with a divider before the rest of the page's
+          content-driven sections begin. Centred on mobile, left-aligned
+          under the identity block on larger screens. Belt colour and grau
+          join the same row on desktop — in the exact same icon/value/label
+          format as the other stats, instead of the ring+belt-bar
+          composition (which stays up in the masthead on mobile only). */}
+      <div className="flex flex-wrap gap-x-10 gap-y-3 justify-center pb-6 mb-6 border-b border-border-subtle md:justify-start">
+        {[
+          { label: 'Dias este mês', value: diasTreinoMes, Icon: CalendarIcon },
+          { label: 'Frequência', value: `${aluno.frequencia}%`, Icon: ChartBarIcon },
+          { label: 'Dias de treino', value: '842', Icon: DumbbellIcon },
+        ].map((s) => (
+          <div key={s.label} className="flex gap-2 items-center">
+            <FontAwesomeIcon icon={s.Icon} className="w-3.5 h-3.5 text-muted" />
+            <div>
+              <div className="text-lg font-extrabold leading-none text-primary md:text-xl">
+                {s.value}
+              </div>
+              <div className="mt-1 text-[10px] text-muted">{s.label}</div>
             </div>
           </div>
         ))}
+
+        {/* Faixa + Grau — desktop only, same stat format, same row */}
+        <div className="hidden gap-2 items-center md:flex">
+          <span className="w-3.5 h-3.5 rounded-full border shrink-0 border-black/10" style={{ background: bc?.bg || GB.red }} />
+          <div>
+            <div className="text-lg font-extrabold leading-none capitalize text-primary md:text-xl">
+              {bc?.label}
+            </div>
+            <div className="mt-1 text-[10px] text-muted">Faixa</div>
+          </div>
+        </div>
+        <div className="hidden gap-2 items-center md:flex">
+          <FontAwesomeIcon icon={TrophyIcon} className="w-3.5 h-3.5 text-muted" />
+          <div>
+            <div className="text-lg font-extrabold leading-none text-primary md:text-xl">
+              {aluno.grau}/4
+            </div>
+            <div className="mt-1 text-[10px] text-muted">Grau</div>
+          </div>
+        </div>
       </div>
 
-      {/* Payment alert */}
+      {/* Payment strip — a single compact line, only shown when something is
+          actually due. Stacks on mobile, both lines flush to the same left
+          edge (not label-left/CTA-right, which read as disjointed); goes
+          back to one line with the CTA on the right once there's room. */}
       {proximoPagamento && (
         <div
           className={[
-            'py-3.5 px-4 mb-4 rounded-md border',
-            proximoPagamento.status === 'vencido' ? 'border-gb-red/30 bg-gb-red/8' : 'border-amber-500/25 bg-amber-500/[0.07]',
+            'flex flex-col gap-1 items-start py-2.5 px-3.5 mb-5 rounded-lg border sm:flex-row sm:items-center sm:justify-between sm:gap-3',
+            proximoPagamento.status === 'vencido' ? 'border-gb-red/30 bg-gb-red/[0.05]' : 'border-amber-500/30 bg-amber-500/[0.06]',
           ].join(' ')}
         >
-          <div className="flex flex-wrap gap-2.5 justify-between items-start">
-            <div>
-              <div
-                className="mb-1 text-xs"
-                style={{ color: proximoPagamento.status === 'vencido' ? GB.red : '#F59E0B' }}
-              >
-                {proximoPagamento.status === 'vencido' ? (
-                  <div className="flex gap-2 items-center">
-                    <Ico icon={ExclamationTriangleIcon} />
-                    <span className="text-sm">Pagamento em atraso</span>
-                  </div>
-                ) : (
-                  <div className="flex gap-2 items-center">
-                    <Ico icon={ClockIcon} />
-                    <span className="text-sm">Mensalidade a vencer</span>
-                  </div>
-                )}
-              </div>
-              <div className="text-xs text-muted">
-                {proximoPagamento.plano} · Vence {proximoPagamento.vencimento}
-              </div>
-            </div>
-            <div className="flex gap-3 items-center">
-              <button
-                onClick={() => onNavigate?.('meu-financeiro')}
-                className="py-2 px-4 min-h-11 sm:min-h-0 text-xs text-white whitespace-nowrap rounded-sm border-none cursor-pointer transition-all duration-200 hover:brightness-90 active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                style={{
-                  background: proximoPagamento.status === 'vencido' ? GB.red : '#F59E0B',
-                  ['--tw-ring-color' as string]: proximoPagamento.status === 'vencido' ? GB.red : '#F59E0B',
-                }}
-              >
-                {proximoPagamento.status === 'vencido'
-                  ? 'Regularizar'
-                  : 'Pagar agora'}
-              </button>
-            </div>
+          <div
+            className="inline-flex flex-wrap gap-x-2 gap-y-0.5 items-center text-[12.5px] font-semibold"
+            style={{ color: proximoPagamento.status === 'vencido' ? GB.red : '#B45309' }}
+          >
+            <span className="inline-flex gap-1.5 items-center">
+              <Ico icon={proximoPagamento.status === 'vencido' ? ExclamationTriangleIcon : ClockIcon} sm />
+              {proximoPagamento.status === 'vencido' ? 'Pagamento em atraso' : 'Mensalidade a vencer'}
+            </span>
+            <span className="font-normal text-muted">· vence {proximoPagamento.vencimento}</span>
           </div>
+          <button
+            onClick={() => onNavigate?.('meu-financeiro')}
+            className="py-2.5 mt-1 w-full min-h-11 text-[12.5px] font-bold text-center bg-card rounded-md border cursor-pointer transition-colors duration-200 hover:bg-elevated active:bg-elevated sm:mt-0 sm:w-auto sm:min-h-0 sm:p-0 sm:bg-transparent sm:border-none sm:hover:bg-transparent sm:active:bg-transparent sm:hover:underline underline-offset-2"
+            style={{
+              color: proximoPagamento.status === 'vencido' ? GB.red : '#B45309',
+              borderColor: proximoPagamento.status === 'vencido' ? GB.red : '#F59E0B',
+            }}
+          >
+            {proximoPagamento.status === 'vencido' ? 'Regularizar →' : 'Pagar agora →'}
+          </button>
         </div>
       )}
 
-      {/* Navigation cards */}
-      <div className="grid grid-cols-1 gap-1.5 mb-4 md:grid-cols-3 md:gap-2.5">
-        <NavCard
-          Icon={CalendarIcon}
-          label="Minhas Aulas"
-          desc="Horários e presenças"
-          accent="#6B7280"
-          onClick={() => onNavigate?.('minhas-aulas')}
-        />
-        <NavCard
-          Icon={TrophyIcon}
-          label="Minha Evolução"
-          desc="Faixa e graduações"
-          accent="#D97706"
-          onClick={() => onNavigate?.('evolucao')}
-        />
-        <NavCard
-          Icon={CurrencyEuroIcon}
-          label="Financeiro"
-          desc="Pagamentos e faturas"
-          accent="#22C55E"
-          onClick={() => onNavigate?.('meu-financeiro')}
-        />
-        <NavCard
-          Icon={VideoCameraIcon}
-          label="Conteúdo"
-          desc="Técnicas e vídeos"
-          accent={GB.red}
-          onClick={() => onNavigate?.('conteudo')}
-        />
-        <NavCard
-          Icon={ChatBubbleLeftRightIcon}
-          label="Mensagens"
-          desc="Comunicação"
-          accent="#F59E0B"
-          onClick={() => onNavigate?.('mensagens')}
-        />
-        <NavCard
-          Icon={Cog6ToothIcon}
-          label="Minha Conta"
-          desc="Editar dados pessoais"
-          accent="#6B7280"
-          onClick={() => setShowEditPerfil(true)}
-        />
-        <NavCard
-          Icon={DocumentIcon}
-          label="Meu Contrato"
-          desc="Ver contrato completo"
-          accent="#6B7280"
-          onClick={() => setShowContrato(true)}
-        />
+      {/* Próxima Aula — the one thing worth a card: it's actionable, not
+          just informational, so it earns the extra visual weight. */}
+      <Card padding="lg" className="flex flex-col gap-3 mb-6">
+        <div className="flex justify-between items-center">
+          <div className="text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">
+            Próxima Aula
+          </div>
+          {proximaAula && (
+            <span className="text-[11px] font-bold text-gb-red">
+              {proximaAula.diasAteLa === 0 ? 'Hoje' : proximaAula.diasAteLa === 1 ? 'Amanhã' : proximaAula.diaNome}
+            </span>
+          )}
+        </div>
+        {proximaAula ? (
+          <div className="flex flex-wrap gap-4 justify-between items-center">
+            <div>
+              <div className="text-lg font-bold text-primary">
+                {proximaAula.turma.nome}
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 items-center mt-1.5 text-[12.5px] text-secondary">
+                <span className="inline-flex gap-1.5 items-center">
+                  <Ico icon={ClockIcon} sm />{proximaAula.turma.horario}
+                </span>
+                <span className="inline-flex gap-1.5 items-center">
+                  <Ico icon={MapPinIcon} sm />{proximaAula.turma.sala}
+                </span>
+              </div>
+            </div>
+            <Button variant="primary" onClick={() => onNavigate?.('meu-checkin')}>
+              <Ico icon={QrCodeIcon} sm /> Fazer Check-in
+            </Button>
+          </div>
+        ) : (
+          <p className="text-[13px] text-muted">Sem aulas agendadas.</p>
+        )}
+      </Card>
+
+      {/* Quick access — every page the student can reach from here, laid
+          out as real buttons (icon badge + label, bordered tile) so nothing
+          is hidden off-screen and it reads as clickable, not as tabs. */}
+      <div className="grid grid-cols-2 gap-2.5 mb-6 sm:grid-cols-3 lg:grid-cols-4">
+        <NavChip Icon={CalendarIcon} label="Minhas Aulas" accent="#6B7280" onClick={() => onNavigate?.('minhas-aulas')} />
+        <NavChip Icon={TrophyIcon} label="Minha Evolução" accent="#D97706" onClick={() => onNavigate?.('evolucao')} />
+        <NavChip Icon={CurrencyEuroIcon} label="Financeiro" accent="#2F6B4F" onClick={() => onNavigate?.('meu-financeiro')} />
+        <NavChip Icon={VideoCameraIcon} label="Conteúdo" accent={GB.red} onClick={() => onNavigate?.('conteudo')} />
+        <NavChip Icon={ChatBubbleLeftRightIcon} label="Mensagens" accent="#F59E0B" onClick={() => onNavigate?.('mensagens')} />
+        <NavChip Icon={Cog6ToothIcon} label="Minha Conta" accent="#6B7280" onClick={() => setShowEditPerfil(true)} />
+        <NavChip Icon={DocumentIcon} label="Meu Contrato" accent="#6B7280" onClick={() => setShowContrato(true)} />
       </div>
 
       {/* Recent activity */}
@@ -584,7 +587,7 @@ export default function PortalAluno({
               key={p.id}
               className="flex gap-2.5 items-center py-2 border-b border-border-subtle"
             >
-              <div className="flex justify-center items-center w-7 h-7 text-[11px] font-bold text-green-500 rounded-full border shrink-0 border-green-500/20 bg-green-500/10">
+              <div className="flex justify-center items-center w-7 h-7 text-[11px] font-bold text-gb-green rounded-full border shrink-0 border-gb-green/20 bg-gb-green/10">
                 <Ico icon={CheckIcon} sm />
               </div>
               <div className="flex-1">

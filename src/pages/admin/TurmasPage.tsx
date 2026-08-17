@@ -85,7 +85,7 @@ function NovaTurmaModal({ onClose, onSave }: { onClose: ()=>void; onSave: ()=>vo
       <div className="flex gap-2.5">
         <Button variant="secondary" className="flex-1" onClick={onClose}>Cancelar</Button>
         <Button
-          variant="primary" className={['flex-[2]', saved ? '!bg-green-500' : ''].join(' ')}
+          variant="primary" className={['flex-[2]', saved ? '!bg-gb-green' : ''].join(' ')}
           disabled={!nome || !horario || saving} loading={saving}
           onClick={handleSave}
         >

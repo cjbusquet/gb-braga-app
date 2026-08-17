@@ -99,7 +99,7 @@ export default function CheckinPage() {
 
       <Tabs
         tabs={[
-          { id: 'live', label: 'Live', icon: <Ico icon={CircleIcon} className="w-2 h-2 text-green-500" /> },
+          { id: 'live', label: 'Live', icon: <Ico icon={CircleIcon} className="w-2 h-2 text-gb-green" /> },
           { id: 'gps', label: 'GPS Fence' },
           { id: 'manual', label: 'Manual' },
         ]}
@@ -111,7 +111,7 @@ export default function CheckinPage() {
       {tab === 'live' && (
         <div>
           <div className="flex gap-2 items-center mb-3.5">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-[pulse_1.5s_infinite]" />
+            <div className="w-2 h-2 bg-gb-green rounded-full animate-[pulse_1.5s_infinite]" />
             <span className="text-xs text-muted">Hoje: {todayCheckins.length} check-ins</span>
           </div>
           {checkIns.slice(0,20).map((p: any) => (
@@ -194,10 +194,10 @@ export default function CheckinPage() {
                   className={[
                     'flex justify-between items-center py-3 px-3.5 min-h-11 text-left rounded-sm border transition-colors duration-200',
                     'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-                    jaFez ? 'cursor-default border-green-500/30 bg-green-500/[0.08]' : 'cursor-pointer border-border bg-card hover:bg-elevated active:bg-elevated',
+                    jaFez ? 'cursor-default border-gb-green/30 bg-gb-green/[0.08]' : 'cursor-pointer border-border bg-card hover:bg-elevated active:bg-elevated',
                   ].join(' ')}>
                   <span className="text-[13px] text-primary">{a.nome}</span>
-                  {jaFez ? <Ico icon={CheckIcon} className="w-4 h-4 text-green-500 shrink-0" /> : <Ico icon={PlusIcon} className="w-[18px] h-[18px] shrink-0 text-muted" />}
+                  {jaFez ? <Ico icon={CheckIcon} className="w-4 h-4 text-gb-green shrink-0" /> : <Ico icon={PlusIcon} className="w-[18px] h-[18px] shrink-0 text-muted" />}
                 </button>
               );
             })}

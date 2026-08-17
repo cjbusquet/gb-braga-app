@@ -146,11 +146,11 @@ function TocSection() {
         <div
           className={[
             'flex justify-between items-center py-2.5 px-3.5 mb-[18px] rounded-sm border',
-            cfg.simulationMode ? 'border-amber-500/25 bg-amber-500/[0.07]' : 'border-green-500/25 bg-green-500/[0.07]',
+            cfg.simulationMode ? 'border-amber-500/25 bg-amber-500/[0.07]' : 'border-gb-green/25 bg-gb-green/[0.07]',
           ].join(' ')}
         >
           <div>
-            <div className={['text-xs font-bold', cfg.simulationMode ? 'text-amber-500' : 'text-green-500'].join(' ')}>
+            <div className={['text-xs font-bold', cfg.simulationMode ? 'text-amber-500' : 'text-gb-green'].join(' ')}>
               {cfg.simulationMode
                 ? <span className="inline-flex gap-1.5 items-center"><Ico icon={BoltIcon} sm />Modo Simulação</span>
                 : <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Modo Produção</span>}
@@ -163,7 +163,7 @@ function TocSection() {
             className={[
               'py-1.5 px-3.5 min-h-11 sm:min-h-0 text-[11px] font-bold text-white rounded-full border-none cursor-pointer transition-all duration-200 hover:brightness-90 active:brightness-90',
               'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-              cfg.simulationMode ? 'bg-amber-500' : 'bg-green-500',
+              cfg.simulationMode ? 'bg-amber-500' : 'bg-gb-green',
             ].join(' ')}>
             {cfg.simulationMode ? 'Ativar Produção' : 'Ativar Simulação'}
           </button>
@@ -199,7 +199,7 @@ function TocSection() {
             className={[
               'flex-1 py-2.5 min-h-11 sm:min-h-0 text-xs font-semibold rounded-sm border cursor-pointer transition-colors duration-200 bg-elevated hover:bg-border-subtle active:bg-border-subtle',
               'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
-              connStatus === 'ok' ? 'border-green-500/40 text-green-500' : connStatus === 'fail' ? 'border-gb-red/40 text-gb-red' : 'border-border text-secondary',
+              connStatus === 'ok' ? 'border-gb-green/40 text-gb-green' : connStatus === 'fail' ? 'border-gb-red/40 text-gb-red' : 'border-border text-secondary',
             ].join(' ')}>
             {testing
               ? <span className="inline-flex gap-1.5 items-center"><Ico icon={ArrowPathIcon} sm />A testar...</span>
@@ -364,7 +364,7 @@ function StripeSection() {
                 style={{ background: mode === m ? (m === 'live' ? '#22C55E' : '#D97706') : undefined }}
               >
                 <span className="inline-flex gap-1 items-center">
-                  <Ico icon={CircleIcon} sm className={m === 'live' ? 'text-green-500' : 'text-amber-400'} />
+                  <Ico icon={CircleIcon} sm className={m === 'live' ? 'text-gb-green' : 'text-amber-400'} />
                   {m === 'live' ? 'LIVE' : 'TEST'}
                 </span>
               </button>
@@ -394,7 +394,7 @@ function StripeSection() {
               ? <span className="inline-flex gap-1.5 items-center"><Ico icon={ArrowPathIcon} sm />A testar...</span>
               : <span className="inline-flex gap-1.5 items-center"><Ico icon={BoltIcon} sm />Testar</span>}
           </button>
-          {testResult === 'ok' && <span className="inline-flex gap-1 items-center text-xs font-bold text-green-500"><Ico icon={CheckIcon} sm />OK</span>}
+          {testResult === 'ok' && <span className="inline-flex gap-1 items-center text-xs font-bold text-gb-green"><Ico icon={CheckIcon} sm />OK</span>}
           {testResult === 'err' && <span className="inline-flex gap-1 items-center text-xs font-bold text-gb-red"><Ico icon={XMarkIcon} sm />Inválida</span>}
           <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noreferrer"
             className="py-2 px-3 min-h-11 sm:min-h-0 text-[11.5px] font-semibold text-[#635BFF] no-underline rounded-sm border transition-colors duration-200 border-[#635BFF]/20 bg-[#635BFF]/[0.08] hover:bg-[#635BFF]/[0.16] active:bg-[#635BFF]/[0.16] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
@@ -729,7 +729,7 @@ function StaffCard({ member, onSaved }: { member: StaffMember; onSaved: () => vo
               className={[
                 'flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-xs font-semibold rounded-sm border transition-colors duration-200',
                 'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-                resetDone ? 'border-green-500 text-green-600 bg-green-500/10' : 'border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle',
+                resetDone ? 'border-gb-green text-gb-green bg-gb-green/10' : 'border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle',
                 (resetting || resetDone) ? 'cursor-not-allowed' : 'cursor-pointer',
               ].join(' ')}
             >
@@ -881,9 +881,9 @@ function EquipaSection() {
           </Card>
 
           {result && (
-            <Card className="!border-[1.5px] !border-green-500">
+            <Card className="!border-[1.5px] !border-gb-green">
               <div className="flex gap-2.5 items-center mb-3">
-                <FontAwesomeIcon icon={CheckCircleIcon} className="w-5 h-5 text-green-500" />
+                <FontAwesomeIcon icon={CheckCircleIcon} className="w-5 h-5 text-gb-green" />
                 <div>
                   <div className="text-[13px] font-bold text-primary">Conta criada!</div>
                   <div className="text-[11px] text-muted">{result.email}</div>
@@ -898,7 +898,7 @@ function EquipaSection() {
                     className={[
                       'py-1.5 px-3.5 w-full min-h-11 sm:min-h-0 text-xs font-semibold rounded-lg border cursor-pointer transition-colors duration-200',
                       'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-                      copied ? 'text-white bg-green-500 border-green-500 hover:bg-green-600 active:bg-green-600' : 'border-border bg-elevated text-primary hover:bg-border-subtle active:bg-border-subtle',
+                      copied ? 'text-white bg-gb-green border-gb-green hover:bg-gb-green-dark active:bg-gb-green-dark' : 'border-border bg-elevated text-primary hover:bg-border-subtle active:bg-border-subtle',
                     ].join(' ')}>
                     {copied
                       ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Copiado!</span>
@@ -1015,7 +1015,7 @@ function AcademiaSection() {
           className={[
             'flex gap-2 justify-center items-center py-3 mb-4 w-full min-h-11 text-[13px] font-bold text-white rounded-sm border-none transition-colors duration-200',
             'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
-            locating ? 'bg-neutral-400' : 'cursor-pointer bg-green-600 hover:bg-green-700 active:bg-green-700',
+            locating ? 'bg-neutral-400' : 'cursor-pointer bg-gb-green hover:bg-gb-green-dark active:bg-gb-green-dark',
           ].join(' ')}
         >
           {locating
@@ -1073,9 +1073,9 @@ function AcademiaSection() {
 
         {/* Status + Test */}
         {hasPoint && (
-          <div className="flex gap-2.5 justify-between items-center py-2.5 px-3.5 mb-3.5 rounded-sm border border-green-600/20 bg-green-600/[0.06]">
+          <div className="flex gap-2.5 justify-between items-center py-2.5 px-3.5 mb-3.5 rounded-sm border border-gb-green/20 bg-gb-green/[0.06]">
             <div>
-              <div className="inline-flex gap-1.5 items-center text-xs font-bold text-green-600"><Ico icon={CheckIcon} sm />Ponto definido</div>
+              <div className="inline-flex gap-1.5 items-center text-xs font-bold text-gb-green"><Ico icon={CheckIcon} sm />Ponto definido</div>
               <div className="mt-0.5 text-[11px] text-muted">
                 {cfg['GPS Latitude']}, {cfg['GPS Longitude']} · Raio: {radius}m
                 {cfg['GPS Precisão'] && ` · Precisão: ±${cfg['GPS Precisão']}`}
@@ -1099,7 +1099,7 @@ function AcademiaSection() {
         {/* Test result */}
         {testDist !== null && (
           <div
-            className={['py-2.5 px-3.5 mb-3.5 text-[12.5px] font-bold rounded-sm border', testDist <= radius ? 'border-green-600/30 text-green-600 bg-green-600/[0.08]' : 'border-gb-red/20 text-gb-red bg-gb-red/[0.07]'].join(' ')}
+            className={['py-2.5 px-3.5 mb-3.5 text-[12.5px] font-bold rounded-sm border', testDist <= radius ? 'border-gb-green/30 text-gb-green bg-gb-green/[0.08]' : 'border-gb-red/20 text-gb-red bg-gb-red/[0.07]'].join(' ')}
           >
             {testDist <= radius
               ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />{`Dentro do fence — ${testDist}m do ponto (raio: ${radius}m)`}</span>

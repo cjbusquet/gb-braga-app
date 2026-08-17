@@ -1,49 +1,45 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery as useTanstackQuery } from '@tanstack/react-query';
 import { supabase, isConfigured } from './supabaseClient';
 import * as mock from '../data/mockData';
 
 // ── Generic hook ─────────────────────────────────────────────
 // key encodes query identity — change it to trigger a re-fetch (e.g. `alunos:${status}`)
+//
+// Backed by TanStack Query (cached in the app-wide QueryClient set up in
+// App.tsx) instead of component-local state. A hand-rolled useState/useEffect
+// version re-fetches from scratch — resetting to `loading`/empty — every time
+// a page component mounts, which produced a visible flash/flicker on every
+// in-app navigation even for data fetched moments earlier. Keying off `key`
+// lets the cache persist across unmount/remount, so revisiting a page reuses
+// cached data instantly while quietly revalidating in the background.
 function useQuery<T>(
   key: string,
   supabaseQuery: () => Promise<{ data: T[] | null; error: unknown }>,
   fallback: T[]
 ) {
-  const [data, setData]       = useState<T[]>(isConfigured ? [] : fallback);
-  const [loading, setLoading] = useState(isConfigured);
-  const [error, setError]     = useState<string | null>(null);
+  const { data, isLoading, refetch } = useTanstackQuery({
+    queryKey: [key],
+    queryFn: async () => {
+      if (!isConfigured) return fallback;
+      try {
+        const { data: rows, error: err } = await supabaseQuery();
+        if (err) throw err;
+        return (rows as T[]) ?? fallback;
+      } catch (e: unknown) {
+        // Supabase/PostgREST errors are plain objects ({message, details,
+        // hint, code}), not Error instances — String(e) on those just gives
+        // "[object Object]" and hides the actual message.
+        const msg = e instanceof Error ? e.message
+          : (typeof e === 'object' && e !== null && 'message' in e) ? String((e as { message: unknown }).message)
+          : String(e);
+        console.warn(`[${key}] Supabase error:`, msg);
+        return fallback;
+      }
+    },
+  });
 
-  // key encodes when the query should re-run; supabaseQuery/fallback change
-  // on every render (inline functions/arrays) so are intentionally omitted
-  const fetch = useCallback(async () => {
-    if (!isConfigured) { setData(fallback); setLoading(false); return; }
-    setLoading(true);
-    try {
-      const { data: rows, error: err } = await supabaseQuery();
-      if (err) throw err;
-      setData((rows as T[]) ?? fallback);
-      setError(null);
-    } catch (e: unknown) {
-      // Supabase/PostgREST errors are plain objects ({message, details,
-      // hint, code}), not Error instances — String(e) on those just gives
-      // "[object Object]" and hides the actual message.
-      const msg = e instanceof Error ? e.message
-        : (typeof e === 'object' && e !== null && 'message' in e) ? String((e as { message: unknown }).message)
-        : String(e);
-      console.warn(`[${key}] Supabase error:`, msg);
-      setError(msg);
-      setData(fallback);
-    } finally {
-      setLoading(false);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
-
-  // fetch() is async — setState is called asynchronously, not synchronously
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { fetch(); }, [fetch]);
-  return { data, loading, error, refetch: fetch };
+  return { data: data ?? fallback, loading: isLoading, error: null as string | null, refetch };
 }
 
 // ── ALUNOS ────────────────────────────────────────────────────

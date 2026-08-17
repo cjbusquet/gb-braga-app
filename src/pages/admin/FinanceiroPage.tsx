@@ -119,7 +119,7 @@ export default function FinanceiroPage() {
                           <div className="flex flex-wrap gap-1.5">
                             {p.status !== 'pago' && (
                               <button onClick={() => marcarPago(p.id)} disabled={saving===p.id}
-                                className="py-1 px-2.5 text-[11px] font-semibold text-green-600 whitespace-nowrap rounded border cursor-pointer border-green-500/30 bg-green-500/10 transition-colors duration-200 hover:bg-green-500/20 active:bg-green-500/25 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60">
+                                className="py-1 px-2.5 text-[11px] font-semibold text-gb-green whitespace-nowrap rounded border cursor-pointer border-gb-green/30 bg-gb-green/10 transition-colors duration-200 hover:bg-gb-green/20 active:bg-gb-green/25 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60">
                                 {saving===p.id ? '...' : <span className="inline-flex gap-1 items-center"><Ico icon={CheckIcon} sm />Pago</span>}
                               </button>
                             )}
@@ -176,9 +176,9 @@ export default function FinanceiroPage() {
         <div className="max-w-[600px]">
           <Card padding="lg">
             <div className="flex gap-2.5 items-center pb-3.5 mb-4 border-b border-border-subtle">
-              <div className="w-2 h-2 bg-green-500 rounded-full"/>
+              <div className="w-2 h-2 bg-gb-green rounded-full"/>
               <div>
-                <div className="text-[13px] font-bold text-green-600">Emissão automática configurada</div>
+                <div className="text-[13px] font-bold text-gb-green">Emissão automática configurada</div>
                 <div className="text-[11px] text-muted">FR emitida quando Stripe confirma pagamento</div>
               </div>
             </div>

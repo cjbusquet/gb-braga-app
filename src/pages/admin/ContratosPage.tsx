@@ -75,12 +75,12 @@ export default function ContratosPage() {
                     <td className="py-2.5 px-3.5 text-[13px] font-medium whitespace-nowrap text-primary">{c.alunoNome}</td>
                     <td className="py-2.5 px-3.5 text-[13px] whitespace-nowrap text-secondary">{c.plano||'—'}</td>
                     <td className="py-2.5 px-3.5 font-mono text-xs whitespace-nowrap text-secondary">{c.dataInicio||'—'}</td>
-                    <td className={['py-2.5 px-3.5 font-mono text-xs whitespace-nowrap', c.status === 'ativo' ? 'text-green-600' : 'text-muted'].join(' ')}>{c.status==='ativo'?'Em vigor':c.dataFim||'—'}</td>
+                    <td className={['py-2.5 px-3.5 font-mono text-xs whitespace-nowrap', c.status === 'ativo' ? 'text-gb-green' : 'text-muted'].join(' ')}>{c.status==='ativo'?'Em vigor':c.dataFim||'—'}</td>
                     <td className="py-2.5 px-3.5 text-[13px] font-bold whitespace-nowrap text-primary">€{c.valor}</td>
                     <td className="py-2.5 px-3.5">
                       <Badge color={st.color}>{st.label}</Badge>
                     </td>
-                    <td className={['py-2.5 px-3.5 text-[13px] whitespace-nowrap', c.assinado ? 'text-green-600' : 'text-muted'].join(' ')}>{c.assinado ? <span className="inline-flex gap-1 items-center"><Ico icon={CheckIcon} sm />Sim</span> : '—'}</td>
+                    <td className={['py-2.5 px-3.5 text-[13px] whitespace-nowrap', c.assinado ? 'text-gb-green' : 'text-muted'].join(' ')}>{c.assinado ? <span className="inline-flex gap-1 items-center"><Ico icon={CheckIcon} sm />Sim</span> : '—'}</td>
                     <td className="py-2.5 px-3.5">
                       {c.assinado && (
                         <button onClick={() => baixarPDF(c)}

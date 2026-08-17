@@ -10,7 +10,7 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 const COLOR_CLASSES: Record<BadgeColor, string> = {
   neutral: 'text-muted bg-elevated border border-border',
   brand: 'text-gb-red bg-gb-red-glow border border-gb-red/20',
-  success: 'text-green-700 bg-green-50 border border-green-200',
+  success: 'text-gb-green-dark bg-gb-green/10 border border-gb-green/20',
   warning: 'text-amber-700 bg-amber-50 border border-amber-200',
   danger: 'text-red-700 bg-red-50 border border-red-200',
 };

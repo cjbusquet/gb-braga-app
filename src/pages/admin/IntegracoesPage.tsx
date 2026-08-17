@@ -231,7 +231,7 @@ export default function IntegracoesPage({ onNavigate }: { onNavigate?: (page: st
               className={[
                 'py-2.5 mt-4 min-h-11 sm:min-h-0 w-full text-[13px] font-bold text-white rounded-sm border-none cursor-pointer transition-colors duration-200',
                 'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
-                testingStripe ? 'bg-elevated' : stripeStatus === 'ok' ? 'bg-green-600 hover:bg-green-700 active:bg-green-700' : 'bg-[#635BFF] hover:bg-[#524ae0] active:bg-[#524ae0]',
+                testingStripe ? 'bg-elevated' : stripeStatus === 'ok' ? 'bg-gb-green hover:bg-gb-green-dark active:bg-gb-green-dark' : 'bg-[#635BFF] hover:bg-[#524ae0] active:bg-[#524ae0]',
               ].join(' ')}>
               {testingStripe
                 ? <span className="inline-flex gap-1.5 items-center"><Ico icon={ArrowPathIcon} sm />A testar...</span>
@@ -247,7 +247,7 @@ export default function IntegracoesPage({ onNavigate }: { onNavigate?: (page: st
               <div key={ep.id} className="py-3 px-3.5 mb-2.5 rounded-sm border border-border bg-elevated">
                 <div className="flex justify-between mb-1.5">
                   <StatusDot status={ep.status}/>
-                  <span className="text-[11px] font-semibold text-green-600">{ep.successRate}</span>
+                  <span className="text-[11px] font-semibold text-gb-green">{ep.successRate}</span>
                 </div>
                 <div className="mb-1 font-mono text-[11.5px] break-all text-primary">{ep.url}</div>
                 <div className="flex flex-wrap gap-1">
@@ -295,7 +295,7 @@ export default function IntegracoesPage({ onNavigate }: { onNavigate?: (page: st
                 className={[
                   'flex-1 py-2.5 min-h-11 sm:min-h-0 text-xs font-semibold rounded-sm border cursor-pointer border-border transition-colors duration-200',
                   'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
-                  testingToc ? 'bg-elevated text-secondary' : tocStatus === 'ok' ? 'text-white bg-green-600 hover:bg-green-700 active:bg-green-700' : 'bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle',
+                  testingToc ? 'bg-elevated text-secondary' : tocStatus === 'ok' ? 'text-white bg-gb-green hover:bg-gb-green-dark active:bg-gb-green-dark' : 'bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle',
                 ].join(' ')}>
                 {testingToc
                   ? <span className="inline-flex gap-1.5 items-center"><Ico icon={ArrowPathIcon} sm />A testar...</span>

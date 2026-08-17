@@ -149,7 +149,7 @@ function EditAlunoModal({ aluno, onClose }: { aluno: any; onClose: () => void })
             Cancelar
           </Button>
           <Button
-            variant="primary" className={['flex-[2]', saved ? '!bg-green-500' : ''].join(' ')}
+            variant="primary" className={['flex-[2]', saved ? '!bg-gb-green' : ''].join(' ')}
             disabled={saving || saved || !dataNasc || precisaResp}
             onClick={handleSave}
           >
@@ -508,7 +508,7 @@ export default function AlunosPage() {
                 <button onClick={() => changeStatus('ativo')} disabled={statusLoading || isMatriculaPendente(selected)}
                   title={isMatriculaPendente(selected) ? 'Matrícula pendente de confirmação — ação bloqueada até à aprovação do pagamento.' : undefined}
                   className={[
-                    'flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] text-green-600 rounded-sm border cursor-pointer transition-colors duration-200 border-green-500/35 bg-green-500/10 hover:bg-green-500/20 active:bg-green-500/20',
+                    'flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] text-gb-green rounded-sm border cursor-pointer transition-colors duration-200 border-gb-green/35 bg-gb-green/10 hover:bg-gb-green/20 active:bg-gb-green/20',
                     'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
                     statusLoading || isMatriculaPendente(selected) ? 'opacity-50' : 'opacity-100',
                   ].join(' ')}>
@@ -563,7 +563,7 @@ export default function AlunosPage() {
               {isMatriculaPendente(selected)
                 ? <><Ico icon={ClockIcon} sm />Pendente</>
                 : selected.status === 'ativo'
-                ? <><Ico icon={CircleIcon} sm className="text-green-500" />Ativo</>
+                ? <><Ico icon={CircleIcon} sm className="text-gb-green" />Ativo</>
                 : selected.status === 'suspenso'
                   ? <><Ico icon={BanIcon} sm />Suspenso</>
                   : <><Ico icon={CircleIcon} sm className="text-neutral-400" />Inativo</>}
@@ -728,11 +728,11 @@ export default function AlunosPage() {
 
               <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={safePage === totalPages}
                 className={[
-                  'flex gap-1 items-center py-1.5 px-3.5 min-h-11 sm:min-h-0 text-[13px] rounded-sm border transition-colors duration-200 border-border bg-card',
+                  'group flex gap-1 items-center py-1.5 px-3.5 min-h-11 sm:min-h-0 text-[13px] rounded-sm border transition-colors duration-200 border-border bg-card',
                   'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
                   safePage === totalPages ? 'text-muted opacity-50' : 'cursor-pointer text-primary opacity-100 hover:bg-elevated active:bg-elevated',
                 ].join(' ')}>
-                Próximo <FontAwesomeIcon icon={ChevronRightIcon} className="w-[15px] h-[15px]" />
+                Próximo <FontAwesomeIcon icon={ChevronRightIcon} className="w-[15px] h-[15px] transition-transform duration-200 group-hover:translate-x-1" />
               </button>
             </div>
           )}

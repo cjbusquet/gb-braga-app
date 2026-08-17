@@ -120,6 +120,17 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3000',
       },
+      // Lets the app reach the local Supabase stack through the dev
+      // server's own origin (see resolveSupabaseUrl in supabaseClient.ts) —
+      // needed when the page is loaded via an ngrok tunnel or any other
+      // non-localhost origin, since the browser can't otherwise reach
+      // 127.0.0.1:54321 on the developer's machine.
+      '/supabase': {
+        target: 'http://127.0.0.1:54321',
+        changeOrigin: true,
+        ws: true,
+        rewrite: (path) => path.replace(/^\/supabase/, ''),
+      },
     },
   },
 });

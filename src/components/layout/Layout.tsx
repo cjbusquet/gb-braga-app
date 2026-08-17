@@ -25,7 +25,7 @@ import {
 } from '../../lib/icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { roleThemes } from '../../lib/gbBrand';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { GBLogoFull } from '../GBLogo';
 import type { ReactNode } from 'react';
@@ -207,6 +207,7 @@ export default function Layout({
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 1024);
@@ -214,6 +215,16 @@ export default function Layout({
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
+
+  // The page-content element is never remounted between pages (only its
+  // children swap in App.tsx's renderPage()), so it silently kept whatever
+  // scroll position the previous page was left at instead of starting each
+  // page at the top. Desktop scrolls its own container; mobile scrolls the
+  // window itself (see the content div's classes below).
+  useEffect(() => {
+    contentRef.current?.scrollTo(0, 0);
+    window.scrollTo(0, 0);
+  }, [currentPage]);
 
   const handleNav = (id: string) => {
     onNavigate(id);
@@ -529,6 +540,7 @@ export default function Layout({
 
         {/* Page content */}
         <div
+          ref={contentRef}
           className={[
             'overflow-x-hidden',
             isMobile

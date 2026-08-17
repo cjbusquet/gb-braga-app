@@ -203,17 +203,17 @@ export default function KioskMode({ onExit }: Props) {
 
             {state === 'success' && lastCheckin && (
               <div className="text-center animate-[fadeIn_0.3s_ease]">
-                <div className="flex justify-center items-center mx-auto mb-5 w-[100px] h-[100px] rounded-full border-[3px] border-green-600/40 bg-green-600/[0.12]"><FontAwesomeIcon icon={CheckIcon} className="w-12 h-12 text-green-600" /></div>
-                <div className="mb-1.5 text-[28px] font-extrabold text-green-600">CHECK-IN!</div>
+                <div className="flex justify-center items-center mx-auto mb-5 w-[100px] h-[100px] rounded-full border-[3px] border-gb-green/40 bg-gb-green/[0.12]"><FontAwesomeIcon icon={CheckIcon} className="w-12 h-12 text-gb-green" /></div>
+                <div className="mb-1.5 text-[28px] font-extrabold text-gb-green">CHECK-IN!</div>
                 <div className="mb-2 text-[22px] font-bold text-white">{lastCheckin.nome}</div>
                 <div className="flex gap-2.5 justify-center items-center mb-1.5">
                   <BeltBadge faixa={lastCheckin.faixa} grau={lastCheckin.grau} size="md" />
                 </div>
                 <div className="mb-1 font-mono text-[13px] text-[#4A4A58]">{lastCheckin.hora}</div>
                 {lastCheckin.dist > 0 && (
-                  <div className="flex gap-1 justify-center items-center text-xs text-green-600"><Ico icon={MapPinIcon} sm />{lastCheckin.dist}m da academia · GPS confirmado</div>
+                  <div className="flex gap-1 justify-center items-center text-xs text-gb-green"><Ico icon={MapPinIcon} sm />{lastCheckin.dist}m da academia · GPS confirmado</div>
                 )}
-                <div className="flex gap-1.5 justify-center items-center mt-2 text-sm font-bold text-green-600">OSS! <Ico icon={MartialArtsIcon} sm /></div>
+                <div className="flex gap-1.5 justify-center items-center mt-2 text-sm font-bold text-gb-green">OSS! <Ico icon={MartialArtsIcon} sm /></div>
               </div>
             )}
 

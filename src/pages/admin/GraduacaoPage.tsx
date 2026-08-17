@@ -258,7 +258,7 @@ export default function GraduacaoPage() {
             </label>
 
             {success && (
-              <div className="flex gap-1.5 items-center py-2.5 px-3.5 mb-3.5 text-[13px] font-semibold text-green-600 rounded-lg border border-green-500/30 bg-green-500/10">
+              <div className="flex gap-1.5 items-center py-2.5 px-3.5 mb-3.5 text-[13px] font-semibold text-gb-green rounded-lg border border-gb-green/30 bg-gb-green/10">
                 <Ico icon={CheckIcon} sm />Graduação registada! OSS! <Ico icon={MartialArtsIcon} sm />
               </div>
             )}
@@ -272,7 +272,7 @@ export default function GraduacaoPage() {
               variant="primary" size="lg" fullWidth
               disabled={!alunoSel || saving || success || alunoAtualPendente}
               title={alunoAtualPendente ? 'Matrícula pendente de confirmação' : undefined}
-              className={success ? '!bg-green-500 !shadow-none' : undefined}
+              className={success ? '!bg-gb-green !shadow-none' : undefined}
               onClick={handleRegistar}
             >
               {success ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Graduação registada!</span> : saving ? 'A guardar...' : <span className="inline-flex gap-1.5 items-center">Confirmar Graduação — OSS! <Ico icon={MartialArtsIcon} sm /></span>}

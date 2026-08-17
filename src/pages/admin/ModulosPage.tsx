@@ -57,7 +57,7 @@ function ModuleRow({ mod }: { mod: ModuleDef }) {
       {/* Status badge + Toggle */}
       <div className="flex gap-2.5 items-center shrink-0">
         {!isCore && (
-          <span className={['text-[10.5px] font-bold tracking-[0.4px]', active ? 'text-green-600' : 'text-neutral-500'].join(' ')}>
+          <span className={['text-[10.5px] font-bold tracking-[0.4px]', active ? 'text-gb-green' : 'text-neutral-500'].join(' ')}>
             {active ? 'Ativo' : 'Inativo'}
           </span>
         )}

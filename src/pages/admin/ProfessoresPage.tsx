@@ -95,7 +95,7 @@ export default function ProfessoresPage() {
                   </div>
                   <div className="text-right shrink-0">
                     {ativo
-                      ? <div className="text-[10.5px] font-bold text-green-600">● Em aula</div>
+                      ? <div className="text-[10.5px] font-bold text-gb-green">● Em aula</div>
                       : <div className="text-[10.5px] text-muted">{hoje_count} hoje</div>
                     }
                     <div className="mt-0.5 text-[10px] text-muted">{p.turmas.length} turmas</div>
@@ -136,10 +136,10 @@ export default function ProfessoresPage() {
               const ativa = checkinsProfSel.find(c => c.status === 'ativa');
               if (!ativa) return null;
               return (
-                <div className="flex gap-2.5 items-center py-3 px-4 mb-3.5 rounded-md border-[1.5px] border-green-600/25 bg-green-600/[0.07]">
-                  <span className="inline-block w-2.5 h-2.5 bg-green-600 rounded-full shrink-0 animate-[pulse_1.5s_infinite]"/>
+                <div className="flex gap-2.5 items-center py-3 px-4 mb-3.5 rounded-md border-[1.5px] border-gb-green/25 bg-gb-green/[0.07]">
+                  <span className="inline-block w-2.5 h-2.5 bg-gb-green rounded-full shrink-0 animate-[pulse_1.5s_infinite]"/>
                   <div>
-                    <div className="text-[13px] font-bold text-green-600">Aula em curso agora</div>
+                    <div className="text-[13px] font-bold text-gb-green">Aula em curso agora</div>
                     <div className="text-[11.5px] text-muted">{ativa.turmaNome} · desde {ativa.horaInicio}</div>
                   </div>
                 </div>

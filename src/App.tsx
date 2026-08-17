@@ -103,7 +103,7 @@ function SetPasswordScreen() {
   if (done) return (
     <div className="flex justify-center items-center py-8 px-4 min-h-screen bg-base">
       <div className="p-8 w-full max-w-[400px] text-center rounded-2xl border border-border bg-white">
-        <div className="mb-4 text-green-500"><Ico icon={CheckCircleIcon} style={{ width: 48, height: 48 }} /></div>
+        <div className="mb-4 text-gb-green"><Ico icon={CheckCircleIcon} style={{ width: 48, height: 48 }} /></div>
         <h2 className="mb-2 font-display text-lg font-extrabold uppercase text-primary">Password definida!</h2>
         <p className="mb-6 text-sm text-secondary">A tua conta está pronta. Bem-vindo à equipa Gracie Barra Braga.</p>
         <Button variant="primary" onClick={() => window.location.reload()}>
@@ -212,6 +212,13 @@ function AppContent() {
   useEffect(() => {
     if (!user) return;
     const defPage = user.role === 'aluno' ? 'portal' : 'dashboard';
+
+    // currentPage is local component state, so it survives a logout (the
+    // user just goes null, AppContent never unmounts) — without this, log
+    // out from e.g. "perfil" and back in and it silently reopens "perfil"
+    // instead of landing on the portal/dashboard like a fresh login should.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCurrentPage('');
 
     // Set a base history entry so the very first back press doesn't exit the app
     history.replaceState({ page: defPage }, '', location.pathname + location.search);
