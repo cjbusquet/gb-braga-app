@@ -1,5 +1,6 @@
 import { CheckIcon, Ico, MapPinIcon } from '@/lib/icons';
-import { useAlunos, usePresencas, useTurmas } from '../../lib/useData';
+import { useAlunos, usePresencas } from '../../lib/useData';
+import { useTurmasDoAlunoQuery } from '../../hooks/useAulas';
 
 import PortalPageHeader from './PortalPageHeader';
 import { useAuth } from '../../lib/auth';
@@ -19,21 +20,20 @@ const DIAS_FULL = [
 ];
 
 export default function MinhasAulas() {
-  const { data: turmas } = useTurmas();
   const { data: presencas } = usePresencas();
   const { data: alunos } = useAlunos();
   const { user } = useAuth();
   const aluno = alunos.find((a) => a.email === user?.email) || alunos[0];
+  const { data: minhasTurmas = [] } = useTurmasDoAlunoQuery(aluno?.id);
   if (!aluno) return <SkeletonList rows={4} />;
 
-  const minhasTurmas = turmas.slice(0, 2);
   const minhasPresencas = presencas.filter((p) => p.alunoId === aluno.id);
 
   return (
     <div>
       <PortalPageHeader
         title="Minhas Aulas"
-        description="Consulta o teu horário e as aulas em que estás inscrito."
+        description="Consulta o teu horário e as aulas que frequentas."
       />
 
       {/* Weekly schedule */}

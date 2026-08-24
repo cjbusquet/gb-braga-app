@@ -8,6 +8,7 @@ import {
   ChatBubbleLeftRightIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ClipboardDocumentCheckIcon,
   Cog6ToothIcon,
   CurrencyEuroIcon,
   DocumentTextIcon,
@@ -78,6 +79,12 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Graduação',
     id: 'graduacao',
     roles: ['superadmin', 'admin', 'professor'],
+  },
+  {
+    Icon: ClipboardDocumentCheckIcon,
+    label: 'Minhas Aulas',
+    id: 'aulas',
+    roles: ['professor'],
   },
   {
     Icon: EnvelopeIcon,
@@ -411,49 +418,44 @@ export default function Layout({
     </div>
   );
 
-  /* ── Bottom tab bar (mobile only) ────────────────── */
+  /* ── Bottom tab bar (mobile only) — floating translucent dock ──────
+     Icon-only pill that hovers above the page instead of spanning edge to
+     edge; the active item gets a filled accent circle rather than a top
+     bar, since there's no full-width strip left to hang an indicator off.
+     Glassy light tint (not a dark panel) so it sits on top of the page's
+     own off-white background instead of fighting it. */
   const bottomTabBar = isMobile && (
-    <div className="flex fixed right-0 bottom-0 left-0 z-[190] items-stretch pb-[env(safe-area-inset-bottom)] border-t border-border bg-card">
-      {bottomItems.map((item) => {
-        const active = currentPage === item.id;
-        return (
-          <button
-            key={item.id}
-            onClick={() => handleNav(item.id)}
-            className={['flex relative flex-col flex-1 gap-0.5 justify-center items-center py-2 px-1 pb-2.5 min-h-14 bg-none border-none transition-all duration-200 cursor-pointer active:bg-elevated', 'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-inset'].join(' ')}
-          >
-            {/* Accent indicator lives on its own element — a color-bearing
-                inline style directly on the <button> would trip index.css's
-                button[style*="rgb(200, 16, 46)"] legacy-CTA override for any
-                role whose accent happens to be GB red (admin/superadmin),
-                forcing that role's active tab into different padding/radius
-                than every other role. */}
-            <span
-              aria-hidden="true"
-              className="absolute inset-x-0 top-0 h-0.5"
+    <div className="flex fixed inset-x-0 bottom-0 z-[190] justify-center px-4 pb-[calc(env(safe-area-inset-bottom)+14px)] pointer-events-none">
+      <div
+        className="flex gap-1 items-center py-2 px-2 rounded-full border shadow-lg pointer-events-auto backdrop-blur-xl"
+        style={{ background: 'rgba(247,246,244,0.78)', borderColor: 'rgba(0,0,0,0.06)' }}
+      >
+        {bottomItems.map((item) => {
+          const active = currentPage === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleNav(item.id)}
+              title={item.label}
+              className={['flex relative justify-center items-center w-11 h-11 bg-none border-none rounded-full cursor-pointer transition-all duration-200 active:scale-90', 'outline-none focus-visible:ring-2 focus-visible:ring-gb-red/60 focus-visible:ring-inset'].join(' ')}
               style={{ background: active ? rt.accent : 'transparent' }}
-            />
-            <FontAwesomeIcon
-              icon={item.Icon}
-              className="w-[22px] h-[22px]"
-              style={{ color: active ? rt.accent : 'var(--text-muted)' }}
-            />
-            <span
-              className="text-[9.5px] tracking-[0.2px]"
-              style={{ fontWeight: active ? 700 : 400, color: active ? rt.accent : 'var(--text-muted)' }}
             >
-              {item.label}
-            </span>
-            {item.badge && (
-              <span
-                className="flex absolute top-1.5 right-1/2 justify-center items-center w-3.5 h-3.5 text-[9px] font-bold text-white rounded-full translate-x-2 bg-gb-red"
-              >
-                {item.badge}
-              </span>
-            )}
-          </button>
-        );
-      })}
+              <FontAwesomeIcon
+                icon={item.Icon}
+                className="w-[19px] h-[19px]"
+                style={{ color: active ? '#fff' : 'var(--text-muted)' }}
+              />
+              {item.badge && (
+                <span
+                  className="flex absolute top-0.5 right-0.5 justify-center items-center w-3.5 h-3.5 text-[9px] font-bold text-white rounded-full bg-gb-red"
+                >
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 
@@ -544,7 +546,7 @@ export default function Layout({
           className={[
             'overflow-x-hidden',
             isMobile
-              ? 'py-4 px-3.5 pt-[calc(56px+env(safe-area-inset-top)+16px)] pb-[calc(72px+env(safe-area-inset-bottom)+16px)]'
+              ? 'py-4 px-3.5 pt-[calc(56px+env(safe-area-inset-top)+16px)] pb-[calc(88px+env(safe-area-inset-bottom)+16px)]'
               : 'flex-1 overflow-y-auto py-7 px-8',
           ].join(' ')}
         >

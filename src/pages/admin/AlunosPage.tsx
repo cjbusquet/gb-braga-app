@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useResponsaveis, db } from '../../lib/useData';
 import { useAlunosQuery, useInvalidateAlunos } from '../../lib/queries';
 import { useAuth } from '../../lib/auth';
@@ -7,7 +7,8 @@ import { useToast } from '../../components/common/Toast';
 import { beltConfig } from '../../lib/gbBrand';
 import { FAIXAS_PROGRESSAO, isMatriculaPendente } from '../../lib/alunoDomain';
 import NovaMatriculaModal from './NovaMatriculaModal';
-import { Ico, PencilIcon, CheckCircleIcon, XCircleIcon, XMarkIcon, ArrowPathIcon, ArrowLeftIcon, PlusIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, AdjustmentsHorizontalIcon, CheckIcon, SaveIcon, CircleIcon, BanIcon, ClockIcon } from '../../lib/icons';
+import Modal from '../../components/common/Modal';
+import { Ico, PencilIcon, CheckCircleIcon, XCircleIcon, ArrowPathIcon, ArrowLeftIcon, PlusIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, AdjustmentsHorizontalIcon, CheckIcon, SaveIcon, CircleIcon, BanIcon, ClockIcon, ChatBubbleLeftRightIcon } from '../../lib/icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Button from '../../components/common/Button';
 import PageHeader from '../../components/common/PageHeader';
@@ -62,6 +63,7 @@ function EditAlunoModal({ aluno, onClose }: { aluno: any; onClose: () => void })
   const [telefone, setTel]        = useState(aluno.telefone || '');
   const [nif, setNif]             = useState(aluno.nif || '');
   const [dataNasc, setDataNasc]   = useState(aluno.dataNascimento || '');
+  const [genero, setGenero]       = useState(aluno.genero || '');
   const [saving, setSaving]       = useState(false);
   const [saved, setSaved]         = useState(false);
 
@@ -69,13 +71,13 @@ function EditAlunoModal({ aluno, onClose }: { aluno: any; onClose: () => void })
   const idade = calcularIdade(dataNasc);
   const precisaResp = eMenor(dataNasc) && vinculos.length === 0;
 
-  const handleSave = async () => {
+  const handleSave = async (close: () => void) => {
     if (!dataNasc || precisaResp) return;
     setSaving(true);
     try {
-      await db.atualizarAluno(aluno.id, { nome, telefone, nif, dataNascimento: dataNasc });
+      await db.atualizarAluno(aluno.id, { nome, telefone, nif, dataNascimento: dataNasc, genero: genero || null });
       setSaved(true);
-      setTimeout(onClose, 1000);
+      setTimeout(close, 1000);
     } catch(e) {
       console.error(e);
       setSaving(false);
@@ -83,27 +85,9 @@ function EditAlunoModal({ aluno, onClose }: { aluno: any; onClose: () => void })
   };
 
   return (
-    <div
-      onClick={onClose}
-      className="flex fixed inset-0 z-[1000] justify-center items-center p-5 bg-black/50"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="p-7 w-full max-w-[500px] rounded-lg border border-border bg-card"
-      >
-        <div className="flex justify-between mb-5">
-          <div className="text-[15px] font-extrabold text-primary">
-            Editar — {aluno.nome}
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="Fechar"
-            className="flex justify-center items-center p-2 -m-2 bg-none rounded-full border-none cursor-pointer text-muted transition-colors duration-200 hover:text-primary hover:bg-elevated active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
-          >
-            <Ico icon={XMarkIcon} />
-          </button>
-        </div>
-
+    <Modal onClose={onClose} title={`Editar — ${aluno.nome}`}>
+      {close => (
+        <>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="col-span-full">
             <label className={LABEL_CLASS}>Nome completo</label>
@@ -133,6 +117,14 @@ function EditAlunoModal({ aluno, onClose }: { aluno: any; onClose: () => void })
               </div>
             )}
           </div>
+          <div>
+            <Select label="Género (opcional)" value={genero} onChange={e => setGenero(e.target.value)}>
+              <option value="">—</option>
+              <option value="feminino">Feminino</option>
+              <option value="masculino">Masculino</option>
+              <option value="outro">Outro</option>
+            </Select>
+          </div>
         </div>
 
         {precisaResp && (
@@ -145,13 +137,13 @@ function EditAlunoModal({ aluno, onClose }: { aluno: any; onClose: () => void })
         )}
 
         <div className="flex gap-2.5 mt-4.5">
-          <Button variant="secondary" className="flex-1" disabled={saving} onClick={onClose}>
+          <Button variant="secondary" className="flex-1" disabled={saving} onClick={close}>
             Cancelar
           </Button>
           <Button
             variant="primary" className={['flex-[2]', saved ? '!bg-gb-green' : ''].join(' ')}
             disabled={saving || saved || !dataNasc || precisaResp}
-            onClick={handleSave}
+            onClick={() => handleSave(close)}
           >
             {saved ? (
               <><Ico icon={CheckIcon} sm /> Guardado!</>
@@ -162,8 +154,9 @@ function EditAlunoModal({ aluno, onClose }: { aluno: any; onClose: () => void })
             )}
           </Button>
         </div>
-      </div>
-    </div>
+        </>
+      )}
+    </Modal>
   );
 }
 
@@ -366,7 +359,13 @@ function ResponsaveisSection({ aluno }: { aluno: any }) {
 
 // ── AlunosPage ──────────────────────────────────────────────────────────────
 
-export default function AlunosPage() {
+interface Props {
+  /** Aluno a abrir automaticamente ao entrar (ex: vindo do "Ver perfil →" do Chat). */
+  initialAlunoId?: string;
+  onNavigate?: (page: string, param?: string) => void;
+}
+
+export default function AlunosPage({ initialAlunoId, onNavigate }: Props) {
   const { user } = useAuth();
   const toast = useToast();
   // restringir_update_aluno() (trigger na BD) só deixa admin/superadmin/
@@ -394,6 +393,20 @@ export default function AlunosPage() {
   const [editModal, setEditModal]       = useState(false);
   const [showMatricula, setShowMatricula] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
+
+  // Deep link vindo do Chat ("Ver perfil →"): abre o perfil deste aluno assim
+  // que a lista carrega. Um ref evita reabrir o perfil se o utilizador voltar
+  // à lista e um refetch em segundo plano trocar a referência de `alunos`.
+  const appliedInitialAlunoId = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!initialAlunoId || initialAlunoId === appliedInitialAlunoId.current || !alunos.length) return;
+    const a = alunos.find((x: any) => x.id === initialAlunoId);
+    if (a) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSelected(a);
+      appliedInitialAlunoId.current = initialAlunoId;
+    }
+  }, [initialAlunoId, alunos]);
 
   const changeStatus = async (newStatus: 'ativo' | 'suspenso' | 'inativo') => {
     const labels: Record<string, string> = {
@@ -461,9 +474,16 @@ export default function AlunosPage() {
 
     return (
       <div>
-        <button onClick={() => setSelected(null)} className="flex gap-1.5 items-center py-2 mb-4 min-h-11 sm:min-h-0 text-[13px] bg-none border-none cursor-pointer transition-colors duration-200 text-muted hover:text-primary active:text-primary outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
-          <Ico icon={ArrowLeftIcon} sm /> Voltar
-        </button>
+        <div className="flex justify-between items-center mb-4">
+          <button onClick={() => setSelected(null)} className="flex gap-1.5 items-center py-2 min-h-11 sm:min-h-0 text-[13px] bg-none border-none cursor-pointer transition-colors duration-200 text-muted hover:text-primary active:text-primary outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+            <Ico icon={ArrowLeftIcon} sm /> Voltar
+          </button>
+          {onNavigate && initialAlunoId === selected.id && (
+            <button onClick={() => onNavigate('chat', selected.id)} className="flex gap-1.5 items-center py-1.5 px-3 min-h-11 sm:min-h-0 text-xs font-semibold rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+              <Ico icon={ChatBubbleLeftRightIcon} sm /> Voltar ao chat
+            </button>
+          )}
+        </div>
         <div className="p-6 rounded-lg border border-border bg-card">
 
           {/* Cabeçalho */}

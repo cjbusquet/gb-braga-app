@@ -8,6 +8,7 @@ import { revenueHistory } from '../../data/mockData';
 import { beltConfig } from '../../lib/gbBrand';
 import { exportRelatorioFinanceiro, exportRelatorioAlunos, exportCSV } from '../../services/pdf';
 import Card from '../../components/common/Card';
+import Modal from '../../components/common/Modal';
 import PageHeader from '../../components/common/PageHeader';
 import { SkeletonCard } from '../../components/common/Skeleton';
 import { useToast } from '../../components/common/Toast';
@@ -16,7 +17,6 @@ import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
 import {
   Ico,
-  XMarkIcon,
   ExclamationTriangleIcon,
   StarIcon,
   MartialArtsIcon,
@@ -73,7 +73,7 @@ function NovaAcademiaModal({ onClose, onAdd }: { onClose: () => void; onAdd: (a:
   const [cidade, setCidade] = useState('');
   const [err,    setErr]    = useState('');
 
-  const submit = (e: React.FormEvent) => {
+  const submit = (close: () => void) => (e: React.FormEvent) => {
     e.preventDefault();
     const c = cidade.trim();
     if (!c) { setErr('Indica a cidade da nova academia.'); return; }
@@ -84,21 +84,13 @@ function NovaAcademiaModal({ onClose, onAdd }: { onClose: () => void; onAdd: (a:
       alunos:      0, receita: 0, crescimento: 0,
       freq:        0, inadimp: 0, status: 'nova',
     });
-    onClose();
+    close();
   };
 
   return (
-    <div className="flex fixed inset-0 z-[9999] justify-center items-center p-5 bg-black/60" onClick={onClose}>
-      <div className="p-7 w-full max-w-[400px] rounded-lg border border-border bg-card" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-5">
-          <div>
-            <div className="mb-1 text-[10px] font-bold tracking-[1px] uppercase text-muted">Rede Gracie Barra Portugal</div>
-            <h2 className="m-0 text-base font-extrabold text-primary">+ Nova Academia</h2>
-          </div>
-          <button type="button" onClick={onClose} className="flex justify-center items-center p-1 min-h-11 min-w-11 leading-none bg-none border-none cursor-pointer transition-colors duration-200 text-muted hover:text-primary active:text-primary outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"><Ico icon={XMarkIcon} /></button>
-        </div>
-
-        <form onSubmit={submit}>
+    <Modal onClose={onClose} eyebrow="Rede Gracie Barra Portugal" title="+ Nova Academia" maxWidth={400}>
+      {close => (
+        <form onSubmit={submit(close)}>
           <div className="mb-5">
             <label className="block mb-1.5 text-[11.5px] font-bold tracking-[0.5px] uppercase text-secondary">
               Cidade
@@ -117,7 +109,7 @@ function NovaAcademiaModal({ onClose, onAdd }: { onClose: () => void; onAdd: (a:
           </div>
 
           <div className="flex gap-2.5">
-            <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>
+            <Button type="button" variant="secondary" className="flex-1" onClick={close}>
               Cancelar
             </Button>
             <Button type="submit" variant="primary" className="flex-[2]">
@@ -125,8 +117,8 @@ function NovaAcademiaModal({ onClose, onAdd }: { onClose: () => void; onAdd: (a:
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+      )}
+    </Modal>
   );
 }
 

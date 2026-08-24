@@ -80,22 +80,6 @@ export function useProfessores() {
   );
 }
 
-// ── PROFESSOR CHECKINS ────────────────────────────────────────
-export function useProfessorCheckins(professorId?: string) {
-  return useQuery(
-    `professor_checkins:${professorId ?? ''}`,
-    async () => {
-      let q = supabase.from('professor_checkins').select('*').order('data', { ascending: false }).order('hora_inicio', { ascending: false });
-      if (professorId) q = q.eq('professor_id', professorId);
-      const res = await q;
-      return { data: res.data?.map(mapProfessorCheckin) ?? null, error: res.error };
-    },
-    professorId
-      ? mock.mockProfessorCheckins.filter(c => c.professorId === professorId)
-      : mock.mockProfessorCheckins
-  );
-}
-
 // ── PAGAMENTOS ────────────────────────────────────────────────
 export function usePagamentos(alunoId?: string) {
   return useQuery(
@@ -256,6 +240,7 @@ export const db = {
       nif:             dados.nif          || null,
       faixa,
       grau:            dados.grau         ?? 0,
+      genero:          dados.genero       || null,
       plano_id:        dados.planoId      || null,
       plano_nome:      dados.planoNome    || null,
       morada:          dados.morada       || null,
@@ -281,6 +266,7 @@ export const db = {
     if (campos.nif)       map.nif       = campos.nif;
     if (campos.status)    map.status    = campos.status;
     if (campos.faixa)     map.faixa     = campos.faixa;
+    if (campos.genero !== undefined) map.genero = campos.genero || null;
     if (campos.grau !== undefined)          map.grau            = campos.grau;
     if (campos.dataNascimento !== undefined) map.data_nascimento = campos.dataNascimento || null;
     const { data, error } = await supabase.from('alunos').update(map).eq('id', id).select().single();
@@ -295,12 +281,28 @@ export const db = {
 
   registarPresenca: async (dados: any) => {
     if (!isConfigured) return null;
+    const hoje = new Date().toISOString().split('T')[0];
+
+    // Materializa a ocorrência concreta desta turma hoje (ou reaproveita
+    // a já existente) para que a presença fique ligada a uma aula, não
+    // só a (turma_id, data) — ver patch 27_aulas_individuais.sql.
+    let aulaId: string | null = null;
+    if (dados.turmaId) {
+      const { data: aid, error: aulaError } = await supabase.rpc('obter_ou_criar_aula', {
+        p_turma_id: dados.turmaId,
+        p_data: hoje,
+      });
+      if (aulaError) throw aulaError;
+      aulaId = aid;
+    }
+
     const { data, error } = await supabase.from('presencas').insert({
       aluno_id:   dados.alunoId,
       aluno_nome: dados.alunoNome,
       turma_id:   dados.turmaId   || null,
       turma_nome: dados.turmaNome || null,
-      data:       new Date().toISOString().split('T')[0],
+      aula_id:    aulaId,
+      data:       hoje,
       hora:       new Date().toTimeString().slice(0, 8),
       tipo:       'checkin',
       metodo:     dados.metodo || 'manual',
@@ -498,31 +500,6 @@ export const db = {
     if (error) throw error;
   },
 
-  registarProfessorCheckin: async (dados: { professorId: string; professorNome: string; turmaId: string; turmaNome: string }) => {
-    if (!isConfigured) return null;
-    const now = new Date();
-    const { data, error } = await supabase.from('professor_checkins').insert({
-      professor_id:   dados.professorId,
-      professor_nome: dados.professorNome,
-      turma_id:       dados.turmaId,
-      turma_nome:     dados.turmaNome,
-      data:           now.toISOString().split('T')[0],
-      hora_inicio:    now.toTimeString().slice(0, 5),
-      status:         'ativa',
-    }).select().single();
-    if (error) throw error;
-    return data;
-  },
-
-  concluirCheckinProfessor: async (id: string) => {
-    if (!isConfigured) return null;
-    const now = new Date();
-    const { data, error } = await supabase.from('professor_checkins')
-      .update({ hora_fim: now.toTimeString().slice(0, 5), status: 'concluida' })
-      .eq('id', id).select().single();
-    if (error) throw error;
-    return data;
-  },
 };
 
 // ── MAPPERS: Supabase snake_case → App camelCase ──────────────
@@ -540,6 +517,7 @@ export function mapAluno(r: any) {
     codPostal:       r.cod_postal || r.codPostal || '',
     faixa:           r.faixa || 'branca',
     grau:            r.grau ?? 0,
+    genero:          r.genero || undefined,
     dataMatricula:   r.data_matricula || r.dataMatricula || '',
     plano:           r.plano_nome || r.plano || '',
     planoId:         r.plano_id || r.planoId || '',
@@ -656,21 +634,6 @@ export function mapProfessor(r: any) {
   };
 }
 
-export function mapProfessorCheckin(r: any) {
-  if (!r) return r;
-  return {
-    id:            r.id,
-    professorId:   r.professor_id   || r.professorId,
-    professorNome: r.professor_nome || r.professorNome,
-    turmaId:       r.turma_id       || r.turmaId,
-    turmaNome:     r.turma_nome     || r.turmaNome,
-    data:          r.data,
-    horaInicio:    r.hora_inicio    || r.horaInicio,
-    horaFim:       r.hora_fim       || r.horaFim,
-    status:        r.status || 'concluida',
-  };
-}
-
 export function mapTurma(r: any) {
   if (!r) return r;
   return {
@@ -682,7 +645,6 @@ export function mapTurma(r: any) {
     diaSemana:     r.dias_semana    || r.diaSemana || [],
     sala:          r.sala || '',
     capacidade:    r.capacidade || 20,
-    inscritos:     r.inscritos ?? 0,
     nivel:         r.nivel || 'all',
     tipo:          r.tipo  || 'gi',
     cor:           r.cor   || null,

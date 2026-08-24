@@ -19,6 +19,8 @@ import { SuperAdminDashboard, RelatoriosPage } from './pages/admin/SpecialPages'
 import FluxoMatricula from './pages/matricula/FluxoMatricula';
 import PendentesNumerario from './pages/admin/PendentesNumerario';
 import ProfessorView from './pages/professor/ProfessorView';
+import MinhasAulasPage from './pages/professor/MinhasAulasPage';
+import AulaDetalhePage from './pages/professor/AulaDetalhePage';
 import PortalAluno from './pages/aluno/PortalAluno';
 import MinhasAulas from './pages/aluno/MinhasAulas';
 import MinhaEvolucao from './pages/aluno/MinhaEvolucao';
@@ -47,6 +49,8 @@ const PAGE_ROLES: Record<string, UserRole[]> = {
   checkin:       ['superadmin','admin','atendimento','professor'],
   financeiro:    ['superadmin','admin'],
   graduacao:     ['superadmin','admin','professor'],
+  aulas:         ['professor'],
+  'aula-detalhe':['professor'],
   comunicacao:   ['superadmin','admin','atendimento'],
   chat:          ['superadmin','admin','atendimento'],
   contratos:     ['superadmin','admin'],
@@ -195,6 +199,7 @@ function AppContent() {
   const { user, refreshProfile, pendingPasswordSetup } = useAuth();
   const { isActive } = useModulos();
   const [currentPage, setCurrentPage] = useState('');
+  const [currentParam, setCurrentParam] = useState<string | undefined>(undefined);
   const [registering, setRegistering] = useState(false);
 
   // Only relevant for an aluno whose enrollment isn't complete yet — called
@@ -219,6 +224,7 @@ function AppContent() {
     // instead of landing on the portal/dashboard like a fresh login should.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage('');
+    setCurrentParam(undefined);
 
     // Set a base history entry so the very first back press doesn't exit the app
     history.replaceState({ page: defPage }, '', location.pathname + location.search);
@@ -227,10 +233,12 @@ function AppContent() {
       const p: string | undefined = e.state?.page;
       if (p && canAccess(user.role, p)) {
         setCurrentPage(p);
+        setCurrentParam(e.state?.param);
       } else {
         // No more in-app history — land on default (next back will exit as expected)
         history.pushState({ page: defPage }, '', location.pathname + location.search);
         setCurrentPage(defPage);
+        setCurrentParam(undefined);
       }
     };
 
@@ -286,11 +294,12 @@ function AppContent() {
     ? page
     : defaultPage;
 
-  const handleNavigate = (p: string) => {
+  const handleNavigate = (p: string, param?: string) => {
     if (canAccess(user.role, p)) {
       // Push a history entry so the mobile back button navigates within the app
-      history.pushState({ page: p }, '', location.pathname + location.search);
+      history.pushState({ page: p, param }, '', location.pathname + location.search);
       setCurrentPage(p);
+      setCurrentParam(param);
     }
   };
 
@@ -312,13 +321,15 @@ function AppContent() {
     // Professor routes
     if (user.role === 'professor') {
       switch (safePage) {
-        case 'dashboard':  return <ProfessorView />;
-        case 'alunos':     return <AlunosPage />;
-        case 'turmas':     return <TurmasPage />;
-        case 'checkin':    return <CheckinPage />;
-        case 'graduacao':  return <GraduacaoPage />;
-        case 'perfil':     return <PerfilPage />;
-        default:           return <ProfessorView />;
+        case 'dashboard':    return <ProfessorView onNavigate={handleNavigate} />;
+        case 'alunos':       return <AlunosPage />;
+        case 'turmas':       return <TurmasPage />;
+        case 'checkin':      return <CheckinPage />;
+        case 'graduacao':    return <GraduacaoPage />;
+        case 'aulas':        return <MinhasAulasPage onNavigate={handleNavigate} />;
+        case 'aula-detalhe': return <AulaDetalhePage aulaId={currentParam} onNavigate={handleNavigate} />;
+        case 'perfil':       return <PerfilPage />;
+        default:             return <ProfessorView onNavigate={handleNavigate} />;
       }
     }
 
@@ -330,13 +341,13 @@ function AppContent() {
     // Admin + Superadmin + Atendimento routes
     switch (safePage) {
       case 'dashboard':    return <Dashboard />;
-      case 'alunos':       return <AlunosPage />;
+      case 'alunos':       return <AlunosPage initialAlunoId={currentParam} onNavigate={handleNavigate} />;
       case 'turmas':       return <TurmasPage />;
       case 'checkin':      return <CheckinPage />;
       case 'financeiro':   return <FinanceiroPage />;
       case 'graduacao':    return <GraduacaoPage />;
       case 'comunicacao':  return <ComunicacaoPage />;
-      case 'chat':         return <ChatPage onNavigate={handleNavigate} />;
+      case 'chat':         return <ChatPage onNavigate={handleNavigate} initialAlunoId={currentParam} />;
       case 'contratos':    return <ContratosPage />;
       case 'relatorios':   return <RelatoriosPage />;
       case 'integracoes':  return <IntegracoesPage onNavigate={handleNavigate} />;

@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useMemo } from 'react';
-import { useTurmas, useAlunos, db } from '../../lib/useData';
+import { useTurmas, db } from '../../lib/useData';
+import { useAlunosDaTurmaQuery } from '../../hooks/useAulas';
+import { useAuth } from '../../lib/auth';
 import { GB } from '../../lib/gbBrand';
 import { useMobile } from '../../lib/useMobile';
-import { Ico, type HeroIcon, ArrowLeftIcon, PlusIcon, CheckIcon, ClockIcon, MapPinIcon, CalendarIcon, Bars3Icon } from '../../lib/icons';
+import { Ico, type HeroIcon, ArrowLeftIcon, PlusIcon, CheckIcon, ClockIcon, MapPinIcon, CalendarIcon, Bars3Icon, UserIcon } from '../../lib/icons';
 import Modal from '../../components/common/Modal';
 import Select from '../../components/common/Select';
 import Button from '../../components/common/Button';
@@ -17,6 +19,22 @@ const DIAS_LABEL: Record<string, string> = {
   quinta:  'QUI', sexta: 'SEX', sábado: 'SÁB', domingo: 'DOM',
 };
 const DIAS_ORDER = ['segunda','terça','quarta','quinta','sexta','sábado'];
+
+/** Datas (DD/MM) de segunda a sábado da semana corrente, para mostrar junto aos rótulos SEG/TER/... */
+function datasDaSemanaAtual(): Record<string, string> {
+  const hoje = new Date();
+  const offsetParaSegunda = hoje.getDay() === 0 ? -6 : 1 - hoje.getDay();
+  const segunda = new Date(hoje);
+  segunda.setDate(hoje.getDate() + offsetParaSegunda);
+
+  const out: Record<string, string> = {};
+  DIAS_ORDER.forEach((dia, i) => {
+    const d = new Date(segunda);
+    d.setDate(segunda.getDate() + i);
+    out[dia] = d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
+  });
+  return out;
+}
 const TIPOS = ['gi','nogi','wrestling','kids'];
 const NIVEIS = ['all','iniciante','intermediario','avancado','kids'];
 const DIAS_FULL = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
@@ -40,13 +58,13 @@ function NovaTurmaModal({ onClose, onSave }: { onClose: ()=>void; onSave: ()=>vo
   const toggleDia = (d: string) =>
     setDias(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
 
-  const handleSave = async () => {
+  const handleSave = async (close: () => void) => {
     if (!nome || !horario) return;
     setSaving(true);
     try {
       await db.criarTurma({ nome, professorNome: professor, horario, diasSemana: dias, sala, capacidade, nivel, tipo });
       setSaved(true);
-      setTimeout(() => { onSave(); onClose(); }, 1000);
+      setTimeout(() => { onSave(); close(); }, 1000);
     } catch (e) {
       console.error('Erro ao criar turma:', e);
       setSaving(false);
@@ -55,51 +73,54 @@ function NovaTurmaModal({ onClose, onSave }: { onClose: ()=>void; onSave: ()=>vo
 
   return (
     <Modal onClose={onClose} title="Nova Turma" maxWidth={560}>
-      <div className="grid grid-cols-1 gap-3 mb-3 sm:grid-cols-2">
-        <div className="col-span-full">
-          <label className={LABEL_CLASS}>Nome da Turma *</label>
-          <input value={nome} onChange={e=>setNome(e.target.value)} placeholder="ex: GB 1 - Adultos" className={FIELD_CLASS}/>
-        </div>
-        <div><label className={LABEL_CLASS}>Professor</label><input value={professor} onChange={e=>setProfessor(e.target.value)} placeholder="Nome do professor" className={FIELD_CLASS}/></div>
-        <div><label className={LABEL_CLASS}>Horário *</label><input value={horario} onChange={e=>setHorario(e.target.value)} placeholder="18:30" className={FIELD_CLASS}/></div>
-        <div><label className={LABEL_CLASS}>Sala</label><input value={sala} onChange={e=>setSala(e.target.value)} placeholder="Tatame 1" className={FIELD_CLASS}/></div>
-        <div><label className={LABEL_CLASS}>Capacidade</label><input type="number" value={capacidade} onChange={e=>setCapacidade(parseInt(e.target.value)||20)} className={FIELD_CLASS}/></div>
-        <div><Select label="Tipo" value={tipo} onChange={e=>setTipo(e.target.value)}>{TIPOS.map(t=><option key={t} value={t}>{t.toUpperCase()}</option>)}</Select></div>
-        <div><Select label="Nível" value={nivel} onChange={e=>setNivel(e.target.value)}>{NIVEIS.map(n=><option key={n} value={n}>{n}</option>)}</Select></div>
-      </div>
-      <div className="mb-4">
-        <label className={LABEL_CLASS}>Dias da Semana</label>
-        <div className="flex flex-wrap gap-1.5">
-          {DIAS_FULL.map(d=>(
-            <button key={d} onClick={()=>toggleDia(d)}
-              className={[
-                'py-1.5 px-3 min-h-11 sm:min-h-0 text-[12.5px] rounded-md border cursor-pointer transition-colors duration-200',
-                'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-                dias.includes(d) ? 'text-white bg-gb-red border-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark' : 'text-secondary bg-elevated border-border hover:bg-border-subtle active:bg-border-subtle',
-              ].join(' ')}>
-              {d}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="flex gap-2.5">
-        <Button variant="secondary" className="flex-1" onClick={onClose}>Cancelar</Button>
-        <Button
-          variant="primary" className={['flex-[2]', saved ? '!bg-gb-green' : ''].join(' ')}
-          disabled={!nome || !horario || saving} loading={saving}
-          onClick={handleSave}
-        >
-          {saved ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Turma criada!</span> : saving ? 'A guardar...' : '+ Criar Turma'}
-        </Button>
-      </div>
+      {close => (
+        <>
+          <div className="grid grid-cols-1 gap-3 mb-3 sm:grid-cols-2">
+            <div className="col-span-full">
+              <label className={LABEL_CLASS}>Nome da Turma *</label>
+              <input value={nome} onChange={e=>setNome(e.target.value)} placeholder="ex: GB 1 - Adultos" className={FIELD_CLASS}/>
+            </div>
+            <div><label className={LABEL_CLASS}>Professor</label><input value={professor} onChange={e=>setProfessor(e.target.value)} placeholder="Nome do professor" className={FIELD_CLASS}/></div>
+            <div><label className={LABEL_CLASS}>Horário *</label><input value={horario} onChange={e=>setHorario(e.target.value)} placeholder="18:30" className={FIELD_CLASS}/></div>
+            <div><label className={LABEL_CLASS}>Sala</label><input value={sala} onChange={e=>setSala(e.target.value)} placeholder="Tatame 1" className={FIELD_CLASS}/></div>
+            <div><label className={LABEL_CLASS}>Capacidade</label><input type="number" value={capacidade} onChange={e=>setCapacidade(parseInt(e.target.value)||20)} className={FIELD_CLASS}/></div>
+            <div><Select label="Tipo" value={tipo} onChange={e=>setTipo(e.target.value)}>{TIPOS.map(t=><option key={t} value={t}>{t.toUpperCase()}</option>)}</Select></div>
+            <div><Select label="Nível" value={nivel} onChange={e=>setNivel(e.target.value)}>{NIVEIS.map(n=><option key={n} value={n}>{n}</option>)}</Select></div>
+          </div>
+          <div className="mb-4">
+            <label className={LABEL_CLASS}>Dias da Semana</label>
+            <div className="flex flex-wrap gap-1.5">
+              {DIAS_FULL.map(d=>(
+                <button key={d} onClick={()=>toggleDia(d)}
+                  className={[
+                    'py-1.5 px-3 min-h-11 sm:min-h-0 text-[12.5px] rounded-md border cursor-pointer transition-colors duration-200',
+                    'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                    dias.includes(d) ? 'text-white bg-gb-red border-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark' : 'text-secondary bg-elevated border-border hover:bg-border-subtle active:bg-border-subtle',
+                  ].join(' ')}>
+                  {d}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-2.5">
+            <Button variant="secondary" className="flex-1" onClick={close}>Cancelar</Button>
+            <Button
+              variant="primary" className={['flex-[2]', saved ? '!bg-gb-green' : ''].join(' ')}
+              disabled={!nome || !horario || saving} loading={saving}
+              onClick={() => handleSave(close)}
+            >
+              {saved ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Turma criada!</span> : saving ? 'A guardar...' : '+ Criar Turma'}
+            </Button>
+          </div>
+        </>
+      )}
     </Modal>
   );
 }
 
 // ─── Turma Detail ─────────────────────────────────────────────────────────────
 function TurmaDetail({ turma, onBack }: { turma: any; onBack: ()=>void }) {
-  const { data: alunos } = useAlunos();
-  const inscritos = alunos.filter((a: any) => a.turmaId === turma.id || a.plano?.includes(turma.nome));
+  const { data: frequentam = [], isLoading: frequentamLoading } = useAlunosDaTurmaQuery(turma.id);
   const cor = (turma as any).cor || GB.red;
 
   return (
@@ -119,6 +140,7 @@ function TurmaDetail({ turma, onBack }: { turma: any; onBack: ()=>void }) {
                 {turma.tipo?.toUpperCase()}
               </span>
               <span className="inline-flex gap-1.5 items-center text-sm text-muted"><Ico icon={ClockIcon} sm />{turma.horario}</span>
+              {turma.professorNome && <span className="inline-flex gap-1.5 items-center text-sm text-muted"><Ico icon={UserIcon} sm />{turma.professorNome}</span>}
               {turma.sala && <span className="inline-flex gap-1.5 items-center text-sm text-muted"><Ico icon={MapPinIcon} sm />{turma.sala}</span>}
             </div>
             <div className="mt-1.5 text-xs text-muted">
@@ -128,22 +150,24 @@ function TurmaDetail({ turma, onBack }: { turma: any; onBack: ()=>void }) {
             </div>
           </div>
           <div className="py-3 px-[18px] text-right rounded-sm bg-elevated">
-            <div className="text-2xl font-extrabold text-primary">{inscritos.length}/{turma.capacidade}</div>
-            <div className="text-[11px] text-muted">alunos inscritos</div>
+            <div className="text-2xl font-extrabold text-primary">{frequentam.length}/{turma.capacidade}</div>
+            <div className="text-[11px] text-muted">alunos (últimos 60 dias)</div>
             <div className="mt-1.5 w-20 h-1 rounded bg-border">
-              <div className="h-full rounded" style={{ width: `${Math.min(100, Math.round((inscritos.length/turma.capacidade)*100))}%`, background: cor }}/>
+              <div className="h-full rounded" style={{ width: `${Math.min(100, Math.round((frequentam.length/turma.capacidade)*100))}%`, background: cor }}/>
             </div>
           </div>
         </div>
       </Card>
       <Card padding="lg">
-        <div className="mb-3 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Alunos inscritos</div>
-        {inscritos.length === 0 ? (
-          <div className="p-5 text-[13px] text-center text-muted">Nenhum aluno inscrito nesta turma</div>
-        ) : inscritos.map((a: any) => (
+        <div className="mb-3 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Alunos que frequentaram esta turma (últimos 60 dias)</div>
+        {frequentamLoading ? (
+          <div className="p-5 text-[13px] text-center text-muted">A carregar...</div>
+        ) : frequentam.length === 0 ? (
+          <div className="p-5 text-[13px] text-center text-muted">Ninguém frequentou esta turma nos últimos 60 dias</div>
+        ) : frequentam.map((a) => (
           <div key={a.id} className="flex justify-between items-center py-2 border-b border-border-subtle">
             <span className="text-[13px] text-primary">{a.nome}</span>
-            <BeltBadge faixa={a.faixa} grau={a.grau} size="sm" />
+            <BeltBadge faixa={a.faixa as any} grau={a.grau} size="sm" />
           </div>
         ))}
       </Card>
@@ -159,6 +183,7 @@ function CalendarView({ turmas, onSelect, filtroTipo }: {
 }) {
   const { isMobile } = useMobile();
   const [diaAtivo, setDiaAtivo] = useState(DIAS_ORDER[0]);
+  const datasSemana = useMemo(() => datasDaSemanaAtual(), []);
 
   const filtered = filtroTipo === 'all' ? turmas : turmas.filter((t: any) => t.tipo === filtroTipo);
 
@@ -200,8 +225,11 @@ function CalendarView({ turmas, onSelect, filtroTipo }: {
         >
           {t.nome}
         </div>
+        {t.professorNome && (
+          <div className="overflow-hidden mt-0.5 text-[9.5px] font-semibold whitespace-nowrap text-ellipsis text-secondary">{t.professorNome}</div>
+        )}
         {t.sala && (
-          <div className="mt-0.5 text-[9.5px] text-muted">{t.sala}</div>
+          <div className="overflow-hidden mt-0.5 text-[9.5px] whitespace-nowrap text-ellipsis text-muted">{t.sala}</div>
         )}
       </button>
     );
@@ -221,7 +249,7 @@ function CalendarView({ turmas, onSelect, filtroTipo }: {
                 'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
                 diaAtivo === d ? 'font-bold border-gb-red text-gb-red' : 'font-normal border-transparent text-muted hover:text-primary active:text-primary',
               ].join(' ')}>
-              {DIAS_LABEL[d]}
+              {DIAS_LABEL[d]} <span className="text-[10.5px] font-normal opacity-70">{datasSemana[d]}</span>
             </button>
           ))}
         </div>
@@ -263,8 +291,9 @@ function CalendarView({ turmas, onSelect, filtroTipo }: {
         <div className="flex border-b border-border bg-elevated">
           <div style={{ width: TIME_W }} className="shrink-0 py-2.5 px-2 border-r border-border" />
           {dias.map(d => (
-            <div key={d} style={{ width: COL_W }} className="shrink-0 py-2.5 px-2 text-xs font-extrabold tracking-[0.5px] text-center border-r border-border text-primary">
-              {DIAS_LABEL[d]}
+            <div key={d} style={{ width: COL_W }} className="shrink-0 py-2.5 px-2 text-center border-r border-border">
+              <div className="text-xs font-extrabold tracking-[0.5px] text-primary">{DIAS_LABEL[d]}</div>
+              <div className="mt-0.5 text-[10px] font-normal text-muted">{datasSemana[d]}</div>
             </div>
           ))}
         </div>
@@ -325,14 +354,56 @@ function Legend({ turmas }: { turmas: any[] }) {
   );
 }
 
+// ─── Turma Card (vista de lista) ───────────────────────────────────────────────
+function TurmaListCard({ turma, onSelect }: { turma: any; onSelect: () => void }) {
+  const { data: frequentam = [] } = useAlunosDaTurmaQuery(turma.id);
+  const pct = Math.round((frequentam.length / (turma.capacidade || 20)) * 100);
+  const cor = turma.cor || GB.red;
+
+  return (
+    <button onClick={onSelect}
+      className="p-4.5 w-full text-left rounded-lg border cursor-pointer transition-colors duration-200 border-border bg-card hover:border-border-strong outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
+    >
+      <div className="flex gap-2 justify-between mb-2">
+        <div className="text-[13px] font-bold leading-tight text-primary">{turma.nome}</div>
+        <span
+          className="py-0.5 px-1.5 text-[10px] font-bold rounded-full shrink-0"
+          style={{ background: `${cor}20`, color: cor }}
+        >
+          {turma.tipo?.toUpperCase()}
+        </span>
+      </div>
+      <div className="inline-flex gap-1.5 items-center mb-1 text-[11.5px] text-muted">
+        <Ico icon={ClockIcon} sm />{turma.horario} &nbsp;·&nbsp;
+        {Array.isArray(turma.diaSemana)
+          ? turma.diaSemana.map((d: string) => DIAS_LABEL[d] || d).join(' ')
+          : turma.diaSemana}
+      </div>
+      {turma.professorNome && <div className="inline-flex gap-1.5 items-center mb-1 text-xs text-muted"><Ico icon={UserIcon} sm />{turma.professorNome}</div>}
+      {turma.sala && <div className="inline-flex gap-1.5 items-center mb-2 text-xs text-muted"><Ico icon={MapPinIcon} sm />{turma.sala}</div>}
+      <div className="flex justify-between mb-1.5 text-xs text-muted">
+        <span>{frequentam.length}/{turma.capacidade} alunos</span>
+        <span className={pct >= 90 ? 'font-bold text-gb-red' : 'font-normal'}>{pct}%</span>
+      </div>
+      <div className="h-[3px] rounded bg-border">
+        <div className="h-full rounded transition-[width] duration-300" style={{ width: `${Math.min(100,pct)}%`, background: cor }}/>
+      </div>
+    </button>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function TurmasPage() {
+  const { user } = useAuth();
+  // RLS ("Admin cria turmas") só permite INSERT a estes papéis — o professor
+  // pode ver o horário mas não gerir turmas, por isso o botão fica escondido
+  // em vez de deixar o professor tentar criar e falhar em silêncio.
+  const podeCriarTurma = user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'atendimento';
   const { data: turmas, refetch } = useTurmas();
   const [showNova,   setShowNova]   = useState(false);
   const [selected,   setSelected]   = useState<any | null>(null);
   const [filtroTipo, setFiltroTipo] = useState('all');
   const [view,       setView]       = useState<'calendar' | 'list'>('calendar');
-  const { data: alunos } = useAlunos();
 
   if (selected) return <TurmaDetail turma={selected} onBack={() => setSelected(null)} />;
 
@@ -346,12 +417,13 @@ export default function TurmasPage() {
         eyebrow="Academia"
         title="Horário de Turmas"
         actions={<>
-          {/* View toggle */}
-          <div className="flex overflow-hidden rounded-sm border border-border bg-elevated">
+          {/* View toggle — sized to match the Button 'md' preset (py-2.5/text-[12px])
+              so it lines up with "+ Nova Turma" instead of standing taller. */}
+          <div className="flex overflow-hidden self-stretch rounded-sm border border-border bg-elevated">
             {([['calendar', CalendarIcon],['list', Bars3Icon]] as [string, HeroIcon][]).map(([v, icon]) => (
               <button key={v} onClick={() => setView(v as any)}
                 className={[
-                  'py-3 px-3.5 min-h-11 sm:min-h-0 text-sm border-none cursor-pointer transition-colors duration-200',
+                  'py-2.5 px-3.5 min-h-11 sm:min-h-0 text-[12px] border-none cursor-pointer transition-colors duration-200',
                   'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-inset',
                   view===v ? 'text-white bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark' : 'bg-transparent text-muted hover:bg-border-subtle active:bg-border-subtle',
                 ].join(' ')}>
@@ -359,9 +431,11 @@ export default function TurmasPage() {
               </button>
             ))}
           </div>
-          <Button variant="primary" onClick={() => setShowNova(true)}>
-            <Ico icon={PlusIcon} sm /> Nova Turma
-          </Button>
+          {podeCriarTurma && (
+            <Button variant="primary" onClick={() => setShowNova(true)}>
+              <Ico icon={PlusIcon} sm /> Nova Turma
+            </Button>
+          )}
         </>}
       />
 
@@ -393,45 +467,16 @@ export default function TurmasPage() {
       {/* List view */}
       {view === 'list' && (
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
-          {filtered.map((turma: any) => {
-            const inscritos = alunos.filter((a: any) => a.turmaId === turma.id).length || turma.inscritos || 0;
-            const pct = Math.round((inscritos / (turma.capacidade || 20)) * 100);
-            const cor = turma.cor || GB.red;
-            return (
-              <button key={turma.id} onClick={() => setSelected(turma)}
-                className="p-4.5 w-full text-left rounded-lg border cursor-pointer transition-colors duration-200 border-border bg-card hover:border-border-strong outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
-              >
-                <div className="flex gap-2 justify-between mb-2">
-                  <div className="text-[13px] font-bold leading-tight text-primary">{turma.nome}</div>
-                  <span
-                    className="py-0.5 px-1.5 text-[10px] font-bold rounded-full shrink-0"
-                    style={{ background: `${cor}20`, color: cor }}
-                  >
-                    {turma.tipo?.toUpperCase()}
-                  </span>
-                </div>
-                <div className="inline-flex gap-1.5 items-center mb-1 text-[11.5px] text-muted">
-                  <Ico icon={ClockIcon} sm />{turma.horario} &nbsp;·&nbsp;
-                  {Array.isArray(turma.diaSemana)
-                    ? turma.diaSemana.map((d: string) => DIAS_LABEL[d] || d).join(' ')
-                    : turma.diaSemana}
-                </div>
-                {turma.sala && <div className="inline-flex gap-1.5 items-center mb-2 text-xs text-muted"><Ico icon={MapPinIcon} sm />{turma.sala}</div>}
-                <div className="flex justify-between mb-1.5 text-xs text-muted">
-                  <span>{inscritos}/{turma.capacidade} alunos</span>
-                  <span className={pct >= 90 ? 'font-bold text-gb-red' : 'font-normal'}>{pct}%</span>
-                </div>
-                <div className="h-[3px] rounded bg-border">
-                  <div className="h-full rounded transition-[width] duration-300" style={{ width: `${Math.min(100,pct)}%`, background: cor }}/>
-                </div>
-              </button>
-            );
-          })}
-          <button onClick={() => setShowNova(true)}
-            className="flex flex-col gap-2 justify-center items-center p-5 min-h-[130px] rounded-lg border-2 border-dashed cursor-pointer transition-colors duration-200 border-border bg-elevated hover:border-gb-red active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
-            <span className="text-3xl text-muted">+</span>
-            <span className="text-[13px] text-muted">Nova Turma</span>
-          </button>
+          {filtered.map((turma: any) => (
+            <TurmaListCard key={turma.id} turma={turma} onSelect={() => setSelected(turma)} />
+          ))}
+          {podeCriarTurma && (
+            <button onClick={() => setShowNova(true)}
+              className="flex flex-col gap-2 justify-center items-center p-5 min-h-[130px] rounded-lg border-2 border-dashed cursor-pointer transition-colors duration-200 border-border bg-elevated hover:border-gb-red active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+              <span className="text-3xl text-muted">+</span>
+              <span className="text-[13px] text-muted">Nova Turma</span>
+            </button>
+          )}
         </div>
       )}
     </div>

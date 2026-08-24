@@ -25,6 +25,7 @@ CREATE TYPE belt_type       AS ENUM (
 CREATE TYPE payment_status  AS ENUM ('pago','pendente','vencido','cancelado');
 CREATE TYPE payment_method  AS ENUM ('stripe','numerario','transferencia');
 CREATE TYPE aluno_status    AS ENUM ('ativo','inativo','suspenso');
+CREATE TYPE genero_type     AS ENUM ('feminino','masculino','outro');
 CREATE TYPE turma_nivel     AS ENUM ('iniciante','intermediario','avancado','kids','all');
 CREATE TYPE turma_tipo      AS ENUM ('gi','nogi','wrestling','kids');
 CREATE TYPE msg_canal       AS ENUM ('whatsapp','sms','email','push');
@@ -137,6 +138,7 @@ CREATE TABLE IF NOT EXISTS alunos (
   cod_postal             TEXT,
   faixa                  belt_type NOT NULL DEFAULT 'branca',
   grau                   SMALLINT NOT NULL DEFAULT 0 CHECK (grau BETWEEN 0 AND 4),
+  genero                 genero_type,
   data_matricula         DATE NOT NULL DEFAULT CURRENT_DATE,
   plano_id               TEXT REFERENCES planos(id) ON DELETE SET NULL,
   plano_nome             TEXT,
@@ -179,18 +181,6 @@ CREATE TABLE IF NOT EXISTS turmas (
 );
 
 CREATE INDEX idx_turmas_professor ON turmas(professor_id);
-
-CREATE TABLE IF NOT EXISTS inscricoes_turma (
-  aluno_id       UUID REFERENCES alunos(id) ON DELETE CASCADE,
-  turma_id       UUID REFERENCES turmas(id) ON DELETE CASCADE,
-  data_inscricao DATE NOT NULL DEFAULT CURRENT_DATE,
-  ativa          BOOLEAN NOT NULL DEFAULT TRUE,
-  PRIMARY KEY (aluno_id, turma_id)
-);
-
--- aluno_id já está coberto pelo prefixo esquerdo da PK composta
--- (aluno_id, turma_id); turma_id sozinho não fica coberto por essa PK.
-CREATE INDEX idx_inscricoes_turma ON inscricoes_turma(turma_id);
 
 INSERT INTO turmas (nome, professor_nome, horario, dias_semana, sala, capacidade, tipo, nivel) VALUES
   ('Jiu-Jitsu Adultos — Manhã',   'Prof. João Santos', '07:00-08:30', ARRAY['Segunda','Terça','Quarta','Quinta','Sexta'], 'Sala Principal', 20, 'gi', 'all'),
@@ -275,6 +265,33 @@ CREATE TABLE IF NOT EXISTS professor_checkins (
 
 CREATE INDEX idx_professor_checkins_professor ON professor_checkins(professor_id);
 CREATE INDEX idx_professor_checkins_turma     ON professor_checkins(turma_id);
+
+-- ── AULAS ────────────────────────────────────────────────────
+-- Ocorrência concreta de uma turma num dia (ex: "Jiu-Jitsu Manhã" de
+-- 17/08), distinta do horário-modelo semanal em `turmas`. Materializada
+-- automaticamente por qualquer check-in ou pelo professor a dar aula —
+-- ver obter_ou_criar_aula / iniciar_aula / concluir_aula mais abaixo.
+CREATE TABLE IF NOT EXISTS aulas (
+  id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  turma_id       UUID NOT NULL REFERENCES turmas(id) ON DELETE CASCADE,
+  turma_nome     TEXT NOT NULL,
+  professor_id   UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  professor_nome TEXT,
+  data           DATE NOT NULL,
+  horario        TEXT,               -- horário agendado (copiado da turma, ex: "07:00-08:30")
+  hora_inicio    TIME,               -- hora real em que o professor iniciou
+  hora_fim       TIME,               -- hora real em que o professor concluiu
+  sala           TEXT,
+  status         TEXT NOT NULL DEFAULT 'agendada' CHECK (status IN ('agendada','em_curso','concluida')),
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (turma_id, data)
+);
+
+CREATE INDEX idx_aulas_professor ON aulas(professor_id);
+CREATE INDEX idx_aulas_data      ON aulas(data);
+
+ALTER TABLE presencas ADD COLUMN aula_id UUID REFERENCES aulas(id) ON DELETE SET NULL;
+CREATE INDEX idx_presencas_aula ON presencas(aula_id);
 
 -- ── CONTRATOS ────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS contratos (
@@ -506,7 +523,6 @@ ALTER TABLE profiles          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE planos            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE alunos            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE turmas            ENABLE ROW LEVEL SECURITY;
-ALTER TABLE inscricoes_turma  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pagamentos        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE presencas         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE professor_checkins ENABLE ROW LEVEL SECURITY;
@@ -538,8 +554,8 @@ $$ LANGUAGE SQL SECURITY DEFINER STABLE SET search_path = public;
 
 -- Helper: aluno_id do utilizador atual
 -- Devolve NULL para quem está suspenso/inativo: é o ponto único usado
--- pelas policies de self-service (inscricoes_turma, presencas,
--- pagamentos, chat, aluno_responsaveis, professor_checkins, ...), por
+-- pelas policies de self-service (presencas, pagamentos, chat,
+-- aluno_responsaveis, professor_checkins, ...), por
 -- isso bloquear aqui bloqueia tudo isso de uma vez quando "Suspender"
 -- ou "Tornar Inativo" (AlunosPage.tsx) muda o status.
 CREATE OR REPLACE FUNCTION private.my_aluno_id() RETURNS UUID AS $$
@@ -690,11 +706,13 @@ CREATE POLICY "Admin cria turmas"    ON turmas FOR INSERT WITH CHECK ((SELECT pr
 CREATE POLICY "Admin atualiza turmas" ON turmas FOR UPDATE USING ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento'));
 CREATE POLICY "Admin apaga turmas"   ON turmas FOR DELETE USING ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento'));
 
--- INSCRIÇÕES EM TURMA policies
-CREATE POLICY "Aluno vê a própria inscrição" ON inscricoes_turma FOR SELECT USING (aluno_id = (SELECT private.my_aluno_id()) OR (SELECT private.auth_role()) IN ('admin','superadmin','atendimento','professor'));
-CREATE POLICY "Admin cria inscrições"    ON inscricoes_turma FOR INSERT WITH CHECK ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento'));
-CREATE POLICY "Admin atualiza inscrições" ON inscricoes_turma FOR UPDATE USING ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento'));
-CREATE POLICY "Admin apaga inscrições"   ON inscricoes_turma FOR DELETE USING ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento'));
+-- AULAS policies
+-- Visibilidade do horário/agenda não é sensível — mesmo critério que
+-- "Ver turmas". Sem policies de INSERT/UPDATE diretas: toda a escrita
+-- passa por obter_ou_criar_aula/iniciar_aula/concluir_aula (SECURITY
+-- DEFINER), que decidem o professor a partir de quem chama.
+ALTER TABLE aulas ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Ver aulas" ON aulas FOR SELECT USING ((SELECT auth.uid()) IS NOT NULL);
 
 -- PAGAMENTOS policies
 CREATE POLICY "Aluno vê pagamentos" ON pagamentos FOR SELECT USING (aluno_id = (SELECT private.my_aluno_id()) OR (SELECT private.auth_role()) IN ('admin','superadmin'));
@@ -808,6 +826,98 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 REVOKE EXECUTE ON FUNCTION registrar_graduacao(UUID, belt_type, SMALLINT, TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION registrar_graduacao(UUID, belt_type, SMALLINT, TEXT) TO authenticated;
+
+-- ── obter_ou_criar_aula ────────────────────────────────────────
+-- Chamada por qualquer check-in (aluno/kiosk/staff) para materializar
+-- a aula do dia; usa o professor por omissão da turma.
+CREATE OR REPLACE FUNCTION obter_ou_criar_aula(p_turma_id UUID, p_data DATE)
+RETURNS UUID AS $$
+DECLARE
+  v_turma turmas%ROWTYPE;
+  v_aula_id UUID;
+BEGIN
+  SELECT * INTO v_turma FROM turmas WHERE id = p_turma_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Turma não encontrada' USING ERRCODE = 'P0002';
+  END IF;
+
+  INSERT INTO aulas (turma_id, turma_nome, professor_id, professor_nome, data, horario, sala)
+  VALUES (v_turma.id, v_turma.nome, v_turma.professor_id, v_turma.professor_nome, p_data, v_turma.horario, v_turma.sala)
+  ON CONFLICT (turma_id, data) DO NOTHING
+  RETURNING id INTO v_aula_id;
+
+  IF v_aula_id IS NULL THEN
+    SELECT id INTO v_aula_id FROM aulas WHERE turma_id = p_turma_id AND data = p_data;
+  END IF;
+
+  RETURN v_aula_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+REVOKE EXECUTE ON FUNCTION obter_ou_criar_aula(UUID, DATE) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION obter_ou_criar_aula(UUID, DATE) TO authenticated;
+
+-- ── iniciar_aula ─────────────────────────────────────────────
+-- Só um professor pode iniciar; fica registado como o professor desta
+-- aula (suporta substituições face ao professor por omissão da turma).
+CREATE OR REPLACE FUNCTION iniciar_aula(p_turma_id UUID, p_data DATE)
+RETURNS UUID AS $$
+DECLARE
+  v_role TEXT := private.auth_role();
+  v_turma turmas%ROWTYPE;
+  v_professor_nome TEXT;
+  v_aula_id UUID;
+BEGIN
+  IF v_role <> 'professor' THEN
+    RAISE EXCEPTION 'Só um professor pode iniciar uma aula' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT * INTO v_turma FROM turmas WHERE id = p_turma_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Turma não encontrada' USING ERRCODE = 'P0002';
+  END IF;
+
+  SELECT nome INTO v_professor_nome FROM profiles WHERE id = auth.uid();
+
+  INSERT INTO aulas (turma_id, turma_nome, professor_id, professor_nome, data, horario, sala, status, hora_inicio)
+  VALUES (v_turma.id, v_turma.nome, auth.uid(), COALESCE(v_professor_nome, 'Professor'), p_data, v_turma.horario, v_turma.sala, 'em_curso', NOW()::TIME(0))
+  ON CONFLICT (turma_id, data) DO UPDATE SET
+    professor_id   = auth.uid(),
+    professor_nome = COALESCE(v_professor_nome, 'Professor'),
+    status         = 'em_curso',
+    hora_inicio    = NOW()::TIME(0)
+  RETURNING id INTO v_aula_id;
+
+  RETURN v_aula_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+REVOKE EXECUTE ON FUNCTION iniciar_aula(UUID, DATE) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION iniciar_aula(UUID, DATE) TO authenticated;
+
+-- ── concluir_aula ────────────────────────────────────────────
+-- Só o professor da aula ou admin/superadmin.
+CREATE OR REPLACE FUNCTION concluir_aula(p_aula_id UUID)
+RETURNS VOID AS $$
+DECLARE
+  v_role TEXT := private.auth_role();
+  v_aula aulas%ROWTYPE;
+BEGIN
+  SELECT * INTO v_aula FROM aulas WHERE id = p_aula_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Aula não encontrada' USING ERRCODE = 'P0002';
+  END IF;
+
+  IF NOT ((v_aula.professor_id = auth.uid() AND v_role = 'professor') OR v_role IN ('admin','superadmin')) THEN
+    RAISE EXCEPTION 'Sem permissão para concluir esta aula' USING ERRCODE = '42501';
+  END IF;
+
+  UPDATE aulas SET status = 'concluida', hora_fim = NOW()::TIME(0) WHERE id = p_aula_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+REVOKE EXECUTE ON FUNCTION concluir_aula(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION concluir_aula(UUID) TO authenticated;
 
 -- TOConline policies
 -- "Admin vê faturas" e "Aluno vê as suas faturas" eram 2 policies de

@@ -17,7 +17,6 @@ import {
   ArrowDownTrayIcon as SaveIcon,
   TrophyIcon,
   VideoCameraIcon,
-  XMarkIcon,
   type HeroIcon,
 } from '../../lib/icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -28,8 +27,8 @@ import {
   useContratos,
   usePagamentos,
   usePresencas,
-  useTurmas,
 } from '../../lib/useData';
+import { useTurmasDoAlunoQuery } from '../../hooks/useAulas';
 
 import type { Belt, Turma } from '../../types';
 import { exportContratoPDF } from '../../services/pdf';
@@ -37,6 +36,7 @@ import { useAuth } from '../../lib/auth';
 import { useState } from 'react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import Modal from '../../components/common/Modal';
 import { useToast } from '../../components/common/Toast';
 import { Skeleton, SkeletonList } from '../../components/common/Skeleton';
 import BeltBar from '../../components/common/BeltBar';
@@ -108,7 +108,7 @@ function EditPerfilModal({
   const [saved, setSaved] = useState(false);
   const [err, setErr] = useState('');
 
-  const handleSave = async () => {
+  const handleSave = async (close: () => void) => {
     if (!nome.trim()) { setErr('O nome não pode estar vazio.'); return; }
     setErr('');
     setSaving(true);
@@ -120,7 +120,7 @@ function EditPerfilModal({
       });
       onSaved();
       setSaved(true);
-      setTimeout(onClose, 900);
+      setTimeout(close, 900);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Erro ao guardar. Tenta novamente.');
       setSaving(false);
@@ -128,27 +128,9 @@ function EditPerfilModal({
   };
 
   return (
-    <div
-      onClick={onClose}
-      className="flex fixed inset-0 z-[1000] justify-center items-center p-5 bg-black/50"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="p-7 w-full max-w-[500px] rounded-lg border border-border bg-card"
-      >
-        <div className="flex justify-between mb-5">
-          <div className="text-[15px] font-extrabold text-primary">
-            Editar Dados Pessoais
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="Fechar"
-            className="flex justify-center items-center p-2 -m-2 bg-none rounded-full border-none cursor-pointer text-muted transition-colors duration-200 hover:text-primary hover:bg-elevated active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
-          >
-            <Ico icon={XMarkIcon} />
-          </button>
-        </div>
-
+    <Modal onClose={onClose} title="Editar Dados Pessoais">
+      {close => (
+        <>
         <div className="mb-3">
           <label className={EDIT_LABEL_CLASS}>Nome completo</label>
           <input value={nome} onChange={(e) => setNome(e.target.value)} className={EDIT_FIELD_CLASS} />
@@ -175,13 +157,13 @@ function EditPerfilModal({
         )}
 
         <div className="flex gap-2.5 mt-4.5">
-          <Button variant="secondary" className="flex-1" disabled={saving} onClick={onClose}>
+          <Button variant="secondary" className="flex-1" disabled={saving} onClick={close}>
             Cancelar
           </Button>
           <Button
             variant="primary" className={['flex-[2]', saved ? '!bg-gb-green' : ''].join(' ')}
             disabled={saving || saved}
-            onClick={handleSave}
+            onClick={() => handleSave(close)}
           >
             {saved ? (
               <><Ico icon={CheckIcon} sm /> Guardado!</>
@@ -192,8 +174,9 @@ function EditPerfilModal({
             )}
           </Button>
         </div>
-      </div>
-    </div>
+        </>
+      )}
+    </Modal>
   );
 }
 
@@ -207,11 +190,11 @@ export default function PortalAluno({
   const { data: pagamentos } = usePagamentos();
   const { data: presencas } = usePresencas();
   const { data: contratos } = useContratos();
-  const { data: turmas } = useTurmas();
   const [showEditPerfil, setShowEditPerfil] = useState(false);
   const [showContrato, setShowContrato] = useState(false);
   const { user, refreshProfile } = useAuth();
   const aluno = alunos.find((a) => a.email === user?.email) || alunos[0];
+  const { data: minhasTurmasFrequentadas = [] } = useTurmasDoAlunoQuery(aluno?.id);
 
   // alunos starts empty until useAlunos() resolves — render a placeholder
   // instead of crashing on aluno.* below.
@@ -255,7 +238,9 @@ export default function PortalAluno({
 
   // Find the soonest upcoming occurrence of one of the student's classes, so
   // the portal can lead with "what's next" instead of a flat menu of pages.
-  const minhasTurmas = turmas.slice(0, 2);
+  // "Minhas turmas" é inferido do histórico real de presenças (últimos 60
+  // dias via useTurmasDoAlunoQuery) — já não existe "inscrição" estática.
+  const minhasTurmas = minhasTurmasFrequentadas;
   const todayIdx = hoje.getDay();
   const proximasAulas = minhasTurmas
     .flatMap((t) => t.diaSemana.map((diaNome: string) => ({ turma: t, diaNome, idx: WEEKDAY_INDEX[diaNome] })))
@@ -282,26 +267,9 @@ export default function PortalAluno({
       )}
       {/* Contract Modal */}
       {showContrato && (
-        <div
-          onClick={() => setShowContrato(false)}
-          className="flex fixed inset-0 z-[1000] justify-center items-center p-5 bg-black/50"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="overflow-y-auto p-7 w-full max-w-[560px] max-h-[85vh] rounded-lg border border-border bg-card"
-          >
-            <div className="flex justify-between mb-5">
-              <div className="text-[15px] font-extrabold text-primary">
-                Contrato de Adesão
-              </div>
-              <button
-                onClick={() => setShowContrato(false)}
-                aria-label="Fechar"
-                className="flex justify-center items-center p-2 -m-2 bg-none rounded-full border-none cursor-pointer text-muted transition-colors duration-200 hover:text-primary hover:bg-elevated active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
-              >
-                <Ico icon={XMarkIcon} />
-              </button>
-            </div>
+        <Modal onClose={() => setShowContrato(false)} title="Contrato de Adesão" maxWidth={560}>
+          {close => (
+            <>
             <div className="py-4 px-5 mb-[18px] text-[13px] leading-[1.8] rounded-md border border-border bg-elevated text-secondary">
               <p>
                 <strong>Tribo Laurada Lda.</strong> (NIF 518948471) · Gracie
@@ -345,7 +313,7 @@ export default function PortalAluno({
                       meuContrato?.dataInicio || aluno.dataMatricula || '',
                     assinaturaImg: meuContrato?.assinaturaImg || null,
                   });
-                  setShowContrato(false);
+                  close();
                 }}
                 className="flex flex-[1_1_140px] gap-1.5 justify-center items-center py-2.5 min-h-11 sm:min-h-0 text-[13px] font-bold text-white rounded-sm border-none cursor-pointer bg-gb-red transition-all duration-200 hover:bg-gb-red-dark active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
               >
@@ -359,7 +327,7 @@ export default function PortalAluno({
                     )
                   ) {
                     toast.success('Pedido de cancelamento registado. Entraremos em contacto.');
-                    setShowContrato(false);
+                    close();
                   }
                 }}
                 className="flex flex-[1_1_140px] gap-1.5 justify-center items-center py-2.5 min-h-11 sm:min-h-0 text-xs font-semibold rounded-sm border cursor-pointer border-gb-red/20 text-gb-red bg-gb-red/[0.08] transition-colors duration-200 hover:bg-gb-red/[0.15] active:bg-gb-red/[0.15] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
@@ -367,8 +335,9 @@ export default function PortalAluno({
                 <Ico icon={ExclamationTriangleIcon} sm /> Cancelar subscrição
               </button>
             </div>
-          </div>
-        </div>
+            </>
+          )}
+        </Modal>
       )}
       {/* ── rest of portal ── */}
       {/* Masthead — identity + belt progress. No card, no background wash:

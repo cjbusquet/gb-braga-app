@@ -33,6 +33,7 @@ export interface Aluno {
   dataNascimento: string;
   faixa: Belt;
   grau: number; // 0-4
+  genero?: 'feminino' | 'masculino' | 'outro';
   dataMatricula: string;
   plano: string;
   status: 'ativo' | 'inativo' | 'suspenso';
@@ -69,7 +70,6 @@ export interface Turma {
   diaSemana: string[];
   sala: string;
   capacidade: number;
-  inscritos: number;
   nivel: 'iniciante' | 'intermediario' | 'avancado' | 'kids' | 'all';
   tipo: 'gi' | 'nogi' | 'wrestling' | 'kids';
 }

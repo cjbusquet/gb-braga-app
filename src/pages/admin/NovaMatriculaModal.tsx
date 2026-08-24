@@ -59,6 +59,7 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
   const [dataNasc, setDataNasc] = useState('');
   const [faixa, setFaixa]     = useState('branca');
   const [grau, setGrau]       = useState('0');
+  const [genero, setGenero]   = useState('');
 
   // Step 3 — responsável (só para menores)
   const [respNome, setRespNome]       = useState('');
@@ -85,12 +86,12 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
     setStep(eMenor ? 3 : 4);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (close: () => void) => {
     setSaving(true);
     try {
       const aluno = await db.criarAluno({
         nome, email, telefone, nif, dataNasc,
-        faixa, grau: parseInt(grau) || 0,
+        faixa, grau: parseInt(grau) || 0, genero: genero || undefined,
         planoId, planoNome: planoSel?.nome,
       });
 
@@ -110,7 +111,7 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
 
       setSaved(true);
       onSuccess?.();
-      setTimeout(onClose, 1500);
+      setTimeout(close, 1500);
     } catch (e) {
       console.error('Erro ao criar aluno:', e);
       setSaving(false);
@@ -126,6 +127,7 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
 
   return (
     <Modal onClose={onClose} eyebrow={`Nova Matrícula · Passo ${step} de ${totalSteps}`} title={stepLabel[step]}>
+      {close => <>
       {/* Barra de progresso */}
       <div className="flex gap-1.5 mb-6">
         {Array.from({ length: totalSteps }, (_, i) => i + 1).map(s => (
@@ -219,6 +221,14 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
             <div>
               <Select label="Grau" value={grau} onChange={e => setGrau(e.target.value)}>
                 {[0,1,2,3,4].map(g => <option key={g} value={g}>{g}</option>)}
+              </Select>
+            </div>
+            <div>
+              <Select label="Género (opcional)" value={genero} onChange={e => setGenero(e.target.value)}>
+                <option value="">—</option>
+                <option value="feminino">Feminino</option>
+                <option value="masculino">Masculino</option>
+                <option value="outro">Outro</option>
               </Select>
             </div>
           </div>
@@ -331,7 +341,7 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
               variant="primary"
               disabled={saving || saved}
               className={saved ? '!bg-gb-green !shadow-none' : undefined}
-              onClick={handleSave}
+              onClick={() => handleSave(close)}
             >
               {saved
                 ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Criado!</span>
@@ -340,6 +350,7 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
           </div>
         </div>
       )}
+      </>}
     </Modal>
   );
 }

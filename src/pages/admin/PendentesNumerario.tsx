@@ -29,22 +29,22 @@ export default function PendentesNumerario() {
   const erro = actionErro ?? (error instanceof Error ? error.message : null);
   const saving = aprovarMutation.isPending || rejeitarMutation.isPending;
 
-  const aprovar = async (id: string) => {
+  const aprovar = async (id: string, close: () => void) => {
     setActionErro(null);
     try {
       await aprovarMutation.mutateAsync({ id, nota: nota || 'Aprovado pelo admin' });
-      setModalId(null);
+      close();
       setNota('');
     } catch (e) {
       setActionErro(e instanceof Error ? e.message : String(e));
     }
   };
 
-  const rejeitar = async (id: string) => {
+  const rejeitar = async (id: string, close: () => void) => {
     setActionErro(null);
     try {
       await rejeitarMutation.mutateAsync({ id, nota: nota || 'Rejeitado' });
-      setModalId(null);
+      close();
       setNota('');
     } catch (e) {
       setActionErro(e instanceof Error ? e.message : String(e));
@@ -60,6 +60,7 @@ export default function PendentesNumerario() {
       {/* Modal */}
       {modalId && pedidoModal && (
         <Modal onClose={() => setModalId(null)} eyebrow="Pedido de Numerário" title={pedidoModal.nomeAluno}>
+          {close => <>
           <div className="p-3.5 mb-[18px] rounded-md bg-elevated">
             {[
               ['Plano', pedidoModal.plano],
@@ -87,7 +88,7 @@ export default function PendentesNumerario() {
           </div>
 
           <div className="flex gap-2.5">
-            <button onClick={() => rejeitar(pedidoModal.id)} disabled={saving}
+            <button onClick={() => rejeitar(pedidoModal.id, close)} disabled={saving}
               className={[
                 'flex-1 flex gap-1.5 justify-center items-center py-2.5 min-h-11 sm:min-h-0 text-[13px] font-bold rounded-sm border border-border bg-elevated text-gb-red',
                 'transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
@@ -95,10 +96,11 @@ export default function PendentesNumerario() {
               ].join(' ')}>
               <Ico icon={XMarkIcon} sm /> Rejeitar
             </button>
-            <Button variant="primary" className="flex-[2]" loading={saving} onClick={() => aprovar(pedidoModal.id)}>
+            <Button variant="primary" className="flex-[2]" loading={saving} onClick={() => aprovar(pedidoModal.id, close)}>
               {saving ? 'A processar…' : <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Aprovar excepção</span>}
             </Button>
           </div>
+          </>}
         </Modal>
       )}
 

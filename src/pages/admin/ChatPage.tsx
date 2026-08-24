@@ -63,7 +63,7 @@ function AlunoAvatar({ aluno, size = 38 }: { aluno: Aluno; size?: number }) {
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-export default function ChatPage({ onNavigate }: { onNavigate?: (page: string) => void }) {
+export default function ChatPage({ onNavigate, initialAlunoId }: { onNavigate?: (page: string, param?: string) => void; initialAlunoId?: string }) {
   const { user } = useAuth();
   const toast = useToast();
   const { data: alunos } = useAlunos();
@@ -89,6 +89,15 @@ export default function ChatPage({ onNavigate }: { onNavigate?: (page: string) =
     setAlunoAtivo(id);
     if (isMobile) setMobileView('chat');
   };
+
+  // Deep link from "Ver perfil →" (AlunosPage) back into this conversation
+  useEffect(() => {
+    if (initialAlunoId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      selectAluno(initialAlunoId);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialAlunoId]);
 
   const aluno = alunos.find(a => a.id === alunoAtivo);
 
@@ -216,7 +225,7 @@ export default function ChatPage({ onNavigate }: { onNavigate?: (page: string) =
                 </a>
               )}
               {!isMobile && (
-                <button onClick={() => onNavigate?.('alunos')} className="py-1.5 px-3 text-xs rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+                <button onClick={() => onNavigate?.('alunos', alunoAtivo)} className="py-1.5 px-3 text-xs rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
                   Ver perfil →
                 </button>
               )}

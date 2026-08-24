@@ -15,7 +15,9 @@ import { createClient } from '@supabase/supabase-js';
 const URL = process.env.SEED_SUPABASE_URL || 'http://127.0.0.1:54321';
 const SERVICE_KEY = process.env.SEED_SERVICE_ROLE_KEY
   || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
-const PASSWORD = 'password123';
+// Must match DEV_PASSWORD in src/pages/LoginPage.tsx — that's what the
+// login page's "DEV" quick-login buttons send for these seeded accounts.
+const PASSWORD = 'DevTest1234!';
 
 if (!/^https?:\/\/(127\.0\.0\.1|localhost)/.test(URL)) {
   console.error(`Refusing to seed a non-local URL: ${URL}`);
@@ -87,6 +89,10 @@ async function main() {
       await admin.from('professor_extras').insert({
         id, faixa: 'preta', grau: 3, turmas: ['Jiu-Jitsu Adultos — Manhã'], status: 'ativo',
       });
+      // turmas.professor_id nunca era ligado ao criar o professor — só
+      // professor_nome (texto) ficava certo. Sem isto, "Minhas Turmas"
+      // do professor fica sempre vazio (filtra por professor_id).
+      await admin.from('turmas').update({ professor_id: id }).eq('professor_nome', nome);
     }
   }
 
@@ -150,7 +156,7 @@ async function main() {
   }
 
   console.log('\nDone. Login at http://localhost:5173 (or wherever `npm run dev` prints) with:\n');
-  console.log('  password for every account: password123\n');
+  console.log(`  password for every account: ${PASSWORD}\n`);
   for (const u of [...USERS, ...ALUNOS]) console.log(`  ${u.email}`);
 }
 
