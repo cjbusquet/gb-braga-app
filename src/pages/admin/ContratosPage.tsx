@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useContratos } from '../../lib/useData';
 import { exportContratoPDF } from '../../services/pdf';
 import Badge, { type BadgeColor } from '../../components/common/Badge';
+import Card from '../../components/common/Card';
 import PageHeader from '../../components/common/PageHeader';
 import { Ico, DocumentIcon, CheckIcon, ArrowDownTrayIcon } from '../../lib/icons';
 
@@ -57,7 +58,7 @@ export default function ContratosPage() {
           <div>Sem contratos. Os contratos são criados automaticamente no fluxo de matrícula.</div>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <Card padding="none" className="overflow-hidden">
           <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
@@ -96,7 +97,7 @@ export default function ContratosPage() {
             </tbody>
           </table>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );

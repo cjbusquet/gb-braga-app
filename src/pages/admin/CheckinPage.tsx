@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { usePresencas, useAlunos, useTurmas, db } from '../../lib/useData';
 import { Ico, type HeroIcon, ArrowDownTrayIcon, MapPinIcon, CheckIcon, PlusIcon, XMarkIcon, CircleIcon } from '../../lib/icons';
 import PageHeader from '../../components/common/PageHeader';
+import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Select from '../../components/common/Select';
 import Tabs from '../../components/common/Tabs';
@@ -137,7 +138,7 @@ export default function CheckinPage() {
               <Ico icon={MapPinIcon} sm /> Ponto de referência da academia por definir em Config. → Academia → GPS Fence.
             </div>
           )}
-          <div className="p-6 mb-4 rounded-lg border border-border bg-card">
+          <Card padding="none" className="p-6 mb-4">
             <div className="mb-5 text-center">
               <div
                 className="flex justify-center items-center mx-auto mb-3 w-20 h-20 rounded-full border-[3px]"
@@ -168,7 +169,7 @@ export default function CheckinPage() {
             >
               <Ico icon={CheckIcon} sm /> Check-in Pessoal
             </Button>
-          </div>
+          </Card>
         </div>
       )}
 

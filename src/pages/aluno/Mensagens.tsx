@@ -12,6 +12,7 @@ import { useMarcarNotificacoesPorLinkLidas } from '../../hooks/useNotificacoes';
 import { useToast } from '../../components/common/Toast';
 import PortalPageHeader from './PortalPageHeader';
 import Badge from '../../components/common/Badge';
+import Card from '../../components/common/Card';
 
 function formatHora(iso: string): string {
   const d = new Date(iso);
@@ -67,7 +68,7 @@ export default function Mensagens() {
         trailing={unread > 0 ? <Badge color="brand">{unread} novas</Badge> : undefined}
       />
 
-      <div className="flex overflow-hidden flex-col rounded-lg border border-border bg-card h-[calc(100vh-220px)] min-h-[420px]">
+      <Card padding="none" className="flex overflow-hidden flex-col h-[calc(100vh-220px)] min-h-[420px]">
         {/* Messages */}
         <div className="flex overflow-y-auto flex-col flex-1 gap-2 py-4 px-3.5 sm:px-[18px]">
           {isLoading ? (
@@ -125,7 +126,7 @@ export default function Mensagens() {
             </button>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

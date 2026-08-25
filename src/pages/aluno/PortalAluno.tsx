@@ -297,7 +297,9 @@ export default function PortalAluno({
               </p>
             </div>
             <div className="flex flex-wrap gap-2.5">
-              <button
+              <Button
+                variant="primary"
+                className="flex-[1_1_140px]"
                 onClick={() => {
                   exportContratoPDF({
                     alunoNome: meuContrato?.alunoNome || aluno.nome,
@@ -315,10 +317,9 @@ export default function PortalAluno({
                   });
                   close();
                 }}
-                className="flex flex-[1_1_140px] gap-1.5 justify-center items-center py-2.5 min-h-11 sm:min-h-0 text-[13px] font-bold text-white rounded-sm border-none cursor-pointer bg-gb-red transition-all duration-200 hover:bg-gb-red-dark active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
               >
                 <Ico icon={ArrowDownTrayIcon} sm /> Descarregar PDF
-              </button>
+              </Button>
               <button
                 onClick={() => {
                   if (

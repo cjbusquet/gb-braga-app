@@ -93,7 +93,7 @@ export default function FinanceiroPage() {
               Sem pagamentos. Os pagamentos são criados automaticamente quando um aluno faz matrícula.
             </div>
           ) : (
-            <div className="overflow-hidden rounded-lg border border-border bg-card">
+            <Card padding="none" className="overflow-hidden">
               <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
               <table className="w-full border-collapse min-w-[560px]">
                 <thead>
@@ -143,7 +143,7 @@ export default function FinanceiroPage() {
                 </tbody>
               </table>
               </div>
-            </div>
+            </Card>
           )}
         </div>
       )}

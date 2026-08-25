@@ -12,6 +12,7 @@ import { inviteStaff } from '../../services/api/edgeFunctions';
 import { haversineDistanceMeters } from '../../services/geo';
 import type { TocConfig } from '../../types';
 import PageHeader from '../../components/common/PageHeader';
+import Card from '../../components/common/Card';
 import BeltBadge from '../../components/common/BeltBadge';
 import Select from '../../components/common/Select';
 import Button from '../../components/common/Button';
@@ -87,10 +88,6 @@ function Input({ value, onChange, placeholder, type = 'text', mono = false }: { 
   );
 }
 
-function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <div className={['p-[22px] rounded-lg border border-border bg-card', className].join(' ')}>{children}</div>;
-}
-
 function SaveBar({ onSave, saved, saving = false }: { onSave: () => void; saved: boolean; saving?: boolean }) {
   return (
     <div className="flex justify-end mt-5">
@@ -133,7 +130,7 @@ function TocSection() {
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       {/* Left: form */}
-      <Card>
+      <Card padding="none" className="p-[22px]">
         <div className="flex gap-2.5 items-center pb-4 mb-5 border-b border-border-subtle">
           <div className="flex justify-center items-center w-10 h-10 rounded-md bg-gb-red-glow"><FontAwesomeIcon icon={ReceiptPercentIcon} className="w-5 h-5 text-gb-red" /></div>
           <div>
@@ -216,7 +213,7 @@ function TocSection() {
       {/* Right: guide + status */}
       <div className="flex flex-col gap-3.5">
         {/* Status summary */}
-        <Card>
+        <Card padding="none" className="p-[22px]">
           <Label>Estado dos Serviços TOConline</Label>
           {[
             { label: 'OAuth / Autenticação', ok: !!cfg.clientId || cfg.simulationMode },
@@ -234,7 +231,7 @@ function TocSection() {
         </Card>
 
         {/* Setup guide */}
-        <Card>
+        <Card padding="none" className="p-[22px]">
           <Label>Como configurar — 5 passos</Label>
           {[
             { n: '1', title: 'Aceder ao TOConline', desc: 'Login em app.toconline.pt → Empresa → Dados API' },
@@ -345,7 +342,7 @@ function StripeSection() {
   return (
     <div className="flex flex-col gap-4">
       {/* Keys card */}
-      <Card>
+      <Card padding="none" className="p-[22px]">
         <div className="flex gap-2.5 items-center pb-3.5 mb-[18px] border-b border-border-subtle">
           <div className="flex justify-center items-center w-[38px] h-[38px] text-[15px] font-extrabold text-white rounded-md bg-[#635BFF]">S</div>
           <div className="flex-1">
@@ -409,7 +406,7 @@ function StripeSection() {
       </Card>
 
       {/* Price IDs table */}
-      <Card>
+      <Card padding="none" className="p-[22px]">
         <div className="flex justify-between items-center mb-3.5">
           <div>
             <div className="mb-1 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Price IDs dos Planos</div>
@@ -439,7 +436,7 @@ function StripeSection() {
       </Card>
 
       {/* Webhooks */}
-      <Card>
+      <Card padding="none" className="p-[22px]">
         <Label>Webhook URL para configurar no Stripe</Label>
         <div className="py-2.5 px-3.5 mb-3.5 font-mono text-xs rounded-lg bg-elevated text-primary">
           https://gbbraga.com/api/stripe/webhook
@@ -472,7 +469,7 @@ function WhatsAppSection() {
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      <Card>
+      <Card padding="none" className="p-[22px]">
         <div className="flex gap-2.5 items-center pb-4 mb-[18px] border-b border-border-subtle">
           <div className="flex justify-center items-center w-10 h-10 text-xl rounded-md bg-[#075E54]"><FontAwesomeIcon icon={ChatBubbleLeftRightIcon} className="w-5 h-5 text-white" /></div>
           <div>
@@ -488,7 +485,7 @@ function WhatsAppSection() {
         </Field>
         <SaveBar onSave={() => save()} saved={saved} saving={saving} />
       </Card>
-      <Card>
+      <Card padding="none" className="p-[22px]">
         <Label>Templates aprovados</Label>
         {[
           { nome: 'lembrete_pagamento', status: 'aprovado' },
@@ -519,7 +516,7 @@ function SimpleSection({ secao, title, icon, fields }: {
 
   return (
     <div className="max-w-[560px]">
-      <Card>
+      <Card padding="none" className="p-[22px]">
         <div className="flex gap-2.5 items-center pb-4 mb-5 border-b border-border-subtle">
           <div className="flex justify-center items-center w-10 h-10 rounded-md bg-gb-red-glow"><FontAwesomeIcon icon={icon} className="w-5 h-5 text-gb-red" /></div>
           <div className="text-[15px] font-bold text-primary">{title}</div>
@@ -836,7 +833,7 @@ function EquipaSection() {
       {/* ── Right: invite form (toggle) ── */}
       {showInvite && (
         <div>
-          <Card className={result ? 'mb-4' : 'mb-0'}>
+          <Card padding="none" className={['p-[22px]', result ? 'mb-4' : 'mb-0'].join(' ')}>
             <div className="flex gap-3 items-center pb-3.5 mb-[18px] border-b border-border-subtle">
               <div className="flex justify-center items-center w-[38px] h-[38px] text-lg rounded-md bg-gb-red"><FontAwesomeIcon icon={EnvelopeIcon} className="w-4 h-4 text-white" /></div>
               <div>
@@ -881,7 +878,7 @@ function EquipaSection() {
           </Card>
 
           {result && (
-            <Card className="!border-[1.5px] !border-gb-green">
+            <Card padding="none" className="p-[22px] !border-[1.5px] !border-gb-green">
               <div className="flex gap-2.5 items-center mb-3">
                 <FontAwesomeIcon icon={CheckCircleIcon} className="w-5 h-5 text-gb-green" />
                 <div>
@@ -975,7 +972,7 @@ function AcademiaSection() {
   return (
     <div className="max-w-[560px]">
       {/* Dados básicos */}
-      <Card>
+      <Card padding="none" className="p-[22px]">
         <div className="flex gap-2.5 items-center pb-3.5 mb-5 border-b border-border-subtle">
           <div className="flex justify-center items-center w-10 h-10 rounded-md bg-gb-red-glow"><FontAwesomeIcon icon={SchoolIcon} className="w-5 h-5 text-gb-red" /></div>
           <div className="text-[15px] font-bold text-primary">Academia</div>
@@ -999,7 +996,7 @@ function AcademiaSection() {
       </Card>
 
       {/* GPS Fence */}
-      <Card className="mt-4">
+      <Card padding="none" className="p-[22px] mt-4">
         <div className="flex gap-2.5 items-center pb-3.5 mb-5 border-b border-border-subtle">
           <div className="flex justify-center items-center w-10 h-10 rounded-md bg-gb-red-glow"><FontAwesomeIcon icon={MapPinIcon} className="w-5 h-5 text-gb-red" /></div>
           <div>
@@ -1166,7 +1163,7 @@ function ConfigPageInner() {
 
   const desktopSidebar = (
     <div className="w-[210px] shrink-0">
-      <div className="overflow-hidden rounded-lg border border-border bg-card">
+      <Card padding="none" className="overflow-hidden">
         {visibleSections.map(s => (
           <button key={s.id} onClick={() => setActive(s.id)}
             className="flex gap-2.5 items-center py-3 px-3.5 w-full min-h-11 text-left border-none cursor-pointer transition-colors duration-200 border-b border-border-subtle hover:bg-elevated active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-inset"
@@ -1182,7 +1179,7 @@ function ConfigPageInner() {
             {s.id === 'toconline' && <Badge color="neutral" className="ml-auto">PT</Badge>}
           </button>
         ))}
-      </div>
+      </Card>
     </div>
   );
 

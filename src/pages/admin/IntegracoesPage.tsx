@@ -346,7 +346,7 @@ export default function IntegracoesPage({ onNavigate }: { onNavigate?: (page: st
               )} className="flex gap-1.5 items-center py-1.5 px-3 min-h-11 sm:min-h-0 text-[11.5px] rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"><Ico icon={ArrowDownTrayIcon} sm />Exportar</button>
             </div>
           </div>
-          <div className="overflow-hidden rounded-lg border border-border bg-card">
+          <Card padding="none" className="overflow-hidden">
             <div className="overflow-x-auto">
             <div className="min-w-[480px] grid grid-cols-[20px_56px_1fr_52px_50px_20px] gap-3 py-2.5 px-3.5 text-[10px] font-semibold tracking-[0.5px] uppercase border-b border-border bg-elevated text-muted">
               <div/>
@@ -360,7 +360,7 @@ export default function IntegracoesPage({ onNavigate }: { onNavigate?: (page: st
               {MOCK_LOGS.map(log => <LogRow key={log.id} log={log}/>)}
             </div>
             </div>
-          </div>
+          </Card>
         </div>
       )}
     </div>

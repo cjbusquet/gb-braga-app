@@ -176,7 +176,7 @@ export default function MeuCheckin() {
       <PortalPageHeader title="Checkin" description="Regista a tua presença na aula de hoje." />
 
       {/* Data e hora */}
-      <div className="flex justify-between items-center py-4 px-5 mb-4 rounded-lg border border-border bg-card">
+      <Card padding="none" className="flex justify-between items-center py-4 px-5 mb-4">
         <div>
           <div className="mb-1 text-[10.5px] tracking-[0.8px] uppercase text-muted">
             Hoje
@@ -197,7 +197,7 @@ export default function MeuCheckin() {
             {hora}
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Check-ins de hoje (se já fez) */}
       {presencasHoje.length > 0 && (
@@ -216,7 +216,7 @@ export default function MeuCheckin() {
       {/* Formulário de check-in */}
       {done ? (
         /* ── Confirmação ── */
-        <div className="py-8 px-6 text-center border border-gb-green/30 bg-card">
+        <Card padding="none" className="py-8 px-6 text-center !border-gb-green/30">
           <div className="mb-3 text-gb-green"><Ico icon={CheckCircleSolidIcon} style={{ width: 52, height: 52 }} /></div>
           <div className="mb-1.5 text-[17px] text-primary">
             Presença registada!
@@ -225,16 +225,16 @@ export default function MeuCheckin() {
             {turmasHoje.find((t) => t.id === turmaId)?.nome || 'Treino livre'} ·{' '}
             {horaAtual()}
           </div>
-          <button
+          <Button
+            variant="secondary"
             onClick={() => {
               setDone(false);
               setTurmaId(turmasHoje.length === 1 ? turmasHoje[0].id : '');
             }}
-            className="py-2.5 px-5 min-h-11 sm:min-h-0 text-[13px] rounded-lg border cursor-pointer border-border bg-elevated text-secondary transition-colors duration-200 hover:bg-card hover:text-primary active:bg-card outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
           >
             Fazer outro check-in
-          </button>
-        </div>
+          </Button>
+        </Card>
       ) : (
         /* ── Formulário ── */
         <Card padding="lg">
@@ -386,9 +386,10 @@ export default function MeuCheckin() {
               .filter((p) => p.alunoId === aluno?.id)
               .slice(0, 5)
               .map((p, i) => (
-                <div
+                <Card
                   key={i}
-                  className="flex justify-between items-center py-2.5 px-3.5 rounded-lg border border-border bg-card"
+                  padding="none"
+                  className="flex justify-between items-center py-2.5 px-3.5"
                 >
                   <div>
                     <div className="text-[12.5px] text-primary">
@@ -405,7 +406,7 @@ export default function MeuCheckin() {
                   <div className="text-xs tabular-nums text-muted">
                     {p.hora?.slice(0, 5)}
                   </div>
-                </div>
+                </Card>
               ))}
           </div>
         </div>

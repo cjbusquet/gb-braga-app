@@ -7,7 +7,6 @@ import { supabase, isConfigured, isLocalSupabase } from '../lib/supabaseClient';
 import type { UserRole } from '../types';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
-import Badge from '../components/common/Badge';
 import { Ico, KeyIcon, ClipboardDocumentIcon, PencilIcon, CreditCardIcon, CheckCircleIcon, IdentificationIcon, AcademicCapIcon, ArrowLeftIcon, ArrowPathIcon, ChatBubbleLeftRightIcon, EnvelopeIcon } from '../lib/icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
@@ -74,7 +73,7 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
   };
 
   return (
-    <div className="flex min-h-screen font-ui bg-base">
+    <div className="flex overflow-hidden h-dvh font-ui bg-base">
 
       {/* ── Left decorative panel (desktop only) ── */}
       <div className="hidden relative overflow-hidden flex-col items-center justify-center md:flex w-[44%] py-15 px-12 border-r border-border bg-white">
@@ -84,16 +83,7 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
             <div key={c} className="flex-1" style={{ background: c }} />
           ))}
         </div>
-        <div className="mb-7"><GBLogoFull size={160}/></div>
-        <div className="text-center">
-          <div className="mb-4 text-[13px] font-semibold tracking-[1px] text-[#9B9AA6] uppercase">Sistema de Gestão</div>
-          <div className="max-w-[240px] text-[13px] leading-[1.7] text-[#C0BFCB]">Plataforma integrada com Stripe, TOConline e WhatsApp Business</div>
-        </div>
-        <div className="flex absolute bottom-5 gap-4">
-          {['AT Certificado','Stripe','RGPD'].map(l => (
-            <Badge key={l} color="neutral">{l}</Badge>
-          ))}
-        </div>
+        <GBLogoFull size={160}/>
       </div>
 
       {/* ── Right panel ── */}
@@ -214,29 +204,26 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
                   someone runs `vite dev` pointed at one by mistake. */}
               {(!isConfigured || (import.meta.env.DEV && isLocalSupabase)) && !forgotMode && (
                 <>
-                  <div className="flex gap-3 items-center my-5">
+                  <div className="flex gap-3 items-center my-3.5">
                     <div className="flex-1 h-px bg-border" />
                     <span className="text-[10px] font-semibold tracking-[1px] whitespace-nowrap text-muted uppercase">{isConfigured ? 'Dev' : 'Demo'}</span>
                     <div className="flex-1 h-px bg-border" />
                   </div>
-                  <div className="flex flex-col gap-1.5">
+                  <div className="grid grid-cols-2 gap-1.5">
                     {DEMO_ROLES.map(r => {
                       const rt = roleThemes[r.role];
                       const isAct = active === r.email;
                       return (
-                        <button key={r.email} onClick={() => quick(r.role, r.email)} disabled={!!active}
+                        <button key={r.email} title={r.email} onClick={() => quick(r.role, r.email)} disabled={!!active}
                           className={[
-                            'flex gap-2.5 items-center min-h-11 p-[10px_14px] rounded-sm border cursor-pointer transition-colors duration-200',
+                            'flex gap-1.5 items-center py-2 px-2.5 min-h-11 sm:min-h-0 rounded-sm border cursor-pointer transition-colors duration-200',
                             'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
                             isAct ? 'border-gb-red bg-gb-red/5' : 'border-border bg-card hover:bg-elevated active:bg-elevated',
                             active && !isAct ? 'cursor-not-allowed opacity-60' : '',
                           ].join(' ')}>
-                          <div className="w-2 h-2 rounded-full shrink-0" style={{ background: rt.accent }} />
-                          <div className="flex-1 text-left">
-                            <div className="text-[13px] font-medium text-primary">{(r as any).label || rt.label}</div>
-                            <div className="text-[10.5px] text-muted">{r.email}</div>
-                          </div>
-                          {isAct && <Ico icon={ArrowPathIcon} sm className="text-gb-red" />}
+                          <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: rt.accent }} />
+                          <span className="overflow-hidden flex-1 text-[11.5px] font-medium text-left whitespace-nowrap text-ellipsis text-primary">{(r as any).label || rt.label}</span>
+                          {isAct && <Ico icon={ArrowPathIcon} sm className="shrink-0 text-gb-red" />}
                         </button>
                       );
                     })}

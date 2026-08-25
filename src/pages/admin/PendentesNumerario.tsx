@@ -6,6 +6,7 @@ import {
   useRejeitarNumerario,
 } from '../../hooks/usePedidosNumerario';
 import Modal from '../../components/common/Modal';
+import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Badge, { type BadgeColor } from '../../components/common/Badge';
 import PageHeader from '../../components/common/PageHeader';
@@ -144,17 +145,17 @@ export default function PendentesNumerario() {
       {loading ? (
         <div className="p-5 py-10 text-sm text-center text-muted">A carregar…</div>
       ) : filtrados.length === 0 ? (
-        <div className="p-5 py-10 text-center rounded-lg border border-border bg-card">
+        <Card padding="none" className="p-5 py-10 text-center">
           <div className="mb-2.5 opacity-30"><Ico icon={MoneyBagIcon} style={{ width: 32, height: 32 }} className="mx-auto" /></div>
           <div className="text-sm text-muted">Sem pedidos {filtro !== 'todos' ? filtro + 's' : ''}</div>
-        </div>
+        </Card>
       ) : (
         <div className="flex flex-col gap-2.5">
           {filtrados.map(ped => {
             const st = STATUS_CFG[ped.status];
 
             return (
-              <div key={ped.id} className="flex flex-col gap-4 items-start p-[18px_20px] rounded-lg border border-border bg-card sm:flex-row sm:items-center">
+              <Card key={ped.id} padding="none" className="flex flex-col gap-4 items-start p-[18px_20px] sm:flex-row sm:items-center">
                 <div className="flex justify-center items-center w-11 h-11 text-base font-bold rounded-full shrink-0 bg-elevated text-secondary">
                   {ped.nomeAluno.charAt(0)}
                 </div>
@@ -174,7 +175,7 @@ export default function PendentesNumerario() {
                     </Button>
                   )}
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>

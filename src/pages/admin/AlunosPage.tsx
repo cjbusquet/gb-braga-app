@@ -11,6 +11,7 @@ import Modal from '../../components/common/Modal';
 import { Ico, PencilIcon, CheckCircleIcon, XCircleIcon, ArrowPathIcon, ArrowLeftIcon, PlusIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, AdjustmentsHorizontalIcon, CheckIcon, SaveIcon, CircleIcon, BanIcon, ClockIcon, ChatBubbleLeftRightIcon } from '../../lib/icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Button from '../../components/common/Button';
+import Card from '../../components/common/Card';
 import PageHeader from '../../components/common/PageHeader';
 import Badge from '../../components/common/Badge';
 import Select from '../../components/common/Select';
@@ -484,7 +485,7 @@ export default function AlunosPage({ initialAlunoId, onNavigate }: Props) {
             </button>
           )}
         </div>
-        <div className="p-6 rounded-lg border border-border bg-card">
+        <Card padding="none" className="p-6">
 
           {/* Cabeçalho */}
           <div className="flex justify-between items-start mb-5">
@@ -592,7 +593,7 @@ export default function AlunosPage({ initialAlunoId, onNavigate }: Props) {
 
           {/* Secção de responsáveis — só para menores */}
           {menor && <ResponsaveisSection aluno={selected} />}
-        </div>
+        </Card>
       </div>
     );
   };
@@ -621,7 +622,7 @@ export default function AlunosPage({ initialAlunoId, onNavigate }: Props) {
       />
 
       {/* Filtros */}
-      <div className="py-3.5 px-4 mb-4 rounded-lg border border-border bg-card">
+      <Card padding="none" className="py-3.5 px-4 mb-4">
         {/* Linha 1: Pesquisa + Ordenação */}
         <div className="flex flex-wrap gap-2.5 mb-2.5">
           <div className="flex relative flex-1 items-center min-w-[180px]">
@@ -669,7 +670,7 @@ export default function AlunosPage({ initialAlunoId, onNavigate }: Props) {
             <span className="text-xs whitespace-nowrap text-secondary">Elegíveis p/ graduação</span>
           </label>
         </div>
-      </div>
+      </Card>
 
       {/* Conteúdo */}
       {selected ? renderPerfil() : (
