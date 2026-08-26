@@ -1,189 +1,180 @@
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useAlunos } from '../../lib/useData';
+import { useAuth } from '../../lib/auth';
+import { useToast } from '../../components/common/Toast';
+import {
+  useConversasQuery,
+  useChatMensagensQuery,
+  useEnviarChatMensagem,
+  useMarcarChatLida,
+  useChatRealtime,
+} from '../../hooks/useChat';
+import { useMarcarNotificacoesPorLinkLidas } from '../../hooks/useNotificacoes';
 import { beltConfig } from '../../lib/gbBrand';
 import { useMobile } from '../../lib/useMobile';
 import type { Aluno } from '../../types';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface ChatMsg {
-  id: string;
-  remetente: 'admin' | 'aluno';
-  texto: string;
-  hora: string;
-  canal: 'interno' | 'whatsapp' | 'sms';
-  lida: boolean;
-}
-
-interface Conversa {
-  alunoId: string;
-  msgs: ChatMsg[];
-  ultimaMsg: string;
-  naoLidas: number;
-}
-
-// ─── Mock conversations ───────────────────────────────────────────────────────
-const CONVERSAS_INIT: Record<string, Conversa> = {
-  a2: {
-    alunoId: 'a2', ultimaMsg: '10:32', naoLidas: 2,
-    msgs: [
-      { id: 'm1', remetente: 'admin', texto: 'Olá Maria! A tua mensalidade de Maio vence em 3 dias. Valor: €62.', hora: '10:28', canal: 'interno', lida: true },
-      { id: 'm2', remetente: 'aluno', texto: 'Obrigada pelo aviso! Vou pagar já hoje.', hora: '10:31', canal: 'interno', lida: false },
-      { id: 'm3', remetente: 'aluno', texto: 'Posso pagar por transferência?', hora: '10:32', canal: 'interno', lida: false },
-    ]
-  },
-  a4: {
-    alunoId: 'a4', ultimaMsg: '09:15', naoLidas: 0,
-    msgs: [
-      { id: 'm4', remetente: 'admin', texto: 'Ana, a tua mensalidade de Abril está vencida há 16 dias. Por favor regulariza a situação.', hora: '09:10', canal: 'interno', lida: true },
-      { id: 'm5', remetente: 'aluno', texto: 'Peço desculpa, tive uma situação familiar. Posso pagar na sexta?', hora: '09:15', canal: 'interno', lida: true },
-    ]
-  },
-  a1: {
-    alunoId: 'a1', ultimaMsg: 'ontem', naoLidas: 0,
-    msgs: [
-      { id: 'm6', remetente: 'aluno', texto: 'Bom dia! Posso faltar à aula de amanhã? Tenho uma reunião de trabalho.', hora: 'ontem 18:44', canal: 'interno', lida: true },
-      { id: 'm7', remetente: 'admin', texto: 'Claro Lucas, sem problema! Podes compensar sábado no Open Mat.', hora: 'ontem 19:02', canal: 'interno', lida: true },
-    ]
-  },
-  a6: {
-    alunoId: 'a6', ultimaMsg: '08:50', naoLidas: 1,
-    msgs: [
-      { id: 'm8', remetente: 'aluno', texto: 'Olá! Queria saber se é possível mudar para o plano Família para incluir o meu marido.', hora: '08:50', canal: 'interno', lida: false },
-    ]
-  },
-};
+import PageHeader from '../../components/common/PageHeader';
+import Badge from '../../components/common/Badge';
+import BeltBadge from '../../components/common/BeltBadge';
+import {
+  Ico,
+  CommentIcon,
+  DeviceMobileIcon,
+  MagnifyingGlassIcon,
+  CheckIcon,
+  BoltIcon,
+  ArrowPathIcon,
+} from '../../lib/icons';
 
 const TEMPLATES = [
   'A tua mensalidade vence em 3 dias. Paga aqui: gbbraga.com/central-de-pagamento/',
-  'Lembrete: aula hoje às {hora}. Não faltes! Oss! 🥋',
-  'Parabéns pela graduação! Oss! 🎖️',
+  'Lembrete: aula hoje às {hora}. Não faltes! Oss!',
+  'Parabéns pela graduação! Oss!',
   'Bem-vindo(a) à Gracie Barra Braga! A tua conta está ativa.',
   'A tua mensalidade está em atraso. Por favor regulariza urgentemente.',
 ];
+
+function formatHora(iso: string): string {
+  const d = new Date(iso);
+  const hoje = new Date();
+  const mesmodia = d.toDateString() === hoje.toDateString();
+  return mesmodia
+    ? d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
+}
 
 // ─── Components ───────────────────────────────────────────────────────────────
 function AlunoAvatar({ aluno, size = 38 }: { aluno: Aluno; size?: number }) {
   const bc = beltConfig[aluno.faixa];
   return (
-    <div style={{ width: size, height: size, borderRadius: '50%', background: (bc?.bg || '#888') + '20', border: `2px solid ${(bc?.bg || '#888')}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: bc?.bg === '#F0EEFF' ? '#888' : (bc?.bg || '#C8102E'), fontSize: size * 0.35, fontWeight: 800, flexShrink: 0 }}>
+    <div
+      className="flex justify-center items-center font-extrabold rounded-full shrink-0"
+      style={{
+        width: size, height: size, fontSize: size * 0.35,
+        background: (bc?.bg || '#888') + '20',
+        border: `2px solid ${(bc?.bg || '#888')}40`,
+        color: bc?.bg === '#F0EEFF' ? '#888' : (bc?.bg || '#C8102E'),
+      }}
+    >
       {aluno.nome.charAt(0)}
     </div>
   );
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-export default function ChatPage() {
+export default function ChatPage({ onNavigate, initialAlunoId }: { onNavigate?: (page: string, param?: string) => void; initialAlunoId?: string }) {
+  const { user } = useAuth();
+  const toast = useToast();
   const { data: alunos } = useAlunos();
   const { isMobile } = useMobile();
-  const [conversas, setConversas] = useState(CONVERSAS_INIT);
-  const [alunoAtivo, setAlunoAtivo] = useState<string>('a2');
+  const { data: conversas = [] } = useConversasQuery();
+  const [alunoAtivo, setAlunoAtivo] = useState<string>('');
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   const [texto, setTexto] = useState('');
-  const [canal, setCanal] = useState<'interno' | 'whatsapp' | 'sms'>('interno');
   const [showTemplates, setShowTemplates] = useState(false);
   const [busca, setBusca] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const { data: mensagens = [], isLoading: loadingMsgs } = useChatMensagensQuery(alunoAtivo || undefined);
+  const enviarMutation = useEnviarChatMensagem();
+  const marcarLidaMutation = useMarcarChatLida();
+  const marcarNotificacoesLidas = useMarcarNotificacoesPorLinkLidas();
+  useChatRealtime(alunoAtivo || undefined);
+
+  // Opening the Chat page itself clears the bell badge for chat notifications
+  useEffect(() => { marcarNotificacoesLidas.mutate('chat'); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectAluno = (id: string) => {
     setAlunoAtivo(id);
     if (isMobile) setMobileView('chat');
   };
 
+  // Deep link from "Ver perfil →" (AlunosPage) back into this conversation
+  useEffect(() => {
+    if (initialAlunoId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      selectAluno(initialAlunoId);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialAlunoId]);
+
   const aluno = alunos.find(a => a.id === alunoAtivo);
-  const conversa = conversas[alunoAtivo] || { alunoId: alunoAtivo, msgs: [], ultimaMsg: '—', naoLidas: 0 };
 
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [alunoAtivo, conversas]);
+  }, [alunoAtivo, mensagens]);
 
-  // Mark as read when opening
+  // Mark as read when opening a conversation — the RPC no-ops if there's nothing unread
   useEffect(() => {
-    if (alunoAtivo && conversas[alunoAtivo]?.naoLidas > 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setConversas(prev => ({
-        ...prev,
-        [alunoAtivo]: { ...prev[alunoAtivo], naoLidas: 0, msgs: prev[alunoAtivo].msgs.map(m => ({ ...m, lida: true })) }
-      }));
-    }
+    if (alunoAtivo) marcarLidaMutation.mutate(alunoAtivo);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [alunoAtivo]);
 
   const enviar = () => {
-    if (!texto.trim()) return;
-    const newMsg: ChatMsg = {
-      id: `m${Date.now()}`,
-      remetente: 'admin',
-      texto: texto.trim(),
-      hora: new Date().toTimeString().slice(0, 5),
-      canal,
-      lida: true,
-    };
-    setConversas(prev => ({
-      ...prev,
-      [alunoAtivo]: {
-        ...(prev[alunoAtivo] || { alunoId: alunoAtivo, naoLidas: 0 }),
-        msgs: [...(prev[alunoAtivo]?.msgs || []), newMsg],
-        ultimaMsg: newMsg.hora,
-      }
-    }));
+    if (!texto.trim() || !alunoAtivo || !user) return;
+    const corpo = texto.trim();
     setTexto('');
     setShowTemplates(false);
+    enviarMutation.mutate(
+      { alunoId: alunoAtivo, remetenteId: user.id, remetenteRole: user.role, corpo },
+      { onError: (e) => toast.error(e instanceof Error ? e.message : 'Erro ao enviar a mensagem. Tenta novamente.') }
+    );
   };
 
-  const totalNaoLidas = Object.values(conversas).reduce((s, c) => s + c.naoLidas, 0);
+  const totalNaoLidas = conversas.reduce((s, c) => s + c.naoLidas, 0);
 
   const alunosFiltrados = alunos.filter(a =>
     a.status === 'ativo' && a.nome.toLowerCase().includes(busca.toLowerCase())
   );
 
-  const CANAL_CONFIG = {
-    interno: { icon: '💬', label: 'Chat interno', color: 'var(--gb-red)' },
-    whatsapp: { icon: '📱', label: 'WhatsApp', color: '#25D366' },
-    sms:      { icon: '📟', label: 'SMS', color: '#3B82F6' },
-  };
-
   // ── shared height ─────────────────────────────────────────────────────────────
-  // Desktop: fixed-height panels inside the scrollable layout column
-  // Mobile: the window scrolls naturally; chat window fills the viewport
-  //         (body scroll lets Chrome auto-hide the address bar — the list is
-  //          just a normal list; chat view stretches to 100dvh via position:fixed)
   const chatH = 'calc(100vh - 160px)';
 
   // ── reusable contact list ──────────────────────────────────────────────────
   const contactList = (
-    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', height: isMobile ? undefined : '100%' }}>
-      <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)' }}>
-        <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="🔍 Pesquisar aluno..."
-          style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 11px', fontSize: 14, color: 'var(--text-primary)' }}/>
+    <div className={['flex overflow-hidden flex-col rounded-lg border border-border bg-card', isMobile ? '' : 'h-full'].join(' ')}>
+      <div className="py-3 px-3.5 border-b border-border">
+        <div className="relative">
+          <Ico icon={MagnifyingGlassIcon} sm className="absolute top-1/2 left-2.5 text-muted -translate-y-1/2 pointer-events-none" />
+          <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Pesquisar aluno..."
+            className="py-2 pr-2.5 pl-8 w-full min-h-11 sm:min-h-0 text-sm rounded-sm border outline-none transition-all duration-200 border-border bg-elevated text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25"/>
+        </div>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div className="overflow-y-auto flex-1">
         {alunosFiltrados.map(a => {
-          const conv = conversas[a.id];
+          const conv = conversas.find(c => c.alunoId === a.id);
           const naoLidas = conv?.naoLidas || 0;
-          const ultimaMsg = conv?.msgs?.[conv.msgs.length - 1];
           const isActive = !isMobile && a.id === alunoAtivo;
           return (
-            <div key={a.id} onClick={() => selectAluno(a.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: isMobile ? '13px 16px' : '11px 14px', cursor: 'pointer', borderBottom: '1px solid var(--border-subtle)', background: isActive ? 'rgba(200,16,46,0.05)' : 'transparent', borderLeft: `3px solid ${isActive ? 'var(--gb-red)' : 'transparent'}` }}
-              onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--bg-elevated)'; }}
-              onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+            <button key={a.id} onClick={() => selectAluno(a.id)}
+              className={[
+                'flex gap-3 items-center w-full text-left cursor-pointer border-b border-border-subtle border-l-[3px] transition-colors duration-200',
+                'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-inset',
+                isMobile ? 'py-3.5 px-4' : 'py-2.5 px-3.5',
+                isActive ? 'bg-gb-red/5 border-l-gb-red' : 'bg-transparent border-l-transparent hover:bg-elevated active:bg-elevated',
+              ].join(' ')}
             >
-              <div style={{ position: 'relative', flexShrink: 0 }}>
+              <div className="relative shrink-0">
                 <AlunoAvatar aluno={a} size={isMobile ? 44 : 38}/>
-                {naoLidas > 0 && <div style={{ position: 'absolute', top: -2, right: -2, width: 17, height: 17, borderRadius: '50%', background: 'var(--gb-red)', color: '#fff', fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--bg-card)' }}>{naoLidas}</div>}
+                {naoLidas > 0 && (
+                  <div className="flex absolute -top-0.5 -right-0.5 justify-center items-center w-[17px] h-[17px] text-[9px] font-extrabold text-white rounded-full border-2 border-card bg-gb-red">
+                    {naoLidas}
+                  </div>
+                )}
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                  <span style={{ color: 'var(--text-primary)', fontSize: isMobile ? 14 : 13, fontWeight: naoLidas > 0 ? 700 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{a.nome}</span>
-                  {conv && <span style={{ color: 'var(--text-muted)', fontSize: 10.5, flexShrink: 0, marginLeft: 6 }}>{conv.ultimaMsg}</span>}
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-center mb-1">
+                  <span className={['overflow-hidden whitespace-nowrap text-ellipsis text-primary', isMobile ? 'text-sm' : 'text-[13px]', naoLidas > 0 ? 'font-bold' : 'font-medium'].join(' ')}>{a.nome}</span>
+                  {conv?.ultimaData && <span className="ml-1.5 text-[10.5px] shrink-0 text-muted">{formatHora(conv.ultimaData)}</span>}
                 </div>
-                <div style={{ color: naoLidas > 0 ? 'var(--text-secondary)' : 'var(--text-muted)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, fontWeight: naoLidas > 0 ? 600 : 400 }}>
-                  {ultimaMsg ? (ultimaMsg.remetente === 'admin' ? '↩ ' : '') + ultimaMsg.texto : 'Iniciar conversa...'}
+                <div className={['overflow-hidden text-xs whitespace-nowrap text-ellipsis', naoLidas > 0 ? 'font-semibold text-secondary' : 'font-normal text-muted'].join(' ')}>
+                  {conv?.ultimaMensagem || 'Iniciar conversa...'}
                 </div>
               </div>
-              {isMobile && <span style={{ color: 'var(--text-muted)', fontSize: 16, flexShrink: 0 }}>›</span>}
-            </div>
+              {isMobile && <span className="text-base shrink-0 text-muted">›</span>}
+            </button>
           );
         })}
       </div>
@@ -191,52 +182,50 @@ export default function ChatPage() {
   );
 
   // ── reusable chat window ───────────────────────────────────────────────────
-  // On mobile: position fixed so it covers the full screen (sits above body scroll)
   const chatWindow = (
-    <div style={{
-      background: 'var(--bg-card)',
-      border: isMobile ? 'none' : '1px solid var(--border)',
-      borderRadius: isMobile ? 0 : 'var(--radius-lg)',
-      display: 'flex', flexDirection: 'column',
-      overflow: 'hidden',
-      boxShadow: 'var(--shadow-sm)',
-      // Mobile: fixed overlay that covers everything (top bar + bottom nav included)
-      ...(isMobile ? {
-        position: 'fixed' as const,
-        inset: 0,
-        zIndex: 150,
-      } : {
-        height: '100%',
-      }),
-    }}>
+    <div
+      className={[
+        'flex overflow-hidden flex-col bg-card',
+        isMobile ? 'fixed inset-0 z-[150]' : 'h-full rounded-lg border border-border',
+      ].join(' ')}
+    >
       {aluno ? (
         <>
           {/* Header — on mobile has extra top padding for notch */}
-          <div style={{ padding: isMobile ? '10px 14px' : '12px 18px', paddingTop: isMobile ? 'calc(env(safe-area-inset-top) + 10px)' : undefined, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, background: 'var(--bg-card)' }}>
+          <div
+            className={[
+              'flex gap-2.5 items-center shrink-0 border-b border-border bg-card',
+              isMobile ? 'py-2.5 px-3.5 pt-[calc(env(safe-area-inset-top)+10px)]' : 'py-3 px-[18px]',
+            ].join(' ')}
+          >
             {/* Back button — mobile only */}
             {isMobile && (
               <button onClick={() => setMobileView('list')}
-                style={{ background: 'none', border: 'none', color: 'var(--gb-red)', fontSize: 20, cursor: 'pointer', padding: '4px 6px 4px 0', lineHeight: 1, flexShrink: 0 }}>
+                className="py-1 pr-1.5 min-h-11 min-w-11 text-xl leading-none bg-none border-none cursor-pointer transition-colors duration-200 shrink-0 text-gb-red hover:text-gb-red-dark active:text-gb-red-dark outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
                 ‹
               </button>
             )}
             <AlunoAvatar aluno={aluno} size={isMobile ? 36 : 38}/>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ color: 'var(--text-primary)', fontSize: isMobile ? 14 : 14, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{aluno.nome}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 1 }}>
-                <div style={{ width: 12, height: 4, background: beltConfig[aluno.faixa]?.bg || '#888', borderRadius: 2, border: aluno.faixa === 'branca' ? '1px solid var(--border-strong)' : 'none', flexShrink: 0 }}/>
-                <span style={{ color: 'var(--text-muted)', fontSize: 11, textTransform: 'capitalize' as const, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{beltConfig[aluno.faixa]?.label}{!isMobile && ` · ${aluno.plano}`}</span>
+            <div className="flex-1 min-w-0">
+              <div className="overflow-hidden text-sm font-bold whitespace-nowrap text-ellipsis text-primary">{aluno.nome}</div>
+              <div className="flex gap-1.5 items-center mt-px">
+                <BeltBadge faixa={aluno.faixa} grau={aluno.grau || 0} size="sm" />
+                {!isMobile && <span className="overflow-hidden text-[11px] whitespace-nowrap text-ellipsis text-muted">· {aluno.plano}</span>}
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+            <div className="flex gap-1.5 shrink-0">
               {aluno.whatsapp && (
                 <a href={`https://wa.me/${aluno.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer"
-                  style={{ background: 'rgba(37,211,102,0.1)', border: '1px solid rgba(37,211,102,0.2)', borderRadius: 'var(--radius-sm)', padding: isMobile ? '6px 10px' : '6px 12px', color: '#25D366', fontSize: 12, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {isMobile ? '📱' : '📱 WhatsApp'}
+                  className={[
+                    'flex gap-1 items-center min-h-11 sm:min-h-0 text-xs font-semibold text-[#25D366] no-underline rounded-sm border transition-colors duration-200 border-[#25D366]/20 bg-[#25D366]/10 hover:bg-[#25D366]/20 active:bg-[#25D366]/20',
+                    'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                    isMobile ? 'py-1.5 px-2.5' : 'py-1.5 px-3',
+                  ].join(' ')}>
+                  {isMobile ? <Ico icon={DeviceMobileIcon} sm /> : <><Ico icon={DeviceMobileIcon} sm /> WhatsApp</>}
                 </a>
               )}
               {!isMobile && (
-                <button style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '6px 12px', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer' }}>
+                <button onClick={() => onNavigate?.('alunos', alunoAtivo)} className="py-1.5 px-3 text-xs rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
                   Ver perfil →
                 </button>
               )}
@@ -244,27 +233,40 @@ export default function ChatPage() {
           </div>
 
           {/* Messages */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '12px 14px' : '16px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {conversa.msgs.length === 0 ? (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', padding: 40 }}>
-                <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.3 }}>💬</div>
-                <div style={{ fontSize: 14 }}>Inicia a conversa com {aluno.nome.split(' ')[0]}</div>
-                <div style={{ fontSize: 12, marginTop: 4 }}>Usa um template ou escreve uma mensagem</div>
+          <div className={['flex overflow-y-auto flex-col flex-1 gap-2', isMobile ? 'py-3 px-3.5' : 'py-4 px-[18px]'].join(' ')}>
+            {loadingMsgs ? (
+              <div className="flex flex-1 justify-center items-center text-muted">
+                <Ico icon={ArrowPathIcon} />
+              </div>
+            ) : mensagens.length === 0 ? (
+              <div className="flex flex-col flex-1 justify-center items-center p-10 text-muted">
+                <FontAwesomeIcon icon={CommentIcon} className="mb-3 w-9 h-9 opacity-30" />
+                <div className="text-sm">Inicia a conversa com {aluno.nome.split(' ')[0]}</div>
+                <div className="mt-1 text-xs">Usa um template ou escreve uma mensagem</div>
               </div>
             ) : (
-              conversa.msgs.map(msg => {
-                const isAdmin = msg.remetente === 'admin';
-                const cCfg = CANAL_CONFIG[msg.canal];
+              mensagens.map(msg => {
+                const isAdmin = msg.remetenteRole !== 'aluno';
                 return (
-                  <div key={msg.id} style={{ display: 'flex', justifyContent: isAdmin ? 'flex-end' : 'flex-start' }}>
-                    <div style={{ maxWidth: isMobile ? '85%' : '72%' }}>
-                      <div style={{ background: isAdmin ? 'var(--gb-red)' : 'var(--bg-elevated)', borderRadius: isAdmin ? '14px 14px 4px 14px' : '14px 14px 14px 4px', padding: '10px 13px', boxShadow: 'var(--shadow-xs)' }}>
-                        <p style={{ color: isAdmin ? '#fff' : 'var(--text-primary)', fontSize: 14, margin: 0, lineHeight: 1.5 }}>{msg.texto}</p>
+                  <div key={msg.id} className={['flex', isAdmin ? 'justify-end' : 'justify-start'].join(' ')}>
+                    <div className={isMobile ? 'max-w-[85%]' : 'max-w-[72%]'}>
+                      <div
+                        className="py-2.5 px-3.5"
+                        style={{
+                          background: isAdmin ? 'var(--gb-red)' : 'var(--bg-elevated)',
+                          borderRadius: isAdmin ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                        }}
+                      >
+                        <p className={['m-0 text-sm leading-[1.5]', isAdmin ? 'text-white' : 'text-primary'].join(' ')}>{msg.corpo}</p>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3, justifyContent: isAdmin ? 'flex-end' : 'flex-start' }}>
-                        <span style={{ color: 'var(--text-muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}>{msg.hora}</span>
-                        {msg.canal !== 'interno' && <span style={{ fontSize: 10, color: cCfg.color, fontWeight: 600 }}>{cCfg.icon}</span>}
-                        {isAdmin && <span style={{ color: msg.lida ? '#25D366' : 'var(--text-muted)', fontSize: 11 }}>✓✓</span>}
+                      <div className={['flex gap-1.5 items-center mt-1', isAdmin ? 'justify-end' : 'justify-start'].join(' ')}>
+                        <span className="font-mono text-[10px] text-muted">{formatHora(msg.createdAt)}</span>
+                        {isAdmin && (
+                          <span className={['flex items-center', msg.lida ? 'text-[#25D366]' : 'text-muted'].join(' ')}>
+                            <Ico icon={CheckIcon} sm />
+                            <Ico icon={CheckIcon} sm className="-ml-1.5" />
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -276,14 +278,12 @@ export default function ChatPage() {
 
           {/* Templates panel */}
           {showTemplates && (
-            <div style={{ borderTop: '1px solid var(--border)', padding: '10px 14px', background: 'var(--bg-elevated)', flexShrink: 0, maxHeight: isMobile ? 180 : 170, overflowY: 'auto' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' as const, marginBottom: 7 }}>Templates Rápidos</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <div className={['overflow-y-auto py-2.5 px-3.5 border-t shrink-0 border-border bg-elevated', isMobile ? 'max-h-[180px]' : 'max-h-[170px]'].join(' ')}>
+              <div className="mb-2 text-[10px] font-bold tracking-[0.8px] uppercase text-muted">Templates Rápidos</div>
+              <div className="flex flex-col gap-1.5">
                 {TEMPLATES.map((t, i) => (
                   <button key={i} onClick={() => { setTexto(t); setShowTemplates(false); }}
-                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 11px', fontSize: 13, color: 'var(--text-primary)', textAlign: 'left' as const, cursor: 'pointer', lineHeight: 1.4 }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--gb-red)')}
-                    onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+                    className="py-2 px-2.5 min-h-11 text-[13px] leading-[1.4] text-left rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-card text-primary hover:border-gb-red active:bg-elevated outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
                   >
                     {t}
                   </button>
@@ -293,41 +293,49 @@ export default function ChatPage() {
           )}
 
           {/* Input bar — extra bottom padding for iPhone home indicator */}
-          <div style={{ padding: isMobile ? '10px 12px' : '12px 14px', paddingBottom: isMobile ? 'calc(env(safe-area-inset-bottom) + 10px)' : undefined, borderTop: '1px solid var(--border)', flexShrink: 0, background: 'var(--bg-card)' }}>
-            {/* Canal + templates row */}
-            <div style={{ display: 'flex', gap: 5, marginBottom: 8, alignItems: 'center' }}>
-              {(Object.entries(CANAL_CONFIG) as [typeof canal, typeof CANAL_CONFIG[typeof canal]][]).map(([id, cfg]) => (
-                <button key={id} onClick={() => setCanal(id)}
-                  style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0 : 5, background: canal === id ? cfg.color + '15' : 'var(--bg-elevated)', border: `1px solid ${canal === id ? cfg.color : 'var(--border)'}`, borderRadius: 'var(--radius-sm)', padding: isMobile ? '5px 10px' : '4px 10px', fontSize: isMobile ? 16 : 11.5, color: canal === id ? cfg.color : 'var(--text-muted)', fontWeight: canal === id ? 700 : 400, cursor: 'pointer' }}>
-                  {cfg.icon}{!isMobile && ` ${cfg.label}`}
-                </button>
-              ))}
-              <div style={{ flex: 1 }}/>
+          <div
+            className={[
+              'shrink-0 border-t border-border bg-card',
+              isMobile ? 'py-2.5 px-3 pb-[calc(env(safe-area-inset-bottom)+10px)]' : 'py-3 px-3.5',
+            ].join(' ')}
+          >
+            <div className="flex gap-1.5 items-center mb-2">
+              <div className="flex-1"/>
               <button onClick={() => setShowTemplates(!showTemplates)}
-                style={{ background: showTemplates ? 'rgba(200,16,46,0.08)' : 'var(--bg-elevated)', border: `1px solid ${showTemplates ? 'var(--gb-red)' : 'var(--border)'}`, borderRadius: 'var(--radius-sm)', padding: '5px 10px', fontSize: isMobile ? 15 : 11.5, color: showTemplates ? 'var(--gb-red)' : 'var(--text-muted)', cursor: 'pointer' }}>
-                {isMobile ? '⚡' : '⚡ Templates'}
+                className={[
+                  'py-1 px-2.5 min-h-11 sm:min-h-0 rounded-sm border cursor-pointer transition-colors duration-200',
+                  'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                  isMobile ? 'text-[15px]' : 'text-[11.5px]',
+                  showTemplates ? 'border-gb-red text-gb-red bg-gb-red/8 hover:bg-gb-red/15 active:bg-gb-red/15' : 'border-border bg-elevated text-muted hover:bg-border-subtle active:bg-border-subtle',
+                  'inline-flex gap-1 items-center',
+                ].join(' ')}>
+                {isMobile ? <Ico icon={BoltIcon} sm /> : <><Ico icon={BoltIcon} sm /> Templates</>}
               </button>
             </div>
             {/* Textarea + send */}
-            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+            <div className="flex gap-2 items-end">
               <textarea value={texto} onChange={e => setTexto(e.target.value)}
-                placeholder={`Mensagem via ${CANAL_CONFIG[canal].label}...`}
+                placeholder="Escreve uma mensagem..."
                 rows={isMobile ? 1 : 2}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); }}}
-                style={{ flex: 1, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '10px 13px', fontSize: 14, color: 'var(--text-primary)', resize: 'none' as const, fontFamily: 'var(--font-ui)', lineHeight: 1.5 }}
+                className="flex-1 py-2.5 px-3.5 font-ui text-sm leading-[1.5] rounded-md border outline-none transition-all duration-200 resize-none border-border bg-elevated text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25"
               />
-              <button onClick={enviar} disabled={!texto.trim()}
-                style={{ background: texto.trim() ? 'var(--gb-red)' : 'var(--bg-elevated)', border: 'none', borderRadius: 'var(--radius-md)', width: 44, height: 44, flexShrink: 0, color: texto.trim() ? '#fff' : 'var(--text-muted)', fontSize: 20, cursor: texto.trim() ? 'pointer' : 'not-allowed', boxShadow: texto.trim() ? 'var(--shadow-red)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                ↑
+              <button onClick={enviar} disabled={!texto.trim() || enviarMutation.isPending}
+                className={[
+                  'flex justify-center items-center w-11 h-11 text-xl rounded-md border-none shrink-0 transition-colors duration-200',
+                  'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
+                  texto.trim() ? 'text-white cursor-pointer bg-gb-red hover:bg-gb-red-dark active:bg-gb-red-dark' : 'bg-elevated text-muted',
+                ].join(' ')}>
+                {enviarMutation.isPending ? <Ico icon={ArrowPathIcon} /> : '↑'}
               </button>
             </div>
-            {!isMobile && <div style={{ color: 'var(--text-muted)', fontSize: 10.5, marginTop: 5 }}>Enter para enviar · Shift+Enter para nova linha</div>}
+            {!isMobile && <div className="mt-1.5 text-[10.5px] text-muted">Enter para enviar · Shift+Enter para nova linha</div>}
           </div>
         </>
       ) : (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', flexDirection: 'column', gap: 10 }}>
-          <div style={{ fontSize: 36, opacity: 0.25 }}>💬</div>
-          <div style={{ fontSize: 13 }}>Seleciona um aluno para iniciar</div>
+        <div className="flex flex-col flex-1 gap-2.5 justify-center items-center text-muted">
+          <FontAwesomeIcon icon={CommentIcon} className="w-9 h-9 opacity-25" />
+          <div className="text-[13px]">Seleciona um aluno para iniciar</div>
         </div>
       )}
     </div>
@@ -337,20 +345,15 @@ export default function ChatPage() {
     <div>
       {/* Page header — hidden on mobile when in chat view */}
       {(!isMobile || mobileView === 'list') && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 18 }}>
-          <div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 10.5, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 3 }}>Academia</div>
-            <h1 style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 800, fontFamily: 'var(--font-display)', textTransform: 'uppercase' as const, display: 'flex', alignItems: 'center', gap: 10 }}>
-              Chat
-              {totalNaoLidas > 0 && <span style={{ background: 'var(--gb-red)', color: '#fff', fontSize: 12, fontWeight: 700, padding: '2px 9px', borderRadius: 99 }}>{totalNaoLidas}</span>}
-            </h1>
-          </div>
-        </div>
+        <PageHeader
+          eyebrow="Academia"
+          title={<>Chat{totalNaoLidas > 0 && <Badge color="brand">{totalNaoLidas}</Badge>}</>}
+        />
       )}
 
       {/* Desktop: side-by-side grid */}
       {!isMobile && (
-        <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 16, height: chatH }}>
+        <div className="grid grid-cols-[300px_1fr] gap-4" style={{ height: chatH }}>
           {contactList}
           {chatWindow}
         </div>

@@ -1,7 +1,10 @@
 /* ── GB Braga — Global Styles ───────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+@import "tailwindcss";
 
 /* ── Design Tokens (CSS Variables) ──────────────────────────── */
+/* Colour tokens: single source of truth, still consumed directly via
+   var(--x) by legacy inline styles across the app — do not rename or
+   remove until every component has been migrated to Tailwind utilities. */
 :root {
   /* Surfaces */
   --bg-base:     #F7F6F4;
@@ -16,28 +19,67 @@
   /* Borders */
   --border:        #E2E0DB;
   --border-subtle: #EDECE9;
+  --border-strong: #C8C6C0;
 
-  /* Radii */
+  /* Brand colours */
+  --gb-red:      #C8102E;
+  --gb-red-dark: #A00D24;
+  --gb-red-glow: rgba(200,16,46,0.12);
+
+  /* Semantic — success/positive states (frequência, check-ins, pagamentos em
+     dia, ...). A muted forest green instead of Tailwind's default green-500,
+     which read as a bright/neon accent next to the warm off-white base and
+     the red brand colour. */
+  --gb-green:      #2F6B4F;
+  --gb-green-dark: #26563F;
+}
+
+/* ── Tailwind theme ───────────────────────────────────────────
+ * Colours: re-exposed under Tailwind's --color-* namespace so
+ * utilities are generated (bg-primary, text-secondary, bg-gb-red, ...)
+ * without duplicating values — everything resolves back to the :root
+ * vars above, so brand colours still have one place to update.
+ *
+ * Radius/font/shadow: our existing token names (--radius-sm, --font-mono,
+ * --shadow-sm, ...) already match Tailwind's own theme namespace, so they
+ * are declared directly here instead of in :root. Tailwind's compiled
+ * output publishes these as real global CSS variables, which is exactly
+ * what the 400+ existing var(--radius-sm)/var(--font-mono)/var(--shadow-*)
+ * inline styles across the app need — no separate :root copy required. */
+@theme {
+  --color-base:     var(--bg-base);
+  --color-card:     var(--bg-card);
+  --color-elevated: var(--bg-elevated);
+
+  --color-primary:   var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-muted:     var(--text-muted);
+
+  --color-border:        var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+
+  --color-gb-red:      var(--gb-red);
+  --color-gb-red-dark: var(--gb-red-dark);
+  --color-gb-red-glow: var(--gb-red-glow);
+
+  --color-gb-green:      var(--gb-green);
+  --color-gb-green-dark: var(--gb-green-dark);
+
   --radius-xs: 6px;
   --radius-sm: 8px;
   --radius-md: 10px;
   --radius-lg: 14px;
   --radius-xl: 20px;
 
-  /* Typography */
   --font-ui:      'DM Sans', system-ui, -apple-system, sans-serif;
   --font-display: 'Arial Black', 'Arial Bold', sans-serif;
-  --font-mono:    'DM Mono', 'Courier New', monospace;
+  /* Was 'DM Mono' — its slashed/dotted zero was disliked across the app's
+     numeric displays (KPIs, prices, tables). Same font as --font-ui now, so
+     every existing `font-mono` class (~400 numeric spots) reads normally
+     without touching each call site individually. */
+  --font-mono:    'DM Sans', system-ui, -apple-system, sans-serif;
 
-  /* Brand colours (also available as CSS variables for use in stylesheets) */
-  --gb-red:      #C8102E;
-  --gb-red-dark: #A00D24;
-  --gb-red-glow: rgba(200,16,46,0.12);
-
-  /* Borders (strong variant used for belt swatch outlines) */
-  --border-strong: #C8C6C0;
-
-  /* Shadows */
   --shadow-xs:  0 1px 4px rgba(0,0,0,0.06);
   --shadow-sm:  0 2px 8px rgba(0,0,0,0.08);
   --shadow-md:  0 4px 16px rgba(0,0,0,0.12);
@@ -45,77 +87,88 @@
   --shadow-red: 0 4px 14px rgba(200,16,46,0.30);
 }
 
-html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+/*
+ * Everything below lives in Tailwind's own `base` layer instead of sitting
+ * unlayered. CSS Cascade Layers give ANY unlayered rule priority over ANY
+ * layered rule, no matter its specificity — so an unlayered `* { margin: 0;
+ * padding: 0 }` silently wins against every `p-*`/`m-*` Tailwind utility
+ * (those live in `@layer utilities`), making them look like no-ops. Layering
+ * these resets as `base` restores the expected order: base < components <
+ * utilities, so a utility class on an element still overrides the default.
+ */
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-body {
-  font-family: var(--font-ui);
-  background: var(--bg-base);
-  color: var(--text-primary);
-  -webkit-font-smoothing: antialiased;
-  -webkit-tap-highlight-color: transparent;
-  overscroll-behavior: none;
-}
+  /* Safety net: no page should ever be able to scroll horizontally, even if a
+     component miscalculates a width (e.g. a fixed-width chart or a long
+     unbreakable string). Individual scrollable regions (tables, code blocks)
+     opt back in locally via their own `overflow-x-auto` wrapper.
+     Scoped to `html` only (the real scrolling element): setting overflow-x on
+     `body` too would force its overflow-y to compute as `auto` as well (per
+     spec, a non-'visible' axis coerces the other), turning body into its own
+     zero-height scroll container. Paired with `overscroll-behavior: none`
+     below, that blocks scroll from ever chaining up to html — the page
+     becomes completely unscrollable, vertically included. */
+  html { overflow-x: hidden; max-width: 100vw; }
+  body { max-width: 100vw; }
 
-/* Scrollbars */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border, #e0e0e0); border-radius: 3px; }
+  html { font-size: 16px; -webkit-text-size-adjust: 100%; }
 
-/* Tables responsive */
-table { width: 100%; border-collapse: collapse; }
-@media (max-width: 767px) {
-  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-}
-
-/* Inputs — prevent iOS zoom */
-@media (max-width: 767px) {
-  input, select, textarea { font-size: 16px !important; }
-}
-
-/* Touch targets */
-button { min-height: 36px; }
-@media (max-width: 767px) {
-  button { min-height: 44px; }
-}
-
-/* Animations */
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
-/* Safe areas for notch */
-@supports (padding: env(safe-area-inset-top)) {
-  .safe-top    { padding-top: env(safe-area-inset-top); }
-  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
-}
-
-/* Modals full screen on mobile */
-@media (max-width: 767px) {
-  .modal-inner {
-    max-width: 100% !important;
-    max-height: 100vh !important;
-    height: 100dvh !important;
-    border-radius: 0 !important;
-    margin: 0 !important;
+  body {
+    font-family: var(--font-ui);
+    background: var(--bg-base);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
   }
-  .modal-backdrop {
-    padding: 0 !important;
-    align-items: flex-end !important;
+
+  /* Scrollbars */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border, #e0e0e0); border-radius: 3px; }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  /* Inputs — prevent iOS zoom */
+  @media (max-width: 767px) {
+    input, select, textarea { font-size: 16px !important; }
   }
+
+  /* Touch targets */
+  button { min-height: 36px; }
+
+  /* Primary GB actions — shared portal treatment for every inline-styled page. */
+  button:where(
+    [style*="var(--gb-red)"],
+    [style*="rgb(200, 16, 46)"],
+    [style*="rgb(200,16,46)"]
+  ) {
+    padding: 10px 18px !important;
+    border-radius: var(--radius-sm) !important;
+    font-weight: 400 !important;
+    box-shadow: none !important;
+  }
+
+  @media (max-width: 767px) {
+    button { min-height: 44px; }
+  }
+
+  /* Animations */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  @keyframes modalBackdropIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes modalPanelIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes modalBackdropOut { from { opacity: 1; } to { opacity: 0; } }
+  @keyframes modalPanelOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: scale(0.96) translateY(8px); } }
 }
 
-/* Grids responsive */
-@media (max-width: 767px) {
-  .grid-2, .grid-3, .grid-4 {
-    grid-template-columns: 1fr !important;
-  }
-  .grid-kpi {
-    grid-template-columns: 1fr 1fr !important;
-  }
-}
-
-@media (min-width: 768px) and (max-width: 1023px) {
-  .grid-3, .grid-4 {
-    grid-template-columns: 1fr 1fr !important;
-  }
+/* Kill the focus ring app-wide. Deliberately unlayered (not @layer base) so it
+   sits above Tailwind's utility layer in the cascade and overrides every
+   `focus-visible:ring-*` / `focus:ring-*` utility class without touching each
+   of the ~500 call sites individually. */
+:focus, :focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
 }

@@ -1,26 +1,14 @@
 import { useState } from 'react';
-import { useProfessores, useProfessorCheckins } from '../../lib/useData';
+import { useProfessores } from '../../lib/useData';
+import { useTodasAulasQuery } from '../../hooks/useAulas';
 import { beltConfig } from '../../lib/gbBrand';
-import { useMobile } from '../../lib/useMobile';
+import Card from '../../components/common/Card';
+import Badge from '../../components/common/Badge';
+import BeltBadge from '../../components/common/BeltBadge';
+import PageHeader from '../../components/common/PageHeader';
 
-function Card({ children, style = {} }: { children: React.ReactNode; style?: React.CSSProperties }) {
-  return <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-xs)', ...style }}>{children}</div>;
-}
-
-function BeltBadge({ faixa, grau }: { faixa: string; grau: number }) {
-  const cfg = (beltConfig as Record<string, { bg: string; text: string; label: string }>)[faixa] || { bg: '#888', text: '#fff', label: faixa };
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-      <span style={{ background: cfg.bg, color: cfg.text, fontSize: 10.5, fontWeight: 700, padding: '2px 9px', borderRadius: 99, border: faixa === 'branca' ? '1px solid #ccc' : 'none', whiteSpace: 'nowrap' as const }}>
-        {cfg.label}
-      </span>
-      {grau > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)' }}>G{grau}</span>}
-    </span>
-  );
-}
-
-function duracao(inicio: string, fim?: string): string {
-  if (!fim) return '—';
+function duracao(inicio: string | null, fim?: string | null): string {
+  if (!inicio || !fim) return '—';
   const [h1, m1] = inicio.split(':').map(Number);
   const [h2, m2] = fim.split(':').map(Number);
   const min = (h2 * 60 + m2) - (h1 * 60 + m1);
@@ -30,10 +18,18 @@ function duracao(inicio: string, fim?: string): string {
   return h > 0 ? `${h}h${m > 0 ? `${m}m` : ''}` : `${m}m`;
 }
 
+function EstadoBadge({ ativa }: { ativa: boolean }) {
+  return ativa
+    ? <Badge color="success">● Ativa</Badge>
+    : <Badge color="neutral">Concluída</Badge>;
+}
+
+const TH_CLASS = 'py-2.5 px-3.5 text-[10.5px] font-semibold text-left uppercase whitespace-nowrap text-muted';
+const TD_CLASS = 'py-2.5 px-3.5';
+
 export default function ProfessoresPage() {
   const { data: professores } = useProfessores();
-  const { data: todosCheckins } = useProfessorCheckins();
-  const { isMobile } = useMobile();
+  const { data: todosCheckins = [] } = useTodasAulasQuery();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const selected = professores.find(p => p.id === selectedId);
@@ -41,40 +37,39 @@ export default function ProfessoresPage() {
 
   const hoje = new Date().toISOString().split('T')[0];
   const checkinsHoje = todosCheckins.filter(c => c.data === hoje);
-  const ativos = todosCheckins.filter(c => c.status === 'ativa');
+  const ativos = todosCheckins.filter(c => c.status === 'em_curso');
 
   return (
     <div>
-      {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, rgba(200,16,46,0.06) 0%, transparent 60%)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: isMobile ? '16px 18px' : '20px 24px', marginBottom: 20, boxShadow: 'var(--shadow-xs)' }}>
-        <div style={{ color: 'var(--text-muted)', fontSize: 10.5, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 4 }}>Gestão de Professores</div>
-        <h1 style={{ color: 'var(--text-primary)', fontSize: 22, fontWeight: 800, fontFamily: 'var(--font-display)', textTransform: 'uppercase' as const, margin: '0 0 4px' }}>Professores</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: 0 }}>{professores.length} professores · {checkinsHoje.length} aulas hoje · {ativos.length} em curso</p>
-      </div>
+      <PageHeader
+        eyebrow="Gestão de Professores"
+        title="Professores"
+        subtitle={`${professores.length} professores · ${checkinsHoje.length} aulas hoje · ${ativos.length} em curso`}
+      />
 
       {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: 12, marginBottom: 20 }}>
+      <div className="grid grid-cols-2 gap-3 mb-5 md:grid-cols-4">
         {[
           { label: 'Professores', value: professores.length,       accent: 'var(--gb-red)' },
-          { label: 'Aulas Hoje',  value: checkinsHoje.length,      accent: '#2563EB' },
+          { label: 'Aulas Hoje',  value: checkinsHoje.length,      accent: 'var(--gb-red)' },
           { label: 'Em Curso',    value: ativos.length,             accent: '#16A34A' },
-          { label: 'Total Check-ins', value: todosCheckins.length, accent: '#7C3AED' },
+          { label: 'Total Check-ins', value: todosCheckins.length, accent: 'var(--gb-red)' },
         ].map(s => (
-          <div key={s.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '14px 16px', borderTop: `3px solid ${s.accent}`, boxShadow: 'var(--shadow-xs)' }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: 10.5, marginBottom: 4 }}>{s.label}</div>
-            <div style={{ color: 'var(--text-primary)', fontSize: 26, fontWeight: 800 }}>{s.value}</div>
+          <div key={s.label} className="py-3.5 px-4 rounded-md border border-border bg-card">
+            <div className="mb-1 text-[10.5px] text-muted">{s.label}</div>
+            <div className="text-2xl font-extrabold text-primary">{s.value}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: selectedId && !isMobile ? '320px 1fr' : '1fr', gap: 16 }}>
+      <div className={['grid grid-cols-1 gap-4', selectedId ? 'lg:grid-cols-[320px_1fr]' : ''].join(' ')}>
         {/* Professors list */}
         <div>
-          <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 10 }}>Lista de Professores</div>
-          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+          <div className="mb-2.5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Lista de Professores</div>
+          <div className="flex flex-col gap-2">
             {professores.map(p => {
               const checkinProf = todosCheckins.filter(c => c.professorId === p.id);
-              const ativo = checkinProf.find(c => c.status === 'ativa');
+              const ativo = checkinProf.find(c => c.status === 'em_curso');
               const hoje_count = checkinProf.filter(c => c.data === hoje).length;
               const bc = beltConfig[p.faixa] || { bg: '#888', text: '#fff', label: p.faixa };
               const isSelected = selectedId === p.id;
@@ -83,21 +78,28 @@ export default function ProfessoresPage() {
                 <button
                   key={p.id}
                   onClick={() => setSelectedId(isSelected ? null : p.id)}
-                  style={{ background: isSelected ? 'rgba(200,16,46,0.05)' : 'var(--bg-card)', border: `1.5px solid ${isSelected ? 'var(--gb-red)' : 'var(--border)'}`, borderRadius: 'var(--radius-md)', padding: '14px 16px', cursor: 'pointer', textAlign: 'left' as const, display: 'flex', alignItems: 'center', gap: 12, boxShadow: 'var(--shadow-xs)' }}
+                  className={[
+                    'flex gap-3 items-center py-3.5 px-4 min-h-11 text-left rounded-md border-[1.5px] cursor-pointer transition-colors duration-200',
+                    'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                    isSelected ? 'border-gb-red bg-gb-red/5 hover:bg-gb-red/10 active:bg-gb-red/15' : 'border-border bg-card hover:bg-elevated active:bg-elevated',
+                  ].join(' ')}
                 >
-                  <div style={{ width: 44, height: 44, borderRadius: '50%', background: `${bc.bg}20`, border: `2px solid ${bc.bg}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 800, color: bc.bg === '#F0EEFF' ? '#888' : bc.bg, flexShrink: 0, fontFamily: 'var(--font-display)' }}>
+                  <div
+                    className="flex justify-center items-center w-11 h-11 font-display text-lg font-extrabold rounded-full shrink-0"
+                    style={{ background: `${bc.bg}20`, border: `2px solid ${bc.bg}`, color: bc.bg === '#F0EEFF' ? '#888' : bc.bg }}
+                  >
                     {p.nome.charAt(0)}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ color: 'var(--text-primary)', fontSize: 13.5, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{p.nome}</div>
-                    <div style={{ marginTop: 3 }}><BeltBadge faixa={p.faixa} grau={p.grau} /></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="overflow-hidden text-[13.5px] font-bold whitespace-nowrap text-ellipsis text-primary">{p.nome}</div>
+                    <div className="mt-0.5"><BeltBadge faixa={p.faixa} grau={p.grau} /></div>
                   </div>
-                  <div style={{ textAlign: 'right' as const, flexShrink: 0 }}>
+                  <div className="text-right shrink-0">
                     {ativo
-                      ? <div style={{ color: '#16A34A', fontSize: 10.5, fontWeight: 700 }}>● Em aula</div>
-                      : <div style={{ color: 'var(--text-muted)', fontSize: 10.5 }}>{hoje_count} hoje</div>
+                      ? <div className="text-[10.5px] font-bold text-gb-green">● Em aula</div>
+                      : <div className="text-[10.5px] text-muted">{hoje_count} hoje</div>
                     }
-                    <div style={{ color: 'var(--text-muted)', fontSize: 10, marginTop: 2 }}>{p.turmas.length} turmas</div>
+                    <div className="mt-0.5 text-[10px] text-muted">{p.turmas.length} turmas</div>
                   </div>
                 </button>
               );
@@ -108,77 +110,71 @@ export default function ProfessoresPage() {
         {/* Detail panel */}
         {selected && (
           <div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 10 }}>
+            <div className="mb-2.5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">
               Check-ins — {selected.nome}
             </div>
 
             {/* Professor info */}
-            <Card style={{ padding: '16px 18px', marginBottom: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' as const }}>
-                <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(200,16,46,0.1)', border: '2px solid rgba(200,16,46,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 800, color: 'var(--gb-red)', fontFamily: 'var(--font-display)', flexShrink: 0 }}>
+            <Card padding="none" className="py-4 px-[18px] mb-3.5">
+              <div className="flex flex-wrap gap-3.5 items-center">
+                <div className="flex justify-center items-center w-14 h-14 font-display text-2xl font-extrabold text-gb-red rounded-full border-2 shrink-0 border-gb-red/30 bg-gb-red/10">
                   {selected.nome.charAt(0)}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ color: 'var(--text-primary)', fontSize: 16, fontWeight: 800 }}>{selected.nome}</div>
-                  <div style={{ marginTop: 3 }}><BeltBadge faixa={selected.faixa} grau={selected.grau} /></div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 11.5, marginTop: 3 }}>{selected.email} · {selected.telefone}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-base font-extrabold text-primary">{selected.nome}</div>
+                  <div className="mt-0.5"><BeltBadge faixa={selected.faixa} grau={selected.grau} /></div>
+                  <div className="mt-0.5 text-[11.5px] text-muted">{selected.email} · {selected.telefone}</div>
                 </div>
-                <div style={{ textAlign: 'right' as const }}>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 10, marginBottom: 2 }}>TOTAL AULAS</div>
-                  <div style={{ color: 'var(--text-primary)', fontSize: 28, fontWeight: 800 }}>{checkinsProfSel.length}</div>
+                <div className="text-right">
+                  <div className="mb-0.5 text-[10px] text-muted">TOTAL AULAS</div>
+                  <div className="text-[28px] font-extrabold text-primary">{checkinsProfSel.length}</div>
                 </div>
               </div>
             </Card>
 
             {/* Aula em curso */}
             {(() => {
-              const ativa = checkinsProfSel.find(c => c.status === 'ativa');
+              const ativa = checkinsProfSel.find(c => c.status === 'em_curso');
               if (!ativa) return null;
               return (
-                <div style={{ background: 'rgba(22,163,74,0.07)', border: '1.5px solid rgba(22,163,74,0.25)', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#16A34A', display: 'inline-block', flexShrink: 0, animation: 'pulse 1.5s infinite' }}/>
+                <div className="flex gap-2.5 items-center py-3 px-4 mb-3.5 rounded-md border-[1.5px] border-gb-green/25 bg-gb-green/[0.07]">
+                  <span className="inline-block w-2.5 h-2.5 bg-gb-green rounded-full shrink-0 animate-[pulse_1.5s_infinite]"/>
                   <div>
-                    <div style={{ color: '#16A34A', fontSize: 13, fontWeight: 700 }}>Aula em curso agora</div>
-                    <div style={{ color: 'var(--text-muted)', fontSize: 11.5 }}>{ativa.turmaNome} · desde {ativa.horaInicio}</div>
+                    <div className="text-[13px] font-bold text-gb-green">Aula em curso agora</div>
+                    <div className="text-[11.5px] text-muted">{ativa.turmaNome} · desde {ativa.horaInicio}</div>
                   </div>
                 </div>
               );
             })()}
 
             {/* Check-in history table */}
-            <Card>
+            <Card padding="none">
               {checkinsProfSel.length === 0 ? (
-                <div style={{ padding: 24, textAlign: 'center' as const, color: 'var(--text-muted)', fontSize: 13 }}>Nenhum check-in registado.</div>
+                <div className="p-6 text-[13px] text-center text-muted">Nenhum check-in registado.</div>
               ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <div className="overflow-x-auto">
+                <table className="w-full border-collapse min-w-[520px]">
                   <thead>
-                    <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)' }}>
+                    <tr className="border-b border-border-subtle bg-elevated">
                       {['Turma','Data','Início','Fim','Duração','Estado'].map(h => (
-                        <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10.5, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>{h}</th>
+                        <th key={h} className={TH_CLASS}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {checkinsProfSel.map(c => (
-                      <tr key={c.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                      >
-                        <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{c.turmaNome}</td>
-                        <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{c.data}</td>
-                        <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{c.horaInicio}</td>
-                        <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{c.horaFim || '—'}</td>
-                        <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>{duracao(c.horaInicio, c.horaFim)}</td>
-                        <td style={{ padding: '10px 14px' }}>
-                          {c.status === 'ativa'
-                            ? <span style={{ background: 'rgba(22,163,74,0.08)', color: '#16A34A', fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>● Ativa</span>
-                            : <span style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, padding: '2px 8px', borderRadius: 99 }}>Concluída</span>
-                          }
-                        </td>
+                      <tr key={c.id} className="border-b border-border-subtle hover:bg-elevated">
+                        <td className={[TD_CLASS, 'text-[13px] font-semibold whitespace-nowrap text-primary'].join(' ')}>{c.turmaNome}</td>
+                        <td className={[TD_CLASS, 'font-mono text-xs whitespace-nowrap text-muted'].join(' ')}>{c.data}</td>
+                        <td className={[TD_CLASS, 'font-mono text-xs whitespace-nowrap text-muted'].join(' ')}>{c.horaInicio || '—'}</td>
+                        <td className={[TD_CLASS, 'font-mono text-xs whitespace-nowrap text-muted'].join(' ')}>{c.horaFim || '—'}</td>
+                        <td className={[TD_CLASS, 'font-mono text-xs whitespace-nowrap text-secondary'].join(' ')}>{duracao(c.horaInicio, c.horaFim)}</td>
+                        <td className={TD_CLASS}><EstadoBadge ativa={c.status === 'em_curso'} /></td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                </div>
               )}
             </Card>
           </div>
@@ -187,42 +183,37 @@ export default function ProfessoresPage() {
         {/* If no professor selected, show all recent check-ins */}
         {!selectedId && (
           <div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 10 }}>Todos os Check-ins Recentes</div>
-            <Card>
+            <div className="mb-2.5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Todos os Check-ins Recentes</div>
+            <Card padding="none">
               {todosCheckins.length === 0 ? (
-                <div style={{ padding: 24, textAlign: 'center' as const, color: 'var(--text-muted)', fontSize: 13 }}>Nenhum check-in registado.</div>
+                <div className="p-6 text-[13px] text-center text-muted">Nenhum check-in registado.</div>
               ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <div className="overflow-x-auto">
+                <table className="w-full border-collapse min-w-[620px]">
                   <thead>
-                    <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)' }}>
+                    <tr className="border-b border-border-subtle bg-elevated">
                       {['Professor','Turma','Data','Início','Fim','Duração','Estado'].map(h => (
-                        <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10.5, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>{h}</th>
+                        <th key={h} className={TH_CLASS}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {todosCheckins.map(c => (
-                      <tr key={c.id} style={{ borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer' }}
+                      <tr key={c.id} className="cursor-pointer border-b border-border-subtle transition-colors duration-200 hover:bg-elevated"
                         onClick={() => setSelectedId(c.professorId)}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                       >
-                        <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{c.professorNome}</td>
-                        <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-secondary)' }}>{c.turmaNome}</td>
-                        <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{c.data}</td>
-                        <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{c.horaInicio}</td>
-                        <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{c.horaFim || '—'}</td>
-                        <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>{duracao(c.horaInicio, c.horaFim)}</td>
-                        <td style={{ padding: '10px 14px' }}>
-                          {c.status === 'ativa'
-                            ? <span style={{ background: 'rgba(22,163,74,0.08)', color: '#16A34A', fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>● Ativa</span>
-                            : <span style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, padding: '2px 8px', borderRadius: 99 }}>Concluída</span>
-                          }
-                        </td>
+                        <td className={[TD_CLASS, 'text-[13px] font-semibold whitespace-nowrap text-primary'].join(' ')}>{c.professorNome}</td>
+                        <td className={[TD_CLASS, 'text-xs whitespace-nowrap text-secondary'].join(' ')}>{c.turmaNome}</td>
+                        <td className={[TD_CLASS, 'font-mono text-xs whitespace-nowrap text-muted'].join(' ')}>{c.data}</td>
+                        <td className={[TD_CLASS, 'font-mono text-xs whitespace-nowrap text-muted'].join(' ')}>{c.horaInicio || '—'}</td>
+                        <td className={[TD_CLASS, 'font-mono text-xs whitespace-nowrap text-muted'].join(' ')}>{c.horaFim || '—'}</td>
+                        <td className={[TD_CLASS, 'font-mono text-xs whitespace-nowrap text-secondary'].join(' ')}>{duracao(c.horaInicio, c.horaFim)}</td>
+                        <td className={TD_CLASS}><EstadoBadge ativa={c.status === 'em_curso'} /></td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                </div>
               )}
             </Card>
           </div>

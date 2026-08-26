@@ -37,3 +37,6 @@ pnpm-debug.log*
 
 # TypeScript
 *.tsbuildinfo
+
+# graphify tool output (local knowledge-graph build artifacts)
+graphify-out/

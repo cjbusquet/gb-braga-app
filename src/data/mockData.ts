@@ -187,12 +187,12 @@ export const mockProfessores: Professor[] = [
 // ─── TURMAS (horários reais do site) ─────────────────────────────────────────
 // Horários reais: Seg-Sex 18h-22h · Sáb 10h-13h
 export const mockTurmas: Turma[] = [
-  { id: 't1', nome: 'Jiu-Jitsu Adultos — Noite 1', professorId: 'p1', professorNome: 'Carlos Silva',   horario: '18:00-19:30', diaSemana: ['Segunda','Quarta','Sexta'],   sala: 'Tatame Principal', capacidade: 20, inscritos: 15, nivel: 'all',          tipo: 'gi' },
-  { id: 't2', nome: 'Jiu-Jitsu Adultos — Noite 2', professorId: 'p1', professorNome: 'Carlos Silva',   horario: '19:30-21:00', diaSemana: ['Segunda','Quarta','Sexta'],   sala: 'Tatame Principal', capacidade: 20, inscritos: 18, nivel: 'all',          tipo: 'gi' },
-  { id: 't3', nome: 'Jiu-Jitsu Avançado',          professorId: 'p1', professorNome: 'Carlos Silva',   horario: '21:00-22:00', diaSemana: ['Terça','Quinta'],             sala: 'Tatame Principal', capacidade: 15, inscritos: 10, nivel: 'avancado',     tipo: 'gi' },
-  { id: 't4', nome: 'No-Gi / Wrestling',            professorId: 'p2', professorNome: 'João Santos',   horario: '20:00-21:30', diaSemana: ['Terça','Quinta'],             sala: 'Tatame Principal', capacidade: 15, inscritos: 11, nivel: 'all',          tipo: 'nogi' },
-  { id: 't5', nome: 'Kids Jiu-Jitsu',              professorId: 'p2', professorNome: 'João Santos',   horario: '18:00-19:00', diaSemana: ['Terça','Quinta'],             sala: 'Tatame Principal', capacidade: 20, inscritos: 14, nivel: 'kids',         tipo: 'kids' },
-  { id: 't6', nome: 'Open Mat — Sábado',           professorId: 'p3', professorNome: 'Fernanda Rocha',horario: '10:00-12:30', diaSemana: ['Sábado'],                     sala: 'Tatame Principal', capacidade: 30, inscritos: 20, nivel: 'all',          tipo: 'gi'   },
+  { id: 't1', nome: 'Jiu-Jitsu Adultos — Noite 1', professorId: 'p1', professorNome: 'Carlos Silva',   horario: '18:00-19:30', diaSemana: ['Segunda','Quarta','Sexta'],   sala: 'Tatame Principal', capacidade: 20, nivel: 'all',          tipo: 'gi' },
+  { id: 't2', nome: 'Jiu-Jitsu Adultos — Noite 2', professorId: 'p1', professorNome: 'Carlos Silva',   horario: '19:30-21:00', diaSemana: ['Segunda','Quarta','Sexta'],   sala: 'Tatame Principal', capacidade: 20, nivel: 'all',          tipo: 'gi' },
+  { id: 't3', nome: 'Jiu-Jitsu Avançado',          professorId: 'p1', professorNome: 'Carlos Silva',   horario: '21:00-22:00', diaSemana: ['Terça','Quinta'],             sala: 'Tatame Principal', capacidade: 15, nivel: 'avancado',     tipo: 'gi' },
+  { id: 't4', nome: 'No-Gi / Wrestling',            professorId: 'p2', professorNome: 'João Santos',   horario: '20:00-21:30', diaSemana: ['Terça','Quinta'],             sala: 'Tatame Principal', capacidade: 15, nivel: 'all',          tipo: 'nogi' },
+  { id: 't5', nome: 'Kids Jiu-Jitsu',              professorId: 'p2', professorNome: 'João Santos',   horario: '18:00-19:00', diaSemana: ['Terça','Quinta'],             sala: 'Tatame Principal', capacidade: 20, nivel: 'kids',         tipo: 'kids' },
+  { id: 't6', nome: 'Open Mat — Sábado',           professorId: 'p3', professorNome: 'Fernanda Rocha',horario: '10:00-12:30', diaSemana: ['Sábado'],                     sala: 'Tatame Principal', capacidade: 30, nivel: 'all',          tipo: 'gi'   },
 ];
 
 // ─── PAGAMENTOS DEMO ──────────────────────────────────────────────────────────
@@ -283,10 +283,6 @@ export const mockTocDocumentos: TocDocumento[] = [
 ];
 
 export const defaultTocConfig: TocConfig = {
-  apiUrl:         'https://app.toconline.pt',
-  oauthUrl:       'https://app.toconline.pt',
-  clientId:       '',
-  clientSecret:   '',
   simulationMode: true,
   empresaNome:    'Gracie Barra Braga',
   empresaNIF:     '512345678',       // ← CONFIRMAR

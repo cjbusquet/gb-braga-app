@@ -1,0 +1,25 @@
+-- ============================================================
+--  Patch 07 — v_kpis como SECURITY INVOKER
+--  Aplicar em: Supabase Dashboard → SQL Editor
+--
+--  Bug: a view v_kpis (Supabase Studio → Advisors reporta isto como
+--  "Security Definer View", severidade Critical) foi criada sem
+--  security_invoker, que é o comportamento por definição do Postgres
+--  para views: executam com os privilégios do DONO da view
+--  (postgres), não do utilizador que faz a query. Isto significa que
+--  qualquer papel com SELECT na view (ex.: authenticated) recebe os
+--  KPIs agregados de TODA a escola — total de alunos, receita
+--  mensal, inadimplentes, etc. — ignorando por completo as policies
+--  RLS de "alunos" e "pagamentos" que normalmente restringiriam um
+--  aluno aos seus próprios dados.
+--
+--  Fix: marcar a view como security_invoker = true (Postgres 15+),
+--  para que passe a respeitar as RLS policies do utilizador que
+--  faz a query. Só admin/superadmin/atendimento/professor têm
+--  cláusulas de bypass nas policies de alunos/pagamentos, por isso
+--  o dashboard admin (único consumidor real — Dashboard.tsx,
+--  SpecialPages.tsx) continua a ver os totais certos; qualquer
+--  outro papel passa a ver 0 linhas.
+-- ============================================================
+
+ALTER VIEW v_kpis SET (security_invoker = true);

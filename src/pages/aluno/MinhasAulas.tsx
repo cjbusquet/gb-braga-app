@@ -1,112 +1,189 @@
-import { useTurmas, usePresencas, useAlunos } from '../../lib/useData';
-import { useAuth } from '../../lib/auth';
-import { GB } from '../../lib/gbBrand';
+import { CheckIcon, Ico, MapPinIcon } from '@/lib/icons';
+import { useAlunos, usePresencas } from '../../lib/useData';
+import { useTurmasDoAlunoQuery } from '../../hooks/useAulas';
 
-const DIAS = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
-const DIAS_FULL = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
+import PortalPageHeader from './PortalPageHeader';
+import { useAuth } from '../../lib/auth';
+import Card from '../../components/common/Card';
+import Badge from '../../components/common/Badge';
+import { SkeletonList } from '../../components/common/Skeleton';
+
+const DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+const DIAS_FULL = [
+  'Segunda',
+  'Terça',
+  'Quarta',
+  'Quinta',
+  'Sexta',
+  'Sábado',
+  'Domingo',
+];
 
 export default function MinhasAulas() {
-  const { data: turmas } = useTurmas();
   const { data: presencas } = usePresencas();
   const { data: alunos } = useAlunos();
   const { user } = useAuth();
-  const aluno = alunos.find(a => a.email === user?.email) || alunos[0];
-  const minhasTurmas = turmas.slice(0, 2);
-  const minhasPresencas = presencas.filter(p => p.alunoId === aluno.id);
+  const aluno = alunos.find((a) => a.email === user?.email) || alunos[0];
+  const { data: minhasTurmas = [] } = useTurmasDoAlunoQuery(aluno?.id);
+  if (!aluno) return <SkeletonList rows={4} />;
+
+  const minhasPresencas = presencas.filter((p) => p.alunoId === aluno.id);
 
   return (
     <div>
-      <div style={{ marginBottom: 18 }}>
-        <div style={{ color: 'var(--text-muted)', fontSize: 10.5, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 3 }}>Aluno</div>
-        <h1 style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 700 }}>Minhas Aulas</h1>
-      </div>
+      <PortalPageHeader
+        title="Minhas Aulas"
+        description="Consulta o teu horário e as aulas que frequentas."
+      />
 
       {/* Weekly schedule */}
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 20, marginBottom: 16 }}>
-        <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 14 }}>Horário Semanal</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
+      <Card padding="lg" className="mb-4">
+        <div className="mb-3.5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">
+          Horário Semanal
+        </div>
+        <div className="grid grid-cols-7 gap-2">
           {DIAS.map((d, i) => {
             const full = DIAS_FULL[i];
-            const aulas = minhasTurmas.filter(t => t.diaSemana.includes(full));
+            const aulas = minhasTurmas.filter((t) =>
+              t.diaSemana.includes(full),
+            );
             return (
-              <div key={d} style={{ textAlign: 'center' as const }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, marginBottom: 6 }}>{d}</div>
-                {aulas.length > 0 ? aulas.map(a => (
-                  <div key={a.id} style={{ background: 'rgba(200,16,46,0.1)', border: '1px solid rgba(200,16,46,0.25)', borderRadius: 'var(--radius-sm)', padding: '6px 4px', marginBottom: 4 }}>
-                    <div style={{ color: GB.red, fontSize: 10.5, fontWeight: 700 }}>{a.horario.split('-')[0]}</div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: 9.5, marginTop: 2 }}>{a.nome.split(' ')[0]}</div>
-                  </div>
-                )) : (
-                  <div style={{ background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', padding: '6px 4px', opacity: 0.4 }}>
-                    <div style={{ color: 'var(--text-muted)', fontSize: 10 }}>—</div>
+              <div key={d} className="text-center">
+                <div className="mb-1.5 text-[11px] font-semibold text-muted">
+                  {d}
+                </div>
+                {aulas.length > 0 ? (
+                  aulas.map((a) => (
+                    <div
+                      key={a.id}
+                      className="py-1.5 px-1 mb-1 rounded-sm border border-gb-red/25 bg-gb-red/10"
+                    >
+                      <div className="text-[10.5px] font-bold text-gb-red">
+                        {a.horario.split('-')[0]}
+                      </div>
+                      <div className="mt-0.5 text-[9.5px] text-secondary">
+                        {a.nome.split(' ')[0]}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-1.5 px-1 rounded-sm opacity-40 bg-elevated">
+                    <div className="text-[10px] text-muted">
+                      —
+                    </div>
                   </div>
                 )}
               </div>
             );
           })}
         </div>
-      </div>
+      </Card>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* My classes */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {minhasTurmas.map(t => (
-            <div key={t.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 18 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+        <div className="flex flex-col order-2 gap-3 md:order-1">
+          {minhasTurmas.map((t) => (
+            <Card key={t.id} padding="none" className="p-[18px]">
+              <div className="flex justify-between items-start mb-3">
                 <div>
-                  <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 700 }}>{t.nome}</div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2 }}>Prof. {t.professorNome}</div>
+                  <div className="text-sm font-bold text-primary">
+                    {t.nome}
+                  </div>
+                  <div className="mt-0.5 text-[11px] text-muted">
+                    Prof. {t.professorNome}
+                  </div>
                 </div>
-                <span style={{ background: 'rgba(34,197,94,0.1)', color: '#22C55E', fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>ATIVA</span>
+                <Badge color="success">ATIVA</Badge>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                <div style={{ background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', padding: '8px 10px' }}>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 10, marginBottom: 2 }}>Horário</div>
-                  <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{t.horario}</div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="py-2 px-2.5 rounded-sm bg-elevated">
+                  <div className="mb-0.5 text-[10px] text-muted">
+                    Horário
+                  </div>
+                  <div className="font-mono text-[13px] font-bold text-primary">
+                    {t.horario}
+                  </div>
                 </div>
-                <div style={{ background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', padding: '8px 10px' }}>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 10, marginBottom: 2 }}>Dias</div>
-                  <div style={{ color: 'var(--text-primary)', fontSize: 11, fontWeight: 600 }}>{t.diaSemana.join(' · ')}</div>
+                <div className="py-2 px-2.5 rounded-sm bg-elevated">
+                  <div className="mb-0.5 text-[10px] text-muted">
+                    Dias
+                  </div>
+                  <div className="text-[11px] font-semibold text-primary">
+                    {t.diaSemana.join(' · ')}
+                  </div>
                 </div>
               </div>
-              <div style={{ marginTop: 10, color: 'var(--text-muted)', fontSize: 11 }}>📍 {t.sala}</div>
-            </div>
+              <div className="mt-2.5 text-[11px] text-muted">
+                <span className="inline-flex gap-1 items-center"><Ico icon={MapPinIcon} sm />{t.sala}</span>
+              </div>
+            </Card>
           ))}
         </div>
-
         {/* Attendance history */}
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 20 }}>
-          <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 14 }}>Histórico de Presenças</div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-            <div style={{ textAlign: 'center' as const }}>
-              <div style={{ color: GB.red, fontSize: 26, fontWeight: 700 }}>{minhasPresencas.length}</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 10.5 }}>aulas este mês</div>
-            </div>
-            <div style={{ textAlign: 'center' as const }}>
-              <div style={{ color: '#22C55E', fontSize: 26, fontWeight: 700 }}>{aluno.frequencia}%</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 10.5 }}>frequência</div>
-            </div>
-            <div style={{ textAlign: 'center' as const }}>
-              <div style={{ color: '#A78BFA', fontSize: 26, fontWeight: 700 }}>12</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 10.5 }}>meta mensal</div>
-            </div>
+        <Card padding="lg" className="order-1 md:order-2">
+          <div className="mb-3.5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">
+            Histórico de Presenças
           </div>
-          <div style={{ background: 'var(--bg-elevated)', borderRadius: 99, height: 8, overflow: 'hidden', marginBottom: 16 }}>
-            <div style={{ background: aluno.frequencia >= 80 ? '#22C55E' : GB.red, height: '100%', width: `${Math.min(aluno.frequencia, 100)}%` }}/>
-          </div>
-          {minhasPresencas.length > 0 ? minhasPresencas.map(p => (
-            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-              <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#22C55E', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>✓</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ color: 'var(--text-primary)', fontSize: 12.5, fontWeight: 500 }}>{p.turmaNome}</div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 10.5 }}>{p.data} · {p.hora}</div>
+          <div className="flex justify-between mb-3">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gb-red">
+                {minhasPresencas.length}
               </div>
-              <span style={{ color: 'var(--text-muted)', fontSize: 10, fontFamily: 'var(--font-mono)', background: 'var(--bg-elevated)', padding: '2px 6px', borderRadius: 3 }}>{p.metodo}</span>
+              <div className="text-[10.5px] text-muted">
+                aulas este mês
+              </div>
             </div>
-          )) : (
-            <p style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center', marginTop: 20 }}>Sem presenças registadas</p>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gb-green">
+                {aluno.frequencia}%
+              </div>
+              <div className="text-[10.5px] text-muted">
+                frequência
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gb-red">
+                12
+              </div>
+              <div className="text-[10.5px] text-muted">
+                meta mensal
+              </div>
+            </div>
+          </div>
+          <div className="overflow-hidden mb-4 h-2 rounded-full bg-elevated">
+            <div
+              className={['h-full', aluno.frequencia >= 80 ? 'bg-gb-green' : 'bg-gb-red'].join(' ')}
+              style={{ width: `${Math.min(aluno.frequencia, 100)}%` }}
+            />
+          </div>
+          {minhasPresencas.length > 0 ? (
+            minhasPresencas.map((p) => (
+              <div
+                key={p.id}
+                className="flex gap-2.5 items-center py-2 border-b border-border-subtle"
+              >
+                <div className="flex justify-center items-center w-[26px] h-[26px] text-[8px] text-gb-green rounded-full border shrink-0 border-gb-green/20 bg-gb-green/10">
+                  <Ico icon={CheckIcon} />
+                </div>
+                <div className="flex-1">
+                  <div className="text-[12.5px] font-medium text-primary">
+                    {p.turmaNome || 'Treino livre'}
+                  </div>
+                  <div className="text-[10.5px] text-muted">
+                    {p.data} · {p.hora}
+                  </div>
+                </div>
+                <span className="py-0.5 px-1.5 font-mono text-[10px] rounded bg-elevated text-muted">
+                  {p.metodo}
+                </span>
+              </div>
+            ))
+          ) : (
+            <p className="mt-5 text-[13px] text-center text-muted">
+              Sem presenças registadas
+            </p>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   );

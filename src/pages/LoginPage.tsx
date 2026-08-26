@@ -1,39 +1,37 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { useAuth } from '../lib/auth';
-import { GB, roleThemes } from '../lib/gbBrand';
+import { roleThemes } from '../lib/gbBrand';
 import { GBLogoFull } from '../components/GBLogo';
-import { supabase, isConfigured } from '../lib/supabaseClient';
+import { supabase, isConfigured, isLocalSupabase } from '../lib/supabaseClient';
 import type { UserRole } from '../types';
-import { Ico, KeyIcon, ClipboardDocumentIcon, PencilIcon, CreditCardIcon, CheckCircleIcon, IdentificationIcon } from '../lib/icons';
+import Button from '../components/common/Button';
+import Input from '../components/common/Input';
+import { Ico, KeyIcon, ClipboardDocumentIcon, PencilIcon, CreditCardIcon, CheckCircleIcon, IdentificationIcon, AcademicCapIcon, ArrowLeftIcon, ArrowPathIcon, ChatBubbleLeftRightIcon, EnvelopeIcon } from '../lib/icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
+// Seeded accounts on the local Supabase stack (`npx supabase start`), one per
+// role — password reset to DEV_PASSWORD below for all of them. Only ever
+// rendered when isLocalSupabase is true (see the gate further down), so this
+// never ships pointed at a real project.
 const DEMO_ROLES: { role: UserRole; email: string; label?: string }[] = [
-  { role: 'superadmin',  email: 'superadmin@gbbraga.com' },
-  { role: 'admin',       email: 'admin@gbbraga.com' },
-  { role: 'atendimento', email: 'recepcao@gbbraga.com' },
-  { role: 'professor',   email: 'joao@gbbraga.com' },
-  { role: 'aluno',       email: 'lucas@gmail.com' },
-  { role: 'aluno',       email: 'novo@gbbraga.com', label: 'Novo Aluno' },
+  { role: 'superadmin',  email: 'superadmin@ginasio.test' },
+  { role: 'admin',       email: 'admin@ginasio.test' },
+  { role: 'atendimento', email: 'atendimento@ginasio.test' },
+  { role: 'professor',   email: 'professor@ginasio.test' },
+  { role: 'aluno',       email: 'aluno1@ginasio.test' },
+  { role: 'aluno',       email: 'aluno2@ginasio.test', label: 'Aluno (2)' },
 ];
+const DEV_PASSWORD = 'DevTest1234!';
 
-const INP: React.CSSProperties = {
-  width: '100%', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-sm)',
-  padding: '12px 14px', fontSize: 16, fontFamily: 'var(--font-ui)',
-  outline: 'none', background: '#fff', color: 'var(--text-primary)', boxSizing: 'border-box',
-  transition: 'border-color 0.15s',
-};
-
-const LBL: React.CSSProperties = {
-  display: 'block', color: 'var(--text-muted)', fontSize: 10.5,
-  fontWeight: 600, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 5,
-};
+const BELT_STRIPE = ['#F0EEFF','#EAB308','#EA580C','#16A34A','#1D4ED8','#7C3AED','#7C4A35','#111'];
 
 interface LoginPageProps {
   onRegister: () => void;
 }
 
 export default function LoginPage({ onRegister }: LoginPageProps) {
-  const { login } = useAuth();
+  const { login, blockedMessage } = useAuth();
   const [tab, setTab]           = useState<'login' | 'register'>('login');
   const [email, setEmail]       = useState('');
   const [pw, setPw]             = useState('');
@@ -48,9 +46,9 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(''); setLoading(true);
-    const ok = await login(email, pw);
+    const result = await login(email, pw);
     setLoading(false);
-    if (!ok) setErr('Email ou password incorrectos.');
+    if (!result.ok) setErr(result.message || 'Email ou password incorrectos.');
   };
 
   const handleForgot = async (e: React.FormEvent) => {
@@ -70,50 +68,44 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
 
   const quick = async (role: UserRole, em: string) => {
     setActive(em);
-    await login(em, '123');
+    await login(em, isConfigured ? DEV_PASSWORD : '123');
     setActive(null);
   };
 
-  const focus = (e: React.FocusEvent<HTMLInputElement>) => (e.target.style.borderColor = GB.red);
-  const blur  = (e: React.FocusEvent<HTMLInputElement>) => (e.target.style.borderColor = 'var(--border)');
-
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', fontFamily: 'var(--font-ui)', background: 'var(--bg-base)' }}>
+    <div className="flex overflow-hidden h-dvh font-ui bg-base">
 
-      {/* ── Left decorative panel ── */}
-      <div className="login-left" style={{ width: '44%', background: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 48px', borderRight: '1px solid var(--border)', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: -80, left: '50%', transform: 'translateX(-50%)', width: 400, height: 300, background: 'radial-gradient(ellipse, rgba(200,16,46,0.06) 0%, transparent 70%)', pointerEvents: 'none' }}/>
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, display: 'flex' }}>
-          {['#F0EEFF','#EAB308','#EA580C','#16A34A','#1D4ED8','#7C3AED','#7C4A35','#111'].map(c => (
-            <div key={c} style={{ flex: 1, background: c }}/>
+      {/* ── Left decorative panel (desktop only) ── */}
+      <div className="hidden relative overflow-hidden flex-col items-center justify-center md:flex w-[44%] py-15 px-12 border-r border-border bg-white">
+        <div className="absolute -top-20 left-1/2 w-[400px] h-[300px] -translate-x-1/2 bg-[radial-gradient(ellipse,rgba(200,16,46,0.06)_0%,transparent_70%)] pointer-events-none" />
+        <div className="flex absolute right-0 bottom-0 left-0 h-1">
+          {BELT_STRIPE.map(c => (
+            <div key={c} className="flex-1" style={{ background: c }} />
           ))}
         </div>
-        <div style={{ marginBottom: 28 }}><GBLogoFull size={160}/></div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 13, color: '#9B9AA6', marginBottom: 16, letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>Sistema de Gestão</div>
-          <div style={{ fontSize: 13, color: '#C0BFCB', lineHeight: 1.7, maxWidth: 240 }}>Plataforma integrada com Stripe, TOConline e WhatsApp Business</div>
-        </div>
-        <div style={{ position: 'absolute', bottom: 20, display: 'flex', gap: 16 }}>
-          {['AT Certificado','Stripe','RGPD'].map(l => (
-            <span key={l} style={{ background: '#F5F4F2', border: '1px solid #E0DDD8', borderRadius: 4, padding: '3px 8px', fontSize: 9.5, color: '#9B9AA6', fontWeight: 600 }}>{l}</span>
-          ))}
-        </div>
+        <GBLogoFull size={160}/>
       </div>
 
       {/* ── Right panel ── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '32px 24px', overflowY: 'auto', background: 'var(--bg-base)' }}>
-        <div style={{ width: '100%', maxWidth: 400 }}>
+      <div className="flex overflow-y-auto flex-col flex-1 justify-center items-center py-8 px-6 bg-base">
+        <div className="w-full max-w-[400px]">
 
           {/* Mobile logo */}
-          <div className="mobile-logo" style={{ display: 'none', justifyContent: 'center', marginBottom: 28 }}>
+          <div className="flex justify-center mb-7 md:hidden">
             <GBLogoFull size={80}/>
           </div>
 
           {/* Tab switcher */}
-          <div style={{ display: 'flex', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: 4, marginBottom: 28 }}>
+          <div className="flex p-1 mb-7 rounded-md border border-border bg-elevated">
             {(['login', 'register'] as const).map(t => (
               <button key={t} onClick={() => { setTab(t); setErr(''); }}
-                style={{ flex: 1, padding: '9px 0', border: 'none', borderRadius: tab === t ? 'calc(var(--radius-md) - 2px)' : 0, background: tab === t ? '#fff' : 'transparent', color: tab === t ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: tab === t ? 700 : 400, fontSize: 13.5, cursor: 'pointer', fontFamily: 'var(--font-ui)', boxShadow: tab === t ? 'var(--shadow-xs)' : 'none', transition: 'all 0.15s' }}>
+                className={[
+                  'inline-flex flex-1 gap-1.5 justify-center items-center py-2.5 min-h-11 sm:min-h-0',
+                  'border-none font-ui text-[13.5px] transition-all duration-200',
+                  'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                  tab === t ? 'rounded-[calc(var(--radius-md)-2px)] bg-white text-primary font-bold' : 'rounded-none bg-transparent text-muted font-normal hover:text-primary active:text-primary',
+                  'cursor-pointer',
+                ].join(' ')}>
                 {t === 'login'
                   ? <><Ico icon={KeyIcon} sm /> Entrar</>
                   : <><Ico icon={ClipboardDocumentIcon} sm /> Inscrever-me</>
@@ -128,91 +120,110 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
               {/* ── Forgot password view ── */}
               {forgotMode ? (
                 <>
-                  <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4, fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: '1px' }}>Recuperar Password</h1>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 22 }}>Indica o teu email e enviamos um link para definires uma nova password.</p>
+                  <h1 className="mb-1 font-display text-[22px] font-bold tracking-[1px] text-primary uppercase">Recuperar Password</h1>
+                  <p className="mb-[22px] text-sm text-secondary">Indica o teu email e enviamos um link para definires uma nova password.</p>
 
                   {resetSent ? (
-                    <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 'var(--radius-sm)', padding: '16px 18px', textAlign: 'center' }}>
-                      <div style={{ fontSize: 32, marginBottom: 10 }}>📧</div>
-                      <div style={{ color: '#16A34A', fontWeight: 700, fontSize: 14, marginBottom: 6 }}>Email enviado!</div>
-                      <div style={{ color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.6 }}>
+                    <div className="p-[16px_18px] text-center rounded-sm border border-gb-green/25 bg-gb-green/[0.08]">
+                      <div className="mb-2.5 text-gb-green"><Ico icon={EnvelopeIcon} style={{ width: 32, height: 32 }} /></div>
+                      <div className="mb-1.5 text-sm font-bold text-gb-green">Email enviado!</div>
+                      <div className="text-[13px] leading-[1.6] text-secondary">
                         Verifica a tua caixa de entrada em <strong>{email}</strong>.<br/>O link expira em 24h.
                       </div>
-                      <button onClick={() => { setForgot(false); setResetSent(false); }} style={{ marginTop: 16, background: 'transparent', border: `1px solid var(--border)`, borderRadius: 'var(--radius-sm)', padding: '8px 20px', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>
-                        ← Voltar ao login
-                      </button>
+                      <Button
+                        variant="secondary" size="sm" className="mt-4"
+                        onClick={() => { setForgot(false); setResetSent(false); }}
+                      >
+                        <Ico icon={ArrowLeftIcon} sm />Voltar ao login
+                      </Button>
                     </div>
                   ) : (
                     <form onSubmit={handleForgot}>
-                      <div style={{ marginBottom: 18 }}>
-                        <label style={LBL}>Email</label>
-                        <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-                          placeholder="seu@email.com" required style={INP} onFocus={focus} onBlur={blur}/>
+                      <div className="mb-[18px]">
+                        <Input
+                          label="Email" type="email" value={email}
+                          onChange={e => setEmail(e.target.value)}
+                          placeholder="seu@email.com" required
+                        />
                       </div>
-                      {resetErr && <p style={{ color: GB.red, fontSize: 13, marginBottom: 12, fontWeight: 500 }}>{resetErr}</p>}
-                      <button type="submit" disabled={resetLoading}
-                        style={{ width: '100%', background: resetLoading ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', color: '#fff', fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-display)', letterSpacing: '1px', textTransform: 'uppercase', cursor: resetLoading ? 'not-allowed' : 'pointer', boxShadow: resetLoading ? 'none' : 'var(--shadow-red)', minHeight: 48 }}>
-                        {resetLoading ? 'A enviar...' : '📧 Enviar link de recuperação'}
-                      </button>
-                      <button type="button" onClick={() => { setForgot(false); setResetErr(''); }}
-                        style={{ width: '100%', marginTop: 10, background: 'transparent', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '11px', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>
-                        ← Voltar ao login
-                      </button>
+                      {resetErr && <p className="mb-3 text-[13px] font-medium text-gb-red">{resetErr}</p>}
+                      <Button type="submit" variant="primary" size="lg" fullWidth loading={resetLoading} className="min-h-12">
+                        {resetLoading ? 'A enviar...' : <><Ico icon={EnvelopeIcon} sm />Enviar link de recuperação</>}
+                      </Button>
+                      <Button
+                        type="button" variant="secondary" size="md" fullWidth className="mt-2.5"
+                        onClick={() => { setForgot(false); setResetErr(''); }}
+                      >
+                        <Ico icon={ArrowLeftIcon} sm />Voltar ao login
+                      </Button>
                     </form>
                   )}
                 </>
               ) : (
                 <>
-              <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4, fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: '1px' }}>Entrar</h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 22 }}>Acede ao painel da tua academia</p>
+              <h1 className="mb-1 font-display text-[22px] font-bold tracking-[1px] text-primary uppercase">Entrar</h1>
+              <p className="mb-[22px] text-sm text-secondary">Acede ao painel da tua academia</p>
 
               <form onSubmit={handleLogin}>
-                <div style={{ marginBottom: 12 }}>
-                  <label style={LBL}>Email</label>
-                  <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-                    placeholder="seu@email.com" required style={INP} onFocus={focus} onBlur={blur}/>
+                <div className="mb-3">
+                  <Input
+                    label="Email" type="email" value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="seu@email.com" required
+                  />
                 </div>
-                <div style={{ marginBottom: 6 }}>
-                  <label style={LBL}>Password</label>
-                  <input type="password" value={pw} onChange={e => setPw(e.target.value)}
-                    placeholder="••••••••" required style={INP} onFocus={focus} onBlur={blur}/>
+                <div className="mb-1.5">
+                  <Input
+                    label="Password" type="password" value={pw}
+                    onChange={e => setPw(e.target.value)}
+                    placeholder="••••••••" required
+                  />
                 </div>
-                <div style={{ textAlign: 'right', marginBottom: 18 }}>
+                <div className="mb-[18px] text-right">
                   <button type="button" onClick={() => { setForgot(true); setErr(''); setResetErr(''); setResetSent(false); }}
-                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+                    className="p-0 text-xs text-muted bg-none border-none underline cursor-pointer transition-colors duration-200 hover:text-primary active:text-primary outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 rounded-sm">
                     Esqueceste a password?
                   </button>
                 </div>
-                {err && <p style={{ color: GB.red, fontSize: 13, marginBottom: 12, fontWeight: 500 }}>{err}</p>}
-                <button type="submit" disabled={loading}
-                  style={{ width: '100%', background: loading ? '#aaa' : GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', color: '#fff', fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-display)', letterSpacing: '1px', textTransform: 'uppercase', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: loading ? 'none' : 'var(--shadow-red)', minHeight: 48 }}>
+                {/* blockedMessage: a session already open in this tab belonged to an
+                    aluno staff just suspended/marked inactive — loadProfile signs
+                    them out on its own, this just explains why they're back here. */}
+                {(err || blockedMessage) && <p className="mb-3 text-[13px] font-medium text-gb-red">{err || blockedMessage}</p>}
+                <Button type="submit" variant="primary" size="lg" fullWidth loading={loading} className="min-h-12">
                   {loading ? 'A entrar...' : 'Entrar'}
-                </button>
+                </Button>
               </form>
                 </>
               )}
 
-              {/* Demo buttons */}
-              {!isConfigured && !forgotMode && (
+              {/* Demo / dev quick-login buttons. Two safe cases only:
+                  no Supabase configured at all (pure mock demo, no real
+                  credentials involved), or a local Supabase dev stack while
+                  running under Vite's dev server — never in a production
+                  build, and never against a real/hosted project even if
+                  someone runs `vite dev` pointed at one by mistake. */}
+              {(!isConfigured || (import.meta.env.DEV && isLocalSupabase)) && !forgotMode && (
                 <>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0 12px' }}>
-                    <div style={{ flex: 1, height: 1, background: 'var(--border)' }}/>
-                    <span style={{ color: 'var(--text-muted)', fontSize: 10, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Demo</span>
-                    <div style={{ flex: 1, height: 1, background: 'var(--border)' }}/>
+                  <div className="flex gap-3 items-center my-3.5">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-[10px] font-semibold tracking-[1px] whitespace-nowrap text-muted uppercase">{isConfigured ? 'Dev' : 'Demo'}</span>
+                    <div className="flex-1 h-px bg-border" />
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div className="grid grid-cols-2 gap-1.5">
                     {DEMO_ROLES.map(r => {
                       const rt = roleThemes[r.role];
                       const isAct = active === r.email;
                       return (
-                        <button key={r.email} onClick={() => quick(r.role, r.email)} disabled={!!active}
-                          style={{ display: 'flex', alignItems: 'center', gap: 10, background: isAct ? 'rgba(200,16,46,0.05)' : 'var(--bg-card)', border: `1px solid ${isAct ? GB.red : 'var(--border)'}`, borderRadius: 'var(--radius-sm)', padding: '10px 14px', cursor: 'pointer', minHeight: 44 }}>
-                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: rt.accent, flexShrink: 0 }}/>
-                          <div style={{ flex: 1, textAlign: 'left' }}>
-                            <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 500 }}>{(r as any).label || rt.label}</div>
-                            <div style={{ color: 'var(--text-muted)', fontSize: 10.5 }}>{r.email}</div>
-                          </div>
-                          {isAct && <span style={{ color: GB.red, fontSize: 11 }}>⟳</span>}
+                        <button key={r.email} title={r.email} onClick={() => quick(r.role, r.email)} disabled={!!active}
+                          className={[
+                            'flex gap-1.5 items-center py-2 px-2.5 min-h-11 sm:min-h-0 rounded-sm border cursor-pointer transition-colors duration-200',
+                            'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                            isAct ? 'border-gb-red bg-gb-red/5' : 'border-border bg-card hover:bg-elevated active:bg-elevated',
+                            active && !isAct ? 'cursor-not-allowed opacity-60' : '',
+                          ].join(' ')}>
+                          <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: rt.accent }} />
+                          <span className="overflow-hidden flex-1 text-[11.5px] font-medium text-left whitespace-nowrap text-ellipsis text-primary">{(r as any).label || rt.label}</span>
+                          {isAct && <Ico icon={ArrowPathIcon} sm className="shrink-0 text-gb-red" />}
                         </button>
                       );
                     })}
@@ -221,8 +232,8 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
               )}
 
               {isConfigured && !forgotMode && (
-                <div style={{ marginTop: 18, textAlign: 'center' }}>
-                  <a href="mailto:atendimento@gbbraga.com" style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                <div className="mt-[18px] text-center">
+                  <a href="mailto:atendimento@gbbraga.com" className="text-xs text-muted transition-colors duration-200 hover:text-primary outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 rounded-sm">
                     Problemas? atendimento@gbbraga.com
                   </a>
                 </div>
@@ -232,61 +243,53 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
 
           {/* ══ REGISTER ══ */}
           {tab === 'register' && (
-            <div style={{ textAlign: 'center' }}>
+            <div className="text-center">
               {/* Belt stripe decoration */}
-              <div style={{ height: 4, display: 'flex', borderRadius: 99, overflow: 'hidden', marginBottom: 28 }}>
-                {['#F0EEFF','#EAB308','#EA580C','#16A34A','#1D4ED8','#7C3AED','#7C4A35','#111'].map(c => (
-                  <div key={c} style={{ flex: 1, background: c }}/>
+              <div className="flex overflow-hidden mb-7 h-1 rounded-full">
+                {BELT_STRIPE.map(c => (
+                  <div key={c} className="flex-1" style={{ background: c }} />
                 ))}
               </div>
 
-              <div style={{ fontSize: 52, marginBottom: 12 }}>🥋</div>
-              <h1 style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>
+              <div className="mb-3 text-gb-red"><Ico icon={AcademicCapIcon} style={{ width: 52, height: 52 }} /></div>
+              <h1 className="mb-2 font-display text-2xl font-black tracking-[1px] text-primary uppercase">
                 Junta-te à GB Braga
               </h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.7, marginBottom: 28, maxWidth: 320, margin: '0 auto 28px' }}>
+              <p className="mx-auto mb-7 max-w-[320px] text-sm leading-[1.7] text-secondary">
                 Faz a tua matrícula online em poucos minutos.<br/>
                 Preenches a ficha, assinas o contrato e escolhes o plano — tudo num só passo.
               </p>
 
               {/* Steps preview */}
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 28, flexWrap: 'wrap' }}>
+              <div className="flex flex-wrap gap-1.5 justify-center mb-7">
                 {([
                   [IdentificationIcon,'Ficha'],
                   [PencilIcon,'Contrato'],
                   [CreditCardIcon,'Pagamento'],
                   [CheckCircleIcon,'Ativo'],
                 ] as const).map(([Icon,label]) => (
-                  <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(200,16,46,0.08)', border: '1.5px solid rgba(200,16,46,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Icon style={{ width: 20, height: 20, color: 'rgba(200,16,46,0.7)' }} />
+                  <div key={label} className="flex flex-col gap-1 items-center">
+                    <div className="flex justify-center items-center w-10 h-10 rounded-full border-[1.5px] border-gb-red/20 bg-gb-red/8">
+                      <FontAwesomeIcon icon={Icon} className="w-5 h-5 text-gb-red/70" />
                     </div>
-                    <span style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600 }}>{label}</span>
+                    <span className="text-[10.5px] font-semibold text-muted">{label}</span>
                   </div>
                 ))}
               </div>
 
-              <button onClick={onRegister}
-                style={{ width: '100%', background: GB.red, border: 'none', borderRadius: 'var(--radius-sm)', padding: '15px', color: '#fff', fontSize: 15, fontWeight: 800, fontFamily: 'var(--font-display)', letterSpacing: '1px', textTransform: 'uppercase', cursor: 'pointer', boxShadow: 'var(--shadow-red)', minHeight: 52, marginBottom: 12 }}>
-                🥋 Começar Matrícula
-              </button>
+              <Button variant="primary" size="lg" fullWidth className="mb-3 min-h-13" onClick={onRegister}>
+                <Ico icon={AcademicCapIcon} />Começar Matrícula
+              </Button>
 
-              <p style={{ color: 'var(--text-muted)', fontSize: 12, lineHeight: 1.6 }}>
+              <p className="text-xs leading-[1.6] text-muted">
                 Primeira aula gratuita · Sem compromisso inicial<br/>
-                <a href="https://wa.me/351927773854" style={{ color: '#25D366', fontWeight: 700 }}>💬 Falar com a receção</a>
+                <a href="https://wa.me/351927773854" className="inline-flex gap-1.5 items-center font-bold text-[#25D366] transition-colors duration-200 hover:underline outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 rounded-sm"><Ico icon={ChatBubbleLeftRightIcon} sm />Falar com a receção</a>
               </p>
             </div>
           )}
 
         </div>
       </div>
-
-      <style>{`
-        @media (max-width: 767px) {
-          .login-left  { display: none !important; }
-          .mobile-logo { display: flex !important; }
-        }
-      `}</style>
     </div>
   );
 }

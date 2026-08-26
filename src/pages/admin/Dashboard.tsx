@@ -1,17 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useKPIs, useAlunos, usePagamentos, usePresencas, useTurmas } from '../../lib/useData';
+import { useAlunos, usePagamentos, usePresencas, useTurmas } from '../../lib/useData';
+import { useKPIs } from '../../hooks/useKPIs';
 import { GB } from '../../lib/gbBrand';
-import { useMobile } from '../../lib/useMobile';
+import Card from '../../components/common/Card';
+import { SkeletonCard } from '../../components/common/Skeleton';
+import { Ico, CheckIcon } from '../../lib/icons';
 
 function KpiCard({ label, value, sub, color = GB.red }: any) {
   return (
-    <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'18px 20px', boxShadow:'var(--shadow-xs)' }}>
-      <div style={{ color:'var(--text-muted)', fontSize:10.5, fontWeight:600, letterSpacing:'0.8px', textTransform:'uppercase', marginBottom:8 }}>{label}</div>
-      <div style={{ color, fontSize:28, fontWeight:800, fontFamily:'var(--font-mono)', marginBottom:4 }}>{value}</div>
-      {sub && <div style={{ color:'var(--text-muted)', fontSize:11 }}>{sub}</div>}
-    </div>
+    <Card>
+      <div className="mb-2 text-[10.5px] font-semibold tracking-[0.8px] uppercase text-muted">{label}</div>
+      <div className="mb-1 font-mono text-[28px] font-extrabold" style={{ color }}>{value}</div>
+      {sub && <div className="text-[11px] text-muted">{sub}</div>}
+    </Card>
   );
 }
+
+const KPI_GRID_CLASS = 'grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 mb-6';
 
 export default function Dashboard() {
   const { data: kpis }      = useKPIs();
@@ -19,7 +24,6 @@ export default function Dashboard() {
   const { data: pagamentos }= usePagamentos();
   const { data: presencas } = usePresencas();
   const { data: turmas }    = useTurmas();
-  const { isMobile }        = useMobile();
 
   const hoje = new Date().toISOString().split('T')[0];
   const checkinsHoje = presencas.filter((p: any) => p.data === hoje);
@@ -28,65 +32,73 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div style={{ marginBottom:24 }}>
-        <div style={{ color:'var(--text-muted)', fontSize:10.5, letterSpacing:'1px', textTransform:'uppercase', marginBottom:3 }}>
+      <div className="mb-6">
+        <div className="mb-1 text-[10.5px] tracking-[1px] uppercase text-muted">
           {new Date().toLocaleDateString('pt-PT', { weekday:'long', day:'numeric', month:'long' })}
         </div>
-        <h1 style={{ color:'var(--text-primary)', fontSize:22, fontWeight:800, fontFamily:'var(--font-display)', textTransform:'uppercase' }}>
+        <h1 className="font-display text-[22px] font-extrabold uppercase text-primary">
           Dashboard
         </h1>
       </div>
 
-      {/* KPIs */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(180px,1fr))', gap:12, marginBottom:24 }}>
-        <KpiCard label="Alunos Ativos"    value={kpis.alunosAtivos || alunos.filter((a:any)=>a.status==='ativo').length} sub="total activos" color="#22C55E"/>
-        <KpiCard label="Receita Mensal"   value={`€${(kpis.receitaMensal||0).toFixed(0)}`} sub="mês corrente" color={GB.red}/>
-        <KpiCard label="Check-ins Hoje"   value={checkinsHoje.length} sub="presenças hoje" color="#3B82F6"/>
-        <KpiCard label="Inadimplentes"    value={vencidos.length} sub="pagamentos vencidos" color="#F59E0B"/>
-        <KpiCard label="Pendente"         value={`€${pendentes.reduce((s,p)=>s+(p.valor||0),0).toFixed(0)}`} sub="a receber" color="#7C3AED"/>
-        <KpiCard label="Turmas Activas"   value={turmas.length} sub="turmas" color="#06B6D4"/>
-      </div>
+      {/* KPIs — kpis is undefined only during the initial fetch; show
+          placeholders instead of the demo/mock numbers flashing before the
+          real values arrive. */}
+      {!kpis ? (
+        <div className={KPI_GRID_CLASS}>
+          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} className="h-[76px]" />)}
+        </div>
+      ) : (
+        <div className={KPI_GRID_CLASS}>
+          <KpiCard label="Alunos Ativos"    value={kpis.alunosAtivos || alunos.filter((a:any)=>a.status==='ativo').length} sub="total activos" color="#22C55E"/>
+          <KpiCard label="Receita Mensal"   value={`€${(kpis.receitaMensal||0).toFixed(0)}`} sub="mês corrente" color={GB.red}/>
+          <KpiCard label="Check-ins Hoje"   value={checkinsHoje.length} sub="presenças hoje" color={GB.red}/>
+          <KpiCard label="Inadimplentes"    value={vencidos.length} sub="pagamentos vencidos" color="#F59E0B"/>
+          <KpiCard label="Pendente"         value={`€${pendentes.reduce((s,p)=>s+(p.valor||0),0).toFixed(0)}`} sub="a receber" color="#F59E0B"/>
+          <KpiCard label="Turmas Activas"   value={turmas.length} sub="turmas" color={GB.red}/>
+        </div>
+      )}
 
       {/* Recent activity */}
-      <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:16 }}>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 
         {/* Recent check-ins */}
-        <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:20 }}>
-          <div style={{ color:'var(--text-muted)', fontSize:10.5, fontWeight:600, letterSpacing:'1px', textTransform:'uppercase', marginBottom:12 }}>
+        <Card>
+          <div className="mb-3 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">
             Últimos Check-ins
           </div>
           {presencas.slice(0,6).length === 0 ? (
-            <div style={{ color:'var(--text-muted)', fontSize:12, textAlign:'center', padding:20 }}>Sem presenças ainda</div>
+            <div className="p-5 text-xs text-center text-muted">Sem presenças ainda</div>
           ) : presencas.slice(0,6).map((p: any) => (
-            <div key={p.id} style={{ display:'flex', justifyContent:'space-between', padding:'7px 0', borderBottom:'1px solid var(--border-subtle)' }}>
+            <div key={p.id} className="flex justify-between py-1.5 border-b border-border-subtle">
               <div>
-                <div style={{ color:'var(--text-primary)', fontSize:12.5, fontWeight:500 }}>{p.alunoNome}</div>
-                <div style={{ color:'var(--text-muted)', fontSize:11 }}>{p.turmaNome||'—'}</div>
+                <div className="text-[12.5px] font-medium text-primary">{p.alunoNome}</div>
+                <div className="text-[11px] text-muted">{p.turmaNome||'—'}</div>
               </div>
-              <div style={{ color:'var(--text-muted)', fontSize:11, textAlign:'right', fontFamily:'var(--font-mono)' }}>
-                {p.hora}<br/><span style={{ fontSize:10 }}>{p.data}</span>
+              <div className="font-mono text-[11px] text-right text-muted">
+                {p.hora}<br/><span className="text-[10px]">{p.data}</span>
               </div>
             </div>
           ))}
-        </div>
+        </Card>
 
         {/* Pagamentos vencidos */}
-        <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:20 }}>
-          <div style={{ color:'var(--text-muted)', fontSize:10.5, fontWeight:600, letterSpacing:'1px', textTransform:'uppercase', marginBottom:12 }}>
+        <Card>
+          <div className="mb-3 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">
             Pagamentos em Atraso
           </div>
           {vencidos.slice(0,6).length === 0 ? (
-            <div style={{ color:'#22C55E', fontSize:12, textAlign:'center', padding:20 }}>✓ Sem pagamentos em atraso</div>
+            <div className="flex gap-1.5 justify-center items-center p-5 text-xs text-center text-gb-green"><Ico icon={CheckIcon} sm />Sem pagamentos em atraso</div>
           ) : vencidos.slice(0,6).map((p: any) => (
-            <div key={p.id} style={{ display:'flex', justifyContent:'space-between', padding:'7px 0', borderBottom:'1px solid var(--border-subtle)' }}>
+            <div key={p.id} className="flex justify-between py-1.5 border-b border-border-subtle">
               <div>
-                <div style={{ color:'var(--text-primary)', fontSize:12.5, fontWeight:500 }}>{p.alunoNome}</div>
-                <div style={{ color:'var(--text-muted)', fontSize:11 }}>{p.plano||'—'}</div>
+                <div className="text-[12.5px] font-medium text-primary">{p.alunoNome}</div>
+                <div className="text-[11px] text-muted">{p.plano||'—'}</div>
               </div>
-              <div style={{ color:GB.red, fontSize:12.5, fontWeight:700 }}>€{p.valor}</div>
+              <div className="text-[12.5px] font-bold text-gb-red">€{p.valor}</div>
             </div>
           ))}
-        </div>
+        </Card>
 
       </div>
     </div>

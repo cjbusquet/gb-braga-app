@@ -1,44 +1,45 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery as useTanstackQuery } from '@tanstack/react-query';
 import { supabase, isConfigured } from './supabaseClient';
 import * as mock from '../data/mockData';
 
 // ── Generic hook ─────────────────────────────────────────────
 // key encodes query identity — change it to trigger a re-fetch (e.g. `alunos:${status}`)
+//
+// Backed by TanStack Query (cached in the app-wide QueryClient set up in
+// App.tsx) instead of component-local state. A hand-rolled useState/useEffect
+// version re-fetches from scratch — resetting to `loading`/empty — every time
+// a page component mounts, which produced a visible flash/flicker on every
+// in-app navigation even for data fetched moments earlier. Keying off `key`
+// lets the cache persist across unmount/remount, so revisiting a page reuses
+// cached data instantly while quietly revalidating in the background.
 function useQuery<T>(
   key: string,
   supabaseQuery: () => Promise<{ data: T[] | null; error: unknown }>,
   fallback: T[]
 ) {
-  const [data, setData]       = useState<T[]>(isConfigured ? [] : fallback);
-  const [loading, setLoading] = useState(isConfigured);
-  const [error, setError]     = useState<string | null>(null);
+  const { data, isLoading, refetch } = useTanstackQuery({
+    queryKey: [key],
+    queryFn: async () => {
+      if (!isConfigured) return fallback;
+      try {
+        const { data: rows, error: err } = await supabaseQuery();
+        if (err) throw err;
+        return (rows as T[]) ?? fallback;
+      } catch (e: unknown) {
+        // Supabase/PostgREST errors are plain objects ({message, details,
+        // hint, code}), not Error instances — String(e) on those just gives
+        // "[object Object]" and hides the actual message.
+        const msg = e instanceof Error ? e.message
+          : (typeof e === 'object' && e !== null && 'message' in e) ? String((e as { message: unknown }).message)
+          : String(e);
+        console.warn(`[${key}] Supabase error:`, msg);
+        return fallback;
+      }
+    },
+  });
 
-  // key encodes when the query should re-run; supabaseQuery/fallback change
-  // on every render (inline functions/arrays) so are intentionally omitted
-  const fetch = useCallback(async () => {
-    if (!isConfigured) { setData(fallback); setLoading(false); return; }
-    setLoading(true);
-    try {
-      const { data: rows, error: err } = await supabaseQuery();
-      if (err) throw err;
-      setData((rows as T[]) ?? fallback);
-      setError(null);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.warn(`[${key}] Supabase error:`, msg);
-      setError(msg);
-      setData(fallback);
-    } finally {
-      setLoading(false);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
-
-  // fetch() is async — setState is called asynchronously, not synchronously
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { fetch(); }, [fetch]);
-  return { data, loading, error, refetch: fetch };
+  return { data: data ?? fallback, loading: isLoading, error: null as string | null, refetch };
 }
 
 // ── ALUNOS ────────────────────────────────────────────────────
@@ -79,22 +80,6 @@ export function useProfessores() {
   );
 }
 
-// ── PROFESSOR CHECKINS ────────────────────────────────────────
-export function useProfessorCheckins(professorId?: string) {
-  return useQuery(
-    `professor_checkins:${professorId ?? ''}`,
-    async () => {
-      let q = supabase.from('professor_checkins').select('*').order('data', { ascending: false }).order('hora_inicio', { ascending: false });
-      if (professorId) q = q.eq('professor_id', professorId);
-      const res = await q;
-      return { data: res.data?.map(mapProfessorCheckin) ?? null, error: res.error };
-    },
-    professorId
-      ? mock.mockProfessorCheckins.filter(c => c.professorId === professorId)
-      : mock.mockProfessorCheckins
-  );
-}
-
 // ── PAGAMENTOS ────────────────────────────────────────────────
 export function usePagamentos(alunoId?: string) {
   return useQuery(
@@ -118,6 +103,7 @@ export function usePresencas(alunoId?: string, limit = 100) {
         .from('presencas')
         .select('id, aluno_id, aluno_nome, turma_id, turma_nome, data, hora, tipo, metodo, created_at')
         .order('data', { ascending: false })
+        .order('hora', { ascending: false })
         .limit(limit);
       if (alunoId) q = q.eq('aluno_id', alunoId);
       const res = await q;
@@ -229,52 +215,9 @@ export function useMensagens(limit = 100) {
 }
 
 // ── KPIs ──────────────────────────────────────────────────────
-export function useKPIs() {
-  const [data, setData]       = useState(mock.mockKPIs);
-  const [loading, setLoading] = useState(isConfigured);
-
-  const refetch = useCallback(async () => {
-    if (!isConfigured) { setLoading(false); return; }
-    try {
-      // Calculate KPIs from real data
-      const [alunosRes, pagRes] = await Promise.all([
-        supabase.from('alunos').select('id, status, data_matricula'),
-        supabase.from('pagamentos').select('aluno_id, valor, status, data_pagamento, vencimento'),
-      ]);
-
-      const alunos    = alunosRes.data || [];
-      const pags      = pagRes.data    || [];
-      const now       = new Date();
-      const mesAtual  = now.toISOString().slice(0, 7);
-
-      const ativos    = alunos.filter(a => a.status === 'ativo').length;
-      const novos     = alunos.filter(a => a.data_matricula?.startsWith(mesAtual)).length;
-      const pagMes    = pags.filter(p => p.status === 'pago' && p.data_pagamento?.startsWith(mesAtual));
-      const receita   = pagMes.reduce((s, p) => s + (parseFloat(p.valor) || 0), 0);
-      const inadimp   = new Set(pags.filter(p => p.status === 'vencido').map(p => p.aluno_id)).size;
-
-      setData({
-        totalAlunos:    alunos.length,
-        alunosAtivos:   ativos,
-        receitaMensal:  receita,
-        receitaPrevista: pags.filter(p => p.status === 'pendente').reduce((s,p) => s + (parseFloat(p.valor)||0), 0),
-        inadimplentes:  inadimp,
-        taxaFrequencia: 0,
-        novosAlunos:    novos,
-        cancelamentos:  alunos.filter(a => a.status === 'inativo').length,
-        taxaRetencao:   ativos > 0 ? Math.round((ativos / alunos.length) * 100) : 0,
-      });
-    } catch (e) {
-      console.warn('useKPIs error:', e);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { refetch(); }, [refetch]);
-  return { data, loading, refetch };
-}
+// useKPIs moved to src/hooks/useKPIs.ts — real TanStack Query (useQuery)
+// instead of this file's hand-rolled fetch shim, so callers can gate on
+// `!kpis` the same way AlunosPage/PortalAluno already gate on their data.
 
 // ── MUTATIONS ─────────────────────────────────────────────────
 export const db = {
@@ -297,12 +240,14 @@ export const db = {
       nif:             dados.nif          || null,
       faixa,
       grau:            dados.grau         ?? 0,
+      genero:          dados.genero       || null,
       plano_id:        dados.planoId      || null,
       plano_nome:      dados.planoNome    || null,
       morada:          dados.morada       || null,
       cod_postal:      dados.codPostal    || null,
       data_nascimento: dados.dataNasc     || null,
       status:          dados.status       || 'ativo',
+      metodo_pagamento: dados.metodoPagamento || 'stripe',
       data_matricula:  new Date().toISOString().split('T')[0],
     }).select().single();
     if (error) throw error;
@@ -313,11 +258,15 @@ export const db = {
     if (!isConfigured) return null;
     const map: any = {};
     if (campos.nome)      map.nome      = campos.nome;
-    if (campos.email)     map.email     = campos.email;
+    // email is intentionally not editable here — it's the login credential
+    // in auth.users, and the alunos.email column is locked at the DB layer
+    // (restringir_update_aluno trigger) since RLS matches rows on it.
     if (campos.telefone)  map.telefone  = campos.telefone;
+    if (campos.whatsapp !== undefined) map.whatsapp = campos.whatsapp || null;
     if (campos.nif)       map.nif       = campos.nif;
     if (campos.status)    map.status    = campos.status;
     if (campos.faixa)     map.faixa     = campos.faixa;
+    if (campos.genero !== undefined) map.genero = campos.genero || null;
     if (campos.grau !== undefined)          map.grau            = campos.grau;
     if (campos.dataNascimento !== undefined) map.data_nascimento = campos.dataNascimento || null;
     const { data, error } = await supabase.from('alunos').update(map).eq('id', id).select().single();
@@ -332,12 +281,28 @@ export const db = {
 
   registarPresenca: async (dados: any) => {
     if (!isConfigured) return null;
+    const hoje = new Date().toISOString().split('T')[0];
+
+    // Materializa a ocorrência concreta desta turma hoje (ou reaproveita
+    // a já existente) para que a presença fique ligada a uma aula, não
+    // só a (turma_id, data) — ver patch 27_aulas_individuais.sql.
+    let aulaId: string | null = null;
+    if (dados.turmaId) {
+      const { data: aid, error: aulaError } = await supabase.rpc('obter_ou_criar_aula', {
+        p_turma_id: dados.turmaId,
+        p_data: hoje,
+      });
+      if (aulaError) throw aulaError;
+      aulaId = aid;
+    }
+
     const { data, error } = await supabase.from('presencas').insert({
       aluno_id:   dados.alunoId,
       aluno_nome: dados.alunoNome,
       turma_id:   dados.turmaId   || null,
       turma_nome: dados.turmaNome || null,
-      data:       new Date().toISOString().split('T')[0],
+      aula_id:    aulaId,
+      data:       hoje,
       hora:       new Date().toTimeString().slice(0, 8),
       tipo:       'checkin',
       metodo:     dados.metodo || 'manual',
@@ -374,22 +339,20 @@ export const db = {
     return data;
   },
 
+  // Regista o histórico e atualiza alunos.faixa/grau numa única transação
+  // no servidor (função registrar_graduacao) — evitar duas chamadas REST
+  // separadas, que podiam deixar o histórico e o aluno dessincronizados
+  // se a segunda falhasse. O professor autenticado é resolvido no
+  // servidor (auth.uid()), não é enviado pelo cliente.
   registarGraduacao: async (dados: any) => {
     if (!isConfigured) return null;
-    const { data, error } = await supabase.from('graduacoes').insert({
-      aluno_id:       dados.alunoId,
-      aluno_nome:     dados.alunoNome,
-      faixa_anterior: dados.faixaAnterior,
-      grau_anterior:  dados.grauAnterior,
-      faixa_nova:     dados.faixaNova,
-      grau_novo:      dados.grauNovo,
-      data:           new Date().toISOString().split('T')[0],
-      professor_nome: dados.professorNome,
-      observacao:     dados.observacao || null,
-    }).select().single();
+    const { data, error } = await supabase.rpc('registrar_graduacao', {
+      p_aluno_id: dados.alunoId,
+      p_faixa_nova: dados.faixaNova,
+      p_grau_novo: dados.grauNovo,
+      p_observacao: dados.observacao || null,
+    });
     if (error) throw error;
-    // Actualizar faixa do aluno
-    await supabase.from('alunos').update({ faixa: dados.faixaNova, grau: dados.grauNovo }).eq('id', dados.alunoId);
     return data;
   },
 
@@ -432,6 +395,28 @@ export const db = {
     }).select().single();
     if (error) throw error;
     return data;
+  },
+
+  atualizarTurma: async (id: string, dados: any) => {
+    if (!isConfigured) return null;
+    const map: any = {};
+    if (dados.nome !== undefined)        map.nome           = dados.nome;
+    if (dados.professorNome !== undefined) map.professor_nome = dados.professorNome || null;
+    if (dados.horario !== undefined)     map.horario        = dados.horario;
+    if (dados.diasSemana !== undefined)  map.dias_semana    = dados.diasSemana;
+    if (dados.sala !== undefined)        map.sala           = dados.sala || null;
+    if (dados.capacidade !== undefined)  map.capacidade     = dados.capacidade;
+    if (dados.nivel !== undefined)       map.nivel          = dados.nivel;
+    if (dados.tipo !== undefined)        map.tipo           = dados.tipo;
+    const { data, error } = await supabase.from('turmas').update(map).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  apagarTurma: async (id: string) => {
+    if (!isConfigured) return;
+    const { error } = await supabase.from('turmas').delete().eq('id', id);
+    if (error) throw error;
   },
 
   criarTemplate: async (dados: { nome: string; canal: string; assunto?: string; corpo: string }) => {
@@ -537,31 +522,6 @@ export const db = {
     if (error) throw error;
   },
 
-  registarProfessorCheckin: async (dados: { professorId: string; professorNome: string; turmaId: string; turmaNome: string }) => {
-    if (!isConfigured) return null;
-    const now = new Date();
-    const { data, error } = await supabase.from('professor_checkins').insert({
-      professor_id:   dados.professorId,
-      professor_nome: dados.professorNome,
-      turma_id:       dados.turmaId,
-      turma_nome:     dados.turmaNome,
-      data:           now.toISOString().split('T')[0],
-      hora_inicio:    now.toTimeString().slice(0, 5),
-      status:         'ativa',
-    }).select().single();
-    if (error) throw error;
-    return data;
-  },
-
-  concluirCheckinProfessor: async (id: string) => {
-    if (!isConfigured) return null;
-    const now = new Date();
-    const { data, error } = await supabase.from('professor_checkins')
-      .update({ hora_fim: now.toTimeString().slice(0, 5), status: 'concluida' })
-      .eq('id', id).select().single();
-    if (error) throw error;
-    return data;
-  },
 };
 
 // ── MAPPERS: Supabase snake_case → App camelCase ──────────────
@@ -579,6 +539,7 @@ export function mapAluno(r: any) {
     codPostal:       r.cod_postal || r.codPostal || '',
     faixa:           r.faixa || 'branca',
     grau:            r.grau ?? 0,
+    genero:          r.genero || undefined,
     dataMatricula:   r.data_matricula || r.dataMatricula || '',
     plano:           r.plano_nome || r.plano || '',
     planoId:         r.plano_id || r.planoId || '',
@@ -695,21 +656,6 @@ export function mapProfessor(r: any) {
   };
 }
 
-export function mapProfessorCheckin(r: any) {
-  if (!r) return r;
-  return {
-    id:            r.id,
-    professorId:   r.professor_id   || r.professorId,
-    professorNome: r.professor_nome || r.professorNome,
-    turmaId:       r.turma_id       || r.turmaId,
-    turmaNome:     r.turma_nome     || r.turmaNome,
-    data:          r.data,
-    horaInicio:    r.hora_inicio    || r.horaInicio,
-    horaFim:       r.hora_fim       || r.horaFim,
-    status:        r.status || 'concluida',
-  };
-}
-
 export function mapTurma(r: any) {
   if (!r) return r;
   return {
@@ -721,7 +667,6 @@ export function mapTurma(r: any) {
     diaSemana:     r.dias_semana    || r.diaSemana || [],
     sala:          r.sala || '',
     capacidade:    r.capacidade || 20,
-    inscritos:     r.inscritos ?? 0,
     nivel:         r.nivel || 'all',
     tipo:          r.tipo  || 'gi',
     cor:           r.cor   || null,

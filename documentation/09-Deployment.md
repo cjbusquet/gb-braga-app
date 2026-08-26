@@ -2,6 +2,8 @@
 
 **Gracie Barra Braga — Production Deployment**
 
+Custo mensal estimado: €0–15/mês até 500 alunos. Tempo estimado para ir ao ar (projeto novo): 1 dia técnico + 1 dia de configuração.
+
 ---
 
 ## 1. Architecture
@@ -152,13 +154,14 @@ supabase link --project-ref yrfdxocwhztokadzxtto
 # Deploy all functions
 supabase functions deploy invite-staff
 supabase functions deploy send-email
-
-# Set secrets for Edge Functions
-supabase secrets set SMTP_HOST=smtp.example.com
-supabase secrets set SMTP_PORT=587
-supabase secrets set SMTP_USER=noreply@gbbraga.com
-supabase secrets set SMTP_PASS=your-smtp-password
 ```
+
+No `supabase secrets set` step is needed for email — `send-email` reads its
+SMTP/Resend credentials from the `configuracoes` table (`secao='email'`) at
+request time, not from function secrets/env vars. Configure them via
+**Admin → Config → Email** in the app after deploying (see §5.2 below). This
+means the same deployed function works without redeploying if credentials
+change — just update the row in the DB.
 
 ---
 
@@ -215,16 +218,13 @@ Admin → Config → Email:
 - [ ] Run `npm run typecheck` — 0 errors
 - [ ] Run `npm run build` — successful
 - [ ] All environment variables set in Vercel
-- [ ] Supabase schema fully applied (including all patches)
-- [ ] RLS fixes applied (SEC-004, SEC-005)
-- [ ] `turmas` and `configuracoes` tables have RLS
+- [ ] Supabase schema fully applied (including all patches in `supabase/patches/`, in order)
 - [ ] Avatars bucket created with correct policies
 - [ ] Edge Functions deployed: `invite-staff`, `send-email`
 - [ ] Stripe webhook registered
 - [ ] Resend domain verified + API key configured in Config
 - [ ] Custom domain configured and SSL active
 - [ ] Supabase Auth redirect URL set to production URL
-- [ ] `src/src/` duplicate directory removed
 
 ### Post-deployment Validation
 

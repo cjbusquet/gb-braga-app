@@ -1,490 +1,279 @@
 import { useState } from 'react';
-import { useTurmas, useAlunos, usePresencas, useGraduacoes, useProfessorCheckins, db } from '../../lib/useData';
+import { useAlunos } from '../../lib/useData';
+import {
+  useMinhasAulasQuery,
+  useMinhasAulasDadasQuery,
+  useTurmasDoProfessorQuery,
+  useAlunosDasAulasQuery,
+  useAlunosDaTurmaQuery,
+  useIniciarAulaMutation,
+  useConcluirAulaMutation,
+  type AulaComContagem,
+} from '../../hooks/useAulas';
 import { useAuth } from '../../lib/auth';
 import { beltConfig } from '../../lib/gbBrand';
-import { useMobile } from '../../lib/useMobile';
 import type { Belt } from '../../types';
+import Card from '../../components/common/Card';
+import Badge from '../../components/common/Badge';
+import Button from '../../components/common/Button';
+import { Ico, type HeroIcon, UsersIcon, PlayCircleIcon, CheckIcon, MartialArtsIcon, CircleIcon, MapPinIcon, ClockIcon, ArrowRightIcon } from '../../lib/icons';
 
-function Card({ children, style = {} }: { children: React.ReactNode; style?: React.CSSProperties }) {
-  return <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-xs)', ...style }}>{children}</div>;
-}
-
-const DAYS_ABR = ['Seg','Ter','Qua','Qui','Sex','Sáb'];
 const DAYS_FULL = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 
-export default function ProfessorView() {
-  const { data: turmas } = useTurmas();
-  const { data: alunos } = useAlunos();
-  const { data: presencas } = usePresencas();
-  const { data: graduacoes } = useGraduacoes();
+const STATUS_BADGE: Record<AulaComContagem['status'], { color: 'success' | 'neutral' | 'warning'; label: string }> = {
+  em_curso:  { color: 'success', label: 'Em curso' },
+  concluida: { color: 'neutral', label: 'Concluída' },
+  agendada:  { color: 'warning', label: 'Agendada' },
+};
+
+// Frequência recente da turma (últimos 60 dias) — substitui a antiga
+// "inscrição" estática, que nunca refletiu quem realmente aparece.
+function TurmaAlunosCount({ turmaId }: { turmaId: string }) {
+  const { data: alunos = [] } = useAlunosDaTurmaQuery(turmaId);
+  return <>{alunos.length} alunos</>;
+}
+
+// ─── Card informativo — "Minhas Turmas" (todas, não só as de hoje) ──
+function TurmaInfoCard({ t }: { t: { id: string; nome: string; horario: string; diaSemana: string[]; sala: string; capacidade: number } }) {
+  return (
+    <Card padding="lg">
+      <div className="mb-1 text-[13px] font-bold text-primary">{t.nome}</div>
+      <div className="inline-flex gap-1.5 items-center mb-1 text-[11.5px] text-muted"><Ico icon={ClockIcon} sm />{t.horario} · {t.diaSemana.join(', ')}</div>
+      <div className="inline-flex gap-1.5 items-center text-[11px] text-muted">
+        <Ico icon={MapPinIcon} sm />{t.sala} · <TurmaAlunosCount turmaId={t.id} /> · cap. {t.capacidade}
+      </div>
+    </Card>
+  );
+}
+
+export default function ProfessorView({ onNavigate }: { onNavigate?: (page: string, param?: string) => void }) {
   const { user } = useAuth();
-  const { data: meuCheckins, refetch: refetchCheckins } = useProfessorCheckins(user?.id);
-  const [tab, setTab] = useState<'overview'|'classes'|'students'|'attendance'|'graduation'|'darAula'>('overview');
+  const { data: turmas = [] } = useTurmasDoProfessorQuery(user?.id);
+  const { data: alunos } = useAlunos();
+  const { data: alunosDasAulas = [] } = useAlunosDasAulasQuery(user?.id);
+  const { data: minhasAulas = [], refetch: refetchAulas } = useMinhasAulasQuery(user?.id);
+  const { data: aulasDadas = [] } = useMinhasAulasDadasQuery(user?.id);
+  const iniciarAulaMutation = useIniciarAulaMutation();
+  const concluirAulaMutation = useConcluirAulaMutation();
+  const [tab, setTab] = useState<'turmas'|'darAula'>('turmas');
   const [checkinLoading, setCheckinLoading] = useState<string | null>(null);
 
-  const { isMobile } = useMobile();
   const nome = user?.nome || 'Professor';
-  const allAlunos = alunos.filter(a => a.status === 'ativo');
-  const allPresencas = presencas;
-  const candidatosGraduacao = allAlunos.filter(a => a.frequencia >= 70);
+  const candidatosGraduacao = alunos.filter(a => a.status === 'ativo' && a.frequencia >= 70);
 
   const hoje = new Date().toISOString().split('T')[0];
-  const checkinAtivo = meuCheckins.find(c => c.status === 'ativa');
+  // getDay(): 0=Domingo..6=Sábado → índice em DAYS_FULL (0=Segunda..5=Sábado).
+  // Domingo (6) fica fora do array de propósito — a academia não dá aulas.
+  const diaSemanaHoje = DAYS_FULL[(new Date().getDay() + 6) % 7];
+  const turmasHoje = turmas.filter(t => t.diaSemana.includes(diaSemanaHoje));
+  const checkinAtivo = minhasAulas.find(a => a.status === 'em_curso');
 
-  const handleCheckin = async (turmaId: string, turmaNome: string) => {
+  const handleCheckin = async (turmaId: string) => {
     setCheckinLoading(turmaId);
     try {
-      await db.registarProfessorCheckin({ professorId: user?.id || '', professorNome: user?.nome || '', turmaId, turmaNome });
-      refetchCheckins();
+      await iniciarAulaMutation.mutateAsync({ turmaId, data: hoje });
+      refetchAulas();
     } finally {
       setCheckinLoading(null);
     }
   };
 
-  const handleConcluir = async (id: string) => {
-    setCheckinLoading(id);
+  const handleConcluir = async (aulaId: string) => {
+    setCheckinLoading(aulaId);
     try {
-      await db.concluirCheckinProfessor(id);
-      refetchCheckins();
+      await concluirAulaMutation.mutateAsync(aulaId);
+      refetchAulas();
     } finally {
       setCheckinLoading(null);
     }
   };
 
-  const TABS = [
-    { id: 'overview',    icon: '⊞', label: 'Visão Geral' },
-    { id: 'darAula',     icon: '▶', label: 'Dar Aula'     },
-    { id: 'classes',     icon: '▤', label: 'Turmas'       },
-    { id: 'students',    icon: '◎', label: 'Alunos'       },
-    { id: 'attendance',  icon: '✓', label: 'Presenças'    },
-    { id: 'graduation',  icon: '◈', label: 'Graduação'    },
+  // O professor está sempre ligado a um conjunto de turmas — "Minhas
+  // Turmas" é por isso a vista principal (controlo de quais dá, não só
+  // as de hoje). "Dar Aula" fica só com a ação diária (iniciar/concluir).
+  // Histórico completo de aulas dadas vive na página dedicada
+  // ("Minhas Aulas" na sidebar) — aqui mostramos só uma pré-visualização.
+  const TABS: { id: string; icon: HeroIcon; label: string }[] = [
+    { id: 'turmas',  icon: UsersIcon,       label: 'Minhas Turmas' },
+    { id: 'darAula', icon: PlayCircleIcon,  label: 'Dar Aula'      },
   ];
 
   return (
     <div>
       {/* Profile header — no financial data */}
-      <div style={{ background: 'linear-gradient(135deg, rgba(200,16,46,0.06) 0%, transparent 60%)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: isMobile ? '16px 18px' : '22px 24px', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: 'var(--shadow-xs)', flexWrap: 'wrap', gap: 12 }}>
+      <div className="flex flex-wrap gap-3 justify-between items-center py-4 px-4.5 mb-5 rounded-lg border border-border md:py-5.5 md:px-6">
         <div>
-          <div style={{ color: 'var(--text-muted)', fontSize: 10.5, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 4 }}>Painel do Professor</div>
-          <h1 style={{ color: 'var(--text-primary)', fontSize: 22, fontWeight: 800, fontFamily: 'var(--font-display)', textTransform: 'uppercase' as const, margin: 0 }}>
+          <div className="mb-1 text-[10.5px] tracking-[1px] uppercase text-muted">Painel do Professor</div>
+          <h1 className="m-0 font-display text-[22px] font-extrabold uppercase text-primary">
             Bem-vindo, {nome.split(' ')[0]}!
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '4px 0 0' }}>
-            Gracie Barra Braga · {allAlunos.length} alunos · {turmas.length} turmas · OSS! 🥋
+          <p className="inline-flex gap-1.5 items-center m-0 mt-1 text-[13px] text-muted">
+            Gracie Barra Braga · {turmas.length} turmas · OSS! <Ico icon={MartialArtsIcon} sm />
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(200,16,46,0.1)', border: '2px solid rgba(200,16,46,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 800, color: 'var(--gb-red)', fontFamily: 'var(--font-display)', flexShrink: 0 }}>
+        <div className="flex gap-3 items-center">
+          <div className="flex justify-center items-center w-14 h-14 font-display text-2xl font-extrabold text-gb-red rounded-full border-2 shrink-0 border-gb-red/30 bg-gb-red/10">
             {nome.charAt(0)}
           </div>
           <div>
-            <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 700 }}>{nome}</div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 1 }}>Faixa Preta · Gracie Barra</div>
-            <div style={{ color: '#16A34A', fontSize: 11, marginTop: 1, fontWeight: 600 }}>● Ativo</div>
+            <div className="text-sm font-bold text-primary">{nome}</div>
+            <div className="mt-px text-[11px] text-muted">Faixa Preta · Gracie Barra</div>
+            <div className="inline-flex gap-1 items-center mt-px text-[11px] font-semibold text-gb-green"><Ico icon={CircleIcon} className="w-2 h-2" />Ativo</div>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 2, marginBottom: 18, borderBottom: '1px solid var(--border)', overflowX: 'auto', scrollbarWidth: 'none' }}>
+      <div className="flex overflow-x-auto gap-0.5 mb-[18px] border-b border-border [scrollbar-width:none]">
         {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id as typeof tab)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: isMobile ? '9px 10px' : '9px 14px', fontSize: isMobile ? 12 : 13, color: tab === t.id ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: tab === t.id ? 700 : 400, borderBottom: `2px solid ${tab === t.id ? 'var(--gb-red)' : 'transparent'}`, marginBottom: -1, whiteSpace: 'nowrap', flexShrink: 0 }}>
-            {t.icon} {t.label}
+          <button key={t.id} onClick={() => setTab(t.id as typeof tab)}
+            className={[
+              'flex gap-1.5 items-center py-2.5 px-2.5 -mb-px min-h-11 sm:min-h-0 text-xs whitespace-nowrap shrink-0 bg-none border-none border-b-2 cursor-pointer transition-colors duration-200 md:px-3.5 md:text-[13px]',
+              'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-inset',
+              tab === t.id ? 'font-bold border-gb-red text-primary' : 'font-normal border-transparent text-muted hover:text-primary active:text-primary',
+            ].join(' ')}>
+            <Ico icon={t.icon} sm /> {t.label}
           </button>
         ))}
       </div>
+
+      {/* ── MINHAS TURMAS — controlo de a que turmas o professor está ligado ── */}
+      {tab === 'turmas' && (
+        <div>
+          <div className="grid grid-cols-2 gap-3 mb-[18px] md:grid-cols-4">
+            {[
+              { label: 'Minhas Turmas',        value: turmas.length },
+              { label: 'Alunos nas Minhas Aulas', value: alunosDasAulas.length },
+              { label: 'Aulas Dadas',           value: aulasDadas.length },
+              { label: 'Candidatos Grad.',      value: candidatosGraduacao.length },
+            ].map(s => (
+              <div key={s.label} className="py-3.5 px-4 rounded-md border border-border bg-card">
+                <div className="mb-1 text-[10.5px] text-muted">{s.label}</div>
+                <div className="text-2xl font-extrabold text-primary">{s.value}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mb-3 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">As Minhas Turmas</div>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3 mb-6">
+            {turmas.length === 0 ? (
+              <div className="py-6 text-[13px] text-center text-muted col-span-full">Ainda não tens turmas atribuídas.</div>
+            ) : turmas.map(t => <TurmaInfoCard key={t.id} t={t} />)}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 mb-4 md:grid-cols-2">
+            {/* Belt distribution — só alunos que passaram por aulas deste professor */}
+            <Card padding="lg">
+              <div className="mb-3.5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Distribuição de Faixas</div>
+              {alunosDasAulas.length === 0 ? (
+                <div className="py-4 text-[13px] text-center text-muted">Ainda sem presenças nas tuas aulas.</div>
+              ) : (Object.entries(beltConfig) as [Belt, typeof beltConfig[Belt]][]).map(([faixa, cfg]) => {
+                const count = alunosDasAulas.filter(a => a.faixa === faixa).length;
+                if (!count) return null;
+                return (
+                  <div key={faixa} className="flex gap-2 items-center mb-2">
+                    <div className="w-[18px] h-1.5 rounded-sm shrink-0" style={{ background: cfg.bg, border: faixa === 'branca' ? '1px solid var(--border-strong)' : 'none' }}/>
+                    <span className="w-12 text-[11.5px] capitalize text-secondary">{cfg.label}</span>
+                    <div className="overflow-hidden flex-1 h-[5px] rounded-full bg-elevated">
+                      <div className="h-full" style={{ background: cfg.bg === '#F0EEFF' ? '#aaa' : cfg.bg, width: `${(count / alunosDasAulas.length) * 100}%` }}/>
+                    </div>
+                    <span className="w-3.5 text-[11px] text-right text-muted">{count}</span>
+                  </div>
+                );
+              })}
+            </Card>
+
+            {/* Aulas recentes — atalho para a página dedicada */}
+            <Card padding="lg">
+              <div className="flex justify-between items-center mb-3.5">
+                <div className="text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Aulas Recentes</div>
+                {checkinAtivo && <Badge color="success"><Ico icon={CircleIcon} className="w-2 h-2" />Em curso</Badge>}
+              </div>
+              {aulasDadas.length === 0 ? (
+                <div className="py-4 text-[13px] text-center text-muted">Ainda não deste nenhuma aula.</div>
+              ) : (
+                <div className="flex flex-col gap-1.5 mb-3">
+                  {aulasDadas.slice(0, 5).map(a => (
+                    <button key={a.id} onClick={() => onNavigate?.('aula-detalhe', a.id)}
+                      className="flex justify-between items-center py-2 px-2.5 w-full text-left rounded-sm cursor-pointer transition-colors duration-200 outline-none hover:bg-elevated active:bg-elevated focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-inset"
+                    >
+                      <div className="min-w-0">
+                        <div className="overflow-hidden text-[12.5px] font-semibold whitespace-nowrap text-ellipsis text-primary">{a.turmaNome}</div>
+                        <div className="text-[10.5px] text-muted">{a.data}</div>
+                      </div>
+                      <Badge color={STATUS_BADGE[a.status].color}>{STATUS_BADGE[a.status].label}</Badge>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <Button variant="secondary" fullWidth size="sm" onClick={() => onNavigate?.('aulas')}>
+                Ver todas as aulas <Ico icon={ArrowRightIcon} sm />
+              </Button>
+            </Card>
+          </div>
+        </div>
+      )}
 
       {/* ── DAR AULA (check-in do professor) ── */}
       {tab === 'darAula' && (
         <div>
           {checkinAtivo && (
-            <div style={{ background: 'rgba(22,163,74,0.08)', border: '1.5px solid rgba(22,163,74,0.3)', borderRadius: 'var(--radius-md)', padding: '14px 18px', marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#16A34A', display: 'inline-block', flexShrink: 0 }}/>
+            <div className="flex flex-wrap gap-3 justify-between items-center py-3.5 px-[18px] mb-[18px] rounded-md border-[1.5px] border-gb-green/30 bg-gb-green/[0.08]">
+              <div className="flex gap-2.5 items-center">
+                <span className="inline-block w-2.5 h-2.5 bg-gb-green rounded-full shrink-0"/>
                 <div>
-                  <div style={{ color: '#16A34A', fontSize: 13, fontWeight: 700 }}>Aula em curso: {checkinAtivo.turmaNome}</div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 11.5, marginTop: 1 }}>Início: {checkinAtivo.horaInicio} · {checkinAtivo.data}</div>
+                  <div className="text-[13px] font-bold text-gb-green">Aula em curso: {checkinAtivo.turmaNome}</div>
+                  <div className="mt-px text-[11.5px] text-muted">Início: {checkinAtivo.horaInicio} · {checkinAtivo.data}</div>
                 </div>
               </div>
               <button
                 onClick={() => handleConcluir(checkinAtivo.id)}
                 disabled={checkinLoading === checkinAtivo.id}
-                style={{ background: '#16A34A', color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: checkinLoading === checkinAtivo.id ? 0.6 : 1 }}
+                className={[
+                  'py-2 px-4 min-h-11 sm:min-h-0 text-xs font-bold text-white rounded-sm border-none bg-gb-green transition-all duration-200',
+                  'outline-none focus-visible:ring-2 focus-visible:ring-gb-green focus-visible:ring-offset-2',
+                  checkinLoading === checkinAtivo.id ? 'cursor-not-allowed opacity-60' : 'cursor-pointer opacity-100 hover:bg-gb-green-dark active:scale-[0.98]',
+                ].join(' ')}
               >
                 {checkinLoading === checkinAtivo.id ? 'A concluir...' : 'Concluir aula'}
               </button>
             </div>
           )}
 
-          <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 12 }}>Minhas Turmas — Hoje</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 12, marginBottom: 24 }}>
-            {turmas.map(t => {
-              const jaFezCheckin = meuCheckins.some(c => c.turmaId === t.id && c.data === hoje);
-              const estaAtiva = checkinAtivo?.turmaId === t.id;
+          <div className="mb-3 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Aulas de Hoje ({diaSemanaHoje})</div>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 mb-6">
+            {turmasHoje.length === 0 && (
+              <div className="py-6 text-[13px] text-center text-muted col-span-full">Não tens turmas agendadas para hoje.</div>
+            )}
+            {turmasHoje.map(t => {
+              const aulaHoje = minhasAulas.find(a => a.turmaId === t.id && a.data === hoje);
+              const estaAtiva = aulaHoje?.status === 'em_curso';
+              const jaConcluida = aulaHoje?.status === 'concluida';
               return (
-                <Card key={t.id} style={{ padding: 18, borderTop: estaAtiva ? '3px solid #16A34A' : jaFezCheckin ? '3px solid #6B7280' : '3px solid var(--gb-red)' }}>
-                  <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 700, marginBottom: 3 }}>{t.nome}</div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 11.5, marginBottom: 10 }}>{t.horario} · {t.diaSemana.join(', ')}</div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 11, marginBottom: 14 }}>📍 {t.sala} · {t.inscritos} alunos</div>
+                <Card key={t.id} padding="lg" className="flex flex-col h-full">
+                  <div className="flex-1">
+                    <div className="mb-1 text-[13px] font-bold text-primary">{t.nome}</div>
+                    <div className="mb-2.5 text-[11.5px] text-muted">{t.horario} · {t.diaSemana.join(', ')}</div>
+                    <div className="inline-flex gap-1.5 items-center mb-3.5 text-[11px] text-muted">
+                      <Ico icon={MapPinIcon} sm />{t.sala} · <TurmaAlunosCount turmaId={t.id} />
+                    </div>
+                  </div>
                   {estaAtiva ? (
-                    <span style={{ background: 'rgba(22,163,74,0.08)', color: '#16A34A', fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 99, display: 'inline-block' }}>● Em curso</span>
-                  ) : jaFezCheckin ? (
-                    <span style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 99, display: 'inline-block' }}>✓ Concluída hoje</span>
+                    <Badge color="success"><Ico icon={CircleIcon} className="w-2 h-2" />Em curso</Badge>
+                  ) : jaConcluida ? (
+                    <Badge color="neutral"><Ico icon={CheckIcon} sm />Concluída hoje</Badge>
                   ) : (
-                    <button
-                      onClick={() => handleCheckin(t.id, t.nome)}
+                    <Button
+                      variant="primary" fullWidth size="sm"
                       disabled={!!checkinLoading || !!checkinAtivo}
-                      style={{ background: 'var(--gb-red)', color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '7px 14px', fontSize: 12, fontWeight: 700, cursor: (checkinLoading || checkinAtivo) ? 'not-allowed' : 'pointer', opacity: (checkinLoading || checkinAtivo) ? 0.5 : 1, width: '100%' }}
+                      onClick={() => handleCheckin(t.id)}
                     >
                       {checkinLoading === t.id ? 'A registar...' : 'Iniciar aula'}
-                    </button>
+                    </Button>
                   )}
                 </Card>
               );
             })}
-          </div>
-
-          <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 12 }}>Histórico de Check-ins</div>
-          <Card>
-            {meuCheckins.length === 0 ? (
-              <div style={{ padding: '24px', textAlign: 'center' as const, color: 'var(--text-muted)', fontSize: 13 }}>Nenhum check-in registado ainda.</div>
-            ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)' }}>
-                    {['Turma','Data','Início','Fim','Estado'].map(h => (
-                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10.5, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {meuCheckins.map(c => (
-                    <tr key={c.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                      <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{c.turmaNome}</td>
-                      <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{c.data}</td>
-                      <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{c.horaInicio}</td>
-                      <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{c.horaFim || '—'}</td>
-                      <td style={{ padding: '10px 14px' }}>
-                        {c.status === 'ativa'
-                          ? <span style={{ background: 'rgba(22,163,74,0.08)', color: '#16A34A', fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>● Ativa</span>
-                          : <span style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, padding: '2px 8px', borderRadius: 99 }}>Concluída</span>
-                        }
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </Card>
-        </div>
-      )}
-
-      {/* ── OVERVIEW — NO FINANCIAL DATA ── */}
-      {tab === 'overview' && (
-        <div>
-          {/* KPIs — only non-financial */}
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: 12, marginBottom: 18 }}>
-            {[
-              { label: 'Minhas Turmas',     value: turmas.length,           accent: 'var(--gb-red)' },
-              { label: 'Alunos Ativos',     value: allAlunos.length,            accent: '#2563EB' },
-              { label: 'Check-ins (mês)',   value: allPresencas.length,         accent: '#16A34A' },
-              { label: 'Candidatos Grad.', value: candidatosGraduacao.length,  accent: '#7C3AED' },
-            ].map(s => (
-              <div key={s.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '14px 16px', borderTop: `3px solid ${s.accent}`, boxShadow: 'var(--shadow-xs)' }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: 10.5, marginBottom: 4 }}>{s.label}</div>
-                <div style={{ color: 'var(--text-primary)', fontSize: 26, fontWeight: 800 }}>{s.value}</div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 16 }}>
-            {/* Weekly schedule */}
-            <Card style={{ padding: 20 }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 14 }}>Horário Semanal</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 6 }}>
-                {DAYS_ABR.map((d, i) => {
-                  const dayTurmas = turmas.filter(t => t.diaSemana.includes(DAYS_FULL[i]));
-                  return (
-                    <div key={d} style={{ textAlign: 'center' as const }}>
-                      <div style={{ color: dayTurmas.length ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, marginBottom: 5 }}>{d}</div>
-                      {dayTurmas.length > 0 ? dayTurmas.map((t, ti) => (
-                        <div key={ti} style={{ background: 'rgba(200,16,46,0.07)', border: '1px solid rgba(200,16,46,0.18)', borderRadius: 5, padding: '3px 2px', marginBottom: 3 }}>
-                          <div style={{ color: 'var(--gb-red)', fontSize: 8.5, fontWeight: 700, lineHeight: 1.2 }}>{t.horario.split('-')[0]}</div>
-                        </div>
-                      )) : (
-                        <div style={{ background: 'var(--bg-elevated)', borderRadius: 5, padding: '3px 2px', opacity: 0.4 }}>
-                          <div style={{ color: 'var(--text-muted)', fontSize: 9 }}>—</div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-
-            {/* Belt distribution */}
-            <Card style={{ padding: 20 }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 14 }}>Distribuição de Faixas</div>
-              {(Object.entries(beltConfig) as [Belt, typeof beltConfig[Belt]][]).map(([faixa, cfg]) => {
-                const count = allAlunos.filter(a => a.faixa === faixa).length;
-                if (!count) return null;
-                return (
-                  <div key={faixa} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    <div style={{ width: 18, height: 6, background: cfg.bg, borderRadius: 2, border: faixa === 'branca' ? '1px solid var(--border-strong)' : 'none', flexShrink: 0 }}/>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: 11.5, width: 48, textTransform: 'capitalize' as const }}>{cfg.label}</span>
-                    <div style={{ flex: 1, background: 'var(--bg-elevated)', borderRadius: 99, height: 5, overflow: 'hidden' }}>
-                      <div style={{ background: cfg.bg === '#F0EEFF' ? '#aaa' : cfg.bg, height: '100%', width: `${(count / allAlunos.length) * 100}%` }}/>
-                    </div>
-                    <span style={{ color: 'var(--text-muted)', fontSize: 11, width: 14, textAlign: 'right' as const }}>{count}</span>
-                  </div>
-                );
-              })}
-            </Card>
-          </div>
-
-          {/* Recent check-ins */}
-          <Card style={{ padding: 20 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const }}>Últimas Presenças</div>
-              <span style={{ background: 'rgba(22,163,74,0.08)', color: '#16A34A', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>● AO VIVO</span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: 8 }}>
-              {allPresencas.slice(0, 9).map(p => (
-                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)' }}>
-                  <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(22,163,74,0.1)', border: '1px solid rgba(22,163,74,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#16A34A', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>✓</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ color: 'var(--text-primary)', fontSize: 12, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{p.alunoNome}</div>
-                    <div style={{ color: 'var(--text-muted)', fontSize: 10.5 }}>{p.hora}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* ── CLASSES ── */}
-      {tab === 'classes' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 14 }}>
-          {turmas.map(t => {
-            const ocupacao = Math.round((t.inscritos / t.capacidade) * 100);
-            return (
-              <Card key={t.id} style={{ padding: 20, borderTop: '3px solid var(--gb-red)' }}>
-                <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{t.nome}</div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 11.5, marginBottom: 14 }}>📍 {t.sala}</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-                  <div style={{ background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', padding: '8px 10px' }}>
-                    <div style={{ color: 'var(--text-muted)', fontSize: 9.5, marginBottom: 2 }}>HORÁRIO</div>
-                    <div style={{ color: 'var(--text-primary)', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{t.horario}</div>
-                  </div>
-                  <div style={{ background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', padding: '8px 10px' }}>
-                    <div style={{ color: 'var(--text-muted)', fontSize: 9.5, marginBottom: 2 }}>ALUNOS</div>
-                    <div style={{ color: 'var(--text-primary)', fontSize: 12, fontWeight: 700 }}>{t.inscritos}/{t.capacidade}</div>
-                  </div>
-                </div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 11, marginBottom: 8 }}>{t.diaSemana.join(' · ')}</div>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ color: 'var(--text-muted)', fontSize: 10.5 }}>Ocupação</span>
-                    <span style={{ color: ocupacao >= 90 ? '#EF4444' : '#16A34A', fontSize: 10.5, fontWeight: 700 }}>{ocupacao}%</span>
-                  </div>
-                  <div style={{ background: 'var(--bg-elevated)', borderRadius: 99, height: 5, overflow: 'hidden' }}>
-                    <div style={{ background: ocupacao >= 90 ? '#EF4444' : '#16A34A', height: '100%', width: `${ocupacao}%` }}/>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ── STUDENTS ── */}
-      {tab === 'students' && (
-        <Card>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)' }}>
-                {['Aluno', 'Faixa / Grau', 'Frequência', 'Estado', 'Grad. Possível'].map(h => (
-                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10.5, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {allAlunos.map(a => {
-                const bc = beltConfig[a.faixa];
-                const podeGraduar = a.frequencia >= 70 && a.grau < 4;
-                return (
-                  <tr key={a.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    <td style={{ padding: '11px 14px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: (bc?.bg || '#888') + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', color: bc?.bg === '#F0EEFF' ? '#888' : (bc?.bg || 'var(--gb-red)'), fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{a.nome.charAt(0)}</div>
-                        <div>
-                          <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}>{a.nome}</div>
-                          <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>{a.dataMatricula}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ padding: '11px 14px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <div style={{ width: 20, height: 7, background: bc?.bg || '#888', borderRadius: 2, border: a.faixa === 'branca' ? '1px solid var(--border-strong)' : 'none' }}/>
-                        <span style={{ color: 'var(--text-secondary)', fontSize: 12, textTransform: 'capitalize' as const }}>{bc?.label} · {a.grau}° grau</span>
-                      </div>
-                    </td>
-                    <td style={{ padding: '11px 14px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ background: 'var(--bg-elevated)', borderRadius: 99, height: 5, width: 60, overflow: 'hidden' }}>
-                          <div style={{ background: a.frequencia >= 80 ? '#16A34A' : a.frequencia >= 60 ? '#D97706' : 'var(--gb-red)', height: '100%', width: `${a.frequencia}%` }}/>
-                        </div>
-                        <span style={{ color: a.frequencia >= 80 ? '#16A34A' : a.frequencia >= 60 ? '#D97706' : 'var(--gb-red)', fontSize: 12, fontWeight: 700 }}>{a.frequencia}%</span>
-                      </div>
-                    </td>
-                    <td style={{ padding: '11px 14px' }}>
-                      <span style={{ background: a.status === 'ativo' ? 'rgba(22,163,74,0.08)' : 'rgba(200,16,46,0.08)', color: a.status === 'ativo' ? '#16A34A' : 'var(--gb-red)', fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 99, textTransform: 'capitalize' as const }}>{a.status}</span>
-                    </td>
-                    <td style={{ padding: '11px 14px' }}>
-                      {podeGraduar
-                        ? <span style={{ background: 'rgba(124,58,237,0.08)', color: '#7C3AED', fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>✓ Elegível</span>
-                        : <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </Card>
-      )}
-
-      {/* ── ATTENDANCE ── */}
-      {tab === 'attendance' && (
-        <div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 16 }}>
-            {[
-              { label: 'Total este mês',    value: allPresencas.length, accent: 'var(--gb-red)' },
-              { label: 'Média por aula',    value: Math.round(allPresencas.length / 5) || 12, accent: '#2563EB' },
-              { label: 'Taxa de presença',  value: '78%', accent: '#16A34A' },
-            ].map(s => (
-              <div key={s.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '14px 16px', borderTop: `3px solid ${s.accent}`, boxShadow: 'var(--shadow-xs)' }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: 10.5, marginBottom: 4 }}>{s.label}</div>
-                <div style={{ color: 'var(--text-primary)', fontSize: 24, fontWeight: 800 }}>{s.value}</div>
-              </div>
-            ))}
-          </div>
-          <Card>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)' }}>
-                  {['Aluno', 'Turma', 'Data', 'Hora', 'Método'].map(h => (
-                    <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10.5, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {allPresencas.map(p => (
-                  <tr key={p.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{p.alunoNome}</td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-secondary)' }}>{p.turmaNome}</td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{p.data}</td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{p.hora}</td>
-                    <td style={{ padding: '10px 14px' }}>
-                      <span style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', fontSize: 10.5, fontWeight: 600, padding: '2px 7px', borderRadius: 4 }}>{p.metodo}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
-        </div>
-      )}
-
-      {/* ── GRADUATION ── */}
-      {tab === 'graduation' && (
-        <div>
-          <div style={{ background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 18 }}>🎖️</span>
-            <div>
-              <div style={{ color: '#7C3AED', fontSize: 13, fontWeight: 700 }}>Próxima Cerimónia de Graduação</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{candidatosGraduacao.length} alunos elegíveis (frequência ≥ 70%)</div>
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 12 }}>
-            {candidatosGraduacao.map(a => {
-              const bc = beltConfig[a.faixa];
-              const belts = ['branca','cinza','amarela','laranja','verde','azul','roxa','marrom','preta'];
-              const nextFaixa = a.grau >= 4 ? (belts[belts.indexOf(a.faixa)+1] || a.faixa) : a.faixa;
-              const nextGrau = a.grau >= 4 ? 1 : a.grau + 1;
-              const nextBc = beltConfig[nextFaixa];
-              return (
-                <Card key={a.id} style={{ padding: 18 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: (bc?.bg || '#888') + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', color: bc?.bg === '#F0EEFF' ? '#888' : (bc?.bg || 'var(--gb-red)'), fontSize: 14, fontWeight: 700, flexShrink: 0 }}>{a.nome.charAt(0)}</div>
-                    <div>
-                      <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}>{a.nome}</div>
-                      <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Frequência: {a.frequencia}%</div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', marginBottom: 12 }}>
-                    <div style={{ flex: 1, textAlign: 'center' as const }}>
-                      <div style={{ color: 'var(--text-muted)', fontSize: 9, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 4 }}>ATUAL</div>
-                      <div style={{ width: 28, height: 8, background: bc?.bg || '#888', borderRadius: 2, margin: '0 auto', border: a.faixa === 'branca' ? '1px solid var(--border-strong)' : 'none' }}/>
-                      <div style={{ color: 'var(--text-muted)', fontSize: 10, marginTop: 3, textTransform: 'capitalize' as const }}>{bc?.label} G{a.grau}</div>
-                    </div>
-                    <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>→</span>
-                    <div style={{ flex: 1, textAlign: 'center' as const }}>
-                      <div style={{ color: '#16A34A', fontSize: 9, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 4 }}>PRÓXIMA</div>
-                      <div style={{ width: 28, height: 8, background: nextBc?.bg || '#888', borderRadius: 2, margin: '0 auto', border: nextFaixa === 'branca' ? '1px solid var(--border-strong)' : 'none' }}/>
-                      <div style={{ color: '#16A34A', fontSize: 10, marginTop: 3, textTransform: 'capitalize' as const, fontWeight: 600 }}>{nextBc?.label} G{nextGrau}</div>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-
-          {/* Graduation history */}
-          <div style={{ marginTop: 20 }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 12 }}>Histórico de Graduações</div>
-            <Card>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)' }}>
-                    {['Aluno', 'De', 'Para', 'Data', 'Observação'].map(h => (
-                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10.5, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {graduacoes.map(g => {
-                    const bcA = beltConfig[g.faixaAnterior];
-                    const bcN = beltConfig[g.faixaNova];
-                    return (
-                      <tr key={g.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                        <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{g.alunoNome}</td>
-                        <td style={{ padding: '10px 14px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                            <div style={{ width: 16, height: 6, background: bcA?.bg || '#888', borderRadius: 2, border: g.faixaAnterior === 'branca' ? '1px solid var(--border-strong)' : 'none' }}/>
-                            <span style={{ color: 'var(--text-muted)', fontSize: 11, textTransform: 'capitalize' as const }}>{bcA?.label} G{g.grauAnterior}</span>
-                          </div>
-                        </td>
-                        <td style={{ padding: '10px 14px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                            <div style={{ width: 16, height: 6, background: bcN?.bg || '#888', borderRadius: 2, border: g.faixaNova === 'branca' ? '1px solid var(--border-strong)' : 'none' }}/>
-                            <span style={{ color: '#16A34A', fontSize: 11, textTransform: 'capitalize' as const, fontWeight: 600 }}>{bcN?.label} G{g.grauNovo}</span>
-                          </div>
-                        </td>
-                        <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{g.data}</td>
-                        <td style={{ padding: '10px 14px', fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>{g.observacao || '—'}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </Card>
           </div>
         </div>
       )}

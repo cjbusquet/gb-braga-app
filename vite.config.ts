@@ -1,13 +1,19 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
-import { VitePWA } from 'vite-plugin-pwa'
+import { VitePWA } from 'vite-plugin-pwa';
+import { defineConfig } from 'vite';
+import path from 'path';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   plugins: [
     react(),
+    tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      // We register the SW manually (src/main.tsx via `virtual:pwa-register`)
+      // so an update can force a one-time reload instead of silently leaving
+      // an open tab running a stale bundle until the next navigation.
+      injectRegister: false,
 
       // Assets to pre-cache alongside the app shell
       includeAssets: ['favicon.svg', 'logo.png', 'icons.svg'],
@@ -107,4 +113,24 @@ export default defineConfig({
     target: 'es2020',
     sourcemap: false,
   },
-})
+
+  server: {
+    allowedHosts: ['kim-dorsispinal-ugly.ngrok-free.dev'],
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+      },
+      // Lets the app reach the local Supabase stack through the dev
+      // server's own origin (see resolveSupabaseUrl in supabaseClient.ts) —
+      // needed when the page is loaded via an ngrok tunnel or any other
+      // non-localhost origin, since the browser can't otherwise reach
+      // 127.0.0.1:54321 on the developer's machine.
+      '/supabase': {
+        target: 'http://127.0.0.1:54321',
+        changeOrigin: true,
+        ws: true,
+        rewrite: (path) => path.replace(/^\/supabase/, ''),
+      },
+    },
+  },
+});

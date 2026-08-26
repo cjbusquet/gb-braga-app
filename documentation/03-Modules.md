@@ -45,7 +45,7 @@
 - `CORE_MODULE_IDS: Set<string>` — Modules that cannot be disabled
 
 **Behavior:**
-- Loads from `configuracoes.datos` (secao='modulos') on mount
+- Loads from `configuracoes.dados` (secao='modulos') on mount
 - Subscribes to Supabase Realtime for live updates
 - `isActive(id)`: returns `true` for core modules regardless of DB state; returns `true` for any module not explicitly set to `false`
 - `toggle(id)`: optimistic update + DB upsert; reverts on error
@@ -118,7 +118,7 @@ export const isConfigured = url.startsWith('https://') && url.includes('.supabas
 
 ---
 
-## 6. TOConline Integration (`src/lib/toconline.ts`)
+## 6. TOConline Integration (`src/services/api/toconline.ts`)
 
 **Purpose:** Portuguese fiscal document generation via TOConline API.
 
@@ -135,16 +135,15 @@ export const isConfigured = url.startsWith('https://') && url.includes('.supabas
 
 ---
 
-## 7. Report Export (`src/lib/reportExport.ts`)
+## 7. Report Export (`src/services/pdf/`)
 
-**Purpose:** PDF generation using jsPDF.
+**Purpose:** PDF/CSV generation using jsPDF, split by concern:
+- `contrato.ts` — Contract PDF with signature
+- `report.ts` — Payment/attendance report PDFs
+- `csv.ts` — CSV exports (e.g. student list)
+- `index.ts` — Re-exports
 
-**Functions:**
-- `exportContractPDF(contrato, aluno)` — Contract PDF with signature
-- `exportPaymentReport(pagamentos)` — Payment history PDF
-- `exportStudentList(alunos)` — Student list PDF
-
-**Note:** jsPDF (~85KB) is always bundled. Lazy-loading recommended (see performance audit).
+**Note:** jsPDF (~85KB) is always bundled; lazy-loading it on demand would reduce initial bundle size.
 
 ---
 
@@ -178,3 +177,14 @@ Used in Layout.tsx to switch between sidebar (desktop) and bottom nav (mobile).
 - `onVoltar?: () => void` — Back button handler
 
 **DB writes on completion:** profiles, alunos, contratos, pagamentos (or pedidos_numerario)
+
+---
+
+## 10. Additional Modules
+
+- **`src/lib/alunoDomain.ts`** — Aluno domain helpers: belt-list constants (`FAIXAS_KIDS`, `FAIXAS_ADULTO`) and related derived-data helpers, shared by graduation and evolution pages.
+- **`src/lib/icons.tsx`** — Thin wrappers around `@fortawesome/react-fontawesome` icons for consistent sizing/usage across pages.
+- **`src/lib/queries.ts`** — TanStack Query key factories/helpers used alongside `useData.ts`.
+- **`src/hooks/`** — Newer data hooks (`useProfile`, `useConfiguracoes`, `useAlunoInfo`, `usePedidosNumerario`) that follow the same pattern as `useData.ts` but live outside `lib/`; new data hooks should be added here rather than in `lib/`.
+- **`src/services/api/edgeFunctions.ts`** — Typed wrappers for invoking the `invite-staff` and `send-email` Edge Functions from the frontend.
+- **`src/services/geo.ts`** — Haversine distance calculation used by the GPS check-in flow (§9 in `02-System-Overview.md`).

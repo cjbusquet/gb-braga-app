@@ -1,85 +1,100 @@
 import { usePagamentos, useAlunos } from '../../lib/useData';
-import { mockTocDocumentos } from '../../data/mockData';
+import { ACADEMIA, mockTocDocumentos } from '../../data/mockData';
 import { useAuth } from '../../lib/auth';
-import { GB } from '../../lib/gbBrand';
+import { CreditCardIcon, ExclamationTriangleIcon, Ico } from '../../lib/icons';
+import PortalPageHeader from './PortalPageHeader';
+import Card from '../../components/common/Card';
+import Badge from '../../components/common/Badge';
+import { SkeletonList } from '../../components/common/Skeleton';
 
 export default function MeuFinanceiro() {
   const { data: pagamentos } = usePagamentos();
   const { data: alunos } = useAlunos();
   const { user } = useAuth();
   const aluno = alunos.find(a => a.email === user?.email) || alunos[0];
+  if (!aluno) return <SkeletonList rows={4} />;
+
   const pags = pagamentos.filter(p => p.alunoId === aluno.id);
   const faturas = mockTocDocumentos.filter(d => d.alunoNome === aluno.nome);
   const proximo = pags.find(p => p.status === 'pendente' || p.status === 'vencido');
 
+  const statusBadgeColor = (status: string) =>
+    status === 'pago' ? 'success' : status === 'vencido' ? 'danger' : 'warning';
+
   return (
     <div>
-      <div style={{ marginBottom: 18 }}>
-        <div style={{ color: 'var(--text-muted)', fontSize: 10.5, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 3 }}>Aluno</div>
-        <h1 style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 700 }}>Meu Financeiro</h1>
-      </div>
+      <PortalPageHeader
+        title="Meu Financeiro"
+        description="Consulta pagamentos, faturas e os próximos vencimentos."
+      />
 
       {proximo && (
-        <div style={{ background: proximo.status === 'vencido' ? 'rgba(200,16,46,0.08)' : 'rgba(245,158,11,0.08)', border: `1px solid ${proximo.status === 'vencido' ? GB.red + '30' : 'rgba(245,158,11,0.3)'}`, borderRadius: 'var(--radius-lg)', padding: 20, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div
+          className={[
+            'flex justify-between items-center p-5 mb-4 rounded-lg border',
+            proximo.status === 'vencido' ? 'border-gb-red/30 bg-gb-red/8' : 'border-amber-500/30 bg-amber-500/8',
+          ].join(' ')}
+        >
           <div>
-            <div style={{ color: proximo.status === 'vencido' ? GB.red : '#F59E0B', fontSize: 12, fontWeight: 700, marginBottom: 4 }}>
-              {proximo.status === 'vencido' ? '⚠️ Pagamento em atraso' : '💳 Próximo pagamento'}
+            <div className={['mb-1 text-xs font-bold', proximo.status === 'vencido' ? 'text-gb-red' : 'text-amber-500'].join(' ')}>
+              <span className="inline-flex gap-1.5 items-center"><Ico icon={proximo.status === 'vencido' ? ExclamationTriangleIcon : CreditCardIcon} sm />{proximo.status === 'vencido' ? 'Pagamento em atraso' : 'Próximo pagamento'}</span>
             </div>
-            <div style={{ color: 'var(--text-primary)', fontSize: 26, fontWeight: 800, fontFamily: 'var(--font-mono)' }}>€{proximo.valor.toFixed(2)}</div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 3 }}>{proximo.plano} · Vence: {proximo.vencimento}</div>
+            <div className="font-mono text-2xl font-extrabold text-primary">€{proximo.valor.toFixed(2)}</div>
+            <div className="mt-1 text-xs text-muted">{proximo.plano} · Vence: {proximo.vencimento}</div>
           </div>
-          <button style={{ background: '#635BFF', border: 'none', borderRadius: 'var(--radius-md)', padding: '12px 22px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 0 16px rgba(99,91,255,0.3)' }}>
-            💳 Pagar agora
-          </button>
+          <a
+            href={`https://wa.me/${ACADEMIA.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá! Gostava de regularizar o pagamento de €${proximo.valor.toFixed(2)} (${proximo.plano}, venc. ${proximo.vencimento}).`)}`}
+            target="_blank" rel="noreferrer"
+            className="inline-flex gap-1.5 items-center py-3 px-[22px] text-[13px] font-bold text-white no-underline rounded-md border-none cursor-pointer bg-[#635BFF] transition-all duration-200 hover:bg-[#5851E6] active:scale-[0.98] active:shadow-none outline-none focus-visible:ring-2 focus-visible:ring-[#635BFF] focus-visible:ring-offset-2"
+          >
+            <Ico icon={CreditCardIcon} sm />Pagar agora
+          </a>
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {/* Payments */}
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 20 }}>
-          <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 16 }}>Histórico de Pagamentos</div>
+        <Card padding="lg">
+          <div className="mb-4 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Histórico de Pagamentos</div>
           {pags.map(p => (
-            <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+            <div key={p.id} className="flex justify-between items-center py-2.5 border-b border-border-subtle">
               <div>
-                <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 500 }}>{p.plano}</div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2, fontFamily: 'var(--font-mono)' }}>{p.vencimento}</div>
+                <div className="text-[13px] font-medium text-primary">{p.plano}</div>
+                <div className="mt-0.5 font-mono text-[11px] text-muted">{p.vencimento}</div>
               </div>
-              <div style={{ textAlign: 'right' as const }}>
-                <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>€{p.valor}</div>
-                <span style={{ fontSize: 10.5, fontWeight: 600, padding: '2px 6px', borderRadius: 99,
-                  background: p.status === 'pago' ? 'rgba(34,197,94,0.1)' : p.status === 'vencido' ? 'rgba(200,16,46,0.1)' : 'rgba(245,158,11,0.1)',
-                  color: p.status === 'pago' ? '#22C55E' : p.status === 'vencido' ? GB.red : '#F59E0B'
-                }}>{p.status}</span>
+              <div className="text-right">
+                <div className="font-mono text-[13px] font-bold text-primary">€{p.valor}</div>
+                <Badge color={statusBadgeColor(p.status)}>{p.status}</Badge>
               </div>
             </div>
           ))}
-        </div>
+        </Card>
 
         {/* Faturas */}
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 20 }}>
-          <div style={{ color: 'var(--text-muted)', fontSize: 10.5, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, marginBottom: 16 }}>Minhas Faturas (TOConline)</div>
+        <Card padding="lg">
+          <div className="mb-4 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Minhas Faturas (TOConline)</div>
           {faturas.length > 0 ? faturas.map(f => (
-            <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+            <div key={f.id} className="flex justify-between items-center py-2.5 border-b border-border-subtle">
               <div>
-                <div style={{ color: 'var(--text-primary)', fontSize: 12.5, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{f.numero}</div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 10.5, marginTop: 2 }}>{f.dataEmissao} · IVA: €{f.ivaTotal.toFixed(2)}</div>
+                <div className="font-mono text-[12.5px] font-bold text-primary">{f.numero}</div>
+                <div className="mt-0.5 text-[10.5px] text-muted">{f.dataEmissao} · IVA: €{f.ivaTotal.toFixed(2)}</div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>€{f.valorTotal}</span>
+              <div className="flex gap-2 items-center">
+                <span className="font-mono text-[13px] font-bold text-primary">€{f.valorTotal}</span>
                 {f.pdfUrl && (
-                  <a href={f.pdfUrl} target="_blank" rel="noreferrer" style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 5, padding: '4px 8px', color: '#22C55E', fontSize: 11, fontWeight: 600, textDecoration: 'none' }}>PDF</a>
+                  <a href={f.pdfUrl} target="_blank" rel="noreferrer" className="inline-flex items-center py-1 px-2 text-[11px] font-semibold text-gb-green no-underline rounded border transition-colors duration-200 border-gb-green/20 bg-gb-green/10 hover:bg-gb-green/20 active:bg-gb-green/20 outline-none focus-visible:ring-2 focus-visible:ring-gb-green focus-visible:ring-offset-2">PDF</a>
                 )}
               </div>
             </div>
           )) : (
-            <p style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center', marginTop: 20 }}>Nenhuma fatura emitida ainda</p>
+            <p className="mt-5 text-[13px] text-center text-muted">Nenhuma fatura emitida ainda</p>
           )}
 
-          <div style={{ marginTop: 16, background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 'var(--radius-sm)', padding: '10px 12px' }}>
-            <div style={{ color: '#3B82F6', fontSize: 11, fontWeight: 600, marginBottom: 2 }}>ℹ️ Faturas certificadas AT</div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 11, lineHeight: 1.5 }}>As faturas são emitidas automaticamente via TOConline após confirmação do pagamento Stripe.</div>
+          <div className="p-2.5 px-3 mt-4 rounded-sm border border-border bg-elevated">
+            <div className="mb-0.5 text-[11px] font-semibold text-secondary">Faturas certificadas AT</div>
+            <div className="text-[11px] leading-[1.5] text-muted">As faturas são emitidas automaticamente via TOConline após confirmação do pagamento Stripe.</div>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

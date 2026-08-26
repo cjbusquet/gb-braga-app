@@ -181,25 +181,27 @@ gb-braga-app/
 │   ├── favicon.svg
 │   ├── icons.svg
 │   └── logo.png
-├── qa/                         # Test strategies
-├── reports/                    # Audit reports
 ├── scripts/                    # Setup utilities
 │   ├── setup.sh
 │   └── validate-env.js
 ├── src/
 │   ├── components/
 │   │   ├── GBLogo.tsx          # Brand logo component
+│   │   ├── common/             # Reusable UI primitives (Button, Card, Modal, Badge, ...)
+│   │   ├── features/           # Feature-scoped components (scaffolded)
 │   │   └── layout/
 │   │       └── Layout.tsx      # App shell (sidebar, nav, mobile)
 │   ├── data/
 │   │   └── mockData.ts         # Demo mode mock users
+│   ├── hooks/                  # useProfile, useConfiguracoes, useAlunoInfo, usePedidosNumerario
 │   ├── lib/
 │   │   ├── auth.tsx            # AuthContext + useAuth hook
+│   │   ├── alunoDomain.ts      # Aluno domain helpers (belt lists, plan helpers)
 │   │   ├── gbBrand.ts          # Belt colors, brand constants
-│   │   ├── reportExport.ts     # PDF/CSV export utilities
+│   │   ├── icons.tsx           # FontAwesome icon wrappers
+│   │   ├── queries.ts          # TanStack Query keys/helpers
 │   │   ├── supabase.ts         # Supabase data functions (legacy)
 │   │   ├── supabaseClient.ts   # Supabase client singleton
-│   │   ├── toconline.ts        # TOConline API integration
 │   │   ├── useData.ts          # Data hooks (useAlunos, useTurmas, etc.)
 │   │   ├── useMobile.ts        # Responsive breakpoint hook
 │   │   └── useModulos.tsx      # Module management context
@@ -221,6 +223,7 @@ gb-braga-app/
 │   │   │   ├── ModulosPage.tsx
 │   │   │   ├── NovaMatriculaModal.tsx
 │   │   │   ├── PendentesNumerario.tsx
+│   │   │   ├── ProfessoresPage.tsx
 │   │   │   ├── SpecialPages.tsx
 │   │   │   └── TurmasPage.tsx
 │   │   ├── aluno/              # Student portal pages
@@ -230,14 +233,18 @@ gb-braga-app/
 │   │   │   ├── MeuFinanceiro.tsx
 │   │   │   ├── MinhaEvolucao.tsx
 │   │   │   ├── MinhasAulas.tsx
-│   │   │   └── PortalAluno.tsx
+│   │   │   ├── PortalAluno.tsx
+│   │   │   └── PortalPageHeader.tsx
 │   │   ├── matricula/
 │   │   │   └── FluxoMatricula.tsx  # Enrollment wizard
 │   │   ├── professor/
-│   │   │   ├── ProfessorDashboard.tsx
 │   │   │   └── ProfessorView.tsx
 │   │   └── public/
 │   │       └── MatriculaPublica.tsx  # Public enrollment page
+│   ├── services/
+│   │   ├── api/                # edgeFunctions.ts, toconline.ts
+│   │   ├── pdf/                # contrato.ts, csv.ts, report.ts (jsPDF)
+│   │   └── geo.ts               # Haversine distance for GPS check-in
 │   ├── types/
 │   │   └── index.ts            # TypeScript interfaces + enums
 │   ├── App.tsx                 # Root component, routing
@@ -245,7 +252,8 @@ gb-braga-app/
 │   └── main.tsx                # React entry point
 ├── supabase/
 │   ├── functions/
-│   │   └── invite-staff/       # Edge Function: create staff user
+│   │   ├── invite-staff/       # Edge Function: create staff user
+│   │   └── send-email/         # Edge Function: SMTP/Resend email
 │   ├── patches/                # Incremental SQL migrations
 │   └── schema.sql              # Full database schema
 ├── .env.example                # Environment variable template
@@ -253,8 +261,6 @@ gb-braga-app/
 ├── vite.config.ts              # Vite + PWA configuration
 └── package.json
 ```
-
-> **Note:** `src/src/` is a duplicate directory from an earlier copy operation. It is not imported by the active application and should be deleted.
 
 ---
 
