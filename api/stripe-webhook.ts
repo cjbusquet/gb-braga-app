@@ -1,18 +1,16 @@
 /**
  * Stripe Webhook Handler — GB Braga
- * Deploy as Vercel Edge Function: /api/stripe-webhook.ts
+ * Deploy as Vercel Serverless Function (Node.js runtime): /api/stripe-webhook.ts
+ * NOTE: the `stripe` package is not Edge-Runtime-compatible (it pulls in Node
+ * built-ins internally even with the fetch HTTP client), so this must run on
+ * the default Node.js runtime, not `runtime: 'edge'`.
  */
 
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-export const config = {
-  runtime: 'edge',
-};
-
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-06-20',
-  httpClient: Stripe.createFetchHttpClient(),
 });
 
 const supabase = createClient(
