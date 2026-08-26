@@ -215,10 +215,10 @@ export default function IntegracoesPage({ onNavigate }: { onNavigate?: (page: st
               </div>
               <StatusDot status="ok"/>
             </div>
+            <div className="py-2 px-3 mb-3 text-[11px] rounded-sm border border-border-subtle bg-elevated text-muted">
+              Chaves de API geridas como variáveis de ambiente no deployment.
+            </div>
             {[
-              { k: 'Chave pública (pk_test_)',   v: 'pk_test_••••••••••••••••' },
-              { k: 'Chave secreta (sk_test_)',   v: 'sk_test_••••••••••••••••' },
-              { k: 'Webhook Secret (whsec_)',    v: 'whsec_••••••••••••••••' },
               { k: 'Moeda',                      v: 'EUR (€) — Portugal' },
               { k: 'Modo',                       v: 'Sandbox (test)' },
             ].map(r => (
@@ -279,15 +279,13 @@ export default function IntegracoesPage({ onNavigate }: { onNavigate?: (page: st
               <div className="text-[11px] text-muted">Faturas não são comunicadas à AT. Ativa o modo produção nas Configurações.</div>
             </div>
             {[
-              { k: 'API URL',      v: 'https://app.toconline.pt' },
-              { k: 'Client ID',    v: '—  (configurar)' },
               { k: 'Empresa',      v: 'Gracie Barra Braga' },
               { k: 'NIF',         v: '512345678' },
               { k: 'Série',       v: 'GB2025' },
             ].map(r => (
               <div key={r.k} className={ROW_CLASS}>
                 <span className="text-xs text-muted">{r.k}</span>
-                <span className={['font-mono text-xs', r.v.includes('configurar') ? 'text-amber-700' : 'text-primary'].join(' ')}>{r.v}</span>
+                <span className="font-mono text-xs text-primary">{r.v}</span>
               </div>
             ))}
             <div className="flex gap-2 mt-4">
@@ -325,7 +323,7 @@ export default function IntegracoesPage({ onNavigate }: { onNavigate?: (page: st
             <div className="py-2.5 px-3 mt-4 rounded-sm border border-[#635BFF]/15 bg-[#635BFF]/5">
               <div className="mb-1 text-[11.5px] font-bold text-[#635BFF]">Próxima ação</div>
               <div className="text-[11.5px] leading-[1.5] text-muted">
-                Insere o Client ID e Client Secret TOConline em <strong>Config. → TOConline</strong> para ativar a emissão real de faturas.
+                Configura o Client ID e Client Secret TOConline como variáveis de ambiente no deployment para ativar a emissão real de faturas.
               </div>
             </div>
           </Card>

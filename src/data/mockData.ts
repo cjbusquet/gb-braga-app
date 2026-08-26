@@ -283,10 +283,6 @@ export const mockTocDocumentos: TocDocumento[] = [
 ];
 
 export const defaultTocConfig: TocConfig = {
-  apiUrl:         'https://app.toconline.pt',
-  oauthUrl:       'https://app.toconline.pt',
-  clientId:       '',
-  clientSecret:   '',
   simulationMode: true,
   empresaNome:    'Gracie Barra Braga',
   empresaNIF:     '512345678',       // ← CONFIRMAR

@@ -978,11 +978,18 @@ CREATE POLICY "Marcar própria notificação como lida" ON notificacoes FOR UPDA
   USING (profile_id = (SELECT auth.uid()))
   WITH CHECK (profile_id = (SELECT auth.uid()));
 
--- CONFIGURACOES policies — SELECT tem de ser amplo (qualquer
--- utilizador autenticado) porque ModulosProvider envolve a app
--- inteira e todos os papéis precisam de saber que módulos estão
--- ativos; só staff pode alterar.
-CREATE POLICY "Ver configuracoes" ON configuracoes FOR SELECT USING ((SELECT auth.uid()) IS NOT NULL);
+-- CONFIGURACOES policies — só 'academia' (GPS fence, lido por
+-- MeuCheckin/KioskMode/CheckinPage) e 'modulos' (ModulosProvider,
+-- envolve a app inteira) precisam de SELECT amplo. As restantes
+-- secoes (toconline/stripe/whatsapp/email/compliance) guardam
+-- credenciais de integrações e nunca devem ser legíveis por
+-- 'aluno'/'professor'/'atendimento' — antes disto, qualquer
+-- utilizador autenticado conseguia ler Client Secret/sk_/whsec_/
+-- token WhatsApp diretamente via supabase.from('configuracoes').
+CREATE POLICY "Ver configuracoes" ON configuracoes FOR SELECT USING (
+  (secao IN ('academia','modulos') AND (SELECT auth.uid()) IS NOT NULL)
+  OR (SELECT private.auth_role()) IN ('admin','superadmin')
+);
 CREATE POLICY "Admin insere configuracoes" ON configuracoes FOR INSERT WITH CHECK ((SELECT private.auth_role()) IN ('admin','superadmin'));
 CREATE POLICY "Admin atualiza configuracoes" ON configuracoes FOR UPDATE USING ((SELECT private.auth_role()) IN ('admin','superadmin'));
 

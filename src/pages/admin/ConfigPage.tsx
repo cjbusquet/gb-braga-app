@@ -33,7 +33,6 @@ import {
   SaveIcon,
   BoltIcon,
   BookIcon,
-  CircleIcon,
   CrownIcon,
   PhoneIcon,
   KeyIcon,
@@ -112,18 +111,9 @@ function SaveBar({ onSave, saved, saving = false }: { onSave: () => void; saved:
 // ─── TOConline Section ────────────────────────────────────────────────────────
 function TocSection() {
   const { data: cfg, setData: setCfg, loading, saving, saved, save } = useConfiguracaoSection<TocConfig>('toconline', defaultTocConfig);
-  const [testing, setTesting] = useState(false);
-  const [connStatus, setConnStatus] = useState<'idle' | 'ok' | 'fail'>('idle');
 
   const update = (key: keyof TocConfig, val: string | boolean) =>
     setCfg(c => ({ ...c, [key]: val }));
-
-  const testConn = async () => {
-    setTesting(true); setConnStatus('idle');
-    await new Promise(r => setTimeout(r, 1400));
-    setConnStatus(cfg.simulationMode || cfg.clientId ? 'ok' : 'fail');
-    setTesting(false);
-  };
 
   if (loading) return <div className="p-6 text-[13px] text-muted">A carregar configuração...</div>;
 
@@ -166,16 +156,9 @@ function TocSection() {
           </button>
         </div>
 
-        <Label>Ligação OAuth 2.0</Label>
-        <Field label="API URL">
-          <Input value={cfg.apiUrl} onChange={v => update('apiUrl', v)} placeholder="https://app.toconline.pt" mono />
-        </Field>
-        <Field label="Client ID (OAUTH_CLIENT_ID)">
-          <Input value={cfg.clientId} onChange={v => update('clientId', v)} placeholder="Obtido em Empresa → Dados API" mono />
-        </Field>
-        <Field label="Client Secret (OAUTH_CLIENT_SECRET)">
-          <Input value={cfg.clientSecret} onChange={v => update('clientSecret', v)} placeholder="••••••••••••••••" type="password" mono />
-        </Field>
+        <div className="py-2.5 px-3.5 mb-[18px] text-xs rounded-lg border border-border-subtle bg-elevated text-secondary">
+          Client ID e Client Secret são geridos como variáveis de ambiente no deployment, nunca nesta interface.
+        </div>
 
         <Label>Dados da Empresa</Label>
         <Field label="Nome da empresa">
@@ -190,23 +173,8 @@ function TocSection() {
           </Field>
         </div>
 
-        {/* Test + Save */}
         <div className="flex gap-2 mt-1.5">
-          <button onClick={testConn} disabled={testing}
-            className={[
-              'flex-1 py-2.5 min-h-11 sm:min-h-0 text-xs font-semibold rounded-sm border cursor-pointer transition-colors duration-200 bg-elevated hover:bg-border-subtle active:bg-border-subtle',
-              'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
-              connStatus === 'ok' ? 'border-gb-green/40 text-gb-green' : connStatus === 'fail' ? 'border-gb-red/40 text-gb-red' : 'border-border text-secondary',
-            ].join(' ')}>
-            {testing
-              ? <span className="inline-flex gap-1.5 items-center"><Ico icon={ArrowPathIcon} sm />A testar...</span>
-              : connStatus === 'ok'
-              ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Ligação OK</span>
-              : connStatus === 'fail'
-              ? <span className="inline-flex gap-1.5 items-center"><Ico icon={XMarkIcon} sm />Sem ligação</span>
-              : <span className="inline-flex gap-1.5 items-center"><Ico icon={BoltIcon} sm />Testar Ligação</span>}
-          </button>
-          <Button2 saving={saving} saved={saved} onClick={() => save()} className="flex-[2]" />
+          <Button2 saving={saving} saved={saved} onClick={() => save()} className="flex-1" />
         </div>
       </Card>
 
@@ -216,10 +184,10 @@ function TocSection() {
         <Card padding="none" className="p-[22px]">
           <Label>Estado dos Serviços TOConline</Label>
           {[
-            { label: 'OAuth / Autenticação', ok: !!cfg.clientId || cfg.simulationMode },
+            { label: 'OAuth / Autenticação', ok: true },
             { label: 'Emissão de Faturas-Recibo (FR)', ok: true },
             { label: 'Download de PDF', ok: true },
-            { label: 'Comunicação à AT (e-fatura)', ok: !cfg.simulationMode && !!cfg.clientId },
+            { label: 'Comunicação à AT (e-fatura)', ok: !cfg.simulationMode },
             { label: 'SAF-T PT (exportação)', ok: !cfg.simulationMode },
             { label: 'Sincronização Stripe → FR', ok: true },
           ].map(s => (
@@ -235,7 +203,7 @@ function TocSection() {
           <Label>Como configurar — 5 passos</Label>
           {[
             { n: '1', title: 'Aceder ao TOConline', desc: 'Login em app.toconline.pt → Empresa → Dados API' },
-            { n: '2', title: 'Descarregar credenciais', desc: 'Clique em "Ficheiro Postman" para obter o Client ID, Secret e URL OAuth' },
+            { n: '2', title: 'Descarregar credenciais', desc: 'Clique em "Ficheiro Postman" para obter o Client ID e Secret — entregar ao developer para configurar no deployment' },
             { n: '3', title: 'Criar serviço', desc: 'Artigos → Serviços → Novo: código "GB-MENSALIDADE", IVA Normal 23%' },
             { n: '4', title: 'Criar série GB2025', desc: 'Empresa → Séries → Nova série FR com prefixo "GB2025"' },
             { n: '5', title: 'Ligar webhook Stripe', desc: 'payment_intent.succeeded → emite FR automaticamente no TOConline' },
@@ -280,68 +248,15 @@ function Button2({ saving, saved, onClick, className = '', label = defaultButton
 }
 
 // ─── Stripe Section ───────────────────────────────────────────────────────────
-const PLANOS_STRIPE = [
-  { id:'pl-adulto-plus',    nome:'Adulto Plus',           valor:62,  cat:'adulto'   },
-  { id:'pl-adulto-fundador',nome:'Adulto Fundador',       valor:53,  cat:'fundador' },
-  { id:'pl-estudante',      nome:'Estudante (Univ.)',      valor:53,  cat:'adulto'   },
-  { id:'pl-kids-plus',      nome:'Kids Plus',             valor:53,  cat:'kids'     },
-  { id:'pl-kids-fundador',  nome:'Kids Fundador',         valor:45,  cat:'fundador' },
-  { id:'pl-familia-2',      nome:'Família 2',             valor:115, cat:'familia'  },
-  { id:'pl-familia-3',      nome:'Família 3',             valor:165, cat:'familia'  },
-  { id:'pl-familia-3-kids', nome:'Família 3 Kids',        valor:150, cat:'familia'  },
-  { id:'pl-familia-4',      nome:'Família 4',             valor:200, cat:'familia'  },
-  { id:'pl-familia-2-fund', nome:'Família 2 Fundador',    valor:109, cat:'fundador' },
-  { id:'pl-familia-3-fund', nome:'Família 3 Fundador',    valor:157, cat:'fundador' },
-  { id:'pl-familia-4-fund', nome:'Família 4 Fundador',    valor:190, cat:'fundador' },
-];
-
-type StripeConfig = {
-  mode: 'test' | 'live';
-  pk: string;
-  sk: string;
-  whsec: string;
-  priceIds: Record<string, string>;
-};
-
-const defaultStripe: StripeConfig = {
-  mode: 'test',
-  pk: '',
-  sk: '',
-  whsec: '',
-  priceIds: Object.fromEntries(PLANOS_STRIPE.map(p => [p.id, ''])),
-};
-
+// Chaves reais (sk_/whsec_/pk_) vivem só nas env vars do deployment (Vercel) —
+// api/stripe-webhook.ts nunca leu a tabela `configuracoes`, por isso os campos
+// de chaves que existiam aqui não tinham qualquer efeito real. Mesma razão
+// para a tabela de Price IDs: os price IDs realmente usados (api/stripe-
+// webhook.ts, src/lib/supabase.ts) vêm de planos.stripe_price_id_live/test,
+// não de configuracoes.stripe.priceIds.
 function StripeSection() {
-  const { data, setData, loading, saving, saved, save } = useConfiguracaoSection<StripeConfig>('stripe', defaultStripe);
-  const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<'ok'|'err'|null>(null);
-
-  const mode    = data.mode;
-  const pk      = data.pk;
-  const sk      = data.sk;
-  const whsec   = data.whsec;
-  const priceIds = data.priceIds ?? defaultStripe.priceIds;
-
-  const setMode    = (m: 'test'|'live')  => setData(p => ({ ...p, mode: m }));
-  const setPk      = (v: string)          => setData(p => ({ ...p, pk: v }));
-  const setSk      = (v: string)          => setData(p => ({ ...p, sk: v }));
-  const setWhsec   = (v: string)          => setData(p => ({ ...p, whsec: v }));
-  const setPriceId = (id: string, v: string) =>
-    setData(p => ({ ...p, priceIds: { ...p.priceIds, [id]: v } }));
-
-  const testConn = async () => {
-    setTesting(true); setTestResult(null);
-    await new Promise(r => setTimeout(r, 1200));
-    setTesting(false);
-    setTestResult(sk.startsWith('sk_') ? 'ok' : 'err');
-    setTimeout(() => setTestResult(null), 4000);
-  };
-
-  if (loading) return <div className="p-6 text-[13px] text-muted">A carregar configuração...</div>;
-
   return (
     <div className="flex flex-col gap-4">
-      {/* Keys card */}
       <Card padding="none" className="p-[22px]">
         <div className="flex gap-2.5 items-center pb-3.5 mb-[18px] border-b border-border-subtle">
           <div className="flex justify-center items-center w-[38px] h-[38px] text-[15px] font-extrabold text-white rounded-md bg-[#635BFF]">S</div>
@@ -349,50 +264,11 @@ function StripeSection() {
             <div className="text-sm font-bold text-primary">Stripe API</div>
             <div className="text-[11px] text-muted">Pagamentos e subscrições recorrentes</div>
           </div>
-          {/* Live / Test toggle */}
-          <div className="flex gap-0.5 p-0.5 rounded-lg bg-elevated">
-            {(['test','live'] as const).map(m => (
-              <button key={m} onClick={() => setMode(m)}
-                className={[
-                  'py-1 px-3 min-h-11 sm:min-h-0 text-[11.5px] font-bold uppercase rounded-md border-none cursor-pointer transition-colors duration-200',
-                  'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-                  mode === m ? 'text-white' : 'bg-transparent text-muted hover:text-primary active:text-primary',
-                ].join(' ')}
-                style={{ background: mode === m ? (m === 'live' ? '#22C55E' : '#D97706') : undefined }}
-              >
-                <span className="inline-flex gap-1 items-center">
-                  <Ico icon={CircleIcon} sm className={m === 'live' ? 'text-gb-green' : 'text-amber-400'} />
-                  {m === 'live' ? 'LIVE' : 'TEST'}
-                </span>
-              </button>
-            ))}
-          </div>
         </div>
-        {mode === 'live' && (
-          <div className="py-2 px-3 mb-3.5 text-xs text-red-600 rounded-lg border border-red-600/20 bg-red-600/[0.06]">
-            <span className="inline-flex gap-1.5 items-center"><Ico icon={ExclamationTriangleIcon} sm />Modo LIVE — cobranças reais aos clientes!</span>
-          </div>
-        )}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label={`Chave Pública (pk_${mode}_)`}>
-            <Input value={pk} onChange={setPk} placeholder={`pk_${mode}_...`} mono />
-          </Field>
-          <Field label={`Chave Secreta (sk_${mode}_)`}>
-            <Input value={sk} onChange={setSk} placeholder={`sk_${mode}_...`} type="password" mono />
-          </Field>
+        <div className="py-2.5 px-3.5 mb-3.5 text-xs rounded-lg border border-border-subtle bg-elevated text-secondary">
+          As chaves de API e o Webhook Secret são geridos como variáveis de ambiente no deployment (Vercel), nunca nesta interface.
         </div>
-        <Field label="Webhook Secret (whsec_)">
-          <Input value={whsec} onChange={setWhsec} placeholder="whsec_..." type="password" mono />
-        </Field>
-        <div className="flex flex-wrap gap-2 items-center mt-4">
-          <button onClick={testConn} disabled={testing}
-            className="py-2 px-3.5 min-h-11 sm:min-h-0 text-xs font-semibold rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed">
-            {testing
-              ? <span className="inline-flex gap-1.5 items-center"><Ico icon={ArrowPathIcon} sm />A testar...</span>
-              : <span className="inline-flex gap-1.5 items-center"><Ico icon={BoltIcon} sm />Testar</span>}
-          </button>
-          {testResult === 'ok' && <span className="inline-flex gap-1 items-center text-xs font-bold text-gb-green"><Ico icon={CheckIcon} sm />OK</span>}
-          {testResult === 'err' && <span className="inline-flex gap-1 items-center text-xs font-bold text-gb-red"><Ico icon={XMarkIcon} sm />Inválida</span>}
+        <div className="flex flex-wrap gap-2 items-center">
           <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noreferrer"
             className="py-2 px-3 min-h-11 sm:min-h-0 text-[11.5px] font-semibold text-[#635BFF] no-underline rounded-sm border transition-colors duration-200 border-[#635BFF]/20 bg-[#635BFF]/[0.08] hover:bg-[#635BFF]/[0.16] active:bg-[#635BFF]/[0.16] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
             <span className="inline-flex gap-1.5 items-center"><Ico icon={LinkIcon} sm />Dashboard →</span>
@@ -401,37 +277,6 @@ function StripeSection() {
             className="py-2 px-3 min-h-11 sm:min-h-0 text-[11.5px] font-semibold text-[#635BFF] no-underline rounded-sm border transition-colors duration-200 border-[#635BFF]/20 bg-[#635BFF]/[0.08] hover:bg-[#635BFF]/[0.16] active:bg-[#635BFF]/[0.16] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
             <span className="inline-flex gap-1.5 items-center"><Ico icon={UserIcon} sm />Portal →</span>
           </a>
-          <Button2 saving={saving} saved={saved} onClick={() => save()} className="ml-auto px-5" />
-        </div>
-      </Card>
-
-      {/* Price IDs table */}
-      <Card padding="none" className="p-[22px]">
-        <div className="flex justify-between items-center mb-3.5">
-          <div>
-            <div className="mb-1 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">Price IDs dos Planos</div>
-            <div className="text-xs text-secondary">Obter em Stripe Dashboard → Products → cada plano → copiar Price ID</div>
-          </div>
-          <a href="https://dashboard.stripe.com/products" target="_blank" rel="noreferrer"
-            className="py-1.5 px-3 min-h-11 sm:min-h-0 text-[11.5px] font-semibold text-[#635BFF] no-underline rounded transition-colors duration-200 bg-[#635BFF]/[0.08] border border-[#635BFF]/20 hover:bg-[#635BFF]/[0.16] active:bg-[#635BFF]/[0.16] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
-            Ver Produtos →
-          </a>
-        </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {PLANOS_STRIPE.map(p => (
-            <div key={p.id} className="flex gap-2 items-center">
-              <div className="w-[120px] shrink-0">
-                <div className="text-xs font-semibold text-primary">{p.nome}</div>
-                <div className="text-[10.5px] text-muted">€{p.valor}/mês</div>
-              </div>
-              <input value={priceIds[p.id] ?? ''} onChange={e => setPriceId(p.id, e.target.value)}
-                placeholder={`price_${mode === 'live' ? 'live' : 'test'}_...`}
-                className="flex-1 py-1.5 px-2.5 min-h-11 sm:min-h-0 font-mono text-[11.5px] rounded border outline-none transition-all duration-200 border-border bg-elevated text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25"/>
-            </div>
-          ))}
-        </div>
-        <div className="flex justify-end mt-3.5">
-          <Button2 saving={saving} saved={saved} onClick={() => save()} label={<span className="inline-flex gap-1.5 items-center"><Ico icon={SaveIcon} sm />Guardar Price IDs</span>} className="px-5" />
         </div>
       </Card>
 
@@ -460,10 +305,13 @@ function StripeSection() {
 }
 
 // ─── WhatsApp Section ─────────────────────────────────────────────────────────
-type WaConfig = { num: string; token: string };
+// Access Token removido: é geridos como variável de ambiente no deployment
+// (META_WHATSAPP_TOKEN, lido só por api/stripe-webhook.ts) — o campo aqui
+// nunca teve qualquer efeito real.
+type WaConfig = { num: string };
 
 function WhatsAppSection() {
-  const { data, setData, loading, saving, saved, save } = useConfiguracaoSection<WaConfig>('whatsapp', { num: '+351912345679', token: '' });
+  const { data, setData, loading, saving, saved, save } = useConfiguracaoSection<WaConfig>('whatsapp', { num: '+351912345679' });
 
   if (loading) return <div className="p-6 text-[13px] text-muted">A carregar configuração...</div>;
 
@@ -480,9 +328,9 @@ function WhatsAppSection() {
         <Field label="Número WhatsApp Business">
           <Input value={data.num} onChange={v => setData(p => ({ ...p, num: v }))} placeholder="+351..." mono />
         </Field>
-        <Field label="Access Token (Meta)">
-          <Input value={data.token} onChange={v => setData(p => ({ ...p, token: v }))} placeholder="EAA..." type="password" mono />
-        </Field>
+        <div className="py-2.5 px-3.5 mb-3.5 text-xs rounded-lg border border-border-subtle bg-elevated text-secondary">
+          O Access Token é gerido como variável de ambiente no deployment, nunca nesta interface.
+        </div>
         <SaveBar onSave={() => save()} saved={saved} saving={saving} />
       </Card>
       <Card padding="none" className="p-[22px]">

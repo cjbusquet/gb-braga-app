@@ -5,7 +5,7 @@ import { useAlunosDaTurmaQuery } from '../../hooks/useAulas';
 import { useAuth } from '../../lib/auth';
 import { GB } from '../../lib/gbBrand';
 import { useMobile } from '../../lib/useMobile';
-import { Ico, type HeroIcon, ArrowLeftIcon, PlusIcon, CheckIcon, ClockIcon, MapPinIcon, CalendarIcon, Bars3Icon, UserIcon } from '../../lib/icons';
+import { Ico, type HeroIcon, ArrowLeftIcon, PlusIcon, CheckIcon, ClockIcon, MapPinIcon, CalendarIcon, Bars3Icon, UserIcon, TrashIcon, ArrowPathIcon, PencilIcon } from '../../lib/icons';
 import Modal from '../../components/common/Modal';
 import Select from '../../components/common/Select';
 import Button from '../../components/common/Button';
@@ -42,16 +42,17 @@ const DIAS_FULL = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domin
 const FIELD_CLASS = 'box-border w-full py-2.5 px-3 min-h-11 sm:min-h-0 font-ui text-[13px] rounded-sm border outline-none transition-all duration-200 border-border bg-elevated text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25';
 const LABEL_CLASS = 'block mb-1 text-[10.5px] font-semibold tracking-[0.8px] uppercase text-muted';
 
-// ─── Nova Turma Modal ─────────────────────────────────────────────────────────
-function NovaTurmaModal({ onClose, onSave }: { onClose: ()=>void; onSave: ()=>void }) {
-  const [nome,       setNome]       = useState('');
-  const [professor,  setProfessor]  = useState('');
-  const [horario,    setHorario]    = useState('');
-  const [dias,       setDias]       = useState<string[]>([]);
-  const [sala,       setSala]       = useState('');
-  const [capacidade, setCapacidade] = useState(20);
-  const [tipo,       setTipo]       = useState('gi');
-  const [nivel,      setNivel]      = useState('all');
+// ─── Turma Modal (criar / editar) ──────────────────────────────────────────────
+function TurmaModal({ turma, onClose, onSave }: { turma?: any; onClose: ()=>void; onSave: ()=>void }) {
+  const isEdit = !!turma;
+  const [nome,       setNome]       = useState(turma?.nome || '');
+  const [professor,  setProfessor]  = useState(turma?.professorNome || '');
+  const [horario,    setHorario]    = useState(turma?.horario || '');
+  const [dias,       setDias]       = useState<string[]>(turma?.diaSemana || []);
+  const [sala,       setSala]       = useState(turma?.sala || '');
+  const [capacidade, setCapacidade] = useState(turma?.capacidade || 20);
+  const [tipo,       setTipo]       = useState(turma?.tipo || 'gi');
+  const [nivel,      setNivel]      = useState(turma?.nivel || 'all');
   const [saving,     setSaving]     = useState(false);
   const [saved,      setSaved]      = useState(false);
 
@@ -62,17 +63,19 @@ function NovaTurmaModal({ onClose, onSave }: { onClose: ()=>void; onSave: ()=>vo
     if (!nome || !horario) return;
     setSaving(true);
     try {
-      await db.criarTurma({ nome, professorNome: professor, horario, diasSemana: dias, sala, capacidade, nivel, tipo });
+      const dados = { nome, professorNome: professor, horario, diasSemana: dias, sala, capacidade, nivel, tipo };
+      if (isEdit) await db.atualizarTurma(turma.id, dados);
+      else        await db.criarTurma(dados);
       setSaved(true);
       setTimeout(() => { onSave(); close(); }, 1000);
     } catch (e) {
-      console.error('Erro ao criar turma:', e);
+      console.error('Erro ao guardar turma:', e);
       setSaving(false);
     }
   };
 
   return (
-    <Modal onClose={onClose} title="Nova Turma" maxWidth={560}>
+    <Modal onClose={onClose} title={isEdit ? 'Editar Turma' : 'Nova Turma'} maxWidth={560}>
       {close => (
         <>
           <div className="grid grid-cols-1 gap-3 mb-3 sm:grid-cols-2">
@@ -109,7 +112,9 @@ function NovaTurmaModal({ onClose, onSave }: { onClose: ()=>void; onSave: ()=>vo
               disabled={!nome || !horario || saving} loading={saving}
               onClick={() => handleSave(close)}
             >
-              {saved ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Turma criada!</span> : saving ? 'A guardar...' : '+ Criar Turma'}
+              {saved
+                ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />{isEdit ? 'Turma atualizada!' : 'Turma criada!'}</span>
+                : saving ? 'A guardar...' : isEdit ? 'Guardar Alterações' : '+ Criar Turma'}
             </Button>
           </div>
         </>
@@ -119,15 +124,46 @@ function NovaTurmaModal({ onClose, onSave }: { onClose: ()=>void; onSave: ()=>vo
 }
 
 // ─── Turma Detail ─────────────────────────────────────────────────────────────
-function TurmaDetail({ turma, onBack }: { turma: any; onBack: ()=>void }) {
+function TurmaDetail({ turma, onBack, podeGerir, onDeleted, onEdit }: { turma: any; onBack: ()=>void; podeGerir: boolean; onDeleted: ()=>void; onEdit: ()=>void }) {
   const { data: frequentam = [], isLoading: frequentamLoading } = useAlunosDaTurmaQuery(turma.id);
   const cor = (turma as any).cor || GB.red;
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!confirm(`Apagar a turma "${turma.nome}"? As aulas associadas também são apagadas; as presenças de alunos são preservadas.`)) return;
+    setDeleting(true);
+    try {
+      await db.apagarTurma(turma.id);
+      onDeleted();
+    } catch (e) {
+      console.error('Erro ao apagar turma:', e);
+      setDeleting(false);
+    }
+  };
 
   return (
     <div>
-      <button onClick={onBack} className="flex gap-1.5 items-center mb-4 py-2 min-h-11 sm:min-h-0 text-[13px] bg-none border-none cursor-pointer transition-colors duration-200 text-muted hover:text-primary active:text-primary outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
-        <Ico icon={ArrowLeftIcon} sm /> Voltar ao calendário
-      </button>
+      <div className="flex flex-wrap gap-3 justify-between items-center mb-4">
+        <button onClick={onBack} className="flex gap-1.5 items-center py-2 min-h-11 sm:min-h-0 text-[13px] bg-none border-none cursor-pointer transition-colors duration-200 text-muted hover:text-primary active:text-primary outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+          <Ico icon={ArrowLeftIcon} sm /> Voltar ao calendário
+        </button>
+        {podeGerir && (
+          <div className="flex gap-2">
+            <button onClick={onEdit}
+              className="inline-flex gap-1.5 items-center py-1.5 px-3 min-h-11 sm:min-h-0 text-xs font-semibold rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-primary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+              <Ico icon={PencilIcon} sm /> Editar
+            </button>
+            <button onClick={handleDelete} disabled={deleting}
+              className={[
+                'inline-flex gap-1.5 items-center py-1.5 px-3 min-h-11 sm:min-h-0 text-xs font-semibold rounded-sm border transition-colors duration-200 border-gb-red/20 text-gb-red bg-gb-red/[0.07] hover:bg-gb-red/[0.14] active:bg-gb-red/[0.14]',
+                'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                deleting ? 'cursor-not-allowed' : 'cursor-pointer',
+              ].join(' ')}>
+              {deleting ? <Ico icon={ArrowPathIcon} sm /> : <Ico icon={TrashIcon} sm />} Apagar Turma
+            </button>
+          </div>
+        )}
+      </div>
       <Card padding="lg" className="mb-4">
         <div className="flex flex-wrap gap-3 justify-between items-start">
           <div>
@@ -402,16 +438,34 @@ export default function TurmasPage() {
   const { data: turmas, refetch } = useTurmas();
   const [showNova,   setShowNova]   = useState(false);
   const [selected,   setSelected]   = useState<any | null>(null);
+  const [editing,    setEditing]    = useState(false);
   const [filtroTipo, setFiltroTipo] = useState('all');
   const [view,       setView]       = useState<'calendar' | 'list'>('calendar');
 
-  if (selected) return <TurmaDetail turma={selected} onBack={() => setSelected(null)} />;
+  if (selected) return (
+    <>
+      <TurmaDetail
+        turma={selected}
+        onBack={() => setSelected(null)}
+        podeGerir={podeCriarTurma}
+        onDeleted={() => { setSelected(null); refetch(); }}
+        onEdit={() => setEditing(true)}
+      />
+      {editing && (
+        <TurmaModal
+          turma={selected}
+          onClose={() => setEditing(false)}
+          onSave={() => { setEditing(false); setSelected(null); refetch(); }}
+        />
+      )}
+    </>
+  );
 
   const filtered = filtroTipo === 'all' ? turmas : turmas.filter((t: any) => t.tipo === filtroTipo);
 
   return (
     <div>
-      {showNova && <NovaTurmaModal onClose={() => setShowNova(false)} onSave={() => { setShowNova(false); refetch(); }} />}
+      {showNova && <TurmaModal onClose={() => setShowNova(false)} onSave={() => { setShowNova(false); refetch(); }} />}
 
       <PageHeader
         eyebrow="Academia"

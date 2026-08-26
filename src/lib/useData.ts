@@ -397,6 +397,28 @@ export const db = {
     return data;
   },
 
+  atualizarTurma: async (id: string, dados: any) => {
+    if (!isConfigured) return null;
+    const map: any = {};
+    if (dados.nome !== undefined)        map.nome           = dados.nome;
+    if (dados.professorNome !== undefined) map.professor_nome = dados.professorNome || null;
+    if (dados.horario !== undefined)     map.horario        = dados.horario;
+    if (dados.diasSemana !== undefined)  map.dias_semana    = dados.diasSemana;
+    if (dados.sala !== undefined)        map.sala           = dados.sala || null;
+    if (dados.capacidade !== undefined)  map.capacidade     = dados.capacidade;
+    if (dados.nivel !== undefined)       map.nivel          = dados.nivel;
+    if (dados.tipo !== undefined)        map.tipo           = dados.tipo;
+    const { data, error } = await supabase.from('turmas').update(map).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  apagarTurma: async (id: string) => {
+    if (!isConfigured) return;
+    const { error } = await supabase.from('turmas').delete().eq('id', id);
+    if (error) throw error;
+  },
+
   criarTemplate: async (dados: { nome: string; canal: string; assunto?: string; corpo: string }) => {
     if (!isConfigured) return null;
     const { data: { user } } = await supabase.auth.getUser();

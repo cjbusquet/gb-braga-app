@@ -225,11 +225,6 @@ export interface TocDocumento {
 }
 
 export interface TocConfig {
-  apiUrl: string;
-  oauthUrl: string;
-  clientId: string;
-  clientSecret: string;
-  accessToken?: string;
   simulationMode: boolean;
   empresaNome: string;
   empresaNIF: string;
