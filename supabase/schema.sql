@@ -3,34 +3,86 @@
 --  Tribo Laurada Lda. · NIF 518948471
 --  Rua Nova Santa Cruz 11, 4710-409 Braga
 --  Executar no Supabase: Dashboard → SQL Editor → New Query
+--
+--  Idempotente: seguro voltar a correr contra uma BD que já tem
+--  parte ou a totalidade destes objetos (tipos, tabelas, índices,
+--  triggers, policies) — usa IF NOT EXISTS / DROP...IF EXISTS em
+--  vez de assumir uma instalação limpa. Para uma BD já em produção,
+--  os patches numerados em supabase/patches/ continuam a ser o
+--  caminho normal para uma alteração pontual; este ficheiro é o
+--  estado final para instalação de raiz ou reconciliação.
 -- ============================================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ── ENUMS ────────────────────────────────────────────────────
-CREATE TYPE user_role       AS ENUM ('superadmin','admin','atendimento','professor','aluno');
+DO $$ BEGIN
+  CREATE TYPE user_role       AS ENUM ('superadmin','admin','atendimento','professor','aluno');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 -- Inclui a progressão infantil bicolor (cinza/amarela/laranja/verde
 -- com variantes -branca/-preta) e a vermelha honorária de adulto —
 -- ambas usadas pelo frontend (src/types/index.ts Belt, alunoDomain.ts
 -- FAIXAS_KIDS/FAIXAS_ADULTO) mas em falta aqui, o que fazia qualquer
 -- graduação para uma faixa infantil intermédia falhar com "invalid
 -- input value for enum belt_type".
-CREATE TYPE belt_type       AS ENUM (
-  'branca','azul','roxa','marrom','preta','vermelha',
-  'cinza-branca','cinza','cinza-preta',
-  'amarela-branca','amarela','amarela-preta',
-  'laranja-branca','laranja','laranja-preta',
-  'verde-branca','verde','verde-preta'
-);
-CREATE TYPE payment_status  AS ENUM ('pago','pendente','vencido','cancelado');
-CREATE TYPE payment_method  AS ENUM ('stripe','numerario','transferencia');
-CREATE TYPE aluno_status    AS ENUM ('ativo','inativo','suspenso');
-CREATE TYPE genero_type     AS ENUM ('feminino','masculino','outro');
-CREATE TYPE turma_nivel     AS ENUM ('iniciante','intermediario','avancado','kids','all');
-CREATE TYPE turma_tipo      AS ENUM ('gi','nogi','wrestling','kids');
-CREATE TYPE msg_canal       AS ENUM ('whatsapp','sms','email','push');
-CREATE TYPE msg_status      AS ENUM ('enviado','pendente','erro','lido');
-CREATE TYPE contrato_status AS ENUM ('ativo','cancelado','expirado');
+DO $$ BEGIN
+  CREATE TYPE belt_type       AS ENUM (
+    'branca','azul','roxa','marrom','preta','vermelha',
+    'cinza-branca','cinza','cinza-preta',
+    'amarela-branca','amarela','amarela-preta',
+    'laranja-branca','laranja','laranja-preta',
+    'verde-branca','verde','verde-preta'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+-- Se belt_type já existia numa BD antiga sem estes valores (o cenário
+-- que o comentário acima descreve), o DO block acima só falha em
+-- silêncio (duplicate_object) e não os acrescenta — sem isto o "invalid
+-- input value for enum belt_type" continuava a acontecer numa BD real.
+ALTER TYPE belt_type ADD VALUE IF NOT EXISTS 'branca';
+ALTER TYPE belt_type ADD VALUE IF NOT EXISTS 'azul';
+ALTER TYPE belt_type ADD VALUE IF NOT EXISTS 'roxa';
+ALTER TYPE belt_type ADD VALUE IF NOT EXISTS 'marrom';
+ALTER TYPE belt_type ADD VALUE IF NOT EXISTS 'preta';
+ALTER TYPE belt_type ADD VALUE IF NOT EXISTS 'vermelha';
+ALTER TYPE belt_type ADD VALUE IF NOT EXISTS 'cinza-branca';
+ALTER TYPE belt_type ADD VALUE IF NOT EXISTS 'cinza';
+ALTER TYPE belt_type ADD VALUE IF NOT EXISTS 'cinza-preta';
+ALTER TYPE belt_type ADD VALUE IF NOT EXISTS 'amarela-branca';
+ALTER TYPE belt_type ADD VALUE IF NOT EXISTS 'amarela';
+ALTER TYPE belt_type ADD VALUE IF NOT EXISTS 'amarela-preta';
+ALTER TYPE belt_type ADD VALUE IF NOT EXISTS 'laranja-branca';
+ALTER TYPE belt_type ADD VALUE IF NOT EXISTS 'laranja';
+ALTER TYPE belt_type ADD VALUE IF NOT EXISTS 'laranja-preta';
+ALTER TYPE belt_type ADD VALUE IF NOT EXISTS 'verde-branca';
+ALTER TYPE belt_type ADD VALUE IF NOT EXISTS 'verde';
+ALTER TYPE belt_type ADD VALUE IF NOT EXISTS 'verde-preta';
+DO $$ BEGIN
+  CREATE TYPE payment_status  AS ENUM ('pago','pendente','vencido','cancelado');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE TYPE payment_method  AS ENUM ('stripe','numerario','transferencia');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE TYPE aluno_status    AS ENUM ('ativo','inativo','suspenso');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE TYPE genero_type     AS ENUM ('feminino','masculino','outro');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE TYPE turma_nivel     AS ENUM ('iniciante','intermediario','avancado','kids','all');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE TYPE turma_tipo      AS ENUM ('gi','nogi','wrestling','kids');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE TYPE msg_canal       AS ENUM ('whatsapp','sms','email','push');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE TYPE msg_status      AS ENUM ('enviado','pendente','erro','lido');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE TYPE contrato_status AS ENUM ('ativo','cancelado','expirado');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ── PROFILES (ligado ao Supabase Auth) ───────────────────────
 CREATE TABLE IF NOT EXISTS profiles (
@@ -53,6 +105,13 @@ CREATE TABLE IF NOT EXISTS profiles (
   created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Mesmo motivo do ADD COLUMN em presencas.aula_id mais abaixo: numa BD
+-- onde "profiles" já existia sem nif/morada (o cenário que o comentário
+-- acima descreve), CREATE TABLE IF NOT EXISTS é um no-op e não os
+-- acrescenta sozinho.
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS nif    TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS morada TEXT;
 
 -- Trigger: criar profile automaticamente quando utilizador regista
 -- Se já existe uma linha em alunos com este email (ex.: staff criou o
@@ -91,6 +150,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
@@ -158,11 +218,11 @@ CREATE TABLE IF NOT EXISTS alunos (
   updated_at             TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_alunos_email      ON alunos(email);
-CREATE INDEX idx_alunos_status     ON alunos(status);
-CREATE INDEX idx_alunos_plano      ON alunos(plano_id);
-CREATE INDEX idx_alunos_profile    ON alunos(profile_id);
-CREATE INDEX idx_alunos_aprovado_por ON alunos(numerario_aprovado_por);
+CREATE INDEX IF NOT EXISTS idx_alunos_email      ON alunos(email);
+CREATE INDEX IF NOT EXISTS idx_alunos_status     ON alunos(status);
+CREATE INDEX IF NOT EXISTS idx_alunos_plano      ON alunos(plano_id);
+CREATE INDEX IF NOT EXISTS idx_alunos_profile    ON alunos(profile_id);
+CREATE INDEX IF NOT EXISTS idx_alunos_aprovado_por ON alunos(numerario_aprovado_por);
 
 -- ── TURMAS ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS turmas (
@@ -180,17 +240,23 @@ CREATE TABLE IF NOT EXISTS turmas (
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_turmas_professor ON turmas(professor_id);
+CREATE INDEX IF NOT EXISTS idx_turmas_professor ON turmas(professor_id);
 
-INSERT INTO turmas (nome, professor_nome, horario, dias_semana, sala, capacidade, tipo, nivel) VALUES
-  ('Jiu-Jitsu Adultos — Manhã',   'Prof. João Santos', '07:00-08:30', ARRAY['Segunda','Terça','Quarta','Quinta','Sexta'], 'Sala Principal', 20, 'gi', 'all'),
-  ('Jiu-Jitsu Adultos — Noite 1', 'Prof. João Santos', '18:30-20:00', ARRAY['Segunda','Quarta','Sexta'], 'Sala Principal', 25, 'gi', 'iniciante'),
-  ('Jiu-Jitsu Adultos — Noite 2', 'Prof. João Santos', '20:00-21:30', ARRAY['Segunda','Quarta','Sexta'], 'Sala Principal', 25, 'gi', 'intermediario'),
-  ('Jiu-Jitsu Avançado',          'Prof. João Santos', '19:00-20:30', ARRAY['Terça','Quinta'], 'Sala Principal', 15, 'gi', 'avancado'),
-  ('No-Gi / Wrestling',           'Prof. João Santos', '20:30-22:00', ARRAY['Terça','Quinta'], 'Sala Principal', 20, 'nogi', 'all'),
-  ('Kids — Tarde',                'Prof. João Santos', '17:00-18:00', ARRAY['Segunda','Quarta','Sexta'], 'Sala Pequena', 15, 'kids', 'kids'),
-  ('Open Mat',                    'Prof. João Santos', '09:30-12:30', ARRAY['Sábado'], 'Sala Principal', 30, 'gi', 'all')
-ON CONFLICT DO NOTHING;
+-- turmas não tem nenhuma unique key natural (id é gerado), por isso
+-- "ON CONFLICT DO NOTHING" sozinho nunca colide e duplicava estas 7
+-- linhas em cada re-execução — o guard fica à volta do INSERT.
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM turmas) THEN
+    INSERT INTO turmas (nome, professor_nome, horario, dias_semana, sala, capacidade, tipo, nivel) VALUES
+      ('Jiu-Jitsu Adultos — Manhã',   'Prof. João Santos', '07:00-08:30', ARRAY['Segunda','Terça','Quarta','Quinta','Sexta'], 'Sala Principal', 20, 'gi', 'all'),
+      ('Jiu-Jitsu Adultos — Noite 1', 'Prof. João Santos', '18:30-20:00', ARRAY['Segunda','Quarta','Sexta'], 'Sala Principal', 25, 'gi', 'iniciante'),
+      ('Jiu-Jitsu Adultos — Noite 2', 'Prof. João Santos', '20:00-21:30', ARRAY['Segunda','Quarta','Sexta'], 'Sala Principal', 25, 'gi', 'intermediario'),
+      ('Jiu-Jitsu Avançado',          'Prof. João Santos', '19:00-20:30', ARRAY['Terça','Quinta'], 'Sala Principal', 15, 'gi', 'avancado'),
+      ('No-Gi / Wrestling',           'Prof. João Santos', '20:30-22:00', ARRAY['Terça','Quinta'], 'Sala Principal', 20, 'nogi', 'all'),
+      ('Kids — Tarde',                'Prof. João Santos', '17:00-18:00', ARRAY['Segunda','Quarta','Sexta'], 'Sala Pequena', 15, 'kids', 'kids'),
+      ('Open Mat',                    'Prof. João Santos', '09:30-12:30', ARRAY['Sábado'], 'Sala Principal', 30, 'gi', 'all');
+  END IF;
+END $$;
 
 -- ── PAGAMENTOS ───────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS pagamentos (
@@ -211,10 +277,10 @@ CREATE TABLE IF NOT EXISTS pagamentos (
   created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_pagamentos_aluno   ON pagamentos(aluno_id);
-CREATE INDEX idx_pagamentos_status  ON pagamentos(status);
-CREATE INDEX idx_pagamentos_vencimento ON pagamentos(vencimento);
-CREATE INDEX idx_pagamentos_plano   ON pagamentos(plano_id);
+CREATE INDEX IF NOT EXISTS idx_pagamentos_aluno   ON pagamentos(aluno_id);
+CREATE INDEX IF NOT EXISTS idx_pagamentos_status  ON pagamentos(status);
+CREATE INDEX IF NOT EXISTS idx_pagamentos_vencimento ON pagamentos(vencimento);
+CREATE INDEX IF NOT EXISTS idx_pagamentos_plano   ON pagamentos(plano_id);
 
 -- ── PRESENÇAS ────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS presencas (
@@ -233,16 +299,34 @@ CREATE TABLE IF NOT EXISTS presencas (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_presencas_aluno_data ON presencas(aluno_id, data);
-CREATE INDEX idx_presencas_data       ON presencas(data);
-CREATE INDEX idx_presencas_turma      ON presencas(turma_id);
+CREATE INDEX IF NOT EXISTS idx_presencas_aluno_data ON presencas(aluno_id, data);
+CREATE INDEX IF NOT EXISTS idx_presencas_data       ON presencas(data);
+CREATE INDEX IF NOT EXISTS idx_presencas_turma      ON presencas(turma_id);
+
+-- Numa BD já com dados reais anteriores a esta constraint, pode existir
+-- mais que um check-in do mesmo aluno na mesma turma no mesmo dia (é
+-- exatamente o que esta constraint passa a proibir) — sem isto o
+-- CREATE UNIQUE INDEX abaixo falha com "23505: could not create unique
+-- index ... is duplicated". Mantém só o check-in mais antigo de cada
+-- grupo (o registo real de presença) e remove os duplicados a seguir.
+DELETE FROM presencas WHERE id IN (
+  SELECT id FROM (
+    SELECT id, ROW_NUMBER() OVER (
+      PARTITION BY aluno_id, turma_id, data
+      ORDER BY created_at, id
+    ) AS rn
+    FROM presencas
+    WHERE turma_id IS NOT NULL AND tipo = 'checkin'
+  ) dup
+  WHERE dup.rn > 1
+);
 
 -- Um aluno só pode fazer check-in uma vez por dia na MESMA turma —
 -- WHERE turma_id IS NOT NULL porque NULL nunca é igual a NULL numa
 -- unique index, por isso "treino livre" (turma_id NULL) fica de fora
 -- de propósito e continua sem limite. Diferentes turmas no mesmo dia
 -- continuam permitidas (é só a mesma aula 2x que fica bloqueada).
-CREATE UNIQUE INDEX ux_presencas_aluno_turma_dia
+CREATE UNIQUE INDEX IF NOT EXISTS ux_presencas_aluno_turma_dia
   ON presencas(aluno_id, turma_id, data)
   WHERE turma_id IS NOT NULL AND tipo = 'checkin';
 
@@ -263,8 +347,8 @@ CREATE TABLE IF NOT EXISTS professor_checkins (
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_professor_checkins_professor ON professor_checkins(professor_id);
-CREATE INDEX idx_professor_checkins_turma     ON professor_checkins(turma_id);
+CREATE INDEX IF NOT EXISTS idx_professor_checkins_professor ON professor_checkins(professor_id);
+CREATE INDEX IF NOT EXISTS idx_professor_checkins_turma     ON professor_checkins(turma_id);
 
 -- ── AULAS ────────────────────────────────────────────────────
 -- Ocorrência concreta de uma turma num dia (ex: "Jiu-Jitsu Manhã" de
@@ -287,11 +371,11 @@ CREATE TABLE IF NOT EXISTS aulas (
   UNIQUE (turma_id, data)
 );
 
-CREATE INDEX idx_aulas_professor ON aulas(professor_id);
-CREATE INDEX idx_aulas_data      ON aulas(data);
+CREATE INDEX IF NOT EXISTS idx_aulas_professor ON aulas(professor_id);
+CREATE INDEX IF NOT EXISTS idx_aulas_data      ON aulas(data);
 
-ALTER TABLE presencas ADD COLUMN aula_id UUID REFERENCES aulas(id) ON DELETE SET NULL;
-CREATE INDEX idx_presencas_aula ON presencas(aula_id);
+ALTER TABLE presencas ADD COLUMN IF NOT EXISTS aula_id UUID REFERENCES aulas(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_presencas_aula ON presencas(aula_id);
 
 -- ── CONTRATOS ────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS contratos (
@@ -315,8 +399,8 @@ CREATE TABLE IF NOT EXISTS contratos (
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_contratos_aluno ON contratos(aluno_id);
-CREATE INDEX idx_contratos_plano ON contratos(plano_id);
+CREATE INDEX IF NOT EXISTS idx_contratos_aluno ON contratos(aluno_id);
+CREATE INDEX IF NOT EXISTS idx_contratos_plano ON contratos(plano_id);
 
 -- ── GRADUAÇÕES ───────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS graduacoes (
@@ -335,8 +419,8 @@ CREATE TABLE IF NOT EXISTS graduacoes (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_graduacoes_aluno     ON graduacoes(aluno_id);
-CREATE INDEX idx_graduacoes_professor ON graduacoes(professor_id);
+CREATE INDEX IF NOT EXISTS idx_graduacoes_aluno     ON graduacoes(aluno_id);
+CREATE INDEX IF NOT EXISTS idx_graduacoes_professor ON graduacoes(professor_id);
 
 -- ── MENSAGENS ────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS mensagens (
@@ -382,8 +466,8 @@ CREATE TABLE IF NOT EXISTS mensagens_chat (
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_mensagens_chat_aluno   ON mensagens_chat(aluno_id, created_at);
-CREATE INDEX idx_mensagens_chat_remetente ON mensagens_chat(remetente_id);
+CREATE INDEX IF NOT EXISTS idx_mensagens_chat_aluno   ON mensagens_chat(aluno_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_mensagens_chat_remetente ON mensagens_chat(remetente_id);
 
 -- ── NOTIFICAÇÕES IN-APP ──────────────────────────────────────
 -- Uma linha por destinatário (fan-out feito por trigger, não pelo
@@ -400,7 +484,7 @@ CREATE TABLE IF NOT EXISTS notificacoes (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_notificacoes_profile ON notificacoes(profile_id, lida, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notificacoes_profile ON notificacoes(profile_id, lida, created_at DESC);
 
 -- ── CONFIGURAÇÕES ────────────────────────────────────────────
 -- Referenciada por useConfiguracoes.ts e useModulos.tsx (secao
@@ -437,9 +521,9 @@ CREATE TABLE IF NOT EXISTS aluno_responsaveis (
   created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_responsaveis_aluno            ON responsaveis(aluno_id);
-CREATE INDEX idx_aluno_responsaveis_aluno      ON aluno_responsaveis(aluno_id);
-CREATE INDEX idx_aluno_responsaveis_responsavel ON aluno_responsaveis(responsavel_id);
+CREATE INDEX IF NOT EXISTS idx_responsaveis_aluno            ON responsaveis(aluno_id);
+CREATE INDEX IF NOT EXISTS idx_aluno_responsaveis_aluno      ON aluno_responsaveis(aluno_id);
+CREATE INDEX IF NOT EXISTS idx_aluno_responsaveis_responsavel ON aluno_responsaveis(responsavel_id);
 
 -- ── PROFESSORES ──────────────────────────────────────────────
 -- useProfessores() (useData.ts, usada em ProfessoresPage.tsx) faz
@@ -480,8 +564,8 @@ CREATE TABLE IF NOT EXISTS toc_documentos (
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_toc_documentos_aluno     ON toc_documentos(aluno_id);
-CREATE INDEX idx_toc_documentos_pagamento ON toc_documentos(pagamento_id);
+CREATE INDEX IF NOT EXISTS idx_toc_documentos_aluno     ON toc_documentos(aluno_id);
+CREATE INDEX IF NOT EXISTS idx_toc_documentos_pagamento ON toc_documentos(pagamento_id);
 
 -- ── PEDIDOS NUMERÁRIO ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS pedidos_numerario (
@@ -500,9 +584,9 @@ CREATE TABLE IF NOT EXISTS pedidos_numerario (
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_pedidos_numerario_aluno    ON pedidos_numerario(aluno_id);
-CREATE INDEX idx_pedidos_numerario_plano    ON pedidos_numerario(plano_id);
-CREATE INDEX idx_pedidos_numerario_aprovado ON pedidos_numerario(aprovado_por);
+CREATE INDEX IF NOT EXISTS idx_pedidos_numerario_aluno    ON pedidos_numerario(aluno_id);
+CREATE INDEX IF NOT EXISTS idx_pedidos_numerario_plano    ON pedidos_numerario(plano_id);
+CREATE INDEX IF NOT EXISTS idx_pedidos_numerario_aprovado ON pedidos_numerario(aprovado_por);
 
 -- ── LOGS DE ACESSO (segurança) ────────────────────────────────
 CREATE TABLE IF NOT EXISTS access_logs (
@@ -516,7 +600,7 @@ CREATE TABLE IF NOT EXISTS access_logs (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_access_logs_user ON access_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_access_logs_user ON access_logs(user_id);
 
 -- ── ROW LEVEL SECURITY ────────────────────────────────────────
 ALTER TABLE profiles          ENABLE ROW LEVEL SECURITY;
@@ -569,31 +653,40 @@ $$ LANGUAGE SQL SECURITY DEFINER STABLE SET search_path = public;
 -- mesma tabela) — várias policies permissivas para a mesma
 -- ação+role são reavaliadas todas a cada query (Advisor: "Multiple
 -- Permissive Policies").
+DROP POLICY IF EXISTS "Ver planos" ON planos;
 CREATE POLICY "Ver planos"          ON planos FOR SELECT USING (ativo = true OR (SELECT private.auth_role()) IN ('admin','superadmin','atendimento'));
+DROP POLICY IF EXISTS "Admin insere planos" ON planos;
 CREATE POLICY "Admin insere planos" ON planos FOR INSERT WITH CHECK ((SELECT private.auth_role()) IN ('admin','superadmin'));
+DROP POLICY IF EXISTS "Admin atualiza planos" ON planos;
 CREATE POLICY "Admin atualiza planos" ON planos FOR UPDATE USING ((SELECT private.auth_role()) IN ('admin','superadmin'));
+DROP POLICY IF EXISTS "Admin apaga planos" ON planos;
 CREATE POLICY "Admin apaga planos"  ON planos FOR DELETE USING ((SELECT private.auth_role()) IN ('admin','superadmin'));
 
 -- PROFILES policies
+DROP POLICY IF EXISTS "Perfil próprio" ON profiles;
 CREATE POLICY "Perfil próprio"      ON profiles FOR SELECT USING (id = (SELECT auth.uid()) OR (SELECT private.auth_role()) IN ('admin','superadmin','atendimento'));
 -- Inclui id = auth.uid() (não só admin/superadmin): é o fallback que
 -- auth.tsx's loadProfile() usa quando handle_new_user() não criou o
 -- perfil (ex.: sessão órfã depois de o utilizador subjacente ser
 -- recriado) — sem isto, quem cai nesse caminho fica preso para
 -- sempre em "Profile not found", sem forma de recuperar.
+DROP POLICY IF EXISTS "Inserir perfil" ON profiles;
 CREATE POLICY "Inserir perfil" ON profiles FOR INSERT WITH CHECK (
   id = (SELECT auth.uid()) OR (SELECT private.auth_role()) IN ('admin','superadmin')
 );
+DROP POLICY IF EXISTS "Atualizar perfil" ON profiles;
 CREATE POLICY "Atualizar perfil" ON profiles FOR UPDATE
   USING (id = (SELECT auth.uid()) OR (SELECT private.auth_role()) IN ('admin','superadmin'))
   WITH CHECK (id = (SELECT auth.uid()) OR (SELECT private.auth_role()) IN ('admin','superadmin'));
 
 -- ALUNOS policies
+DROP POLICY IF EXISTS "Aluno vê dados" ON alunos;
 CREATE POLICY "Aluno vê dados" ON alunos FOR SELECT USING (email = (SELECT email FROM profiles WHERE id = (SELECT auth.uid())) OR (SELECT private.auth_role()) IN ('admin','superadmin','atendimento','professor'));
 -- 'professor' incluído: NovaMatriculaModal.tsx (o botão "+ Nova
 -- Matrícula" em AlunosPage.tsx, cuja rota já inclui professor) chama
 -- db.criarAluno() → INSERT direto nesta tabela, que ficava bloqueado
 -- por completo com "new row violates row-level security policy".
+DROP POLICY IF EXISTS "Aluno auto-registo" ON alunos;
 CREATE POLICY "Aluno auto-registo" ON alunos FOR INSERT WITH CHECK (
   email = (SELECT email FROM profiles WHERE id = (SELECT auth.uid()))
   OR (SELECT private.auth_role()) IN ('admin','superadmin','atendimento','professor')
@@ -605,6 +698,7 @@ CREATE POLICY "Aluno auto-registo" ON alunos FOR INSERT WITH CHECK (
 -- Auto-edição exige status='ativo': um aluno suspenso/inativo não
 -- pode editar o próprio registo (staff continua a poder sempre, é
 -- como reativa/edita quem está bloqueado).
+DROP POLICY IF EXISTS "Atualizar aluno" ON alunos;
 CREATE POLICY "Atualizar aluno" ON alunos FOR UPDATE
   USING (
     (email = (SELECT email FROM profiles WHERE id = (SELECT auth.uid())) AND status = 'ativo')
@@ -614,6 +708,7 @@ CREATE POLICY "Atualizar aluno" ON alunos FOR UPDATE
     (email = (SELECT email FROM profiles WHERE id = (SELECT auth.uid())) AND status = 'ativo')
     OR (SELECT private.auth_role()) IN ('admin','superadmin','atendimento','professor')
   );
+DROP POLICY IF EXISTS "Admin apaga alunos" ON alunos;
 CREATE POLICY "Admin apaga alunos" ON alunos FOR DELETE USING ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento'));
 
 -- RLS is row-scoped, not column-scoped: the policy above would let a
@@ -670,6 +765,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
+DROP TRIGGER IF EXISTS trg_restringir_update_aluno ON alunos;
 CREATE TRIGGER trg_restringir_update_aluno
   BEFORE UPDATE ON alunos
   FOR EACH ROW EXECUTE FUNCTION restringir_update_aluno();
@@ -696,14 +792,19 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
+DROP TRIGGER IF EXISTS trg_sincronizar_ban_aluno ON alunos;
 CREATE TRIGGER trg_sincronizar_ban_aluno
   AFTER UPDATE ON alunos
   FOR EACH ROW EXECUTE FUNCTION sincronizar_ban_aluno();
 
 -- TURMAS policies
+DROP POLICY IF EXISTS "Ver turmas" ON turmas;
 CREATE POLICY "Ver turmas" ON turmas FOR SELECT USING ((SELECT auth.uid()) IS NOT NULL);
+DROP POLICY IF EXISTS "Admin cria turmas" ON turmas;
 CREATE POLICY "Admin cria turmas"    ON turmas FOR INSERT WITH CHECK ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento'));
+DROP POLICY IF EXISTS "Admin atualiza turmas" ON turmas;
 CREATE POLICY "Admin atualiza turmas" ON turmas FOR UPDATE USING ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento'));
+DROP POLICY IF EXISTS "Admin apaga turmas" ON turmas;
 CREATE POLICY "Admin apaga turmas"   ON turmas FOR DELETE USING ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento'));
 
 -- AULAS policies
@@ -712,22 +813,29 @@ CREATE POLICY "Admin apaga turmas"   ON turmas FOR DELETE USING ((SELECT private
 -- passa por obter_ou_criar_aula/iniciar_aula/concluir_aula (SECURITY
 -- DEFINER), que decidem o professor a partir de quem chama.
 ALTER TABLE aulas ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Ver aulas" ON aulas;
 CREATE POLICY "Ver aulas" ON aulas FOR SELECT USING ((SELECT auth.uid()) IS NOT NULL);
 
 -- PAGAMENTOS policies
+DROP POLICY IF EXISTS "Aluno vê pagamentos" ON pagamentos;
 CREATE POLICY "Aluno vê pagamentos" ON pagamentos FOR SELECT USING (aluno_id = (SELECT private.my_aluno_id()) OR (SELECT private.auth_role()) IN ('admin','superadmin'));
+DROP POLICY IF EXISTS "Aluno insere pagamento" ON pagamentos;
 CREATE POLICY "Aluno insere pagamento" ON pagamentos FOR INSERT WITH CHECK (
   aluno_id IN (SELECT id FROM alunos WHERE email = (SELECT email FROM profiles WHERE id = (SELECT auth.uid())))
   OR (SELECT private.auth_role()) IN ('admin','superadmin')
 );
+DROP POLICY IF EXISTS "Admin atualiza pagamentos" ON pagamentos;
 CREATE POLICY "Admin atualiza pagamentos" ON pagamentos FOR UPDATE USING ((SELECT private.auth_role()) IN ('admin','superadmin'));
+DROP POLICY IF EXISTS "Admin apaga pagamentos" ON pagamentos;
 CREATE POLICY "Admin apaga pagamentos"   ON pagamentos FOR DELETE USING ((SELECT private.auth_role()) IN ('admin','superadmin'));
 
 -- PRESENÇAS policies
+DROP POLICY IF EXISTS "Ver presenças" ON presencas;
 CREATE POLICY "Ver presenças"    ON presencas FOR SELECT USING (aluno_id = (SELECT private.my_aluno_id()) OR (SELECT private.auth_role()) IN ('admin','superadmin','professor','atendimento'));
 -- 'aluno' estava em falta: o self-checkin em MeuCheckin.tsx faz este
 -- INSERT como o próprio aluno, e sem esta condição a RLS bloqueava-o
 -- por completo — ninguém conseguia fazer check-in a partir do portal.
+DROP POLICY IF EXISTS "Registar presença" ON presencas;
 CREATE POLICY "Registar presença" ON presencas FOR INSERT WITH CHECK (
   aluno_id = (SELECT private.my_aluno_id())
   OR (SELECT private.auth_role()) IN ('admin','superadmin','professor','atendimento')
@@ -739,26 +847,33 @@ CREATE POLICY "Registar presença" ON presencas FOR INSERT WITH CHECK (
 -- verificar também o role, um aluno podia inserir-se a si próprio
 -- como professor_id e auto-nomear-se professor para efeitos desta
 -- tabela.
+DROP POLICY IF EXISTS "Ver checkins de professor" ON professor_checkins;
 CREATE POLICY "Ver checkins de professor" ON professor_checkins FOR SELECT USING (
   (professor_id = (SELECT auth.uid()) AND (SELECT private.auth_role()) = 'professor')
   OR (SELECT private.auth_role()) IN ('admin','superadmin')
 );
+DROP POLICY IF EXISTS "Professor regista checkin" ON professor_checkins;
 CREATE POLICY "Professor regista checkin" ON professor_checkins FOR INSERT WITH CHECK (
   (professor_id = (SELECT auth.uid()) AND (SELECT private.auth_role()) = 'professor')
   OR (SELECT private.auth_role()) IN ('admin','superadmin')
 );
+DROP POLICY IF EXISTS "Professor conclui checkin" ON professor_checkins;
 CREATE POLICY "Professor conclui checkin" ON professor_checkins FOR UPDATE USING (
   (professor_id = (SELECT auth.uid()) AND (SELECT private.auth_role()) = 'professor')
   OR (SELECT private.auth_role()) IN ('admin','superadmin')
 );
 
 -- CONTRATOS policies
+DROP POLICY IF EXISTS "Ver contrato" ON contratos;
 CREATE POLICY "Ver contrato" ON contratos FOR SELECT USING (aluno_id = (SELECT private.my_aluno_id()) OR (SELECT private.auth_role()) IN ('admin','superadmin'));
+DROP POLICY IF EXISTS "Aluno insere contrato" ON contratos;
 CREATE POLICY "Aluno insere contrato" ON contratos FOR INSERT WITH CHECK (
   aluno_id IN (SELECT id FROM alunos WHERE email = (SELECT email FROM profiles WHERE id = (SELECT auth.uid())))
   OR (SELECT private.auth_role()) IN ('admin','superadmin')
 );
+DROP POLICY IF EXISTS "Admin atualiza contratos" ON contratos;
 CREATE POLICY "Admin atualiza contratos" ON contratos FOR UPDATE USING ((SELECT private.auth_role()) IN ('admin','superadmin'));
+DROP POLICY IF EXISTS "Admin apaga contratos" ON contratos;
 CREATE POLICY "Admin apaga contratos"   ON contratos FOR DELETE USING ((SELECT private.auth_role()) IN ('admin','superadmin'));
 
 -- GRADUAÇÕES policies
@@ -766,7 +881,9 @@ CREATE POLICY "Admin apaga contratos"   ON contratos FOR DELETE USING ((SELECT p
 -- acesso a toda a gente (staff incluído) exceto o dono da tabela.
 -- Acesso alinhado com a route guard da app (App.tsx: rota "graduacao"
 -- só para superadmin/admin/professor — atendimento não gere graduações).
+DROP POLICY IF EXISTS "Ver graduações" ON graduacoes;
 CREATE POLICY "Ver graduações" ON graduacoes FOR SELECT USING (aluno_id = (SELECT private.my_aluno_id()) OR (SELECT private.auth_role()) IN ('admin','superadmin','professor'));
+DROP POLICY IF EXISTS "Registar graduação" ON graduacoes;
 CREATE POLICY "Registar graduação" ON graduacoes FOR INSERT WITH CHECK ((SELECT private.auth_role()) IN ('admin','superadmin','professor'));
 
 -- Graduar um aluno é 2 escritas que têm de acontecer juntas ou nenhuma:
@@ -922,6 +1039,7 @@ GRANT EXECUTE ON FUNCTION concluir_aula(UUID) TO authenticated;
 -- TOConline policies
 -- "Admin vê faturas" e "Aluno vê as suas faturas" eram 2 policies de
 -- SELECT sobrepostas — fundidas numa só.
+DROP POLICY IF EXISTS "Ver faturas" ON toc_documentos;
 CREATE POLICY "Ver faturas" ON toc_documentos FOR SELECT USING (aluno_id = (SELECT private.my_aluno_id()) OR (SELECT private.auth_role()) IN ('admin','superadmin'));
 
 -- NUMERÁRIO policies
@@ -930,36 +1048,46 @@ CREATE POLICY "Ver faturas" ON toc_documentos FOR SELECT USING (aluno_id = (SELE
 -- próprio pedido de numerario" (já inclui admin/superadmin/atendimento) —
 -- removidos como redundantes. UPDATE/DELETE continuam restritos a
 -- superadmin, tal como o FOR ALL original.
+DROP POLICY IF EXISTS "Aluno vê o próprio pedido de numerario" ON pedidos_numerario;
 CREATE POLICY "Aluno vê o próprio pedido de numerario" ON pedidos_numerario FOR SELECT USING (
   email = (SELECT email FROM profiles WHERE id = (SELECT auth.uid()))
   OR (SELECT private.auth_role()) IN ('admin','superadmin','atendimento')
 );
+DROP POLICY IF EXISTS "Aluno submete numerario" ON pedidos_numerario;
 CREATE POLICY "Aluno submete numerario" ON pedidos_numerario FOR INSERT WITH CHECK (
   email = (SELECT email FROM profiles WHERE id = (SELECT auth.uid()))
   OR (SELECT private.auth_role()) IN ('admin','superadmin','atendimento')
 );
+DROP POLICY IF EXISTS "Superadmin atualiza numerario" ON pedidos_numerario;
 CREATE POLICY "Superadmin atualiza numerario" ON pedidos_numerario FOR UPDATE USING ((SELECT private.auth_role()) = 'superadmin');
+DROP POLICY IF EXISTS "Superadmin apaga numerario" ON pedidos_numerario;
 CREATE POLICY "Superadmin apaga numerario"   ON pedidos_numerario FOR DELETE USING ((SELECT private.auth_role()) = 'superadmin');
 
 -- MENSAGENS policies
 -- Única policy na tabela — FOR ALL não sobrepõe nada aqui, ao
 -- contrário das tabelas acima.
+DROP POLICY IF EXISTS "Admin gere mensagens" ON mensagens;
 CREATE POLICY "Admin gere mensagens" ON mensagens FOR ALL USING ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento'));
 
 -- TEMPLATES_MENSAGEM policies (só criar/apagar são usados pelo
 -- frontend hoje — sem policy de UPDATE)
+DROP POLICY IF EXISTS "Ver templates" ON templates_mensagem;
 CREATE POLICY "Ver templates" ON templates_mensagem FOR SELECT USING ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento'));
+DROP POLICY IF EXISTS "Staff insere templates" ON templates_mensagem;
 CREATE POLICY "Staff insere templates" ON templates_mensagem FOR INSERT WITH CHECK ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento'));
+DROP POLICY IF EXISTS "Staff apaga templates" ON templates_mensagem;
 CREATE POLICY "Staff apaga templates" ON templates_mensagem FOR DELETE USING ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento'));
 
 -- MENSAGENS_CHAT policies
 -- Sem policy de UPDATE/DELETE — "marcar como lida" passa só pela RPC
 -- marcar_chat_lida() (SECURITY DEFINER), nunca por UPDATE direto do
 -- cliente (ver função mais abaixo).
+DROP POLICY IF EXISTS "Ver conversa" ON mensagens_chat;
 CREATE POLICY "Ver conversa" ON mensagens_chat FOR SELECT USING (
   aluno_id = (SELECT private.my_aluno_id())
   OR (SELECT private.auth_role()) IN ('admin','superadmin','atendimento')
 );
+DROP POLICY IF EXISTS "Enviar mensagem de chat" ON mensagens_chat;
 CREATE POLICY "Enviar mensagem de chat" ON mensagens_chat FOR INSERT WITH CHECK (
   remetente_id = (SELECT auth.uid())
   AND (
@@ -973,7 +1101,9 @@ CREATE POLICY "Enviar mensagem de chat" ON mensagens_chat FOR INSERT WITH CHECK 
 -- notificar_nova_mensagem_chat() (SECURITY DEFINER) — um aluno pode
 -- inserir em mensagens_chat mas não tem (nem deve ter) permissão
 -- direta de escrever notificações para outros perfis (ex.: staff).
+DROP POLICY IF EXISTS "Ver próprias notificações" ON notificacoes;
 CREATE POLICY "Ver próprias notificações" ON notificacoes FOR SELECT USING (profile_id = (SELECT auth.uid()));
+DROP POLICY IF EXISTS "Marcar própria notificação como lida" ON notificacoes;
 CREATE POLICY "Marcar própria notificação como lida" ON notificacoes FOR UPDATE
   USING (profile_id = (SELECT auth.uid()))
   WITH CHECK (profile_id = (SELECT auth.uid()));
@@ -986,11 +1116,14 @@ CREATE POLICY "Marcar própria notificação como lida" ON notificacoes FOR UPDA
 -- 'aluno'/'professor'/'atendimento' — antes disto, qualquer
 -- utilizador autenticado conseguia ler Client Secret/sk_/whsec_/
 -- token WhatsApp diretamente via supabase.from('configuracoes').
+DROP POLICY IF EXISTS "Ver configuracoes" ON configuracoes;
 CREATE POLICY "Ver configuracoes" ON configuracoes FOR SELECT USING (
   (secao IN ('academia','modulos') AND (SELECT auth.uid()) IS NOT NULL)
   OR (SELECT private.auth_role()) IN ('admin','superadmin')
 );
+DROP POLICY IF EXISTS "Admin insere configuracoes" ON configuracoes;
 CREATE POLICY "Admin insere configuracoes" ON configuracoes FOR INSERT WITH CHECK ((SELECT private.auth_role()) IN ('admin','superadmin'));
+DROP POLICY IF EXISTS "Admin atualiza configuracoes" ON configuracoes;
 CREATE POLICY "Admin atualiza configuracoes" ON configuracoes FOR UPDATE USING ((SELECT private.auth_role()) IN ('admin','superadmin'));
 
 -- RESPONSÁVEIS policies
@@ -998,20 +1131,27 @@ CREATE POLICY "Admin atualiza configuracoes" ON configuracoes FOR UPDATE USING (
 -- e vincula um responsável no mesmo fluxo que criarAluno() quando o
 -- novo aluno é menor — bloquear só o INSERT em alunos deixaria este
 -- segundo passo a falhar a seguir, com o mesmo tipo de erro.
+DROP POLICY IF EXISTS "Ver responsaveis" ON responsaveis;
 CREATE POLICY "Ver responsaveis" ON responsaveis FOR SELECT USING ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento','professor'));
+DROP POLICY IF EXISTS "Staff insere responsaveis" ON responsaveis;
 CREATE POLICY "Staff insere responsaveis" ON responsaveis FOR INSERT WITH CHECK ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento','professor'));
 
+DROP POLICY IF EXISTS "Ver vinculos responsaveis" ON aluno_responsaveis;
 CREATE POLICY "Ver vinculos responsaveis" ON aluno_responsaveis FOR SELECT USING ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento','professor'));
+DROP POLICY IF EXISTS "Staff vincula responsavel" ON aluno_responsaveis;
 CREATE POLICY "Staff vincula responsavel" ON aluno_responsaveis FOR INSERT WITH CHECK ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento','professor'));
+DROP POLICY IF EXISTS "Staff desvincula responsavel" ON aluno_responsaveis;
 CREATE POLICY "Staff desvincula responsavel" ON aluno_responsaveis FOR DELETE USING ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento'));
 
 -- PROFESSOR_EXTRAS policies — sem policy de escrita: nenhuma
 -- mutação existe no frontend hoje, view "professores" é só leitura.
+DROP POLICY IF EXISTS "Ver professor_extras" ON professor_extras;
 CREATE POLICY "Ver professor_extras" ON professor_extras FOR SELECT USING ((SELECT private.auth_role()) IN ('admin','superadmin','atendimento'));
 
 -- ACCESS_LOGS policies
 -- Sem policy de INSERT/UPDATE/DELETE: só o backend (service role, que
 -- ignora RLS) deve escrever aqui. Nenhum papel de cliente pode gravar.
+DROP POLICY IF EXISTS "Admin vê access_logs" ON access_logs;
 CREATE POLICY "Admin vê access_logs" ON access_logs FOR SELECT USING ((SELECT private.auth_role()) IN ('admin','superadmin'));
 
 -- ── TRIGGERS updated_at ───────────────────────────────────────
@@ -1019,7 +1159,9 @@ CREATE OR REPLACE FUNCTION set_updated_at() RETURNS TRIGGER AS $$
 BEGIN NEW.updated_at = NOW(); RETURN NEW; END;
 $$ LANGUAGE plpgsql SET search_path = '';
 
+DROP TRIGGER IF EXISTS trg_profiles_upd ON profiles;
 CREATE TRIGGER trg_profiles_upd BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+DROP TRIGGER IF EXISTS trg_alunos_upd ON alunos;
 CREATE TRIGGER trg_alunos_upd   BEFORE UPDATE ON alunos   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- ── SYNC nome (alunos ↔ profiles) ──────────────────────────────
@@ -1052,7 +1194,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
+DROP TRIGGER IF EXISTS trg_sync_aluno_nome ON alunos;
 CREATE TRIGGER trg_sync_aluno_nome   AFTER UPDATE OF nome ON alunos   FOR EACH ROW EXECUTE FUNCTION sync_aluno_nome_to_profile();
+DROP TRIGGER IF EXISTS trg_sync_profile_nome ON profiles;
 CREATE TRIGGER trg_sync_profile_nome AFTER UPDATE OF nome ON profiles FOR EACH ROW EXECUTE FUNCTION sync_profile_nome_to_aluno();
 
 REVOKE EXECUTE ON FUNCTION sync_aluno_nome_to_profile()   FROM PUBLIC;
@@ -1114,6 +1258,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
+DROP TRIGGER IF EXISTS trg_notificar_nova_mensagem_chat ON mensagens_chat;
 CREATE TRIGGER trg_notificar_nova_mensagem_chat
   AFTER INSERT ON mensagens_chat
   FOR EACH ROW EXECUTE FUNCTION notificar_nova_mensagem_chat();
@@ -1232,11 +1377,17 @@ GRANT EXECUTE ON FUNCTION private.my_aluno_id() TO anon, authenticated;
 -- supabase_realtime starts with no tables attached — useModulos.tsx's
 -- postgres_changes subscription on "configuracoes" would silently
 -- never fire without this, even though .subscribe() itself succeeds.
-ALTER PUBLICATION supabase_realtime ADD TABLE configuracoes;
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE configuracoes;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 -- ChatPage.tsx / aluno Mensagens.tsx (mensagens_chat) and the header
 -- notification bell (notificacoes) both rely on postgres_changes.
-ALTER PUBLICATION supabase_realtime ADD TABLE mensagens_chat;
-ALTER PUBLICATION supabase_realtime ADD TABLE notificacoes;
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE mensagens_chat;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE notificacoes;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ── STORAGE: avatars ─────────────────────────────────────────
 -- useUploadAvatar (src/hooks/useProfile.ts) uploads to a bucket that
@@ -1247,10 +1398,13 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('avatars', 'avatars', true)
 ON CONFLICT (id) DO NOTHING;
 
+DROP POLICY IF EXISTS "Avatares são publicamente legíveis" ON storage.objects;
 CREATE POLICY "Avatares são publicamente legíveis" ON storage.objects FOR SELECT
   USING (bucket_id = 'avatars');
+DROP POLICY IF EXISTS "Utilizador faz upload do próprio avatar" ON storage.objects;
 CREATE POLICY "Utilizador faz upload do próprio avatar" ON storage.objects FOR INSERT
   WITH CHECK (bucket_id = 'avatars' AND (SELECT auth.uid())::text = (storage.foldername(name))[1]);
+DROP POLICY IF EXISTS "Utilizador substitui o próprio avatar" ON storage.objects;
 CREATE POLICY "Utilizador substitui o próprio avatar" ON storage.objects FOR UPDATE
   USING (bucket_id = 'avatars' AND (SELECT auth.uid())::text = (storage.foldername(name))[1]);
 
