@@ -34,6 +34,16 @@ function horaAtual() {
   });
 }
 
+/** Minutos desde a meia-noite do início de "HH:MM" ou "HH:MM-HH:MM". */
+function horaInicioMinutos(horario: string | undefined): number | null {
+  const m = horario?.match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return null;
+  return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+}
+
+/** Janela de check-in: até 12h antes do início da aula. */
+const JANELA_CHECKIN_HORAS = 12;
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function MeuCheckin() {
   const { user } = useAuth();
@@ -48,19 +58,55 @@ export default function MeuCheckin() {
   const presencasHoje = presencas.filter(
     (p) => p.alunoId === aluno?.id && p.data === hoje_,
   );
-  const turmaIdsJaChecados = new Set(
-    presencasHoje.filter((p) => p.turmaId).map((p) => p.turmaId),
+
+  const amanhaData = new Date();
+  amanhaData.setDate(amanhaData.getDate() + 1);
+  const amanha_ = amanhaData.toISOString().split('T')[0];
+  const presencasAmanha = presencas.filter(
+    (p) => p.alunoId === aluno?.id && p.data === amanha_,
   );
+
+  const turmaIdsJaChecados = new Set([
+    ...presencasHoje.filter((p) => p.turmaId).map((p) => p.turmaId),
+    ...presencasAmanha.filter((p) => p.turmaId).map((p) => p.turmaId),
+  ]);
 
   // Turmas de hoje (por dia da semana)
   const diaSemana = hojeNomeDia();
-  const turmasHoje = turmas.filter((t) =>
-    Array.isArray(t.diaSemana)
-      ? t.diaSemana.some((d: string) =>
-          d.toLowerCase().startsWith(diaSemana.slice(0, 3)),
+  const turmasHoje = turmas
+    .filter((t) =>
+      Array.isArray(t.diaSemana)
+        ? t.diaSemana.some((d: string) =>
+            d.toLowerCase().startsWith(diaSemana.slice(0, 3)),
+          )
+        : false,
+    )
+    .map((t) => ({ ...t, amanha: false, dataAula: hoje_ }));
+
+  // Turmas de amanhã cujo início cai dentro da janela de check-in
+  // antecipado (até 12h antes) — permite check-in à noite para uma
+  // aula de manhã cedo.
+  const agora = new Date();
+  const diaSemanaAmanha = DIAS_PT[amanhaData.getDay()];
+  const turmasAmanha = turmas
+    .filter((t) => {
+      if (
+        !Array.isArray(t.diaSemana) ||
+        !t.diaSemana.some((d: string) =>
+          d.toLowerCase().startsWith(diaSemanaAmanha.slice(0, 3)),
         )
-      : false,
-  );
+      )
+        return false;
+      const inicioMin = horaInicioMinutos(t.horario);
+      if (inicioMin === null) return false;
+      const inicioAmanha = new Date(amanhaData);
+      inicioAmanha.setHours(Math.floor(inicioMin / 60), inicioMin % 60, 0, 0);
+      const horasAteInicio = (inicioAmanha.getTime() - agora.getTime()) / 3_600_000;
+      return horasAteInicio > 0 && horasAteInicio <= JANELA_CHECKIN_HORAS;
+    })
+    .map((t) => ({ ...t, amanha: true, dataAula: amanha_ }));
+
+  const turmasDisponiveis = [...turmasHoje, ...turmasAmanha];
 
   const [turmaId, setTurmaId] = useState('');
   const [checking, setChecking] = useState(false);
@@ -121,26 +167,27 @@ export default function MeuCheckin() {
     );
   }, [fence]);
 
-  // Pré-selecionar turma se só há uma hoje — mas não se já fizeste
+  // Pré-selecionar turma se só há uma disponível — mas não se já fizeste
   // check-in nela, para não pré-selecionar uma opção bloqueada.
   useEffect(() => {
-    if (turmasHoje.length === 1 && !turmaIdsJaChecados.has(turmasHoje[0].id)) {
-      setTurmaId(turmasHoje[0].id);
+    if (turmasDisponiveis.length === 1 && !turmaIdsJaChecados.has(turmasDisponiveis[0].id)) {
+      setTurmaId(turmasDisponiveis[0].id);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [turmas, turmasHoje]);
+  }, [turmas, turmasDisponiveis]);
 
   const handleCheckin = async () => {
     if (!aluno) return;
     setErr('');
     setChecking(true);
     try {
-      const turma = turmas.find((t) => t.id === turmaId);
+      const turma = turmasDisponiveis.find((t) => t.id === turmaId);
       await db.registarPresenca({
         alunoId: aluno.id,
         alunoNome: aluno.nome,
         turmaId: turma?.id || null,
         turmaNome: turma?.nome || null,
+        data: turma?.dataAula || hoje_,
         metodo: 'app',
         gpsLat: userPos?.latitude ?? null,
         gpsLng: userPos?.longitude ?? null,
@@ -207,7 +254,7 @@ export default function MeuCheckin() {
           </div>
           {presencasHoje.map((p, i) => (
             <div key={i} className="text-xs text-secondary">
-              {p.hora?.slice(0, 5)} — {p.turmaNome || 'Treino livre'}
+              {p.hora?.slice(0, 5)} · {p.turmaNome || 'Treino livre'}
             </div>
           ))}
         </div>
@@ -222,14 +269,14 @@ export default function MeuCheckin() {
             Presença registada!
           </div>
           <div className="mb-5 text-[13px] text-muted">
-            {turmasHoje.find((t) => t.id === turmaId)?.nome || 'Treino livre'} ·{' '}
+            {turmasDisponiveis.find((t) => t.id === turmaId)?.nome} ·{' '}
             {horaAtual()}
           </div>
           <Button
             variant="secondary"
             onClick={() => {
               setDone(false);
-              setTurmaId(turmasHoje.length === 1 ? turmasHoje[0].id : '');
+              setTurmaId(turmasDisponiveis.length === 1 ? turmasDisponiveis[0].id : '');
             }}
           >
             Fazer outro check-in
@@ -244,14 +291,13 @@ export default function MeuCheckin() {
               Aula
             </div>
 
-            {turmasHoje.length === 0 ? (
+            {turmasDisponiveis.length === 0 ? (
               <div className="py-3 text-[13px] text-muted">
-                Sem aulas agendadas para hoje. Podes fazer check-in como treino
-                livre.
+                Sem aulas agendadas para hoje ou nas próximas {JANELA_CHECKIN_HORAS}h.
               </div>
             ) : (
               <div className="flex flex-col gap-2">
-                {turmasHoje.map((t) => {
+                {turmasDisponiveis.map((t) => {
                   const jaChecada = turmaIdsJaChecados.has(t.id);
                   return (
                   <label
@@ -279,37 +325,16 @@ export default function MeuCheckin() {
                         {t.nome}
                       </div>
                       <div className="text-[11px] text-muted">
-                        {jaChecada ? 'Já fizeste check-in hoje' : t.horario}
+                        {jaChecada
+                          ? 'Já fizeste check-in'
+                          : t.amanha
+                            ? `Amanhã · ${t.horario}`
+                            : t.horario}
                       </div>
                     </div>
                   </label>
                   );
                 })}
-
-                {/* Opção "Treino livre" */}
-                <label
-                  className={[
-                    'flex gap-3 items-center py-2.5 px-3.5 rounded-lg border-[1.5px] cursor-pointer transition-colors duration-200',
-                    turmaId === '' ? 'border-gb-red bg-gb-red/[0.06]' : 'border-border bg-elevated',
-                  ].join(' ')}
-                >
-                  <input
-                    type="radio"
-                    name="turma"
-                    value=""
-                    checked={turmaId === ''}
-                    onChange={() => setTurmaId('')}
-                    className="outline-none accent-gb-red focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
-                  />
-                  <div>
-                    <div className="text-[13px] text-primary">
-                      Treino livre
-                    </div>
-                    <div className="text-[11px] text-muted">
-                      Sem turma específica
-                    </div>
-                  </div>
-                </label>
               </div>
             )}
           </div>
@@ -338,7 +363,7 @@ export default function MeuCheckin() {
                   {gpsStatus === 'inside'
                     ? `Dentro da academia (${gpsDist}m)`
                     : gpsStatus === 'outside'
-                      ? `Fora da academia — ${gpsDist}m (máx. ${fence.raio}m)`
+                      ? `Fora da academia, ${gpsDist}m (máx. ${fence.raio}m)`
                       : gpsStatus === 'checking'
                         ? 'A verificar localização...'
                         : gpsStatus === 'error'
@@ -363,14 +388,16 @@ export default function MeuCheckin() {
           {/* Botão check-in */}
           <Button
             variant="primary" fullWidth
-            disabled={checking || (turmaId !== '' && turmaIdsJaChecados.has(turmaId))}
+            disabled={checking || turmaId === '' || turmaIdsJaChecados.has(turmaId)}
             onClick={handleCheckin}
           >
             {turmaId !== '' && turmaIdsJaChecados.has(turmaId)
               ? 'Já fizeste check-in nesta aula'
               : checking
                 ? 'A registar...'
-                : 'Fazer Check-in'}
+                : turmaId === ''
+                  ? 'Escolhe uma aula'
+                  : 'Fazer Check-in'}
           </Button>
         </Card>
       )}

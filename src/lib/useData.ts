@@ -18,6 +18,11 @@ function useQuery<T>(
   supabaseQuery: () => Promise<{ data: T[] | null; error: unknown }>,
   fallback: T[]
 ) {
+  // `fallback` (mock data) só é usado em modo demo (sem Supabase configurado).
+  // Com Supabase real, enquanto a query carrega ou se falha devolvemos [] —
+  // os componentes mostram skeleton. NUNCA mock/valores-default sobre dados
+  // reais (senão um reload pisca "Lucas Oliveira" & companhia).
+  const empty = isConfigured ? ([] as T[]) : fallback;
   const { data, isLoading, refetch } = useTanstackQuery({
     queryKey: [key],
     queryFn: async () => {
@@ -25,7 +30,7 @@ function useQuery<T>(
       try {
         const { data: rows, error: err } = await supabaseQuery();
         if (err) throw err;
-        return (rows as T[]) ?? fallback;
+        return (rows as T[]) ?? [];
       } catch (e: unknown) {
         // Supabase/PostgREST errors are plain objects ({message, details,
         // hint, code}), not Error instances — String(e) on those just gives
@@ -34,12 +39,12 @@ function useQuery<T>(
           : (typeof e === 'object' && e !== null && 'message' in e) ? String((e as { message: unknown }).message)
           : String(e);
         console.warn(`[${key}] Supabase error:`, msg);
-        return fallback;
+        return [] as T[];
       }
     },
   });
 
-  return { data: data ?? fallback, loading: isLoading, error: null as string | null, refetch };
+  return { data: data ?? empty, loading: isLoading, error: null as string | null, refetch };
 }
 
 // ── ALUNOS ────────────────────────────────────────────────────
@@ -94,6 +99,33 @@ export function usePagamentos(alunoId?: string) {
   );
 }
 
+// ── GRUPOS FAMILIARES ─────────────────────────────────────────
+// Um plano família = um grupo + N alunos ligados por grupo_familiar_id, com a
+// subscrição Stripe no titular. RLS: o titular (por email) e os membros veem-no.
+export interface GrupoFamiliar {
+  id: string; planoId: string; planoNome: string; titularNome: string;
+  titularEmail: string; titularTreina: boolean; status: 'ativo' | 'inativo' | 'suspenso';
+  stripeSubId: string;
+}
+export function useGruposFamiliares() {
+  return useQuery<GrupoFamiliar>(
+    'grupos_familiares',
+    async () => {
+      const res = await supabase.from('grupos_familiares').select('*');
+      return {
+        data: res.data?.map((r): GrupoFamiliar => ({
+          id: r.id, planoId: r.plano_id ?? '', planoNome: r.plano_nome ?? '',
+          titularNome: r.titular_nome ?? '', titularEmail: r.titular_email ?? '',
+          titularTreina: !!r.titular_treina, status: r.status,
+          stripeSubId: r.stripe_subscription_id ?? '',
+        })) ?? null,
+        error: res.error,
+      };
+    },
+    [],
+  );
+}
+
 // ── PRESENÇAS ─────────────────────────────────────────────────
 export function usePresencas(alunoId?: string, limit = 100) {
   return useQuery(
@@ -101,7 +133,7 @@ export function usePresencas(alunoId?: string, limit = 100) {
     async () => {
       let q = supabase
         .from('presencas')
-        .select('id, aluno_id, aluno_nome, turma_id, turma_nome, data, hora, tipo, metodo, created_at')
+        .select('id, aluno_id, aluno_nome, turma_id, turma_nome, data, hora, tipo, metodo, created_at, aula_id, aulas(professor_nome, sala)')
         .order('data', { ascending: false })
         .order('hora', { ascending: false })
         .limit(limit);
@@ -229,7 +261,7 @@ export const db = {
     // lowercase single-word values ('cinza', 'branca', …).
     const rawFaixa: string = (dados.faixa || '').toLowerCase().trim();
     const faixaEnum = rawFaixa.split(/\s+/)[0] || 'branca';
-    const validFaixas = ['branca','cinza','amarela','laranja','verde','azul','roxa','marrom','preta'];
+    const validFaixas = ['branca','cinza','amarela','laranja','verde','azul','roxa','marrom','preta','vermelha'];
     const faixa = validFaixas.includes(faixaEnum) ? faixaEnum : 'branca';
 
     const { data, error } = await supabase.from('alunos').insert({
@@ -269,6 +301,7 @@ export const db = {
     if (campos.genero !== undefined) map.genero = campos.genero || null;
     if (campos.grau !== undefined)          map.grau            = campos.grau;
     if (campos.dataNascimento !== undefined) map.data_nascimento = campos.dataNascimento || null;
+    if (campos.aulaParticular !== undefined) map.aula_particular = campos.aulaParticular;
     const { data, error } = await supabase.from('alunos').update(map).eq('id', id).select().single();
     if (error) throw error;
     return data;
@@ -281,16 +314,25 @@ export const db = {
 
   registarPresenca: async (dados: any) => {
     if (!isConfigured) return null;
-    const hoje = new Date().toISOString().split('T')[0];
+    // Nunca aceitar uma presença sem turma — todo o check-in (self-service
+    // ou manual do staff) tem de estar ligado a uma aula real da grelha,
+    // nunca "à toa". Guarda aqui, não em cada ecrã: é o único ponto por
+    // onde toda a gravação de presenças passa.
+    if (!dados.turmaId) throw new Error('Seleciona uma turma para fazer check-in.');
+    // Check-in até 12h antes da aula (MeuCheckin.tsx) passa a data da
+    // própria aula (pode ser amanhã), não a de hoje — sem isto, um
+    // check-in feito hoje à noite para a aula de amanhã de manhã ficava
+    // ligado à ocorrência de HOJE da turma (data errada em `aulas`).
+    const dataAlvo = dados.data || new Date().toISOString().split('T')[0];
 
-    // Materializa a ocorrência concreta desta turma hoje (ou reaproveita
-    // a já existente) para que a presença fique ligada a uma aula, não
-    // só a (turma_id, data) — ver patch 27_aulas_individuais.sql.
+    // Materializa a ocorrência concreta desta turma nessa data (ou
+    // reaproveita a já existente) para que a presença fique ligada a
+    // uma aula, não só a (turma_id, data) — ver patch 27_aulas_individuais.sql.
     let aulaId: string | null = null;
     if (dados.turmaId) {
       const { data: aid, error: aulaError } = await supabase.rpc('obter_ou_criar_aula', {
         p_turma_id: dados.turmaId,
-        p_data: hoje,
+        p_data: dataAlvo,
       });
       if (aulaError) throw aulaError;
       aulaId = aid;
@@ -302,7 +344,7 @@ export const db = {
       turma_id:   dados.turmaId   || null,
       turma_nome: dados.turmaNome || null,
       aula_id:    aulaId,
-      data:       hoje,
+      data:       dataAlvo,
       hora:       new Date().toTimeString().slice(0, 8),
       tipo:       'checkin',
       metodo:     dados.metodo || 'manual',
@@ -384,6 +426,7 @@ export const db = {
     if (!isConfigured) return null;
     const { data, error } = await supabase.from('turmas').insert({
       nome:           dados.nome,
+      professor_id:   dados.professorId   || null,
       professor_nome: dados.professorNome || null,
       horario:        dados.horario,
       dias_semana:    dados.diasSemana || [],
@@ -391,6 +434,7 @@ export const db = {
       capacidade:     dados.capacidade || 20,
       nivel:          dados.nivel      || 'all',
       tipo:           dados.tipo       || 'gi',
+      cor:            dados.cor        || null,
       ativa:          true,
     }).select().single();
     if (error) throw error;
@@ -401,6 +445,7 @@ export const db = {
     if (!isConfigured) return null;
     const map: any = {};
     if (dados.nome !== undefined)        map.nome           = dados.nome;
+    if (dados.professorId !== undefined)  map.professor_id   = dados.professorId || null;
     if (dados.professorNome !== undefined) map.professor_nome = dados.professorNome || null;
     if (dados.horario !== undefined)     map.horario        = dados.horario;
     if (dados.diasSemana !== undefined)  map.dias_semana    = dados.diasSemana;
@@ -408,6 +453,7 @@ export const db = {
     if (dados.capacidade !== undefined)  map.capacidade     = dados.capacidade;
     if (dados.nivel !== undefined)       map.nivel          = dados.nivel;
     if (dados.tipo !== undefined)        map.tipo           = dados.tipo;
+    if (dados.cor !== undefined)         map.cor            = dados.cor || null;
     const { data, error } = await supabase.from('turmas').update(map).eq('id', id).select().single();
     if (error) throw error;
     return data;
@@ -548,8 +594,10 @@ export function mapAluno(r: any) {
     responsavel:     r.responsavel || '',
     stripeCustomerId: r.stripe_customer_id || r.stripeCustomerId || '',
     stripeSubId:     r.stripe_subscription_id || '',
+    grupoFamiliarId: r.grupo_familiar_id || r.grupoFamiliarId || '',
     metodoPagamento: r.metodo_pagamento || 'stripe',
     numerarioAprovado: r.numerario_aprovado || false,
+    aulaParticular:  r.aula_particular || false,
   };
 }
 
@@ -565,6 +613,9 @@ export function mapPresenca(r: any) {
     hora:      r.hora,
     tipo:      r.tipo    || 'checkin',
     metodo:    r.metodo  || 'manual',
+    aulaId:        r.aula_id || r.aulaId || undefined,
+    professorNome: r.aulas?.professor_nome || r.professorNome || undefined,
+    sala:          r.aulas?.sala           || r.sala          || undefined,
   };
 }
 
@@ -582,6 +633,7 @@ export function mapPagamento(r: any) {
     status:           r.status,
     metodo:           r.metodo || '',
     stripePaymentId:  r.stripe_payment_id || '',
+    grupoFamiliarId:  r.grupo_familiar_id || '',
   };
 }
 

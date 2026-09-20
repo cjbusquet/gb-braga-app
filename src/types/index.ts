@@ -1,8 +1,10 @@
-export type UserRole = 'superadmin' | 'admin' | 'atendimento' | 'professor' | 'aluno';
+export type UserRole = 'superadmin' | 'admin' | 'atendimento' | 'professor' | 'aluno' | 'encarregado';
 
 export type Belt =
-  // Faixas adulto
-  | 'branca' | 'azul' | 'roxa' | 'marrom' | 'preta' | 'vermelha'
+  // Faixas adulto — coral (vermelha-preta 7º grau, vermelha-branca 8º grau)
+  // entre a preta e a vermelha (9º/10º grau, honorária).
+  | 'branca' | 'azul' | 'roxa' | 'marrom' | 'preta'
+  | 'vermelha-preta' | 'vermelha-branca' | 'vermelha'
   // Faixas infantil — progressão GB Kids
   | 'cinza-branca' | 'cinza' | 'cinza-preta'
   | 'amarela-branca' | 'amarela' | 'amarela-preta'
@@ -22,6 +24,10 @@ export interface User {
   matriculaCompleta?: boolean;
   telefone?: string;
   createdAt: string;
+  /** true quando é aluno, paga por Stripe, e o primeiro pagamento (ou o do
+   *  grupo família) ainda não foi confirmado pelo webhook — bloqueia a app
+   *  e redireciona para Meu Financeiro (ver AppContent em App.tsx). */
+  pagamentoPendente?: boolean;
 }
 
 export interface Aluno {
@@ -98,6 +104,9 @@ export interface Presenca {
   hora: string;
   tipo: 'checkin' | 'checkout';
   metodo: 'qrcode' | 'manual' | 'app' | 'gps';
+  aulaId?: string;
+  professorNome?: string;
+  sala?: string;
 }
 
 export interface Mensagem {

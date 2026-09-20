@@ -19,7 +19,7 @@ const WIDTH: Record<BeltBarSize, number> = { sm: 64, md: 88, lg: 120 };
  * listras/graus (0-4) marcadas a branco.
  */
 export default function BeltBar({ belt, degrees, size = 'md', className = '' }: BeltBarProps) {
-  const cfg = beltConfig[belt] || { bg: '#888', text: '#fff', label: belt };
+  const cfg = beltConfig[belt] || { bg: 'var(--text-muted)', text: 'var(--color-white)', label: belt };
   const height = HEIGHT[size];
   const width = WIDTH[size];
   const tipColor = belt === 'preta' ? '#7A0E1F' : '#111111';
@@ -32,7 +32,7 @@ export default function BeltBar({ belt, degrees, size = 'md', className = '' }: 
       className={['inline-flex overflow-hidden shrink-0 border border-black/10', className].join(` `)}
       style={{ width, height }}
     >
-      <div className="flex-1 h-full" style={{ background: cfg.bg, border: belt === 'branca' ? '1px solid #d8d6d2' : 'none' }} />
+      <div className="flex-1 h-full" style={{ background: cfg.bg, border: belt === 'branca' ? '1px solid var(--border-strong)' : 'none' }} />
       <div
         className="flex gap-0.5 justify-center items-center h-full shrink-0"
         style={{ width: Math.round(width * 0.28), background: tipColor }}

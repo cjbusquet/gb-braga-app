@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { BellIcon, CheckIcon } from '../../lib/icons';
+import { useMobile } from '../../lib/useMobile';
 import {
   useNotificacoesQuery,
   useMarcarNotificacaoLida,
@@ -10,9 +11,9 @@ import {
 import type { Notificacao } from '../../types';
 
 const TIPO_DOT: Record<Notificacao['tipo'], string> = {
-  info: '#6B7280',
-  sucesso: '#22C55E',
-  aviso: '#F59E0B',
+  info: 'var(--color-gray-500)',
+  sucesso: 'var(--gb-green)',
+  aviso: 'var(--color-amber-500)',
   erro: 'var(--gb-red)',
 };
 
@@ -35,6 +36,7 @@ interface NotificationBellProps {
 export default function NotificationBell({ onNavigate, accent }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const { isMobile } = useMobile();
 
   const { data: notificacoes = [] } = useNotificacoesQuery();
   const marcarLida = useMarcarNotificacaoLida();
@@ -74,7 +76,19 @@ export default function NotificationBell({ onNavigate, accent }: NotificationBel
       </button>
 
       {open && (
-        <div className="overflow-hidden absolute right-0 top-full z-[300] mt-2 w-[min(340px,88vw)] rounded-lg border border-border bg-card">
+        <div
+          className={[
+            'overflow-hidden z-[300] rounded-xl border border-border bg-card',
+            // Em mobile o sino não fica à margem direita do ecrã (o avatar
+            // vem a seguir) — um painel de largura fixa "right-0" relativo
+            // ao próprio botão esticava para a esquerda e saía do ecrã.
+            // fixed + insets no ecrã garante que nunca ultrapassa a borda,
+            // seja qual for a posição do sino.
+            isMobile
+              ? 'fixed left-3 right-3 top-[calc(env(safe-area-inset-top)+60px)]'
+              : 'absolute right-0 top-full mt-2 w-[min(340px,88vw)]',
+          ].join(' ')}
+        >
           <div className="flex justify-between items-center py-2.5 px-3.5 border-b border-border">
             <span className="text-[12.5px] font-bold text-primary">Notificações</span>
             {naoLidas > 0 && (

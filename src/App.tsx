@@ -20,19 +20,25 @@ import FluxoMatricula from './pages/matricula/FluxoMatricula';
 import PendentesNumerario from './pages/admin/PendentesNumerario';
 import ProfessorView from './pages/professor/ProfessorView';
 import MinhasAulasPage from './pages/professor/MinhasAulasPage';
+import ResumoAulasPage from './pages/professor/ResumoAulasPage';
+import AgendaPage from './pages/professor/AgendaPage';
+import ParticularesPage from './pages/professor/ParticularesPage';
 import AulaDetalhePage from './pages/professor/AulaDetalhePage';
 import PortalAluno from './pages/aluno/PortalAluno';
 import MinhasAulas from './pages/aluno/MinhasAulas';
 import MinhaEvolucao from './pages/aluno/MinhaEvolucao';
 import MeuFinanceiro from './pages/aluno/MeuFinanceiro';
+import PortalEncarregado from './pages/aluno/PortalEncarregado';
 import Conteudo from './pages/aluno/Conteudo';
 import Mensagens from './pages/aluno/Mensagens';
 import MeuCheckin from './pages/aluno/MeuCheckin';
 import PerfilPage from './pages/PerfilPage';
 import ModulosPage from './pages/admin/ModulosPage';
 import ProfessoresPage from './pages/admin/ProfessoresPage';
+import AlertasPage from './pages/admin/AlertasPage';
+import RankingPage from './pages/RankingPage';
 import { ModulosProvider, useModulos } from './lib/useModulos';
-import { ToastProvider } from './components/common/Toast';
+import { ToastProvider, useToast } from './components/common/Toast';
 import Button from './components/common/Button';
 import { Ico, ArrowPathIcon, CheckCircleIcon, ClockIcon, KeyIcon } from './lib/icons';
 import { usePedidosNumerarioQuery, type PedidoNumerario } from './hooks/usePedidosNumerario';
@@ -50,6 +56,9 @@ const PAGE_ROLES: Record<string, UserRole[]> = {
   financeiro:    ['superadmin','admin'],
   graduacao:     ['superadmin','admin','professor'],
   aulas:         ['professor'],
+  agenda:        ['professor'],
+  'aulas-resumo':['professor'],
+  particulares:  ['professor'],
   'aula-detalhe':['professor'],
   comunicacao:   ['superadmin','admin','atendimento'],
   chat:          ['superadmin','admin','atendimento'],
@@ -61,6 +70,8 @@ const PAGE_ROLES: Record<string, UserRole[]> = {
   professores:   ['superadmin'],
   matricula:     ['superadmin','admin'],
   modulos:       ['superadmin'],
+  alertas:       ['superadmin','admin','professor'],
+  ranking:       ['superadmin','admin','atendimento','professor','aluno'],
   portal:        ['aluno'],
   'meu-checkin': ['aluno'],
   'minhas-aulas':['aluno'],
@@ -87,7 +98,8 @@ const FIELD_CLASS = 'block box-border w-full py-2.5 px-3.5 font-ui text-sm round
 const LABEL_CLASS = 'block mb-1 text-[11px] font-bold tracking-[0.8px] uppercase text-secondary';
 
 function SetPasswordScreen() {
-  const { completePasswordSetup, logout } = useAuth();
+  const { completePasswordSetup, logout, user } = useAuth();
+  const ehStaff = user?.role && user.role !== 'aluno' && user.role !== 'encarregado';
   const [pw, setPw]       = useState('');
   const [pw2, setPw2]     = useState('');
   const [err, setErr]     = useState('');
@@ -109,7 +121,7 @@ function SetPasswordScreen() {
       <div className="p-8 w-full max-w-[400px] text-center rounded-2xl border border-border bg-white">
         <div className="mb-4 text-gb-green"><Ico icon={CheckCircleIcon} style={{ width: 48, height: 48 }} /></div>
         <h2 className="mb-2 font-display text-lg font-extrabold uppercase text-primary">Password definida!</h2>
-        <p className="mb-6 text-sm text-secondary">A tua conta está pronta. Bem-vindo à equipa Gracie Barra Braga.</p>
+        <p className="mb-6 text-sm text-secondary">A tua conta está pronta. {ehStaff ? 'Bem-vindo à equipa Gracie Barra Braga.' : 'Bem-vindo à família Gracie Barra Braga.'}</p>
         <Button variant="primary" onClick={() => window.location.reload()}>
           Entrar na plataforma →
         </Button>
@@ -126,11 +138,13 @@ function SetPasswordScreen() {
           </div>
           <div className="min-w-0">
             <div className="font-display text-base font-black uppercase text-primary">Define a tua password</div>
-            <div className="text-xs text-muted">Gracie Barra Braga — Acesso de equipa</div>
+            <div className="text-xs text-muted">Gracie Barra Braga · {ehStaff ? 'Acesso de equipa' : 'Acesso ao portal'}</div>
           </div>
         </div>
         <p className="py-2.5 px-3.5 mb-5 text-[13px] leading-[1.6] rounded-lg border text-secondary border-gb-red/[0.12] bg-gb-red/[0.04]">
-          A tua conta foi criada pelo administrador. Escolhe a password que vais usar para aceder à plataforma.
+          {ehStaff
+            ? 'A tua conta foi criada pelo administrador. Escolhe a password que vais usar para aceder à plataforma.'
+            : 'A tua conta foi criada na matrícula. Escolhe a password que vais usar para aceder ao portal.'}
         </p>
         <div className="mb-3.5">
           <label className={LABEL_CLASS}>Nova Password *</label>
@@ -198,6 +212,7 @@ function AguardandoConfirmacaoScreen({ pedido }: { pedido: PedidoNumerario }) {
 function AppContent() {
   const { user, refreshProfile, pendingPasswordSetup } = useAuth();
   const { isActive } = useModulos();
+  const toast = useToast();
   const [currentPage, setCurrentPage] = useState('');
   const [currentParam, setCurrentParam] = useState<string | undefined>(undefined);
   const [registering, setRegistering] = useState(false);
@@ -216,7 +231,9 @@ function AppContent() {
   // Guards internally with `if (!user)` so it's always called.
   useEffect(() => {
     if (!user) return;
-    const defPage = user.role === 'aluno' ? 'portal' : 'dashboard';
+    const defPage = user.role === 'aluno' && user.pagamentoPendente
+      ? 'meu-financeiro'
+      : user.role === 'aluno' ? 'portal' : 'dashboard';
 
     // currentPage is local component state, so it survives a logout (the
     // user just goes null, AppContent never unmounts) — without this, log
@@ -226,12 +243,38 @@ function AppContent() {
     setCurrentPage('');
     setCurrentParam(undefined);
 
+    // Stripe Checkout (criar-checkout-session) redirects back to "/?pago=1|0"
+    // full-page — page nav here is pure in-memory state with no URL restore,
+    // so without this the student would just land back on the default page
+    // with no sign their payment attempt even happened.
+    const pago = new URLSearchParams(location.search).get('pago');
+    if (pago !== null) {
+      setCurrentPage('meu-financeiro');
+      if (pago === '1') {
+        toast.success('Pagamento recebido! A confirmar com a Stripe…');
+        // O webhook atualiza pagamentos + estado/subscrição do aluno de forma
+        // assíncrona — revalida agora e outra vez daqui a instantes. Inclui
+        // refreshProfile() para o gate de pagamentoPendente (App.tsx) deixar
+        // de bloquear assim que o webhook confirmar.
+        const revalida = () => {
+          queryClient.invalidateQueries({ queryKey: ['pagamentos:'] });
+          queryClient.invalidateQueries({ queryKey: ['alunos:'] });
+          refreshProfile();
+        };
+        revalida();
+        setTimeout(revalida, 4000);
+      } else {
+        toast.warning('Pagamento cancelado.');
+      }
+      history.replaceState({}, '', location.pathname);
+    }
+
     // Set a base history entry so the very first back press doesn't exit the app
     history.replaceState({ page: defPage }, '', location.pathname + location.search);
 
     const onPop = (e: PopStateEvent) => {
       const p: string | undefined = e.state?.page;
-      if (p && canAccess(user.role, p)) {
+      if (p && !(user.role === 'aluno' && user.pagamentoPendente && p !== 'meu-financeiro') && canAccess(user.role, p)) {
         setCurrentPage(p);
         setCurrentParam(e.state?.param);
       } else {
@@ -273,6 +316,11 @@ function AppContent() {
     return <LoginPage onRegister={() => setRegistering(true)} />;
   }
 
+  // Responsável de pagamentos de um plano família que não treina — só faturação.
+  if (user.role === 'encarregado') {
+    return <PortalEncarregado />;
+  }
+
   // Only alunos need to complete enrollment; staff go straight to the dashboard.
   // Rendered here (before <Layout>) so this full-screen flow never gets
   // wrapped by the internal Sidebar/Layout — it's not "in the app" yet.
@@ -286,15 +334,23 @@ function AppContent() {
     return <FluxoMatricula onConcludo={refreshProfile} />;
   }
 
-  const defaultPage = user.role === 'aluno' ? 'portal' : 'dashboard';
+  // Aluno com pagamento pendente (Stripe, 1.º pagamento próprio ou do grupo
+  // família ainda não confirmado pelo webhook — ver auth.tsx): só Meu
+  // Financeiro fica acessível, para ativar o débito automático (ou, no caso
+  // de um membro família, ver que quem trata disso é o responsável).
+  const pagamentoBloqueado = user.role === 'aluno' && !!user.pagamentoPendente;
+  const defaultPage = pagamentoBloqueado ? 'meu-financeiro' : (user.role === 'aluno' ? 'portal' : 'dashboard');
   const page = currentPage || defaultPage;
 
-  // Security: redirect if user lacks role access OR module is disabled
-  const safePage = (canAccess(user.role, page) && canAccessModule(page, isActive))
+  // Security: redirect if user lacks role access, module is disabled, or
+  // payment is pending (frontend-only gate — matches how matriculaCompleta
+  // already works; nenhuma destas páginas relaxa RLS).
+  const safePage = (!pagamentoBloqueado && canAccess(user.role, page) && canAccessModule(page, isActive))
     ? page
     : defaultPage;
 
   const handleNavigate = (p: string, param?: string) => {
+    if (pagamentoBloqueado && p !== 'meu-financeiro') return;
     if (canAccess(user.role, p)) {
       // Push a history entry so the mobile back button navigates within the app
       history.pushState({ page: p, param }, '', location.pathname + location.search);
@@ -313,6 +369,7 @@ function AppContent() {
         case 'meu-financeiro':  return <MeuFinanceiro />;
         case 'conteudo':        return <Conteudo />;
         case 'mensagens':       return <Mensagens />;
+        case 'ranking':         return <RankingPage />;
         case 'perfil':          return <PerfilPage />;
         default:                return <PortalAluno onNavigate={handleNavigate}/>;
       }
@@ -327,7 +384,12 @@ function AppContent() {
         case 'checkin':      return <CheckinPage />;
         case 'graduacao':    return <GraduacaoPage />;
         case 'aulas':        return <MinhasAulasPage onNavigate={handleNavigate} />;
+        case 'aulas-resumo': return <ResumoAulasPage />;
+        case 'agenda':       return <AgendaPage />;
+        case 'particulares': return <ParticularesPage />;
         case 'aula-detalhe': return <AulaDetalhePage aulaId={currentParam} onNavigate={handleNavigate} />;
+        case 'alertas':      return <AlertasPage />;
+        case 'ranking':      return <RankingPage />;
         case 'perfil':       return <PerfilPage />;
         default:             return <ProfessorView onNavigate={handleNavigate} />;
       }
@@ -356,6 +418,8 @@ function AppContent() {
       case 'professores':  return <ProfessoresPage />;
       case 'matricula':    return <FluxoMatricula embedded />;
       case 'modulos':      return <ModulosPage />;
+      case 'alertas':      return <AlertasPage />;
+      case 'ranking':      return <RankingPage />;
       case 'perfil':       return <PerfilPage />;
       default:             return <Dashboard />;
     }

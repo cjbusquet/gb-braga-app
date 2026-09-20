@@ -219,7 +219,7 @@ export default function IntegracoesPage({ onNavigate }: { onNavigate?: (page: st
               Chaves de API geridas como variáveis de ambiente no deployment.
             </div>
             {[
-              { k: 'Moeda',                      v: 'EUR (€) — Portugal' },
+              { k: 'Moeda',                      v: 'EUR (€) · Portugal' },
               { k: 'Modo',                       v: 'Sandbox (test)' },
             ].map(r => (
               <div key={r.k} className={ROW_CLASS}>

@@ -1,133 +1,134 @@
-import { CheckIcon, Ico, MapPinIcon } from '@/lib/icons';
-import { useAlunos, usePresencas } from '../../lib/useData';
-import { useTurmasDoAlunoQuery } from '../../hooks/useAulas';
+import { CheckIcon, Ico, InformationCircleIcon, ClockIcon, MapPinIcon, UsersIcon } from '@/lib/icons';
+import { useEffect, useRef, useState } from 'react';
+import { useAlunos, usePresencas, useTurmas } from '../../lib/useData';
+import { useAulasParticularesDoAlunoQuery } from '../../hooks/useAulasParticulares';
 
 import PortalPageHeader from './PortalPageHeader';
 import { useAuth } from '../../lib/auth';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import { SkeletonList } from '../../components/common/Skeleton';
+import CalendarioPresencas from '../../components/features/CalendarioPresencas';
+import { TurmasCalendarView, TurmasLegend } from '../../components/features/TurmasHorario';
 
-const DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-const DIAS_FULL = [
-  'Segunda',
-  'Terça',
-  'Quarta',
-  'Quinta',
-  'Sexta',
-  'Sábado',
-  'Domingo',
-];
+/** Botão "i" com explicação do cálculo da frequência, ao toque/clique. */
+function InfoFrequencia() {
+  const [aberto, setAberto] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!aberto) return;
+    const onClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setAberto(false);
+    };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, [aberto]);
+
+  return (
+    <div
+      ref={ref}
+      className="inline-block relative"
+      onMouseEnter={() => setAberto(true)}
+      onMouseLeave={() => setAberto(false)}
+    >
+      <button
+        type="button"
+        onClick={() => setAberto((v) => !v)}
+        aria-label="Como é calculada a frequência"
+        className="flex justify-center items-center p-0.5 -m-0.5 text-muted bg-transparent rounded-full border-none outline-none cursor-pointer hover:text-primary focus-visible:ring-2 focus-visible:ring-gb-red"
+      >
+        <Ico icon={InformationCircleIcon} sm />
+      </button>
+      {aberto && (
+        <div className="overflow-hidden absolute right-0 top-full z-[300] mt-2 w-[min(260px,80vw)] p-3 text-left rounded-lg border normal-case border-border bg-card">
+          <p className="text-[11.5px] leading-[1.5] text-secondary">
+            % de dias, desde a tua matrícula (ou nos últimos 3 meses, o que for
+            mais curto), em que a academia teve treinos e tu fizeste pelo menos
+            um check-in. Cada dia conta uma vez, mesmo com mais de um treino.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function MinhasAulas() {
-  const { data: presencas } = usePresencas();
   const { data: alunos } = useAlunos();
   const { user } = useAuth();
   const aluno = alunos.find((a) => a.email === user?.email) || alunos[0];
-  const { data: minhasTurmas = [] } = useTurmasDoAlunoQuery(aluno?.id);
+  const { data: presencas } = usePresencas(aluno?.id, 400);
+  const { data: particulares = [] } = useAulasParticularesDoAlunoQuery(aluno?.id, user?.id);
+  const { data: turmas = [] } = useTurmas();
   if (!aluno) return <SkeletonList rows={4} />;
 
   const minhasPresencas = presencas.filter((p) => p.alunoId === aluno.id);
+  const hoje = new Date();
+  const aulasEsteMes = minhasPresencas.filter((p) => {
+    const d = new Date(p.data);
+    return d.getMonth() === hoje.getMonth() && d.getFullYear() === hoje.getFullYear();
+  }).length;
 
   return (
     <div>
       <PortalPageHeader
         title="Minhas Aulas"
-        description="Consulta o teu horário e as aulas que frequentas."
+        description="Consulta as aulas que frequentas."
       />
 
-      {/* Weekly schedule */}
+      {turmas.length > 0 && (
+        <Card padding="lg" className="mb-4">
+          <div className="mb-3.5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">
+            Horário Semanal
+          </div>
+          <TurmasLegend turmas={turmas} />
+          <TurmasCalendarView turmas={turmas} />
+        </Card>
+      )}
+
       <Card padding="lg" className="mb-4">
         <div className="mb-3.5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">
-          Horário Semanal
+          Presenças no último ano
         </div>
-        <div className="grid grid-cols-7 gap-2">
-          {DIAS.map((d, i) => {
-            const full = DIAS_FULL[i];
-            const aulas = minhasTurmas.filter((t) =>
-              t.diaSemana.includes(full),
-            );
-            return (
-              <div key={d} className="text-center">
-                <div className="mb-1.5 text-[11px] font-semibold text-muted">
-                  {d}
-                </div>
-                {aulas.length > 0 ? (
-                  aulas.map((a) => (
-                    <div
-                      key={a.id}
-                      className="py-1.5 px-1 mb-1 rounded-sm border border-gb-red/25 bg-gb-red/10"
-                    >
-                      <div className="text-[10.5px] font-bold text-gb-red">
-                        {a.horario.split('-')[0]}
-                      </div>
-                      <div className="mt-0.5 text-[9.5px] text-secondary">
-                        {a.nome.split(' ')[0]}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="py-1.5 px-1 rounded-sm opacity-40 bg-elevated">
-                    <div className="text-[10px] text-muted">
-                      —
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <CalendarioPresencas presencas={minhasPresencas} />
       </Card>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {/* My classes */}
-        <div className="flex flex-col order-2 gap-3 md:order-1">
-          {minhasTurmas.map((t) => (
-            <Card key={t.id} padding="none" className="p-[18px]">
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <div className="text-sm font-bold text-primary">
-                    {t.nome}
+      {particulares.length > 0 && (
+        <Card padding="lg" className="mb-4">
+          <div className="mb-3.5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">
+            Aulas Particulares
+          </div>
+          <div className="flex flex-col gap-2">
+            {particulares.map(p => (
+              <div key={p.id} className="py-2.5 px-3 rounded-sm bg-elevated">
+                <div className="flex flex-wrap gap-2 justify-between items-start">
+                  <div className="inline-flex gap-1.5 items-center text-[12.5px] font-semibold text-primary">
+                    <Ico icon={ClockIcon} sm />{p.data} · {p.horaInicio}
+                    {p.sala && <><span className="text-muted">·</span><Ico icon={MapPinIcon} sm />{p.sala}</>}
                   </div>
-                  <div className="mt-0.5 text-[11px] text-muted">
-                    Prof. {t.professorNome}
-                  </div>
+                  <Badge color={p.status === 'concluida' ? 'success' : p.status === 'cancelada' ? 'neutral' : 'warning'}>
+                    {p.status === 'concluida' ? 'Concluída' : p.status === 'cancelada' ? 'Cancelada' : 'Agendada'}
+                  </Badge>
                 </div>
-                <Badge color="success">ATIVA</Badge>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="py-2 px-2.5 rounded-sm bg-elevated">
-                  <div className="mb-0.5 text-[10px] text-muted">
-                    Horário
-                  </div>
-                  <div className="font-mono text-[13px] font-bold text-primary">
-                    {t.horario}
-                  </div>
-                </div>
-                <div className="py-2 px-2.5 rounded-sm bg-elevated">
-                  <div className="mb-0.5 text-[10px] text-muted">
-                    Dias
-                  </div>
-                  <div className="text-[11px] font-semibold text-primary">
-                    {t.diaSemana.join(' · ')}
-                  </div>
+                <div className="inline-flex gap-1.5 items-center mt-1 text-[11px] text-muted">
+                  <Ico icon={UsersIcon} sm />com {p.professorNome}
+                  {p.ajudanteNome && ` · ajudante: ${p.ajudanteNome}`}
                 </div>
               </div>
-              <div className="mt-2.5 text-[11px] text-muted">
-                <span className="inline-flex gap-1 items-center"><Ico icon={MapPinIcon} sm />{t.sala}</span>
-              </div>
-            </Card>
-          ))}
-        </div>
-        {/* Attendance history */}
-        <Card padding="lg" className="order-1 md:order-2">
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Attendance history */}
+      <Card padding="lg">
           <div className="mb-3.5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">
             Histórico de Presenças
           </div>
           <div className="flex justify-between mb-3">
             <div className="text-center">
               <div className="text-2xl font-bold text-gb-red">
-                {minhasPresencas.length}
+                {aulasEsteMes}
               </div>
               <div className="text-[10.5px] text-muted">
                 aulas este mês
@@ -137,16 +138,9 @@ export default function MinhasAulas() {
               <div className="text-2xl font-bold text-gb-green">
                 {aluno.frequencia}%
               </div>
-              <div className="text-[10.5px] text-muted">
+              <div className="inline-flex gap-1 items-center text-[10.5px] text-muted">
                 frequência
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gb-red">
-                12
-              </div>
-              <div className="text-[10.5px] text-muted">
-                meta mensal
+                <InfoFrequencia />
               </div>
             </div>
           </div>
@@ -183,8 +177,7 @@ export default function MinhasAulas() {
               Sem presenças registadas
             </p>
           )}
-        </Card>
-      </div>
+      </Card>
     </div>
   );
 }

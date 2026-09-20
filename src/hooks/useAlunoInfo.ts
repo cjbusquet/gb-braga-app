@@ -13,6 +13,7 @@ export interface AlunoInfo {
   plano: string;
   data_matricula: string;
   status: string;
+  whatsapp: string | null;
 }
 
 async function fetchAlunoInfoByEmail(email: string): Promise<AlunoInfo | null> {
@@ -20,7 +21,7 @@ async function fetchAlunoInfoByEmail(email: string): Promise<AlunoInfo | null> {
   // alunos has no "plano" column — the plan name is stored as plano_nome.
   const { data, error } = await supabase
     .from('alunos')
-    .select('id, faixa, grau, plano_nome, data_matricula, status')
+    .select('id, faixa, grau, plano_nome, data_matricula, status, whatsapp')
     .eq('email', email)
     .maybeSingle();
   if (error) throw error;

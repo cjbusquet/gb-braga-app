@@ -1,12 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useAlunos, usePagamentos, usePresencas, useTurmas } from '../../lib/useData';
 import { useKPIs } from '../../hooks/useKPIs';
+import { useAuth } from '../../lib/auth';
 import { GB } from '../../lib/gbBrand';
 import Card from '../../components/common/Card';
 import { SkeletonCard } from '../../components/common/Skeleton';
 import { Ico, CheckIcon } from '../../lib/icons';
 
-function KpiCard({ label, value, sub, color = GB.red }: any) {
+// Cor só quando o número tem um significado de estado (bom/atenção/mau);
+// factos neutros (receita, check-ins, turmas) ficam na tinta de texto
+// normal — reservar a cor para quando ela é informação, não decoração.
+function KpiCard({ label, value, sub, color = 'var(--text-primary)' }: any) {
   return (
     <Card>
       <div className="mb-2 text-[10.5px] font-semibold tracking-[0.8px] uppercase text-muted">{label}</div>
@@ -19,11 +23,17 @@ function KpiCard({ label, value, sub, color = GB.red }: any) {
 const KPI_GRID_CLASS = 'grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 mb-6';
 
 export default function Dashboard() {
+  const { user }            = useAuth();
   const { data: kpis }      = useKPIs();
   const { data: alunos }    = useAlunos();
   const { data: pagamentos }= usePagamentos();
   const { data: presencas } = usePresencas();
   const { data: turmas }    = useTurmas();
+  // Atendimento não tem acesso à página Financeiro — não faz sentido
+  // mostrar-lhe receita/pendente/lista de inadimplentes no Dashboard,
+  // mesmo que só como resumo (o "Financeiro" bloqueado ficava
+  // contradito por estes números aparecerem aqui de qualquer forma).
+  const podeVerFinanceiro = user?.role === 'admin' || user?.role === 'superadmin';
 
   const hoje = new Date().toISOString().split('T')[0];
   const checkinsHoje = presencas.filter((p: any) => p.data === hoje);
@@ -50,17 +60,17 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className={KPI_GRID_CLASS}>
-          <KpiCard label="Alunos Ativos"    value={kpis.alunosAtivos || alunos.filter((a:any)=>a.status==='ativo').length} sub="total activos" color="#22C55E"/>
-          <KpiCard label="Receita Mensal"   value={`€${(kpis.receitaMensal||0).toFixed(0)}`} sub="mês corrente" color={GB.red}/>
-          <KpiCard label="Check-ins Hoje"   value={checkinsHoje.length} sub="presenças hoje" color={GB.red}/>
-          <KpiCard label="Inadimplentes"    value={vencidos.length} sub="pagamentos vencidos" color="#F59E0B"/>
-          <KpiCard label="Pendente"         value={`€${pendentes.reduce((s,p)=>s+(p.valor||0),0).toFixed(0)}`} sub="a receber" color="#F59E0B"/>
-          <KpiCard label="Turmas Activas"   value={turmas.length} sub="turmas" color={GB.red}/>
+          <KpiCard label="Alunos Ativos"    value={kpis.alunosAtivos || alunos.filter((a:any)=>a.status==='ativo').length} sub="total activos" color="var(--gb-green)"/>
+          {podeVerFinanceiro && <KpiCard label="Receita Mensal" value={`€${(kpis.receitaMensal||0).toFixed(0)}`} sub="mês corrente"/>}
+          <KpiCard label="Check-ins Hoje"   value={checkinsHoje.length} sub="presenças hoje"/>
+          {podeVerFinanceiro && <KpiCard label="Inadimplentes" value={vencidos.length} sub="pagamentos vencidos" color={GB.red}/>}
+          {podeVerFinanceiro && <KpiCard label="Pendente" value={`€${pendentes.reduce((s,p)=>s+(p.valor||0),0).toFixed(0)}`} sub="a receber" color="var(--color-amber-500)"/>}
+          <KpiCard label="Turmas Activas"   value={turmas.length} sub="turmas"/>
         </div>
       )}
 
       {/* Recent activity */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className={['grid grid-cols-1 gap-4', podeVerFinanceiro ? 'md:grid-cols-2' : ''].join(' ')}>
 
         {/* Recent check-ins */}
         <Card>
@@ -73,7 +83,7 @@ export default function Dashboard() {
             <div key={p.id} className="flex justify-between py-1.5 border-b border-border-subtle">
               <div>
                 <div className="text-[12.5px] font-medium text-primary">{p.alunoNome}</div>
-                <div className="text-[11px] text-muted">{p.turmaNome||'—'}</div>
+                <div className="text-[11px] text-muted">{p.turmaNome||'-'}</div>
               </div>
               <div className="font-mono text-[11px] text-right text-muted">
                 {p.hora}<br/><span className="text-[10px]">{p.data}</span>
@@ -82,23 +92,25 @@ export default function Dashboard() {
           ))}
         </Card>
 
-        {/* Pagamentos vencidos */}
-        <Card>
-          <div className="mb-3 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">
-            Pagamentos em Atraso
-          </div>
-          {vencidos.slice(0,6).length === 0 ? (
-            <div className="flex gap-1.5 justify-center items-center p-5 text-xs text-center text-gb-green"><Ico icon={CheckIcon} sm />Sem pagamentos em atraso</div>
-          ) : vencidos.slice(0,6).map((p: any) => (
-            <div key={p.id} className="flex justify-between py-1.5 border-b border-border-subtle">
-              <div>
-                <div className="text-[12.5px] font-medium text-primary">{p.alunoNome}</div>
-                <div className="text-[11px] text-muted">{p.plano||'—'}</div>
-              </div>
-              <div className="text-[12.5px] font-bold text-gb-red">€{p.valor}</div>
+        {/* Pagamentos vencidos — mesma razão do KPI acima: sem acesso ao Financeiro, sem lista de quem deve o quê. */}
+        {podeVerFinanceiro && (
+          <Card>
+            <div className="mb-3 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">
+              Pagamentos em Atraso
             </div>
-          ))}
-        </Card>
+            {vencidos.slice(0,6).length === 0 ? (
+              <div className="flex gap-1.5 justify-center items-center p-5 text-xs text-center text-gb-green"><Ico icon={CheckIcon} sm />Sem pagamentos em atraso</div>
+            ) : vencidos.slice(0,6).map((p: any) => (
+              <div key={p.id} className="flex justify-between py-1.5 border-b border-border-subtle">
+                <div>
+                  <div className="text-[12.5px] font-medium text-primary">{p.alunoNome}</div>
+                  <div className="text-[11px] text-muted">{p.plano||'-'}</div>
+                </div>
+                <div className="text-[12.5px] font-bold text-gb-red">€{p.valor}</div>
+              </div>
+            ))}
+          </Card>
+        )}
 
       </div>
     </div>

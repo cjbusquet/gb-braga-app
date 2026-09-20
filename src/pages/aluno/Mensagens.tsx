@@ -79,7 +79,7 @@ export default function Mensagens() {
             <div className="flex flex-col flex-1 gap-2.5 justify-center items-center text-muted">
               <Ico icon={CommentIcon} lg className="opacity-30" />
               <div className="text-sm">Ainda não há mensagens.</div>
-              <div className="text-xs">Escreve à academia — respondemos assim que possível.</div>
+              <div className="text-xs">Escreve à academia, respondemos assim que possível.</div>
             </div>
           ) : (
             mensagens.map(msg => {

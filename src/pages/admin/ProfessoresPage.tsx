@@ -6,13 +6,14 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import BeltBadge from '../../components/common/BeltBadge';
 import PageHeader from '../../components/common/PageHeader';
+import { Ico, CircleIcon } from '../../lib/icons';
 
 function duracao(inicio: string | null, fim?: string | null): string {
-  if (!inicio || !fim) return '—';
+  if (!inicio || !fim) return '-';
   const [h1, m1] = inicio.split(':').map(Number);
   const [h2, m2] = fim.split(':').map(Number);
   const min = (h2 * 60 + m2) - (h1 * 60 + m1);
-  if (min <= 0) return '—';
+  if (min <= 0) return '-';
   const h = Math.floor(min / 60);
   const m = min % 60;
   return h > 0 ? `${h}h${m > 0 ? `${m}m` : ''}` : `${m}m`;
@@ -111,7 +112,7 @@ export default function ProfessoresPage() {
         {selected && (
           <div>
             <div className="mb-2.5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">
-              Check-ins — {selected.nome}
+              Check-ins · {selected.nome}
             </div>
 
             {/* Professor info */}
@@ -137,8 +138,8 @@ export default function ProfessoresPage() {
               const ativa = checkinsProfSel.find(c => c.status === 'em_curso');
               if (!ativa) return null;
               return (
-                <div className="flex gap-2.5 items-center py-3 px-4 mb-3.5 rounded-md border-[1.5px] border-gb-green/25 bg-gb-green/[0.07]">
-                  <span className="inline-block w-2.5 h-2.5 bg-gb-green rounded-full shrink-0 animate-[pulse_1.5s_infinite]"/>
+                <div className="flex gap-2.5 items-center py-3 px-4 mb-3.5 rounded-xl border-[1.5px] border-gb-green/25 bg-gb-green/[0.07]">
+                  <Badge color="success"><Ico icon={CircleIcon} className="w-2 h-2" />Em curso</Badge>
                   <div>
                     <div className="text-[13px] font-bold text-gb-green">Aula em curso agora</div>
                     <div className="text-[11.5px] text-muted">{ativa.turmaNome} · desde {ativa.horaInicio}</div>
@@ -166,8 +167,8 @@ export default function ProfessoresPage() {
                       <tr key={c.id} className="border-b border-border-subtle hover:bg-elevated">
                         <td className={[TD_CLASS, 'text-[13px] font-semibold whitespace-nowrap text-primary'].join(' ')}>{c.turmaNome}</td>
                         <td className={[TD_CLASS, 'font-mono text-xs whitespace-nowrap text-muted'].join(' ')}>{c.data}</td>
-                        <td className={[TD_CLASS, 'font-mono text-xs whitespace-nowrap text-muted'].join(' ')}>{c.horaInicio || '—'}</td>
-                        <td className={[TD_CLASS, 'font-mono text-xs whitespace-nowrap text-muted'].join(' ')}>{c.horaFim || '—'}</td>
+                        <td className={[TD_CLASS, 'font-mono text-xs whitespace-nowrap text-muted'].join(' ')}>{c.horaInicio || '-'}</td>
+                        <td className={[TD_CLASS, 'font-mono text-xs whitespace-nowrap text-muted'].join(' ')}>{c.horaFim || '-'}</td>
                         <td className={[TD_CLASS, 'font-mono text-xs whitespace-nowrap text-secondary'].join(' ')}>{duracao(c.horaInicio, c.horaFim)}</td>
                         <td className={TD_CLASS}><EstadoBadge ativa={c.status === 'em_curso'} /></td>
                       </tr>
@@ -205,8 +206,8 @@ export default function ProfessoresPage() {
                         <td className={[TD_CLASS, 'text-[13px] font-semibold whitespace-nowrap text-primary'].join(' ')}>{c.professorNome}</td>
                         <td className={[TD_CLASS, 'text-xs whitespace-nowrap text-secondary'].join(' ')}>{c.turmaNome}</td>
                         <td className={[TD_CLASS, 'font-mono text-xs whitespace-nowrap text-muted'].join(' ')}>{c.data}</td>
-                        <td className={[TD_CLASS, 'font-mono text-xs whitespace-nowrap text-muted'].join(' ')}>{c.horaInicio || '—'}</td>
-                        <td className={[TD_CLASS, 'font-mono text-xs whitespace-nowrap text-muted'].join(' ')}>{c.horaFim || '—'}</td>
+                        <td className={[TD_CLASS, 'font-mono text-xs whitespace-nowrap text-muted'].join(' ')}>{c.horaInicio || '-'}</td>
+                        <td className={[TD_CLASS, 'font-mono text-xs whitespace-nowrap text-muted'].join(' ')}>{c.horaFim || '-'}</td>
                         <td className={[TD_CLASS, 'font-mono text-xs whitespace-nowrap text-secondary'].join(' ')}>{duracao(c.horaInicio, c.horaFim)}</td>
                         <td className={TD_CLASS}><EstadoBadge ativa={c.status === 'em_curso'} /></td>
                       </tr>

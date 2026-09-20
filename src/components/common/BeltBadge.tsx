@@ -22,7 +22,7 @@ const LABEL_WIDTH: Record<BeltBarSize, number> = { sm: 108, md: 128, lg: 150 };
  * recriar pills/bars coloridas ad-hoc por página.
  */
 export default function BeltBadge({ faixa, grau, size = 'sm', className = '' }: BeltBadgeProps) {
-  const cfg = beltConfig[faixa] || { bg: '#888', text: '#fff', label: faixa };
+  const cfg = beltConfig[faixa] || { bg: 'var(--text-muted)', text: 'var(--color-white)', label: faixa };
   return (
     <span className={['inline-flex gap-2 items-center shrink-0', className].join(' ')}>
       <BeltBar belt={faixa as Belt} degrees={grau} size={size} />

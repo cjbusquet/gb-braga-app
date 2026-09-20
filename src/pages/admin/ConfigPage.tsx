@@ -143,7 +143,7 @@ function TocSection() {
                 : <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Modo Produção</span>}
             </div>
             <div className="mt-0.5 text-[11px] text-muted">
-              {cfg.simulationMode ? 'Não emite faturas reais — ideal para testes' : 'Faturas comunicadas à AT em tempo real'}
+              {cfg.simulationMode ? 'Não emite faturas reais, ideal para testes' : 'Faturas comunicadas à AT em tempo real'}
             </div>
           </div>
           <button onClick={() => update('simulationMode', !cfg.simulationMode)}
@@ -200,10 +200,10 @@ function TocSection() {
 
         {/* Setup guide */}
         <Card padding="none" className="p-[22px]">
-          <Label>Como configurar — 5 passos</Label>
+          <Label>Como configurar · 5 passos</Label>
           {[
             { n: '1', title: 'Aceder ao TOConline', desc: 'Login em app.toconline.pt → Empresa → Dados API' },
-            { n: '2', title: 'Descarregar credenciais', desc: 'Clique em "Ficheiro Postman" para obter o Client ID e Secret — entregar ao developer para configurar no deployment' },
+            { n: '2', title: 'Descarregar credenciais', desc: 'Clique em "Ficheiro Postman" para obter o Client ID e Secret, entregar ao developer para configurar no deployment' },
             { n: '3', title: 'Criar serviço', desc: 'Artigos → Serviços → Novo: código "GB-MENSALIDADE", IVA Normal 23%' },
             { n: '4', title: 'Criar série GB2025', desc: 'Empresa → Séries → Nova série FR com prefixo "GB2025"' },
             { n: '5', title: 'Ligar webhook Stripe', desc: 'payment_intent.succeeded → emite FR automaticamente no TOConline' },
@@ -284,15 +284,17 @@ function StripeSection() {
       <Card padding="none" className="p-[22px]">
         <Label>Webhook URL para configurar no Stripe</Label>
         <div className="py-2.5 px-3.5 mb-3.5 font-mono text-xs rounded-lg bg-elevated text-primary">
-          https://gbbraga.com/api/stripe/webhook
+          https://gbbraga.com/api/stripe-webhook
         </div>
         <Label>Eventos a subscrever</Label>
         {[
-          { event: 'payment_intent.succeeded',           action: 'Emitir FR TOConline + marcar pago + notificar aluno' },
-          { event: 'payment_intent.payment_failed',      action: 'Alertar admin + email/WhatsApp ao aluno' },
+          { event: 'checkout.session.completed',         action: 'Ligar subscrição ao aluno + ativar conta' },
+          { event: 'customer.subscription.created',      action: 'Ligar subscrição + ativar conta' },
+          { event: 'invoice.paid',                       action: 'Registar mensalidade paga + emitir FR TOConline + notificar' },
+          { event: 'invoice.payment_failed',             action: 'Marcar vencido + notificar aluno/admin · suspender após 3 falhas' },
           { event: 'customer.subscription.updated',      action: 'Atualizar plano do aluno na app' },
-          { event: 'customer.subscription.deleted',      action: 'Suspender acesso + notificar admin' },
-          { event: 'invoice.payment_failed',             action: 'Suspender após 3 falhas consecutivas' },
+          { event: 'customer.subscription.deleted',      action: 'Inativar aluno + cancelar contrato' },
+          { event: 'payment_intent.succeeded',           action: 'Pagamento único (retry de mensalidade legada)' },
         ].map(w => (
           <div key={w.event} className="flex gap-2.5 py-2.5 border-b border-border-subtle">
             <span className="font-mono text-[11px] text-[#635BFF] shrink-0">{w.event}</span>
@@ -420,6 +422,8 @@ const STAFF_FAIXAS = [
   { value: 'roxa',           label: 'Roxa' },
   { value: 'marrom',         label: 'Marrom' },
   { value: 'preta',          label: 'Preta' },
+  { value: 'vermelha-preta', label: 'Vermelha/Preta' },
+  { value: 'vermelha-branca',label: 'Vermelha/Branca' },
   { value: 'vermelha',       label: 'Vermelha' },
 ];
 
@@ -749,7 +753,7 @@ function EquipaSection() {
                       ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Copiado!</span>
                       : <span className="inline-flex gap-1.5 items-center"><Ico icon={ClipboardDocumentIcon} sm />Copiar link</span>}
                   </button>
-                  <p className="inline-flex gap-1.5 items-center mt-2 text-[10.5px] leading-[1.5] text-muted"><Ico icon={ExclamationTriangleIcon} sm />Link de uso único — expira em 24h.</p>
+                  <p className="inline-flex gap-1.5 items-center mt-2 text-[10.5px] leading-[1.5] text-muted"><Ico icon={ExclamationTriangleIcon} sm />Link de uso único, expira em 24h.</p>
                 </>
               ) : (
                 <p className="text-xs text-muted">Conta criada. Gera o link manualmente no Supabase Dashboard.</p>
@@ -848,7 +852,7 @@ function AcademiaSection() {
         <div className="flex gap-2.5 items-center pb-3.5 mb-5 border-b border-border-subtle">
           <div className="flex justify-center items-center w-10 h-10 rounded-md bg-gb-red-glow"><FontAwesomeIcon icon={MapPinIcon} className="w-5 h-5 text-gb-red" /></div>
           <div>
-            <div className="text-[15px] font-bold text-primary">GPS Fence — Check-in</div>
+            <div className="text-[15px] font-bold text-primary">GPS Fence · Check-in</div>
             <div className="text-[11px] text-muted">Ponto de referência para validar presenças</div>
           </div>
         </div>
@@ -947,8 +951,8 @@ function AcademiaSection() {
             className={['py-2.5 px-3.5 mb-3.5 text-[12.5px] font-bold rounded-sm border', testDist <= radius ? 'border-gb-green/30 text-gb-green bg-gb-green/[0.08]' : 'border-gb-red/20 text-gb-red bg-gb-red/[0.07]'].join(' ')}
           >
             {testDist <= radius
-              ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />{`Dentro do fence — ${testDist}m do ponto (raio: ${radius}m)`}</span>
-              : <span className="inline-flex gap-1.5 items-center"><Ico icon={XMarkIcon} sm />{`Fora do fence — ${testDist}m do ponto (raio: ${radius}m)`}</span>}
+              ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />{`Dentro do fence · ${testDist}m do ponto (raio: ${radius}m)`}</span>
+              : <span className="inline-flex gap-1.5 items-center"><Ico icon={XMarkIcon} sm />{`Fora do fence · ${testDist}m do ponto (raio: ${radius}m)`}</span>}
           </div>
         )}
 

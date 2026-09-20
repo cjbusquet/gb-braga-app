@@ -98,6 +98,20 @@ import {
   faBriefcase,
   faHandFist,
   faComment,
+  faChild,
+  faGamepad,
+  faPeopleRoof,
+  faGem,
+  faLayerGroup,
+  faWallet,
+  faArrowsRotate,
+  faCoins,
+  faAddressCard,
+  faUserShield,
+  faFileInvoiceDollar,
+  faUnlock,
+  faCircleUser,
+  faPenNib,
 } from '@fortawesome/free-solid-svg-icons';
 
 /**
@@ -209,6 +223,20 @@ export const ArrowDownIcon = faArrowDown;
 export const BriefcaseIcon = faBriefcase;
 export const MartialArtsIcon = faHandFist;
 export const CommentIcon = faComment;
+export const ChildIcon = faChild;
+export const GamepadIcon = faGamepad;
+export const PeopleRoofIcon = faPeopleRoof;
+export const GemIcon = faGem;
+export const LayerGroupIcon = faLayerGroup;
+export const WalletIcon = faWallet;
+export const ArrowsRotateIcon = faArrowsRotate;
+export const CoinsIcon = faCoins;
+export const AddressCardIcon = faAddressCard;
+export const UserShieldIcon = faUserShield;
+export const FileInvoiceDollarIcon = faFileInvoiceDollar;
+export const UnlockIcon = faUnlock;
+export const CircleUserIcon = faCircleUser;
+export const PenNibIcon = faPenNib;
 
 /* Usadas apenas em Layout.tsx (barra lateral) */
 export const ArrowRightOnRectangleIcon = faRightFromBracket;

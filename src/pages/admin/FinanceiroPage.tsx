@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { faArrowUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 import { usePagamentos, usePlanos, useAlunos, db } from '../../lib/useData';
-import { Ico, ChatBubbleLeftRightIcon, DocumentTextIcon, ArrowUpTrayIcon, CheckIcon, ArrowRightIcon } from '../../lib/icons';
+import { Ico, ChatBubbleLeftRightIcon, DocumentTextIcon, ArrowUpTrayIcon, CheckIcon, ArrowRightIcon, BanknotesIcon, ClockIcon, ExclamationTriangleIcon } from '../../lib/icons';
 import Card from '../../components/common/Card';
 import Badge, { type BadgeColor } from '../../components/common/Badge';
 import PageHeader from '../../components/common/PageHeader';
@@ -52,11 +52,20 @@ export default function FinanceiroPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-3 mb-5 md:grid-cols-3">
-        {([['Receita Mês', totais.pago, '#22C55E'],['Pendente', totais.pendente, '#F59E0B'],['Vencido', totais.vencido, 'var(--gb-red)']] as const).map(([label,val,color]) => (
-          <Card key={label}>
-            <div className="mb-1.5 text-[10.5px] font-semibold tracking-[0.8px] uppercase text-muted">{label}</div>
-            <div className="font-mono text-2xl font-extrabold" style={{ color }}>€{(val as number).toFixed(2)}</div>
-          </Card>
+        {([
+          ['Receita Mês', totais.pago, 'text-gb-green', 'bg-gb-green/10', BanknotesIcon],
+          ['Pendente', totais.pendente, 'text-amber-500', 'bg-amber-500/10', ClockIcon],
+          ['Vencido', totais.vencido, 'text-gb-red', 'bg-gb-red/10', ExclamationTriangleIcon],
+        ] as const).map(([label, val, textCls, bgCls, icon]) => (
+          <div key={label} className="flex gap-3 items-center py-3.5 px-4 rounded-xl border border-border bg-card">
+            <div className={['flex justify-center items-center w-9 h-9 rounded-full shrink-0', textCls, bgCls].join(' ')}>
+              <Ico icon={icon} />
+            </div>
+            <div className="min-w-0">
+              <div className={['font-mono text-2xl font-extrabold leading-tight', textCls].join(' ')}>€{(val as number).toFixed(2)}</div>
+              <div className="mt-0.5 text-[10.5px] text-muted">{label}</div>
+            </div>
+          </div>
         ))}
       </div>
 
@@ -93,56 +102,52 @@ export default function FinanceiroPage() {
               Sem pagamentos. Os pagamentos são criados automaticamente quando um aluno faz matrícula.
             </div>
           ) : (
-            <Card padding="none" className="overflow-hidden">
-              <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
-              <table className="w-full border-collapse min-w-[560px]">
-                <thead>
-                  <tr className="border-b border-border-subtle">
-                    {['Aluno','Plano','Valor','Vencimento','Estado','Ações'].map(h => (
-                      <th key={h} className="py-2.5 px-3.5 text-[10.5px] font-semibold text-left uppercase whitespace-nowrap text-muted">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((p: any) => {
-                    const st = STATUS_CFG[p.status] || STATUS_CFG.pendente;
-                    return (
-                      <tr key={p.id} className="border-b border-border-subtle">
-                        <td className="py-2.5 px-3.5 text-[13px] font-medium whitespace-nowrap text-primary">{p.alunoNome}</td>
-                        <td className="py-2.5 px-3.5 text-xs whitespace-nowrap text-secondary">{p.plano||'—'}</td>
-                        <td className="py-2.5 px-3.5 text-[13px] font-bold whitespace-nowrap text-primary">€{p.valor}</td>
-                        <td className="py-2.5 px-3.5 font-mono text-xs whitespace-nowrap text-secondary">{p.vencimento}</td>
-                        <td className="py-2.5 px-3.5">
-                          <Badge color={st.color}>{st.label}</Badge>
-                        </td>
-                        <td className="py-2.5 px-3.5">
-                          <div className="flex flex-wrap gap-1.5">
-                            {p.status !== 'pago' && (
-                              <button onClick={() => marcarPago(p.id)} disabled={saving===p.id}
-                                className="py-1 px-2.5 text-[11px] font-semibold text-gb-green whitespace-nowrap rounded border cursor-pointer border-gb-green/30 bg-gb-green/10 transition-colors duration-200 hover:bg-gb-green/20 active:bg-gb-green/25 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60">
-                                {saving===p.id ? '...' : <span className="inline-flex gap-1 items-center"><Ico icon={CheckIcon} sm />Pago</span>}
-                              </button>
-                            )}
-                            {p.status !== 'pago' && (
-                              <button onClick={() => toast.success(`Lembrete enviado para ${p.alunoNome}!`)}
-                                className="flex gap-1 items-center py-1 px-2.5 text-[11px] font-semibold text-[#25D366] whitespace-nowrap rounded border cursor-pointer border-[#25D366]/20 bg-[#25D366]/10 transition-colors duration-200 hover:bg-[#25D366]/20 active:bg-[#25D366]/25 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
-                                <Ico icon={ChatBubbleLeftRightIcon} sm /> Lembrete
-                              </button>
-                            )}
-                            {p.status === 'pago' && (
-                              <button onClick={() => toast.success(`Recibo gerado para ${p.alunoNome} · €${p.valor}`)}
-                                className="flex gap-1 items-center py-1 px-2.5 text-[11px] font-semibold text-[#635BFF] whitespace-nowrap rounded border cursor-pointer border-[#635BFF]/20 bg-[#635BFF]/[0.08] transition-colors duration-200 hover:bg-[#635BFF]/20 active:bg-[#635BFF]/25 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
-                                <Ico icon={DocumentTextIcon} sm /> Recibo
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              </div>
+            <Card padding="none">
+              {filtered.map((p: any, i: number) => {
+                const st = STATUS_CFG[p.status] || STATUS_CFG.pendente;
+                return (
+                  <div key={p.id} className={[
+                    'py-3.5 px-[18px]',
+                    i > 0 ? 'border-t border-border-subtle' : '',
+                    p.status === 'vencido' ? 'bg-gb-red/[0.03]' : '',
+                  ].join(' ')}>
+                    <div className="flex flex-wrap gap-3 justify-between items-center">
+                      <div className="flex gap-3 items-center min-w-0">
+                        <div className="flex justify-center items-center w-10 h-10 text-[14px] font-bold rounded-full shrink-0 bg-elevated text-secondary">
+                          {p.alunoNome?.charAt(0) || '?'}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-[13px] font-semibold text-primary">{p.alunoNome}</div>
+                          <div className="overflow-hidden text-xs whitespace-nowrap text-ellipsis text-muted">{p.plano || '-'} · vence {p.vencimento}</div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2.5 items-center shrink-0">
+                        <span className="text-[14px] font-bold text-primary">€{p.valor}</span>
+                        <Badge color={st.color}>{st.label}</Badge>
+                      </div>
+                    </div>
+                    {p.status !== 'pago' ? (
+                      <div className="flex flex-wrap gap-1.5 mt-2.5">
+                        <button onClick={() => marcarPago(p.id)} disabled={saving===p.id}
+                          className="py-1 px-2.5 min-h-11 sm:min-h-0 text-[11px] font-semibold text-gb-green whitespace-nowrap rounded border cursor-pointer border-gb-green/30 bg-gb-green/10 transition-colors duration-200 hover:bg-gb-green/20 active:bg-gb-green/25 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60">
+                          {saving===p.id ? '...' : <span className="inline-flex gap-1 items-center"><Ico icon={CheckIcon} sm />Pago</span>}
+                        </button>
+                        <button onClick={() => toast.success(`Lembrete enviado para ${p.alunoNome}!`)}
+                          className="flex gap-1 items-center py-1 px-2.5 min-h-11 sm:min-h-0 text-[11px] font-semibold text-[#25D366] whitespace-nowrap rounded border cursor-pointer border-[#25D366]/20 bg-[#25D366]/10 transition-colors duration-200 hover:bg-[#25D366]/20 active:bg-[#25D366]/25 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+                          <Ico icon={ChatBubbleLeftRightIcon} sm /> Lembrete
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5 mt-2.5">
+                        <button onClick={() => toast.success(`Recibo gerado para ${p.alunoNome} · €${p.valor}`)}
+                          className="flex gap-1 items-center py-1 px-2.5 min-h-11 sm:min-h-0 text-[11px] font-semibold text-[#635BFF] whitespace-nowrap rounded border cursor-pointer border-[#635BFF]/20 bg-[#635BFF]/[0.08] transition-colors duration-200 hover:bg-[#635BFF]/20 active:bg-[#635BFF]/25 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2">
+                          <Ico icon={DocumentTextIcon} sm /> Recibo
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </Card>
           )}
         </div>
@@ -176,7 +181,9 @@ export default function FinanceiroPage() {
         <div className="max-w-[600px]">
           <Card padding="lg">
             <div className="flex gap-2.5 items-center pb-3.5 mb-4 border-b border-border-subtle">
-              <div className="w-2 h-2 bg-gb-green rounded-full"/>
+              <div className="flex justify-center items-center w-7 h-7 text-gb-green rounded-full shrink-0 bg-gb-green/10">
+                <Ico icon={CheckIcon} sm />
+              </div>
               <div>
                 <div className="text-[13px] font-bold text-gb-green">Emissão automática configurada</div>
                 <div className="text-[11px] text-muted">FR emitida quando Stripe confirma pagamento</div>
@@ -184,7 +191,7 @@ export default function FinanceiroPage() {
             </div>
             <div className="flex justify-between items-center mb-3.5">
               <div>
-                <div className="text-[13px] font-bold text-primary">SAF-T PT — Exportação Mensal</div>
+                <div className="text-[13px] font-bold text-primary">SAF-T PT · Exportação Mensal</div>
                 <div className="text-[11px] text-muted">XML para entrega à AT</div>
               </div>
               <button onClick={() => toast.success('SAF-T XML gerado! Ficheiro: SAF-T_GBBraga.xml')}

@@ -1,6 +1,7 @@
 import { CheckCircleIcon, Ico } from '@/lib/icons';
 import { beltConfig } from '../../lib/gbBrand';
 import { useAlunos, useGraduacoes, usePresencas } from '../../lib/useData';
+import { useDiasFrequentesQuery } from '../../hooks/useAnalytics';
 
 import type { Belt } from '../../types';
 import PortalPageHeader from './PortalPageHeader';
@@ -8,24 +9,27 @@ import { useAuth } from '../../lib/auth';
 import Card from '../../components/common/Card';
 import { SkeletonList } from '../../components/common/Skeleton';
 import BeltBadge from '../../components/common/BeltBadge';
+import BeltBar from '../../components/common/BeltBar';
 
-const BELT_PATH_KIDS: Belt[] = [
-  'branca',
-  'cinza-branca',
-  'cinza',
-  'cinza-preta',
-  'amarela-branca',
-  'amarela',
-  'amarela-preta',
-  'laranja-branca',
-  'laranja',
-  'laranja-preta',
-  'verde-branca',
-  'verde',
-  'verde-preta',
-];
+const DIAS_SEMANA_LABEL = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+const MESES_LABEL = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+const MESES_JANELA = 6;
 
-const BELT_PATH_ADULT: Belt[] = ['branca', 'azul', 'roxa', 'marrom', 'preta'];
+/** "1 ano e 3 meses" / "4 meses" a partir de uma data ISO. */
+function tempoDesde(dataIso: string): string {
+  const inicio = new Date(dataIso);
+  if (isNaN(inicio.getTime())) return '-';
+  const hoje = new Date();
+  let meses = (hoje.getFullYear() - inicio.getFullYear()) * 12 + (hoje.getMonth() - inicio.getMonth());
+  if (hoje.getDate() < inicio.getDate()) meses--;
+  meses = Math.max(0, meses);
+  const anos = Math.floor(meses / 12);
+  const restoMeses = meses % 12;
+  if (anos === 0) return `${restoMeses} ${restoMeses === 1 ? 'mês' : 'meses'}`;
+  if (restoMeses === 0) return `${anos} ${anos === 1 ? 'ano' : 'anos'}`;
+  return `${anos} ${anos === 1 ? 'ano' : 'anos'} e ${restoMeses} ${restoMeses === 1 ? 'mês' : 'meses'}`;
+}
+
 
 function calcularIdade(dataNasc: string): number | null {
   if (!dataNasc) return null;
@@ -41,14 +45,33 @@ function calcularIdade(dataNasc: string): number | null {
 export default function MinhaEvolucao() {
   const { data: alunos } = useAlunos();
   const { data: graduacoes } = useGraduacoes();
-  const { data: presencas } = usePresencas();
   const { user } = useAuth();
   const aluno = alunos.find((a) => a.email === user?.email) || alunos[0];
+  const { data: presencas } = usePresencas(aluno?.id, 400);
+  const { data: diasFrequentes = [] } = useDiasFrequentesQuery(aluno?.id);
   if (!aluno) return <SkeletonList rows={4} />;
 
   const historico = graduacoes.filter((g) => g.alunoId === aluno.id);
   const minhasPresencas = presencas.filter((p) => p.alunoId === aluno.id);
   const diasTreino = new Set(minhasPresencas.map((p) => p.data)).size;
+  const desdeFaixaAtual = historico[0]?.data || aluno.dataMatricula;
+  const maxDiaFrequente = Math.max(1, ...diasFrequentes.map((d) => d.total));
+
+  // Dias (únicos) treinados por mês, últimos MESES_JANELA meses.
+  const hoje = new Date();
+  const diasPorMes = Array.from({ length: MESES_JANELA }, (_, i) => {
+    const d = new Date(hoje.getFullYear(), hoje.getMonth() - (MESES_JANELA - 1 - i), 1);
+    const dias = new Set(
+      minhasPresencas
+        .filter((p) => {
+          const pd = new Date(p.data);
+          return pd.getFullYear() === d.getFullYear() && pd.getMonth() === d.getMonth();
+        })
+        .map((p) => p.data),
+    ).size;
+    return { label: MESES_LABEL[d.getMonth()], dias };
+  });
+  const maxDiasMes = Math.max(1, ...diasPorMes.map((m) => m.dias));
 
   const idade = calcularIdade(aluno.dataNascimento);
 
@@ -66,15 +89,12 @@ export default function MinhaEvolucao() {
     'verde',
     'verde-preta',
   ]);
-  const ADULT_ONLY_BELTS = new Set(['azul', 'roxa', 'marrom', 'preta']);
+  const ADULT_ONLY_BELTS = new Set(['azul', 'roxa', 'marrom', 'preta', 'vermelha-preta', 'vermelha-branca', 'vermelha']);
 
   const isKidsByBelt = KIDS_BELTS.has(aluno.faixa as string);
   const isAdultByBelt = ADULT_ONLY_BELTS.has(aluno.faixa as string);
   const isKids =
     isKidsByBelt || (idade !== null && idade < 16 && !isAdultByBelt);
-  const beltPath = isKids ? BELT_PATH_KIDS : BELT_PATH_ADULT;
-
-  const beltIdx = beltPath.indexOf(aluno.faixa as Belt);
   const bc = beltConfig[aluno.faixa];
 
   return (
@@ -84,135 +104,48 @@ export default function MinhaEvolucao() {
         description="Acompanha a tua progressão, graduações e frequência."
       />
 
-      {/* Belt progression hero */}
-      <div
-        className="overflow-hidden relative py-6 px-7 mb-4 rounded-lg border border-gb-red/20"
-        style={{ background: `linear-gradient(135deg, #0D0508 0%, ${bc?.bg || '#888'} 100%)` }}
-      >
-        {/* Same subtle texture and high-contrast treatment used in the portal hero. */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage:
-              'linear-gradient(transparent 1px, rgba(255,255,255,0.02) 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)',
-            backgroundSize: '28px 28px',
-          }}
-        />
-        <div className="flex relative gap-5 justify-between items-center">
-          <div>
-            <div className="mb-1.5 text-[11px] tracking-[1.5px] uppercase text-white/50">
-              A tua jornada
-            </div>
-            <div className="text-2xl font-extrabold leading-none text-white">
-              Evolução é consistência.
-            </div>
-            <div className="mt-1.5 text-[13px] text-white/70">
-              Cada treino é mais um passo no teu percurso.
-            </div>
-            {idade !== null && (
-              <div className="mt-4 text-[11.5px] text-white/65">
-                {idade} anos · {isKids ? 'Programa Kids' : 'Programa Adultos'}
-              </div>
-            )}
+      {/* Cartão de progresso — mesmo formato de cartão do Portal (marca no
+          topo, corpo, faixa elevada em baixo), mas o conteúdo é a faixa em
+          si em destaque, não a identidade do aluno (isso já está no Portal;
+          aqui o que interessa é onde vais e há quanto tempo). */}
+      <div className="overflow-hidden mb-4 rounded-xl border border-border bg-card">
+        {/* Faixa atual em destaque */}
+        <div className="flex flex-col gap-4 items-center pt-7 pb-8 px-5 text-center md:px-7">
+          <div className="text-[11px] tracking-[1.5px] uppercase text-muted">
+            A tua faixa atual
           </div>
-          <div className="text-center shrink-0">
-            <svg
-              width="80"
-              height="80"
-              viewBox="0 0 80 80"
-              aria-label={`Frequência atual: ${aluno.frequencia}%`}
-            >
-              <circle
-                cx="40"
-                cy="40"
-                r="34"
-                fill="none"
-                stroke="rgba(255,255,255,0.12)"
-                strokeWidth="6"
-              />
-              <circle
-                cx="40"
-                cy="40"
-                r="34"
-                fill="none"
-                stroke="#fff"
-                strokeWidth="6"
-                strokeDasharray={`${(2 * Math.PI * 34 * aluno.frequencia) / 100} ${2 * Math.PI * 34}`}
-                strokeLinecap="round"
-                transform="rotate(-90 40 40)"
-              />
-              <text
-                x="40"
-                y="44"
-                textAnchor="middle"
-                fill="#fff"
-                fontSize="15"
-                fontWeight="700"
-                fontFamily="DM Sans, sans-serif"
-              >
-                {aluno.frequencia}%
-              </text>
-            </svg>
-            <div className="mt-1 text-[11px] text-white/70">
-              Frequência atual
-            </div>
+          <BeltBar belt={aluno.faixa as Belt} degrees={aluno.grau} size="lg" />
+          <div className="text-2xl md:text-[28px] font-black leading-none capitalize text-primary">
+            {bc?.label}
+            {aluno.grau > 0 && <span className="font-semibold text-muted"> · {aluno.grau}° Grau</span>}
           </div>
+        </div>
+
+        {/* Tempo nesta faixa + frequência */}
+        <div className="flex flex-wrap gap-x-8 gap-y-2 justify-center items-center py-4 px-5 border-t border-border-subtle bg-elevated md:px-7">
+          <span className="text-[13px] text-secondary">
+            Há <strong className="text-primary">{tempoDesde(desdeFaixaAtual)}</strong> nesta faixa
+          </span>
+          <span className="text-[13px] text-secondary">
+            Frequência <strong className="text-primary">{aluno.frequencia}%</strong>
+          </span>
         </div>
       </div>
 
-      {/* Belt path — only relevant belts for the student's age */}
-      <Card padding="lg" className="mb-4">
-        <div className="mb-3.5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">
-          Percurso de graduação
-        </div>
-        <div className="flex gap-1.5 items-center py-1.5 pb-0.5">
-          {beltPath.map((b, i) => {
-            const bc2 = beltConfig[b];
-            const isCurrent = b === aluno.faixa;
-            const isDone = i < beltIdx;
-            return (
-              <div key={b} className="flex flex-1 gap-1 items-center">
-                <div className="flex flex-col flex-1 gap-1 items-center">
-                  <div
-                    title={bc2?.label || b}
-                    className="w-full rounded-sm transition-all"
-                    style={{
-                      height: isCurrent ? 10 : 6,
-                      background: bc2?.bg || '#888',
-                      border: b === 'branca' ? '1px solid #555' : 'none',
-                      opacity: isDone ? 1 : isCurrent ? 1 : 0.3,
-                      transform: isCurrent ? 'scaleY(1.3)' : 'scaleY(1)',
-                    }}
-                  />
-                  {isCurrent && (
-                    <div className="w-2 h-2 rounded-full border-2 border-white outline outline-1 outline-black/[0.28] bg-gb-red" />
-                  )}
-                </div>
-                {i < beltPath.length - 1 && (
-                  <div className="w-1 h-px shrink-0 bg-border" />
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Kids → Adult transition notice */}
-        {isKids && (
-          <div className="relative pt-3 mt-3.5 text-[11px] border-t border-border-subtle text-muted">
-            Ao completar 16 anos passas para o programa adultos com faixa azul.
-          </div>
-        )}
-      </Card>
+      {/* Nota de transição kids→adultos — única coisa que valia a pena manter
+          do percurso de graduação (removido: já era a 3ª faixa mostrada na
+          página, a seguir à do cartão acima e ao BeltBadge das estatísticas). */}
+      {isKids && (
+        <p className="mb-4 text-[11.5px] text-muted">
+          Ao completar 16 anos passas para o programa adultos com faixa azul.
+        </p>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {/* Stats */}
         <Card padding="lg">
           <div className="mb-4 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">
             Estatísticas
-          </div>
-          <div className="mb-3">
-            <BeltBadge faixa={aluno.faixa} grau={aluno.grau} size="sm" />
           </div>
           {[
             { label: 'Membro desde', value: aluno.dataMatricula },
@@ -221,6 +154,7 @@ export default function MinhaEvolucao() {
             { label: 'Frequência atual', value: `${aluno.frequencia}%` },
             { label: 'Graduações', value: historico.length + 1 },
             { label: 'Grau atual', value: `${aluno.grau}° de 4` },
+            { label: 'Tempo na faixa atual', value: tempoDesde(desdeFaixaAtual) },
           ]
             .filter((s): s is NonNullable<typeof s> => Boolean(s))
             .map((s) => (
@@ -273,6 +207,44 @@ export default function MinhaEvolucao() {
           )}
         </Card>
       </div>
+
+      {/* Dias de treino por mês — tendência ao longo do tempo, em vez de mais
+          uma faixa; complementa "Dias que mais treinas" (por dia da semana). */}
+      <Card padding="lg" className="mt-4">
+        <div className="mb-3.5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">
+          Dias de treino por mês
+        </div>
+        {diasPorMes.map((m) => (
+          <div key={m.label} className="flex gap-2 items-center mb-2">
+            <span className="w-10 text-[11.5px] text-secondary">{m.label}</span>
+            <div className="overflow-hidden flex-1 h-[5px] rounded-full bg-elevated">
+              <div className="h-full bg-gb-green" style={{ width: `${(m.dias / maxDiasMes) * 100}%` }} />
+            </div>
+            <span className="w-6 text-[11px] text-right text-muted">{m.dias}</span>
+          </div>
+        ))}
+      </Card>
+
+      {/* Dias que mais treinas */}
+      {diasFrequentes.length > 0 && (
+        <Card padding="lg" className="mt-4">
+          <div className="mb-3.5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">
+            Dias que mais treinas
+          </div>
+          {diasFrequentes
+            .slice()
+            .sort((a, b) => b.total - a.total)
+            .map((d) => (
+              <div key={d.diaSemana} className="flex gap-2 items-center mb-2">
+                <span className="w-16 text-[11.5px] text-secondary">{DIAS_SEMANA_LABEL[d.diaSemana]}</span>
+                <div className="overflow-hidden flex-1 h-[5px] rounded-full bg-elevated">
+                  <div className="h-full bg-gb-red" style={{ width: `${(d.total / maxDiaFrequente) * 100}%` }} />
+                </div>
+                <span className="w-6 text-[11px] text-right text-muted">{d.total}</span>
+              </div>
+            ))}
+        </Card>
+      )}
     </div>
   );
 }

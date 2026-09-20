@@ -6,8 +6,8 @@ import { useAuth } from '../../lib/auth';
 import { useToast } from '../../components/common/Toast';
 import { useInvalidateAlunos } from '../../lib/queries';
 import { beltConfig } from '../../lib/gbBrand';
-import { FAIXAS_PROGRESSAO, getBeltSystemForAge, isMatriculaPendente } from '../../lib/alunoDomain';
-import { Ico, TrophyIcon, ChatBubbleLeftRightIcon, MartialArtsIcon, MedalIcon, CheckIcon, ExclamationTriangleIcon } from '../../lib/icons';
+import { getBeltSystemForAge, isMatriculaPendente, proxFaixaGrau, podeGraduar } from '../../lib/alunoDomain';
+import { Ico, TrophyIcon, ChatBubbleLeftRightIcon, MartialArtsIcon, MedalIcon, CheckIcon, ExclamationTriangleIcon, ArrowRightIcon } from '../../lib/icons';
 import type { Belt } from '../../types';
 import PageHeader from '../../components/common/PageHeader';
 import Card from '../../components/common/Card';
@@ -18,17 +18,25 @@ import BeltBadge from '../../components/common/BeltBadge';
 import Tabs from '../../components/common/Tabs';
 import Select from '../../components/common/Select';
 
-function proxFaixaGrau(faixa: string, grau: number, progressao: readonly string[] = FAIXAS_PROGRESSAO): { faixa: string; grau: number } {
-  if (grau < 4) return { faixa, grau: grau + 1 };
-  const idx = progressao.indexOf(faixa);
-  if (idx >= 0 && idx < progressao.length - 1) return { faixa: progressao[idx + 1], grau: 0 };
-  return { faixa, grau };
-}
-
 const FIELD_CLASS = 'box-border w-full py-2.5 px-3 min-h-11 sm:min-h-0 font-ui text-[13px] rounded-sm border border-border bg-elevated text-primary transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-gb-red/25 focus:border-gb-red';
 const LABEL_CLASS = 'block mb-1.5 text-[10.5px] font-semibold tracking-[0.8px] uppercase text-muted';
 
 type Tab = 'candidatos' | 'registar' | 'historico';
+
+/** Transição de faixa (antes → depois) num cartão próprio — dá mais peso
+ * visual ao par de faixas do que os deixar soltos na linha, usado em
+ * Candidatos e Histórico. */
+function TransicaoFaixa({ faixaAntes, grauAntes, faixaDepois, grauDepois }: {
+  faixaAntes: string; grauAntes: number; faixaDepois: string; grauDepois: number;
+}) {
+  return (
+    <div className="inline-flex flex-wrap gap-2.5 items-center py-2 px-3 rounded-lg bg-elevated">
+      <BeltBadge faixa={faixaAntes} grau={grauAntes} />
+      <Ico icon={ArrowRightIcon} sm className="text-muted" />
+      <BeltBadge faixa={faixaDepois} grau={grauDepois} />
+    </div>
+  );
+}
 
 export default function GraduacaoPage() {
   const { user } = useAuth();
@@ -70,7 +78,11 @@ export default function GraduacaoPage() {
   }, [alunoSel, alunos]);
 
   // Candidatos elegíveis — exclui alunos com matrícula ainda pendente de confirmação
-  const candidatosTodos = alunos.filter((a: any) => (a.frequencia || 0) >= 70);
+  // e alunos já no topo da progressão (ex.: faixa vermelha), para quem
+  // proxFaixaGrau não tem próximo passo a sugerir.
+  const candidatosTodos = alunos.filter((a: any) =>
+    (a.frequencia || 0) >= 70 && podeGraduar(a.faixa || 'branca', a.grau || 0, getBeltSystemForAge(a.dataNascimento)),
+  );
   const candidatos = candidatosTodos.filter((a: any) => !isMatriculaPendente(a));
   const candidatosOcultos = candidatosTodos.length - candidatos.length;
 
@@ -130,7 +142,7 @@ export default function GraduacaoPage() {
       {/* CANDIDATOS */}
       {tab === 'candidatos' && (
         <div>
-          <div className="flex flex-col gap-3 justify-between items-start py-3 px-4 mb-4 rounded-md border border-border bg-card sm:flex-row sm:items-center">
+          <div className="flex flex-col gap-3 justify-between items-start py-3 px-4 mb-4 rounded-xl border border-border bg-card sm:flex-row sm:items-center">
             <div className="flex gap-2.5 items-center">
               <Badge color="brand">{candidatos.length} elegíveis</Badge>
               <div className="text-xs text-muted">
@@ -152,27 +164,25 @@ export default function GraduacaoPage() {
           ) : candidatos.map((aluno: any) => {
             const prox = proxFaixaGrau(aluno.faixa || 'branca', aluno.grau || 0, getBeltSystemForAge(aluno.dataNascimento));
             return (
-              <div key={aluno.id} className="flex flex-col gap-3.5 items-start py-4 px-4 mb-2.5 rounded-xl border border-border bg-card sm:flex-row sm:items-center">
+              <div key={aluno.id} className="flex flex-col gap-3.5 py-4 px-4 mb-2.5 rounded-xl border border-border bg-card sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex gap-3.5 items-center min-w-0">
-                  <div className="flex justify-center items-center w-[42px] h-[42px] text-base font-bold rounded-full shrink-0 bg-elevated text-secondary">
+                  <div className="flex justify-center items-center w-11 h-11 text-base font-bold rounded-full shrink-0 bg-elevated text-secondary">
                     {aluno.nome.charAt(0)}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="mb-1 text-sm font-bold text-primary">{aluno.nome}</div>
-                    <div className="flex flex-wrap gap-2 items-center">
-                      <BeltBadge faixa={aluno.faixa || 'branca'} grau={aluno.grau || 0} />
-                      <span className="text-[11px] text-muted">→</span>
-                      <BeltBadge faixa={prox.faixa} grau={prox.grau} />
-                      <span className="ml-2 text-[11px] text-muted">Freq: {aluno.frequencia || 0}%</span>
-                    </div>
+                  <div className="min-w-0">
+                    <div className="mb-1.5 text-sm font-bold text-primary">{aluno.nome}</div>
+                    <TransicaoFaixa faixaAntes={aluno.faixa || 'branca'} grauAntes={aluno.grau || 0} faixaDepois={prox.faixa} grauDepois={prox.grau} />
                   </div>
                 </div>
-                <Button
-                  variant="primary" size="sm" className="shrink-0"
-                  onClick={() => { setAlunoSel(aluno.id); setNovaFaixa(prox.faixa); setNovoGrau(prox.grau); setTab('registar'); }}
-                >
-                  <Ico icon={TrophyIcon} sm /> Registar
-                </Button>
+                <div className="flex gap-3 justify-between items-center shrink-0 sm:flex-col sm:items-end sm:gap-2">
+                  <span className="text-[11px] font-semibold text-muted">Freq. {aluno.frequencia || 0}%</span>
+                  <Button
+                    variant="primary" size="sm"
+                    onClick={() => { setAlunoSel(aluno.id); setNovaFaixa(prox.faixa); setNovoGrau(prox.grau); setTab('registar'); }}
+                  >
+                    <Ico icon={TrophyIcon} sm /> Registar
+                  </Button>
+                </div>
               </div>
             );
           })}
@@ -199,18 +209,32 @@ export default function GraduacaoPage() {
               {alunoAtualPendente && (
                 <div className="inline-flex gap-1.5 items-center mt-1.5 text-[11px] font-semibold text-amber-600">
                   <Ico icon={ExclamationTriangleIcon} sm />
-                  Este aluno tem a matrícula pendente de confirmação — não pode ser graduado ainda.
+                  Este aluno tem a matrícula pendente de confirmação, não pode ser graduado ainda.
                 </div>
               )}
             </div>
 
-            {/* Pré-visualização — uma única faixa, atualizada em tempo real */}
-            <div className="flex flex-col gap-3 items-center py-6 px-4 mb-3.5 rounded-lg border border-border bg-elevated">
-              <BeltBar belt={novaFaixa as Belt} degrees={novoGrau} size="lg" />
-              <div className="text-sm font-bold text-primary">
-                Faixa {beltConfig[novaFaixa]?.label || novaFaixa} — {novoGrau > 0 ? `${novoGrau}º Grau` : 'Nenhum Grau'}
-              </div>
-            </div>
+            {/* Pré-visualização — uma única faixa, atualizada em tempo real.
+                Fundo/borda tingidos com a cor da própria faixa (quando é uma
+                cor sólida — as corais usam gradiente, não dá para tingir a
+                partir da string) para sentir-se um preview, não uma caixa cinzenta. */}
+            {(() => {
+              const cfgPreview = beltConfig[novaFaixa];
+              const corSolida = cfgPreview?.bg?.startsWith('#') ? cfgPreview.bg : null;
+              return (
+                <div
+                  className="flex flex-col gap-3 items-center py-6 px-4 mb-3.5 rounded-xl border"
+                  style={corSolida
+                    ? { borderColor: `${corSolida}40`, background: `${corSolida}0F` }
+                    : { borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}
+                >
+                  <BeltBar belt={novaFaixa as Belt} degrees={novoGrau} size="lg" />
+                  <div className="text-sm font-bold text-primary">
+                    Faixa {cfgPreview?.label || novaFaixa} · {novoGrau > 0 ? `${novoGrau}º Grau` : 'Nenhum Grau'}
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="grid grid-cols-1 gap-3 mb-3.5 sm:grid-cols-2">
               <div>
@@ -275,7 +299,7 @@ export default function GraduacaoPage() {
               className={success ? '!bg-gb-green !shadow-none' : undefined}
               onClick={handleRegistar}
             >
-              {success ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Graduação registada!</span> : saving ? 'A guardar...' : <span className="inline-flex gap-1.5 items-center">Confirmar Graduação — OSS! <Ico icon={MartialArtsIcon} sm /></span>}
+              {success ? <span className="inline-flex gap-1.5 items-center"><Ico icon={CheckIcon} sm />Graduação registada!</span> : saving ? 'A guardar...' : <span className="inline-flex gap-1.5 items-center">Confirmar Graduação · OSS! <Ico icon={MartialArtsIcon} sm /></span>}
             </Button>
           </Card>
         </div>
@@ -290,17 +314,16 @@ export default function GraduacaoPage() {
               <div>Sem graduações registadas</div>
             </div>
           ) : graduacoes.map((g: any) => (
-            <div key={g.id} className="flex flex-col gap-3 items-start py-4 px-4 mb-2.5 rounded-xl border border-border bg-card sm:flex-row sm:items-center">
-              <div className="flex-1 min-w-0 w-full sm:w-auto">
-                <div className="overflow-hidden mb-1 text-sm font-bold whitespace-nowrap text-ellipsis text-primary">{g.alunoNome || g.aluno_nome}</div>
-                <div className="flex flex-wrap gap-2 items-center">
-                  <BeltBadge faixa={g.faixaAnterior || g.faixa_anterior || 'branca'} grau={g.grauAnterior || g.grau_anterior || 0} />
-                  <span className="text-[11px] text-muted">→</span>
-                  <BeltBadge faixa={g.faixaNova || g.faixa_nova || 'branca'} grau={g.grauNovo || g.grau_novo || 0} />
-                </div>
+            <div key={g.id} className="flex flex-col gap-3 py-4 px-4 mb-2.5 rounded-xl border border-border bg-card sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <div className="overflow-hidden mb-1.5 text-sm font-bold whitespace-nowrap text-ellipsis text-primary">{g.alunoNome || g.aluno_nome}</div>
+                <TransicaoFaixa
+                  faixaAntes={g.faixaAnterior || g.faixa_anterior || 'branca'} grauAntes={g.grauAnterior || g.grau_anterior || 0}
+                  faixaDepois={g.faixaNova || g.faixa_nova || 'branca'} grauDepois={g.grauNovo || g.grau_novo || 0}
+                />
               </div>
               <div className="shrink-0 text-xs text-left text-muted sm:text-right">
-                {g.data}<br/>{g.professorNome || g.professor_nome || '—'}
+                {g.data}<br/>{g.professorNome || g.professor_nome || '-'}
               </div>
             </div>
           ))}

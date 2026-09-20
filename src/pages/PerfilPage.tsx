@@ -1,8 +1,11 @@
 import {
+  ArrowDownTrayIcon,
   ArrowPathIcon,
   ArrowRightOnRectangleIcon,
   CameraIcon,
   CheckCircleIcon,
+  Cog6ToothIcon,
+  DocumentIcon,
   ExclamationTriangleIcon,
   Ico,
   IdentificationIcon,
@@ -13,13 +16,19 @@ import {
 import { roleThemes } from '../lib/gbBrand';
 import { isConfigured, supabase } from '../lib/supabaseClient';
 import { useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import type { HeroIcon } from '../lib/icons';
 import type React from 'react';
 import { useAuth } from '../lib/auth';
+import { db, useAlunos, useContratos } from '../lib/useData';
 import { useProfileAvatarQuery, useUpdateProfile, useUploadAvatar } from '../hooks/useProfile';
-import { useAlunoInfoByEmailQuery } from '../hooks/useAlunoInfo';
+import { ALUNO_INFO_QUERY_KEYS, useAlunoInfoByEmailQuery, type AlunoInfo } from '../hooks/useAlunoInfo';
+import { criarPortalSession } from '../services/api/edgeFunctions';
+import { exportContratoPDF } from '../services/pdf';
 import BeltBadge from '../components/common/BeltBadge';
+import Button from '../components/common/Button';
+import { useToast } from '../components/common/Toast';
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 const INP_CLASS = 'block box-border w-full py-2.5 px-3 min-h-11 sm:min-h-0 font-ui text-[13px] rounded-sm border outline-none transition-all duration-200 border-border bg-elevated text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25';
@@ -376,6 +385,52 @@ function PasswordSection() {
   );
 }
 
+// WhatsApp é o único campo editável desta secção — isolado num componente
+// próprio, montado só depois de `info` estar garantidamente carregado (ver
+// AlunoSection abaixo), para inicializar o estado local a partir do valor
+// real numa única vez sem precisar de um effect a "apanhar" o valor depois.
+function WhatsappField({ info }: { info: AlunoInfo }) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [whatsapp, setWhatsapp] = useState(info.whatsapp || '');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [err, setErr] = useState('');
+
+  const saveWhatsapp = async () => {
+    setErr('');
+    setSaving(true);
+    try {
+      await db.atualizarAluno(info.id, { whatsapp: whatsapp.trim() });
+      await queryClient.invalidateQueries({ queryKey: ALUNO_INFO_QUERY_KEYS.byEmail(user?.email ?? '') });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Erro ao guardar.');
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div className="col-span-full">
+      <FieldLabel>WhatsApp</FieldLabel>
+      <input
+        value={whatsapp}
+        onChange={(e) => setWhatsapp(e.target.value)}
+        className={INP_CLASS}
+        placeholder="+351 9xx xxx xxx"
+      />
+      {err && (
+        <div className="inline-flex gap-1.5 items-center mt-2.5 text-[11.5px] font-semibold text-gb-red">
+          <Ico icon={ExclamationTriangleIcon} sm />
+          {err}
+        </div>
+      )}
+      <SaveBtn saving={saving} saved={saved} onClick={saveWhatsapp} />
+    </div>
+  );
+}
+
 // ─── Aluno info section ───────────────────────────────────────────────────────
 function AlunoSection() {
   const { user } = useAuth();
@@ -402,7 +457,7 @@ function AlunoSection() {
         month: 'long',
         year: 'numeric',
       })
-    : '—';
+    : '-';
 
   return (
     <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-3.5">
@@ -420,7 +475,7 @@ function AlunoSection() {
           Plano
         </div>
         <div className="text-[13px] font-semibold text-primary">
-          {info.plano || '—'}
+          {info.plano || '-'}
         </div>
       </div>
 
@@ -433,7 +488,89 @@ function AlunoSection() {
           {dataFmt}
         </div>
       </div>
+
+      {/* WhatsApp — usado pelo staff (Chat) para contactar diretamente. */}
+      <WhatsappField key={info.id} info={info} />
     </div>
+  );
+}
+
+// ─── Contrato section ─────────────────────────────────────────────────────────
+// Movido do Portal — em desktop ficava sozinho, um botão estreito no meio da
+// página; aqui junta-se naturalmente às restantes secções do Perfil.
+function ContratoSection() {
+  const { user } = useAuth();
+  const toast = useToast();
+  const { data: alunos } = useAlunos();
+  const { data: contratos } = useContratos();
+  const aluno = alunos.find((a) => a.email === user?.email);
+  const meuContrato = contratos.find((c) => c.alunoId === aluno?.id);
+
+  if (!aluno) {
+    return <div className="text-[13px] text-muted">A carregar...</div>;
+  }
+
+  return (
+    <>
+      <div className="py-4 px-5 mb-[18px] text-[13px] leading-[1.8] rounded-md border border-border bg-elevated text-secondary">
+        <p>
+          <strong>Tribo Laurada Lda.</strong> (NIF 518948471) · Gracie Barra
+          Braga
+          <br />
+          Rua Nova de Santa Cruz, 11 – 4710-409 Braga
+        </p>
+        <p>
+          O aluno <strong>{aluno.nome}</strong> comprometeu-se a:
+        </p>
+        <ul className="mb-2.5 ml-[18px]">
+          <li>Efetuar o pagamento da mensalidade até ao dia 5 de cada mês</li>
+          <li>Utilizar o uniforme oficial da Gracie Barra durante os treinos</li>
+          <li>Cumprir o regulamento interno da escola</li>
+          <li>Declarar estar fisicamente apto para a prática do Jiu-Jitsu</li>
+        </ul>
+        <p className="text-[11.5px] text-muted">
+          Contrato em vigor desde {aluno.dataMatricula}.
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2.5">
+        <Button
+          variant="primary"
+          className="flex-[1_1_140px]"
+          onClick={() => {
+            exportContratoPDF({
+              alunoNome: meuContrato?.alunoNome || aluno.nome,
+              alunoNif: meuContrato?.alunoNif || '',
+              plano: meuContrato?.plano || aluno.plano || '',
+              valor: meuContrato?.valor ?? 0,
+              dataAssinatura: (
+                meuContrato?.dataAssinatura ||
+                aluno.dataMatricula ||
+                ''
+              ).slice(0, 10),
+              dataInicio: meuContrato?.dataInicio || aluno.dataMatricula || '',
+              assinaturaImg: meuContrato?.assinaturaImg || null,
+            });
+          }}
+        >
+          <Ico icon={ArrowDownTrayIcon} sm /> Descarregar PDF
+        </Button>
+        {aluno.stripeSubId && (
+          <button
+            onClick={async () => {
+              try {
+                const { url } = await criarPortalSession();
+                window.location.assign(url);
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : 'Não foi possível abrir a gestão da subscrição.');
+              }
+            }}
+            className="flex flex-[1_1_140px] gap-1.5 justify-center items-center py-2.5 min-h-11 sm:min-h-0 text-xs font-semibold rounded-sm border cursor-pointer border-gb-red/20 text-gb-red bg-gb-red/[0.08] transition-colors duration-200 hover:bg-gb-red/[0.15] active:bg-gb-red/[0.15] outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"
+          >
+            <Ico icon={Cog6ToothIcon} sm /> Gerir / cancelar subscrição
+          </button>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -484,6 +621,13 @@ export default function PerfilPage() {
       {user.role === 'aluno' && (
         <SectionCard title="A minha matrícula" icon={IdentificationIcon}>
           <AlunoSection />
+        </SectionCard>
+      )}
+
+      {/* Aluno-only: contrato de adesão */}
+      {user.role === 'aluno' && (
+        <SectionCard title="O meu contrato" icon={DocumentIcon}>
+          <ContratoSection />
         </SectionCard>
       )}
 

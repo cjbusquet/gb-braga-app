@@ -12,7 +12,7 @@ const COLOR_CLASSES: Record<BadgeColor, string> = {
   brand: 'text-gb-red bg-gb-red-glow border border-gb-red/20',
   success: 'text-gb-green-dark bg-gb-green/10 border border-gb-green/20',
   warning: 'text-amber-700 bg-amber-50 border border-amber-200',
-  danger: 'text-red-700 bg-red-50 border border-red-200',
+  danger: 'text-gb-red bg-gb-red-glow border border-gb-red/20',
 };
 
 export default function Badge({ color = 'neutral', className = '', children, ...rest }: BadgeProps) {

@@ -1,4 +1,4 @@
-import { useAulaQuery, useAulaStatsQuery } from '../../hooks/useAulas';
+import { useAulaQuery, useAulaStatsQuery, useMinhasAulasDadasQuery } from '../../hooks/useAulas';
 import { beltConfig } from '../../lib/gbBrand';
 import type { Belt } from '../../types';
 import Card from '../../components/common/Card';
@@ -16,8 +16,17 @@ const STATUS_BADGE: Record<'agendada' | 'em_curso' | 'concluida', { color: 'succ
 export default function AulaDetalhePage({ aulaId, onNavigate }: { aulaId?: string; onNavigate?: (page: string) => void }) {
   const { data: aula, isLoading: aulaLoading } = useAulaQuery(aulaId);
   const { data: presentes = [], isLoading: presentesLoading } = useAulaStatsQuery(aulaId);
+  const { data: aulasDaTurma = [] } = useMinhasAulasDadasQuery(aula?.professorId ?? undefined);
 
   const voltar = () => onNavigate?.('aulas');
+
+  // Média da turma (outras aulas da mesma turma dadas por este professor),
+  // para dar contexto a esta aula em concreto — "12 presentes" sozinho não
+  // diz se é uma boa ou má aula.
+  const outrasDaTurma = aula ? aulasDaTurma.filter(a => a.turmaId === aula.turmaId && a.id !== aula.id) : [];
+  const mediaTurma = outrasDaTurma.length > 0
+    ? outrasDaTurma.reduce((s, a) => s + a.presentesCount, 0) / outrasDaTurma.length
+    : null;
 
   if (aulaLoading) {
     return (
@@ -54,14 +63,17 @@ export default function AulaDetalhePage({ aulaId, onNavigate }: { aulaId?: strin
             <h2 className="mb-1.5 text-lg font-bold text-primary">{aula.turmaNome}</h2>
             <div className="flex flex-wrap gap-2 items-center">
               <Badge color={STATUS_BADGE[aula.status].color}>{STATUS_BADGE[aula.status].label}</Badge>
-              <span className="inline-flex gap-1.5 items-center text-sm text-muted"><Ico icon={ClockIcon} sm />{aula.horario || '—'}</span>
+              <span className="inline-flex gap-1.5 items-center text-sm text-muted"><Ico icon={ClockIcon} sm />{aula.horario || '-'}</span>
               {aula.sala && <span className="inline-flex gap-1.5 items-center text-sm text-muted"><Ico icon={MapPinIcon} sm />{aula.sala}</span>}
             </div>
             <div className="mt-1.5 text-xs text-muted">{aula.data}</div>
           </div>
-          <div className="py-3 px-[18px] text-right rounded-sm bg-elevated">
+          <div className="py-3 px-[18px] text-right rounded-xl bg-elevated">
             <div className="text-2xl font-extrabold text-primary">{presentes.length}</div>
             <div className="text-[11px] text-muted">presentes</div>
+            {mediaTurma !== null && (
+              <div className="mt-1 text-[11px] text-muted">média da turma: {mediaTurma.toFixed(1)}</div>
+            )}
           </div>
         </div>
       </Card>

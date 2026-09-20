@@ -51,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (data) {
+        let pagamentoPendente = false;
         // Suspenso/inativo: alunos.status is DB-enforced (banned_until
         // sync + RLS on my_aluno_id()) — this is UX only, catching a
         // session that was already open when staff changed the status,
@@ -58,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (data.role === 'aluno') {
           const { data: alunoRow } = await supabase
             .from('alunos')
-            .select('status')
+            .select('status, metodo_pagamento, stripe_subscription_id, grupo_familiar_id')
             .eq('email', email)
             .maybeSingle();
           if (alunoRow && alunoRow.status !== 'ativo') {
@@ -70,9 +71,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setBlockedMessage(message);
             return { blocked: message };
           }
+          // Matrícula por Stripe cujo 1.º pagamento (próprio, ou do grupo
+          // família a que pertence) ainda não foi confirmado pelo webhook —
+          // alunos.status fica 'ativo' desde a criação por razões técnicas
+          // (ver comentário em FluxoMatricula.tsx), por isso não dá para
+          // usar esse campo aui. Numerário segue o fluxo de aprovação já
+          // existente (matricula_completa/pedidoPendente), não este.
+          if (alunoRow?.metodo_pagamento === 'stripe') {
+            if (alunoRow.grupo_familiar_id) {
+              const { data: grupo } = await supabase
+                .from('grupos_familiares')
+                .select('status')
+                .eq('id', alunoRow.grupo_familiar_id)
+                .maybeSingle();
+              pagamentoPendente = grupo?.status !== 'ativo';
+            } else {
+              pagamentoPendente = !alunoRow.stripe_subscription_id;
+            }
+          }
         }
         setBlockedMessage(null);
-        setUser(mapProfile(data, email));
+        setUser({ ...mapProfile(data, email), pagamentoPendente });
         return {};
       }
 

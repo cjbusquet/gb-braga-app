@@ -8,11 +8,17 @@ dist-ssr/
 bundle.html
 bundle_vite.html
 
-# Environment — NUNCA commitar ficheiros com chaves reais
-.env
-.env.local
-.env.*.local
-.env.production
+# Environment — NUNCA commitar ficheiros com chaves reais.
+# Padrão amplo (.env*) apanha qualquer variante presente ou futura
+# (.env.local, .env.production, .env.development, .env.test, o que o
+# Vercel CLI gerar em `vercel env pull`, etc.) — só o template sem
+# segredos reais (.env.example) fica destacado a seguir.
+.env*
+!.env.example
+
+# Vercel CLI (`vercel link`/`vercel dev`) — guarda o id do projeto/org
+# e pode cachear pulls de env vars.
+.vercel
 
 # Parcel cache (não necessário)
 .parcel-cache/

@@ -139,6 +139,7 @@ export type Database = {
           frequencia: number
           genero: Database["public"]["Enums"]["genero_type"] | null
           grau: number
+          grupo_familiar_id: string | null
           id: string
           metodo_pagamento: Database["public"]["Enums"]["payment_method"]
           morada: string | null
@@ -171,6 +172,7 @@ export type Database = {
           frequencia?: number
           genero?: Database["public"]["Enums"]["genero_type"] | null
           grau?: number
+          grupo_familiar_id?: string | null
           id?: string
           metodo_pagamento?: Database["public"]["Enums"]["payment_method"]
           morada?: string | null
@@ -203,6 +205,7 @@ export type Database = {
           frequencia?: number
           genero?: Database["public"]["Enums"]["genero_type"] | null
           grau?: number
+          grupo_familiar_id?: string | null
           id?: string
           metodo_pagamento?: Database["public"]["Enums"]["payment_method"]
           morada?: string | null
@@ -225,6 +228,13 @@ export type Database = {
           whatsapp?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "alunos_grupo_familiar_id_fkey"
+            columns: ["grupo_familiar_id"]
+            isOneToOne: false
+            referencedRelation: "grupos_familiares"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "alunos_numerario_aprovado_por_fkey"
             columns: ["numerario_aprovado_por"]
@@ -513,6 +523,56 @@ export type Database = {
           },
         ]
       }
+      grupos_familiares: {
+        Row: {
+          created_at: string
+          id: string
+          plano_id: string | null
+          plano_nome: string | null
+          status: Database["public"]["Enums"]["aluno_status"]
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          titular_email: string
+          titular_nif: string | null
+          titular_nome: string
+          titular_treina: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          plano_id?: string | null
+          plano_nome?: string | null
+          status?: Database["public"]["Enums"]["aluno_status"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          titular_email: string
+          titular_nif?: string | null
+          titular_nome: string
+          titular_treina?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          plano_id?: string | null
+          plano_nome?: string | null
+          status?: Database["public"]["Enums"]["aluno_status"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          titular_email?: string
+          titular_nif?: string | null
+          titular_nome?: string
+          titular_treina?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grupos_familiares_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mensagens: {
         Row: {
           agendado_para: string | null
@@ -660,11 +720,12 @@ export type Database = {
       }
       pagamentos: {
         Row: {
-          aluno_id: string
+          aluno_id: string | null
           aluno_nome: string
           created_at: string
           data_pagamento: string | null
           descricao: string | null
+          grupo_familiar_id: string | null
           id: string
           metodo: Database["public"]["Enums"]["payment_method"] | null
           plano_id: string | null
@@ -677,11 +738,12 @@ export type Database = {
           vencimento: string
         }
         Insert: {
-          aluno_id: string
+          aluno_id?: string | null
           aluno_nome: string
           created_at?: string
           data_pagamento?: string | null
           descricao?: string | null
+          grupo_familiar_id?: string | null
           id?: string
           metodo?: Database["public"]["Enums"]["payment_method"] | null
           plano_id?: string | null
@@ -694,11 +756,12 @@ export type Database = {
           vencimento: string
         }
         Update: {
-          aluno_id?: string
+          aluno_id?: string | null
           aluno_nome?: string
           created_at?: string
           data_pagamento?: string | null
           descricao?: string | null
+          grupo_familiar_id?: string | null
           id?: string
           metodo?: Database["public"]["Enums"]["payment_method"] | null
           plano_id?: string | null
@@ -716,6 +779,13 @@ export type Database = {
             columns: ["aluno_id"]
             isOneToOne: false
             referencedRelation: "alunos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_grupo_familiar_id_fkey"
+            columns: ["grupo_familiar_id"]
+            isOneToOne: false
+            referencedRelation: "grupos_familiares"
             referencedColumns: ["id"]
           },
           {
@@ -811,6 +881,7 @@ export type Database = {
           created_at: string
           descricao: string | null
           id: string
+          membros: number
           nome: string
           stripe_price_id_live: string | null
           stripe_price_id_test: string | null
@@ -823,6 +894,7 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           id: string
+          membros?: number
           nome: string
           stripe_price_id_live?: string | null
           stripe_price_id_test?: string | null
@@ -835,6 +907,7 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           id?: string
+          membros?: number
           nome?: string
           stripe_price_id_live?: string | null
           stripe_price_id_test?: string | null
@@ -1323,9 +1396,22 @@ export type Database = {
         Returns: number
       }
       concluir_aula: { Args: { p_aula_id: string }; Returns: undefined }
+      definir_professor_aula: {
+        Args: { p_data: string; p_professor_id: string; p_turma_id: string }
+        Returns: string
+      }
+      email_existe: { Args: { e: string }; Returns: boolean }
       iniciar_aula: {
         Args: { p_data: string; p_turma_id: string }
         Returns: string
+      }
+      listar_professores_ativos: {
+        Args: never
+        Returns: {
+          faixa: Database["public"]["Enums"]["belt_type"]
+          id: string
+          nome: string
+        }[]
       }
       marcar_chat_lida: { Args: { p_aluno_id: string }; Returns: undefined }
       obter_ou_criar_aula: {
@@ -1391,7 +1477,13 @@ export type Database = {
       payment_status: "pago" | "pendente" | "vencido" | "cancelado"
       turma_nivel: "iniciante" | "intermediario" | "avancado" | "kids" | "all"
       turma_tipo: "gi" | "nogi" | "wrestling" | "kids"
-      user_role: "superadmin" | "admin" | "atendimento" | "professor" | "aluno"
+      user_role:
+        | "superadmin"
+        | "admin"
+        | "atendimento"
+        | "professor"
+        | "aluno"
+        | "encarregado"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1407,12 +1499,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1436,11 +1528,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1461,11 +1553,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1486,11 +1578,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1503,11 +1595,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1551,7 +1643,14 @@ export const Constants = {
       payment_status: ["pago", "pendente", "vencido", "cancelado"],
       turma_nivel: ["iniciante", "intermediario", "avancado", "kids", "all"],
       turma_tipo: ["gi", "nogi", "wrestling", "kids"],
-      user_role: ["superadmin", "admin", "atendimento", "professor", "aluno"],
+      user_role: [
+        "superadmin",
+        "admin",
+        "atendimento",
+        "professor",
+        "aluno",
+        "encarregado",
+      ],
     },
   },
 } as const

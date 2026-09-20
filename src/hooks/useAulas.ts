@@ -227,7 +227,13 @@ export interface AulaComContagem extends Aula {
   presentesCount: number;
 }
 
-/** Aulas que o professor efetivamente deu (exclui 'agendada' — nunca chegou a iniciar), mais recentes primeiro, com contagem de presentes. */
+/**
+ * Aulas que o professor efetivamente deu, mais recentes primeiro, com
+ * contagem de presentes. Não filtra por status: uma linha em `aulas`
+ * só existe porque um check-in (obter_ou_criar_aula) ou o próprio
+ * professor a materializou — a linha em si já é o sinal de que a aula
+ * aconteceu, não é preciso premir "Iniciar"/"Concluir" para contar.
+ */
 export function useMinhasAulasDadasQuery(professorId?: string) {
   return useQuery({
     queryKey: ['aulas', 'dadas', professorId ?? ''],
@@ -237,7 +243,6 @@ export function useMinhasAulasDadasQuery(professorId?: string) {
         .from('aulas')
         .select('*, presencas(count)')
         .eq('professor_id', professorId)
-        .in('status', ['em_curso', 'concluida'])
         .order('data', { ascending: false })
         .order('hora_inicio', { ascending: false })
         .limit(200);
@@ -277,8 +282,7 @@ export function useAulasResumoQuery(professorId?: string) {
       const { data: aulasDoProf, error: aulasError } = await supabase
         .from('aulas')
         .select('id, turma_nome')
-        .eq('professor_id', professorId)
-        .in('status', ['em_curso', 'concluida']);
+        .eq('professor_id', professorId);
       if (aulasError) throw aulasError;
       const aulas = aulasDoProf ?? [];
       const totalAulas = aulas.length;
@@ -396,25 +400,67 @@ export function useTurmasDoAlunoQuery(alunoId?: string) {
   });
 }
 
-export function useIniciarAulaMutation() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ turmaId, data }: { turmaId: string; data: string }): Promise<string> => {
-      const { data: aulaId, error } = await supabase.rpc('iniciar_aula', { p_turma_id: turmaId, p_data: data });
+export interface ProfessorLista {
+  id: string;
+  nome: string;
+  faixa: string;
+  grau: number;
+}
+
+/** Professores da academia (id + nome) — para o seletor de substituto. SECURITY DEFINER na BD porque um professor não lê o perfil de outro. */
+export function useProfessoresListaQuery() {
+  return useQuery({
+    queryKey: ['professores', 'lista'],
+    queryFn: async (): Promise<ProfessorLista[]> => {
+      if (!isConfigured) return [];
+      const { data, error } = await supabase.rpc('listar_professores_ativos');
       if (error) throw error;
-      return aulaId as string;
+      return (data ?? []) as ProfessorLista[];
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['aulas'] }),
   });
 }
 
-export function useConcluirAulaMutation() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (aulaId: string): Promise<void> => {
-      const { error } = await supabase.rpc('concluir_aula', { p_aula_id: aulaId });
+/** Aulas já materializadas de hoje em diante (academia toda) — base da agenda do professor. */
+export function useAulasFuturasQuery() {
+  return useQuery({
+    queryKey: ['aulas', 'futuras'],
+    queryFn: async (): Promise<Aula[]> => {
+      if (!isConfigured) return [];
+      const hoje = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('aulas')
+        .select('*')
+        .gte('data', hoje)
+        .order('data', { ascending: true })
+        .limit(300);
       if (error) throw error;
+      return (data ?? []).map(mapAula);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['aulas'] }),
   });
 }
+
+/**
+ * Define o professor de uma aula concreta (turma + data), hoje ou no
+ * futuro. `professorId` null = aula sem professor. A BD materializa a
+ * linha em `aulas` se ainda não existir e decide as permissões a
+ * partir de quem chama (ver definir_professor_aula).
+ */
+export function useDefinirProfessorAulaMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ turmaId, data, professorId }: { turmaId: string; data: string; professorId: string | null }): Promise<string> => {
+      const { data: aulaId, error } = await supabase.rpc('definir_professor_aula', {
+        p_turma_id: turmaId,
+        p_data: data,
+        p_professor_id: professorId,
+      });
+      if (error) throw error;
+      return aulaId as string;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['aulas'] });
+      qc.invalidateQueries({ queryKey: ['turmas'] });
+    },
+  });
+}
+

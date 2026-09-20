@@ -7,10 +7,10 @@ const VIDEOS = [
   { id: 1, titulo: 'Fundamentos da Guarda Fechada', nivel: 'branca', duracao: '45min', prof: 'João Santos', desc: 'Posição básica, saídas e controlo de distância.' },
   { id: 2, titulo: 'Passagem de Guarda Toreando', nivel: 'azul', duracao: '32min', prof: 'João Santos', desc: 'Técnica de passagem lateral com controlo de quadril.' },
   { id: 3, titulo: 'Triângulo do Monte', nivel: 'roxa', duracao: '28min', prof: 'Bruno Tavares', desc: 'Setup, finalização e defesa do triângulo.' },
-  { id: 4, titulo: 'De La Riva — Série completa', nivel: 'azul', duracao: '62min', prof: 'Fernanda Rocha', desc: 'Sistema completo de guarda De La Riva — 4 episódios.' },
+  { id: 4, titulo: 'De La Riva: Série completa', nivel: 'azul', duracao: '62min', prof: 'Fernanda Rocha', desc: 'Sistema completo de guarda De La Riva, 4 episódios.' },
   { id: 5, titulo: 'Back Take Series', nivel: 'marrom', duracao: '55min', prof: 'João Santos', desc: 'Sequências para tomar as costas do adversário.' },
-  { id: 6, titulo: 'Leg Locks — Heel Hook Entry', nivel: 'preta', duracao: '40min', prof: 'Bruno Tavares', desc: 'Entradas seguras e controlo para leg locks.' },
-  { id: 7, titulo: 'Kimura — Ataque e Defesa', nivel: 'branca', duracao: '24min', prof: 'Fernanda Rocha', desc: 'Mecânica completa do kimura de todas as posições.' },
+  { id: 6, titulo: 'Leg Locks: Heel Hook Entry', nivel: 'preta', duracao: '40min', prof: 'Bruno Tavares', desc: 'Entradas seguras e controlo para leg locks.' },
+  { id: 7, titulo: 'Kimura: Ataque e Defesa', nivel: 'branca', duracao: '24min', prof: 'Fernanda Rocha', desc: 'Mecânica completa do kimura de todas as posições.' },
   { id: 8, titulo: 'Sistema de Joelho na Barriga', nivel: 'verde', duracao: '35min', prof: 'João Santos', desc: 'Controlo, transições e finalizações.' },
 ];
 

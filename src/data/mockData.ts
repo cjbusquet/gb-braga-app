@@ -1,12 +1,12 @@
 import type { Aluno, Professor, Turma, Pagamento, Presenca, Mensagem, Graduacao, Plano, KPIs, Contrato, User, TocDocumento, TocConfig, ProfessorCheckin } from '../types';
 
-// ─── DADOS REAIS — Gracie Barra Braga ────────────────────────────────────────
+// ─── DADOS REAIS · Gracie Barra Braga ────────────────────────────────────────
 // Fonte: gbbraga.com | Morada: Rua Nova Santa Cruz 11, 4710-409 Braga
 // Tel: +351 927 773 854 | Email: atendimento@gbbraga.com
 
 export const ACADEMIA = {
   nome:       'Gracie Barra Braga',
-  nomeCompleto: 'Gracie Barra Braga — Brazilian Jiu-Jitsu',
+  nomeCompleto: 'Gracie Barra Braga · Brazilian Jiu-Jitsu',
   morada:     'Rua Nova Santa Cruz 11, 4710-409, Braga, Portugal',
   tel:        '+351 927 773 854',
   whatsapp:   '+351927773854',
@@ -25,7 +25,7 @@ export const ACADEMIA = {
 };
 
 // ─── PLANOS REAIS (valores a confirmar pelo Carlos) ───────────────────────────
-// A página central-de-pagamento usa Stripe embedded — os valores exatos
+// A página central-de-pagamento usa Stripe embedded · os valores exatos
 // devem ser confirmados pelo Carlos e os Stripe Price IDs inseridos aqui.
 export const mockPlanos: Plano[] = [
   // ── PLANOS ADULTO ──
@@ -33,7 +33,7 @@ export const mockPlanos: Plano[] = [
     id: 'pl-adulto-plus',
     nome: 'Jiu-Jitsu Adulto Plus',
     valor: 62,
-    descricao: 'Plano mensal individual adulto — aulas ilimitadas',
+    descricao: 'Plano mensal individual adulto · aulas ilimitadas',
     aulas: 'ilimitado',
     ativo: true,
     categoria: 'adulto',
@@ -74,7 +74,7 @@ export const mockPlanos: Plano[] = [
     id: 'pl-kids-fundador',
     nome: 'Jiu-Jitsu Kids Fundador',
     valor: 45,
-    descricao: 'Preço especial sócio fundador — kids',
+    descricao: 'Preço especial sócio fundador · kids',
     aulas: 'ilimitado',
     ativo: true,
     categoria: 'fundador',
@@ -126,7 +126,7 @@ export const mockPlanos: Plano[] = [
     id: 'pl-familia-2-fund',
     nome: 'Família 2 Fundador',
     valor: 109,
-    descricao: 'Preço especial sócio fundador — família 2 membros',
+    descricao: 'Preço especial sócio fundador · família 2 membros',
     aulas: 'ilimitado',
     ativo: true,
     categoria: 'fundador',
@@ -136,7 +136,7 @@ export const mockPlanos: Plano[] = [
     id: 'pl-familia-3-fund',
     nome: 'Família 3 Fundador',
     valor: 157,
-    descricao: 'Preço especial sócio fundador — família 3 membros',
+    descricao: 'Preço especial sócio fundador · família 3 membros',
     aulas: 'ilimitado',
     ativo: true,
     categoria: 'fundador',
@@ -146,7 +146,7 @@ export const mockPlanos: Plano[] = [
     id: 'pl-familia-4-fund',
     nome: 'Família 4 Fundador',
     valor: 190,
-    descricao: 'Preço especial sócio fundador — família 4 membros',
+    descricao: 'Preço especial sócio fundador · família 4 membros',
     aulas: 'ilimitado',
     ativo: true,
     categoria: 'fundador',
@@ -187,12 +187,12 @@ export const mockProfessores: Professor[] = [
 // ─── TURMAS (horários reais do site) ─────────────────────────────────────────
 // Horários reais: Seg-Sex 18h-22h · Sáb 10h-13h
 export const mockTurmas: Turma[] = [
-  { id: 't1', nome: 'Jiu-Jitsu Adultos — Noite 1', professorId: 'p1', professorNome: 'Carlos Silva',   horario: '18:00-19:30', diaSemana: ['Segunda','Quarta','Sexta'],   sala: 'Tatame Principal', capacidade: 20, nivel: 'all',          tipo: 'gi' },
-  { id: 't2', nome: 'Jiu-Jitsu Adultos — Noite 2', professorId: 'p1', professorNome: 'Carlos Silva',   horario: '19:30-21:00', diaSemana: ['Segunda','Quarta','Sexta'],   sala: 'Tatame Principal', capacidade: 20, nivel: 'all',          tipo: 'gi' },
+  { id: 't1', nome: 'Jiu-Jitsu Adultos · Noite 1', professorId: 'p1', professorNome: 'Carlos Silva',   horario: '18:00-19:30', diaSemana: ['Segunda','Quarta','Sexta'],   sala: 'Tatame Principal', capacidade: 20, nivel: 'all',          tipo: 'gi' },
+  { id: 't2', nome: 'Jiu-Jitsu Adultos · Noite 2', professorId: 'p1', professorNome: 'Carlos Silva',   horario: '19:30-21:00', diaSemana: ['Segunda','Quarta','Sexta'],   sala: 'Tatame Principal', capacidade: 20, nivel: 'all',          tipo: 'gi' },
   { id: 't3', nome: 'Jiu-Jitsu Avançado',          professorId: 'p1', professorNome: 'Carlos Silva',   horario: '21:00-22:00', diaSemana: ['Terça','Quinta'],             sala: 'Tatame Principal', capacidade: 15, nivel: 'avancado',     tipo: 'gi' },
   { id: 't4', nome: 'No-Gi / Wrestling',            professorId: 'p2', professorNome: 'João Santos',   horario: '20:00-21:30', diaSemana: ['Terça','Quinta'],             sala: 'Tatame Principal', capacidade: 15, nivel: 'all',          tipo: 'nogi' },
   { id: 't5', nome: 'Kids Jiu-Jitsu',              professorId: 'p2', professorNome: 'João Santos',   horario: '18:00-19:00', diaSemana: ['Terça','Quinta'],             sala: 'Tatame Principal', capacidade: 20, nivel: 'kids',         tipo: 'kids' },
-  { id: 't6', nome: 'Open Mat — Sábado',           professorId: 'p3', professorNome: 'Fernanda Rocha',horario: '10:00-12:30', diaSemana: ['Sábado'],                     sala: 'Tatame Principal', capacidade: 30, nivel: 'all',          tipo: 'gi'   },
+  { id: 't6', nome: 'Open Mat · Sábado',           professorId: 'p3', professorNome: 'Fernanda Rocha',horario: '10:00-12:30', diaSemana: ['Sábado'],                     sala: 'Tatame Principal', capacidade: 30, nivel: 'all',          tipo: 'gi'   },
 ];
 
 // ─── PAGAMENTOS DEMO ──────────────────────────────────────────────────────────
@@ -210,28 +210,28 @@ export const mockPagamentos: Pagamento[] = [
 
 
 export const mockProfessorCheckins: ProfessorCheckin[] = [
-  { id:'pc1', professorId:'p1', professorNome:'Carlos Silva',   turmaId:'t1', turmaNome:'JJ Adultos — Noite 1', data:'2025-05-05', horaInicio:'18:00', horaFim:'19:28', status:'concluida' },
-  { id:'pc2', professorId:'p1', professorNome:'Carlos Silva',   turmaId:'t2', turmaNome:'JJ Adultos — Noite 2', data:'2025-05-05', horaInicio:'19:30', horaFim:'20:55', status:'concluida' },
+  { id:'pc1', professorId:'p1', professorNome:'Carlos Silva',   turmaId:'t1', turmaNome:'JJ Adultos · Noite 1', data:'2025-05-05', horaInicio:'18:00', horaFim:'19:28', status:'concluida' },
+  { id:'pc2', professorId:'p1', professorNome:'Carlos Silva',   turmaId:'t2', turmaNome:'JJ Adultos · Noite 2', data:'2025-05-05', horaInicio:'19:30', horaFim:'20:55', status:'concluida' },
   { id:'pc3', professorId:'p2', professorNome:'João Santos',    turmaId:'t5', turmaNome:'Kids Jiu-Jitsu',       data:'2025-05-05', horaInicio:'18:00', horaFim:'19:02', status:'concluida' },
   { id:'pc4', professorId:'p2', professorNome:'João Santos',    turmaId:'t4', turmaNome:'No-Gi / Wrestling',    data:'2025-05-05', horaInicio:'20:00', horaFim:'21:28', status:'concluida' },
-  { id:'pc5', professorId:'p3', professorNome:'Fernanda Rocha', turmaId:'t6', turmaNome:'Open Mat — Sábado',   data:'2025-05-03', horaInicio:'10:02', horaFim:'12:25', status:'concluida' },
-  { id:'pc6', professorId:'p1', professorNome:'Carlos Silva',   turmaId:'t1', turmaNome:'JJ Adultos — Noite 1', data:'2025-05-07', horaInicio:'18:01', horaFim:'19:30', status:'concluida' },
-  { id:'pc7', professorId:'p1', professorNome:'Carlos Silva',   turmaId:'t2', turmaNome:'JJ Adultos — Noite 2', data:'2025-05-07', horaInicio:'19:31', horaFim:'21:00', status:'concluida' },
+  { id:'pc5', professorId:'p3', professorNome:'Fernanda Rocha', turmaId:'t6', turmaNome:'Open Mat · Sábado',   data:'2025-05-03', horaInicio:'10:02', horaFim:'12:25', status:'concluida' },
+  { id:'pc6', professorId:'p1', professorNome:'Carlos Silva',   turmaId:'t1', turmaNome:'JJ Adultos · Noite 1', data:'2025-05-07', horaInicio:'18:01', horaFim:'19:30', status:'concluida' },
+  { id:'pc7', professorId:'p1', professorNome:'Carlos Silva',   turmaId:'t2', turmaNome:'JJ Adultos · Noite 2', data:'2025-05-07', horaInicio:'19:31', horaFim:'21:00', status:'concluida' },
   { id:'pc8', professorId:'p2', professorNome:'João Santos',    turmaId:'t5', turmaNome:'Kids Jiu-Jitsu',       data:'2025-05-07', horaInicio:'18:00', horaFim:'18:58', status:'concluida' },
   { id:'pc9', professorId:'p2', professorNome:'João Santos',    turmaId:'t4', turmaNome:'No-Gi / Wrestling',    data:'2025-05-07', horaInicio:'20:02', status:'concluida', horaFim:'21:35' },
 ];
 
 export const mockPresencas: Presenca[] = [
-  { id: 'pr1', alunoId: 'a1', alunoNome: 'Lucas Oliveira', turmaId: 't1', turmaNome: 'Jiu-Jitsu Adultos — Noite 1', data: '2025-05-05', hora: '18:05', tipo: 'checkin', metodo: 'qrcode' },
-  { id: 'pr2', alunoId: 'a2', alunoNome: 'Maria Santos',   turmaId: 't1', turmaNome: 'Jiu-Jitsu Adultos — Noite 1', data: '2025-05-05', hora: '18:02', tipo: 'checkin', metodo: 'app'    },
-  { id: 'pr3', alunoId: 'a4', alunoNome: 'Ana Lima',       turmaId: 't1', turmaNome: 'Jiu-Jitsu Adultos — Noite 1', data: '2025-05-05', hora: '18:10', tipo: 'checkin', metodo: 'manual' },
+  { id: 'pr1', alunoId: 'a1', alunoNome: 'Lucas Oliveira', turmaId: 't1', turmaNome: 'Jiu-Jitsu Adultos · Noite 1', data: '2025-05-05', hora: '18:05', tipo: 'checkin', metodo: 'qrcode' },
+  { id: 'pr2', alunoId: 'a2', alunoNome: 'Maria Santos',   turmaId: 't1', turmaNome: 'Jiu-Jitsu Adultos · Noite 1', data: '2025-05-05', hora: '18:02', tipo: 'checkin', metodo: 'app'    },
+  { id: 'pr3', alunoId: 'a4', alunoNome: 'Ana Lima',       turmaId: 't1', turmaNome: 'Jiu-Jitsu Adultos · Noite 1', data: '2025-05-05', hora: '18:10', tipo: 'checkin', metodo: 'manual' },
   { id: 'pr4', alunoId: 'a6', alunoNome: 'Sofia Mendes',   turmaId: 't4', turmaNome: 'No-Gi / Wrestling',           data: '2025-05-05', hora: '20:03', tipo: 'checkin', metodo: 'qrcode' },
-  { id: 'pr5', alunoId: 'a1', alunoNome: 'Lucas Oliveira', turmaId: 't1', turmaNome: 'Jiu-Jitsu Adultos — Noite 1', data: '2025-05-07', hora: '18:01', tipo: 'checkin', metodo: 'qrcode' },
+  { id: 'pr5', alunoId: 'a1', alunoNome: 'Lucas Oliveira', turmaId: 't1', turmaNome: 'Jiu-Jitsu Adultos · Noite 1', data: '2025-05-07', hora: '18:01', tipo: 'checkin', metodo: 'qrcode' },
 ];
 
 export const mockMensagens: Mensagem[] = [
   { id: 'm1', para: 'a2', paraNome: 'Maria Santos',  canal: 'whatsapp', corpo: 'Olá Maria! A tua mensalidade de Maio vence em 3 dias. Paga aqui: gbbraga.com/central-de-pagamento', status: 'enviado', dataEnvio: '2025-05-02T10:30:00', remetente: 'Sistema' },
-  { id: 'm2', para: 'all',paraNome: 'Todos os Alunos',canal: 'email',   assunto: 'Seminário Especial — Junho 2025', corpo: 'Temos o prazer de anunciar um seminário especial...', status: 'enviado', dataEnvio: '2025-04-28T09:00:00', remetente: 'Admin' },
+  { id: 'm2', para: 'all',paraNome: 'Todos os Alunos',canal: 'email',   assunto: 'Seminário Especial · Junho 2025', corpo: 'Temos o prazer de anunciar um seminário especial...', status: 'enviado', dataEnvio: '2025-04-28T09:00:00', remetente: 'Admin' },
   { id: 'm3', para: 'a4', paraNome: 'Ana Lima',       canal: 'whatsapp', corpo: 'Ana, a tua mensalidade está vencida há 10 dias. Contacta-nos: +351 927 773 854', status: 'enviado', dataEnvio: '2025-05-04T14:00:00', remetente: 'Sistema' },
   { id: 'm4', para: 'a8', paraNome: 'Carla Nunes',    canal: 'sms',      corpo: 'GB Braga: A sua conta está suspensa por inadimplência. Contacte-nos: +351927773854', status: 'enviado', dataEnvio: '2025-05-01T10:00:00', remetente: 'Sistema' },
 ];

@@ -31,6 +31,7 @@ const USERS = [
   { email: 'admin@ginasio.test',      role: 'admin',      nome: 'Admin Braga' },
   { email: 'atendimento@ginasio.test', role: 'atendimento', nome: 'Atendimento Braga' },
   { email: 'professor@ginasio.test',  role: 'professor',  nome: 'Prof. João Santos' },
+  { email: 'professor2@ginasio.test', role: 'professor',  nome: 'Prof. Ana Dias' },
 ];
 
 const ALUNOS = [
@@ -118,6 +119,10 @@ async function main() {
       plano_id: plano?.id ?? null,
       plano_nome: plano?.nome ?? null,
       data_matricula: '2024-01-10',
+      // Sem isto, App.tsx trata a conta como "1.º pagamento por confirmar"
+      // (ver auth.tsx/pagamentoPendente) e bloqueia o acesso a tudo menos
+      // Meu Financeiro — más para contas de demo, que devem explorar a app toda.
+      stripe_subscription_id: `sub_demo_${a.email.split('@')[0]}`,
     }).select().single();
     if (alunoErr) throw alunoErr;
 

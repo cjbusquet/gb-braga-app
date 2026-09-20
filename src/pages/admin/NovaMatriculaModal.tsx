@@ -14,7 +14,7 @@ const FAIXAS = [
   'amarela-branca','amarela','amarela-preta',
   'laranja-branca','laranja','laranja-preta',
   'verde-branca','verde','verde-preta',
-  'azul','roxa','marrom','preta',
+  'azul','roxa','marrom','preta','vermelha-preta','vermelha-branca','vermelha',
 ];
 const CATS = ['adulto','kids','familia','fundador'];
 
@@ -225,7 +225,7 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
             </div>
             <div>
               <Select label="Género (opcional)" value={genero} onChange={e => setGenero(e.target.value)}>
-                <option value="">—</option>
+                <option value="">-</option>
                 <option value="feminino">Feminino</option>
                 <option value="masculino">Masculino</option>
                 <option value="outro">Outro</option>
@@ -235,7 +235,7 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
           <div className="flex justify-between mt-5">
             <VoltarButton onClick={() => setStep(1)} />
             <Button variant="primary" disabled={!nome || !email || !dataNasc} onClick={avancarDeStep2}>
-              {eMenor ? 'Seguinte — Responsável' : 'Seguinte'} <Ico icon={ArrowRightIcon} sm className="transition-transform duration-200 group-hover:translate-x-1" />
+              {eMenor ? 'Seguinte · Responsável' : 'Seguinte'} <Ico icon={ArrowRightIcon} sm className="transition-transform duration-200 group-hover:translate-x-1" />
             </Button>
           </div>
         </div>
@@ -252,7 +252,7 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
             <div className="mt-1 text-[11.5px] text-amber-800">
               {idade! >= 12
                 ? 'Pode fazer check-in de forma autónoma. É obrigatório registar um responsável.'
-                : 'Tem menos de 12 anos — é obrigatório registar um responsável para check-in.'}
+                : 'Tem menos de 12 anos, é obrigatório registar um responsável para check-in.'}
             </div>
           </div>
 
@@ -308,11 +308,11 @@ export default function NovaMatriculaModal({ onClose, onSuccess }: { onClose: ()
             {[
               ['Nome',        nome],
               ['Email',       email],
-              ['Telefone',    telefone || '—'],
-              ['NIF',         nif || '—'],
-              ['Nascimento',  dataNasc ? `${dataNasc}${idade !== null ? ` (${idade} anos)` : ''}` : '—'],
+              ['Telefone',    telefone || '-'],
+              ['NIF',         nif || '-'],
+              ['Nascimento',  dataNasc ? `${dataNasc}${idade !== null ? ` (${idade} anos)` : ''}` : '-'],
               ['Faixa',       <BeltBadge faixa={faixa} grau={parseInt(grau) || 0} size="md" />],
-              ['Plano',       planoSel?.nome || '—'],
+              ['Plano',       planoSel?.nome || '-'],
               ['Mensalidade', `€${planoSel?.valor || 0}/mês`],
             ].map(([k, v]) => (
               <div key={k} className="flex justify-between py-1.5 border-b border-border-subtle">

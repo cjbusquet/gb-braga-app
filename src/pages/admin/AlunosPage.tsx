@@ -1,11 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { useResponsaveis, db } from '../../lib/useData';
+import { useResponsaveis, usePresencas, db } from '../../lib/useData';
 import { useAlunosQuery, useInvalidateAlunos } from '../../lib/queries';
 import { useAuth } from '../../lib/auth';
 import { useToast } from '../../components/common/Toast';
 import { beltConfig } from '../../lib/gbBrand';
 import { FAIXAS_PROGRESSAO, isMatriculaPendente } from '../../lib/alunoDomain';
+import { calcularIdade, eMenor, podeCheckinAutonomo, calcularCategoriaIdade, CATEGORIA_IDADE_LABEL } from '../../lib/idade';
+import { useConfiguracaoSecaoQuery } from '../../hooks/useConfiguracoes';
+import { useAulasParticularesDoAlunoQuery } from '../../hooks/useAulasParticulares';
+import NotasELembretesAluno from './NotasELembretesAluno';
+import CalendarioPresencas from '../../components/features/CalendarioPresencas';
 import NovaMatriculaModal from './NovaMatriculaModal';
 import Modal from '../../components/common/Modal';
 import { Ico, PencilIcon, CheckCircleIcon, XCircleIcon, ArrowPathIcon, ArrowLeftIcon, PlusIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, AdjustmentsHorizontalIcon, CheckIcon, SaveIcon, CircleIcon, BanIcon, ClockIcon, ChatBubbleLeftRightIcon } from '../../lib/icons';
@@ -25,28 +30,6 @@ const FAIXAS_ORDER = FAIXAS_PROGRESSAO;
 /** Estado apresentado na UI — sobrepõe o status da BD com "pendente" enquanto a matrícula não é confirmada. */
 function statusEfetivo(a: any): string {
   return isMatriculaPendente(a) ? 'pendente' : a.status;
-}
-
-// ── Utilitários de idade ────────────────────────────────────────────────────
-
-function calcularIdade(dataNasc: string): number | null {
-  if (!dataNasc) return null;
-  const nasc = new Date(dataNasc);
-  const hoje = new Date();
-  let anos = hoje.getFullYear() - nasc.getFullYear();
-  const m = hoje.getMonth() - nasc.getMonth();
-  if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) anos--;
-  return anos;
-}
-
-function eMenor(dataNasc: string): boolean {
-  const idade = calcularIdade(dataNasc);
-  return idade !== null && idade < 18;
-}
-
-function podeCheckinAutonomo(dataNasc: string): boolean {
-  const idade = calcularIdade(dataNasc);
-  return idade !== null && idade >= 12 && idade < 18;
 }
 
 const RELACAO_LABELS: Record<string, string> = {
@@ -86,7 +69,7 @@ function EditAlunoModal({ aluno, onClose }: { aluno: any; onClose: () => void })
   };
 
   return (
-    <Modal onClose={onClose} title={`Editar — ${aluno.nome}`}>
+    <Modal onClose={onClose} title={`Editar · ${aluno.nome}`}>
       {close => (
         <>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -120,7 +103,7 @@ function EditAlunoModal({ aluno, onClose }: { aluno: any; onClose: () => void })
           </div>
           <div>
             <Select label="Género (opcional)" value={genero} onChange={e => setGenero(e.target.value)}>
-              <option value="">—</option>
+              <option value="">-</option>
               <option value="feminino">Feminino</option>
               <option value="masculino">Masculino</option>
               <option value="outro">Outro</option>
@@ -259,7 +242,7 @@ function ResponsaveisSection({ aluno }: { aluno: any }) {
             <div className="flex-1 min-w-0">
               <div className="text-[13px] font-semibold text-primary">{v.responsavel.nome}</div>
               <div className="mt-px text-[11.5px] text-muted">
-                {v.responsavel.telefone || v.responsavel.email || '—'}
+                {v.responsavel.telefone || v.responsavel.email || '-'}
               </div>
             </div>
             {/* Badges */}
@@ -391,6 +374,8 @@ export default function AlunosPage({ initialAlunoId, onNavigate }: Props) {
     return () => clearTimeout(t);
   }, [searchInput]);
   const [selected, setSelected]         = useState<any>(null);
+  const { data: presencasSelecionado } = usePresencas(selected?.id, 400);
+  const { data: particularesSelecionado = [] } = useAulasParticularesDoAlunoQuery(selected?.id);
   const [editModal, setEditModal]       = useState(false);
   const [showMatricula, setShowMatricula] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
@@ -469,9 +454,19 @@ export default function AlunosPage({ initialAlunoId, onNavigate }: Props) {
     status === 'ativo' ? 'success' : status === 'pendente' ? 'warning' : status === 'suspenso' ? 'warning' : 'neutral';
 
   // ── Perfil do aluno seleccionado ────────────────────────────
+  const { data: limiaresIdade } = useConfiguracaoSecaoQuery('categorias_idade');
   const renderPerfil = () => {
     const idade = calcularIdade(selected.dataNascimento);
     const menor = eMenor(selected.dataNascimento);
+    const categoria = selected.dataNascimento
+      ? calcularCategoriaIdade(selected.dataNascimento, (limiaresIdade as Record<string, number>) || {})
+      : null;
+    // Calendário de presenças é partilhado com todo o staff; notas e
+    // lembretes são ferramenta de trabalho do professor — nem admin/
+    // superadmin/atendimento têm acesso (RLS já bloqueia, esta gate é só
+    // para não desenhar uma secção vazia/rejeitada).
+    const podeVerCalendario = user?.role === 'professor' || user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'atendimento';
+    const podeVerNotas = user?.role === 'professor';
 
     return (
       <div>
@@ -485,7 +480,7 @@ export default function AlunosPage({ initialAlunoId, onNavigate }: Props) {
             </button>
           )}
         </div>
-        <Card padding="none" className="p-6">
+        <Card padding="none" className="p-6 mb-4">
 
           {/* Cabeçalho */}
           <div className="flex justify-between items-start mb-5">
@@ -502,6 +497,16 @@ export default function AlunosPage({ initialAlunoId, onNavigate }: Props) {
                     <span className={['py-0.5 px-2 text-[10.5px] font-semibold rounded-full', menor ? 'text-amber-600 bg-amber-600/10' : 'text-muted bg-elevated'].join(' ')}>
                       {idade} anos{menor ? ' · Menor' : ' · Adulto'}
                     </span>
+                    {categoria && (
+                      <span className="py-0.5 px-2 text-[10.5px] font-semibold rounded-full text-secondary bg-elevated">
+                        {CATEGORIA_IDADE_LABEL[categoria]}
+                      </span>
+                    )}
+                    {particularesSelecionado.length > 0 && (
+                      <span className="py-0.5 px-2 text-[10.5px] font-semibold text-purple-600 rounded-full bg-purple-600/10">
+                        Aula particular
+                      </span>
+                    )}
                     {menor && podeCheckinAutonomo(selected.dataNascimento) && (
                       <span className="py-0.5 px-2 text-[10.5px] font-semibold text-emerald-600 rounded-full bg-emerald-600/10">
                         Check-in autónomo (≥12)
@@ -521,13 +526,13 @@ export default function AlunosPage({ initialAlunoId, onNavigate }: Props) {
             <div className="flex flex-wrap gap-2">
               <button onClick={() => { if (!isMatriculaPendente(selected)) setEditModal(true); }}
                 disabled={isMatriculaPendente(selected)}
-                title={isMatriculaPendente(selected) ? 'Matrícula pendente de confirmação — ação bloqueada até à aprovação do pagamento.' : undefined}
+                title={isMatriculaPendente(selected) ? 'Matrícula pendente de confirmação, ação bloqueada até à aprovação do pagamento.' : undefined}
                 className="flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] rounded-sm border cursor-pointer transition-colors duration-200 border-border bg-elevated text-secondary hover:bg-border-subtle active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-elevated">
                 <Ico icon={PencilIcon} sm /> Editar
               </button>
               {podeAlterarStatus && (selected.status === 'suspenso' || selected.status === 'inativo') && (
                 <button onClick={() => changeStatus('ativo')} disabled={statusLoading || isMatriculaPendente(selected)}
-                  title={isMatriculaPendente(selected) ? 'Matrícula pendente de confirmação — ação bloqueada até à aprovação do pagamento.' : undefined}
+                  title={isMatriculaPendente(selected) ? 'Matrícula pendente de confirmação, ação bloqueada até à aprovação do pagamento.' : undefined}
                   className={[
                     'flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] text-gb-green rounded-sm border cursor-pointer transition-colors duration-200 border-gb-green/35 bg-gb-green/10 hover:bg-gb-green/20 active:bg-gb-green/20',
                     'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
@@ -538,7 +543,7 @@ export default function AlunosPage({ initialAlunoId, onNavigate }: Props) {
               )}
               {podeAlterarStatus && selected.status !== 'suspenso' && (
                 <button onClick={() => changeStatus('suspenso')} disabled={statusLoading || isMatriculaPendente(selected)}
-                  title={isMatriculaPendente(selected) ? 'Matrícula pendente de confirmação — ação bloqueada até à aprovação do pagamento.' : undefined}
+                  title={isMatriculaPendente(selected) ? 'Matrícula pendente de confirmação, ação bloqueada até à aprovação do pagamento.' : undefined}
                   className={[
                     'flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] text-amber-600 rounded-sm border cursor-pointer transition-colors duration-200 border-amber-600/30 bg-amber-600/10 hover:bg-amber-600/20 active:bg-amber-600/20',
                     'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
@@ -549,7 +554,7 @@ export default function AlunosPage({ initialAlunoId, onNavigate }: Props) {
               )}
               {podeAlterarStatus && selected.status !== 'inativo' && (
                 <button onClick={() => changeStatus('inativo')} disabled={statusLoading || isMatriculaPendente(selected)}
-                  title={isMatriculaPendente(selected) ? 'Matrícula pendente de confirmação — ação bloqueada até à aprovação do pagamento.' : undefined}
+                  title={isMatriculaPendente(selected) ? 'Matrícula pendente de confirmação, ação bloqueada até à aprovação do pagamento.' : undefined}
                   className={[
                     'flex gap-1.5 items-center py-2 px-3.5 min-h-11 sm:min-h-0 text-[12.5px] text-neutral-500 rounded-sm border cursor-pointer transition-colors duration-200 border-neutral-500/25 bg-neutral-500/[0.08] hover:bg-neutral-500/[0.16] active:bg-neutral-500/[0.16]',
                     'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 disabled:cursor-not-allowed',
@@ -563,11 +568,11 @@ export default function AlunosPage({ initialAlunoId, onNavigate }: Props) {
 
           {/* Campos de dados */}
           {[
-            ['NIF',        selected.nif || '—'],
-            ['Telefone',   selected.telefone || '—'],
-            ['Nascimento', selected.dataNascimento ? `${selected.dataNascimento}${idade !== null ? ` (${idade} anos)` : ''}` : '—'],
-            ['Matrícula',  selected.dataMatricula || '—'],
-            ['Plano',      selected.plano || '—'],
+            ['NIF',        selected.nif || '-'],
+            ['Telefone',   selected.telefone || '-'],
+            ['Nascimento', selected.dataNascimento ? `${selected.dataNascimento}${idade !== null ? ` (${idade} anos)` : ''}` : '-'],
+            ['Matrícula',  selected.dataMatricula || '-'],
+            ['Plano',      selected.plano || '-'],
             ['Faixa',      <BeltBadge faixa={selected.faixa} grau={selected.grau} size="md" />],
             ['Frequência', `${selected.frequencia || 0}%`],
           ].map(([k, v]) => (
@@ -594,6 +599,22 @@ export default function AlunosPage({ initialAlunoId, onNavigate }: Props) {
           {/* Secção de responsáveis — só para menores */}
           {menor && <ResponsaveisSection aluno={selected} />}
         </Card>
+
+        {/* Calendário — partilhado com todo o staff. RLS já bloqueia o
+            aluno; esta gate é só para não desenhar uma secção vazia/
+            rejeitada. */}
+        {podeVerCalendario && (
+          <Card padding="lg" className="mb-4">
+            <div className="mb-3.5 text-[10.5px] font-semibold tracking-[1px] uppercase text-muted">
+              Presenças no último ano
+            </div>
+            <CalendarioPresencas presencas={presencasSelecionado} />
+          </Card>
+        )}
+
+        {/* Notas privadas + lembretes — só o professor (RLS não deixa
+            nem admin/superadmin/atendimento ver ou escrever). */}
+        {podeVerNotas && <NotasELembretesAluno alunoId={selected.id} />}
       </div>
     );
   };
@@ -664,11 +685,15 @@ export default function AlunosPage({ initialAlunoId, onNavigate }: Props) {
             </Select>
           )}
 
-          <label className="flex gap-1.5 items-center py-1.5 ml-auto cursor-pointer">
-            <input type="checkbox" checked={soGraduaveis} onChange={e => { setSoGraduaveis(e.target.checked); setPage(1); }}
-              className="w-3.5 h-3.5 accent-gb-red" />
-            <span className="text-xs whitespace-nowrap text-secondary">Elegíveis p/ graduação</span>
-          </label>
+          {/* Atendimento não tem acesso à página de Graduação — filtrar por
+              elegibilidade não serve para nada que possa fazer com isso. */}
+          {user?.role !== 'atendimento' && (
+            <label className="flex gap-1.5 items-center py-1.5 ml-auto cursor-pointer">
+              <input type="checkbox" checked={soGraduaveis} onChange={e => { setSoGraduaveis(e.target.checked); setPage(1); }}
+                className="w-3.5 h-3.5 accent-gb-red" />
+              <span className="text-xs whitespace-nowrap text-secondary">Elegíveis p/ graduação</span>
+            </label>
+          )}
         </div>
       </Card>
 
@@ -702,7 +727,7 @@ export default function AlunosPage({ initialAlunoId, onNavigate }: Props) {
                         </span>
                       )}
                     </div>
-                    <div className="overflow-hidden text-xs whitespace-nowrap text-ellipsis text-muted">{a.email} · {a.plano || '—'}</div>
+                    <div className="overflow-hidden text-xs whitespace-nowrap text-ellipsis text-muted">{a.email} · {a.plano || '-'}</div>
                   </div>
                   <div className="flex gap-2 items-center shrink-0">
                     <BeltBadge faixa={a.faixa} grau={a.grau} size="sm" />

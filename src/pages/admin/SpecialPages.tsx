@@ -149,7 +149,7 @@ export function SuperAdminDashboard({ onNavigate }: { onNavigate?: (page: string
       <div className="grid grid-cols-1 gap-4 mb-4 lg:grid-cols-[1.8fr_1fr]">
         <Card padding="none" className="py-5 px-[22px]">
           <div className="flex justify-between items-center mb-[18px]">
-            <SectionLabel>Receita da Rede — 12 meses</SectionLabel>
+            <SectionLabel>Receita da Rede · 12 meses</SectionLabel>
             <span className="font-mono text-base font-extrabold text-primary">€{(totalReceita*12/1000).toFixed(0)}k/ano</span>
           </div>
           <div className="flex gap-2 items-end h-[120px]">
@@ -527,7 +527,7 @@ export function RelatoriosPage() {
       {tab === 'retencao' && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Card padding="none" className="py-5 px-[22px]">
-            <SectionLabel>Retenção — últimos 6 meses</SectionLabel>
+            <SectionLabel>Retenção · últimos 6 meses</SectionLabel>
             {[
               {mes:'Dezembro', taxa:91},{mes:'Janeiro',taxa:88},
               {mes:'Fevereiro',taxa:90},{mes:'Março',   taxa:87},
@@ -546,11 +546,11 @@ export function RelatoriosPage() {
             <SectionLabel>Exportar Relatórios</SectionLabel>
             <div className="flex flex-col gap-2">
               {[
-                { label:'Relatório Financeiro — PDF',        icon:DocumentTextIcon, fn: () => exportRelatorioFinanceiro(pagamentos as any) },
-                { label:'Relatório de Alunos — PDF',         icon:DocumentTextIcon, fn: () => exportRelatorioAlunos(alunos as any) },
-                { label:'Pagamentos — CSV (Excel)',           icon:ChartBarIcon, fn: () => exportCSV(['Aluno','Valor','Estado','Data'],pagamentos.map(p=>[p.alunoNome,p.valor,p.status,p.vencimento]),'Pagamentos') },
-                { label:'Alunos — CSV (Excel)',               icon:ChartBarIcon, fn: () => exportCSV(['Nome','Faixa','Plano','Freq'],alunos.map(a=>[a.nome,a.faixa,a.plano,a.frequencia]),'Alunos') },
-                { label:'SAF-T PT — TOConline',               icon:ReceiptPercentIcon, fn: () => toast.success('SAF-T exportado via TOConline') },
+                { label:'Relatório Financeiro · PDF',        icon:DocumentTextIcon, fn: () => exportRelatorioFinanceiro(pagamentos as any) },
+                { label:'Relatório de Alunos · PDF',         icon:DocumentTextIcon, fn: () => exportRelatorioAlunos(alunos as any) },
+                { label:'Pagamentos · CSV (Excel)',           icon:ChartBarIcon, fn: () => exportCSV(['Aluno','Valor','Estado','Data'],pagamentos.map(p=>[p.alunoNome,p.valor,p.status,p.vencimento]),'Pagamentos') },
+                { label:'Alunos · CSV (Excel)',               icon:ChartBarIcon, fn: () => exportCSV(['Nome','Faixa','Plano','Freq'],alunos.map(a=>[a.nome,a.faixa,a.plano,a.frequencia]),'Alunos') },
+                { label:'SAF-T PT · TOConline',               icon:ReceiptPercentIcon, fn: () => toast.success('SAF-T exportado via TOConline') },
               ].map(r => (
                 <button key={r.label} onClick={() => doExport(r.label, r.fn)}
                   className="flex gap-2.5 items-center py-2.5 px-3.5 min-h-11 text-[13px] font-medium text-left rounded-sm border cursor-pointer transition-all duration-200 border-border bg-elevated text-primary hover:border-gb-red hover:text-gb-red active:bg-border-subtle outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2"

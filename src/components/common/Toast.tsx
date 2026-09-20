@@ -28,11 +28,16 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | null>(null);
 
-const TOAST_CONFIG: Record<ToastType, { icon: HeroIcon; color: string; border: string }> = {
-  sucesso: { icon: CheckCircleIcon,        color: '#22C55E',      border: 'rgba(34,197,94,0.25)' },
-  erro:    { icon: XCircleIcon,            color: 'var(--gb-red)', border: 'rgba(200,16,30,0.2)' },
-  aviso:   { icon: ExclamationTriangleIcon, color: '#F59E0B',      border: 'rgba(245,158,11,0.25)' },
-  info:    { icon: InformationCircleIcon,  color: '#6B7280',      border: 'rgba(107,114,128,0.25)' },
+// Mesmo padrão de callout (borda + ícone na cor, rounded-xl) já usado em
+// Graduação/Alertas/Portal do aluno, mas fundo SÓLIDO (bg-card): o toast
+// flutua por cima de conteúdo arbitrário da página (fixed), por isso não
+// pode ter transparência — um fundo tingido a 10% deixa o que está por
+// baixo transparecer e sobrepor-se ao texto.
+const TOAST_CONFIG: Record<ToastType, { icon: HeroIcon; text: string; border: string; bg: string }> = {
+  sucesso: { icon: CheckCircleIcon,         text: 'text-gb-green',   border: 'border-gb-green/30',   bg: 'bg-card' },
+  erro:    { icon: XCircleIcon,             text: 'text-gb-red',     border: 'border-gb-red/30',     bg: 'bg-card' },
+  aviso:   { icon: ExclamationTriangleIcon, text: 'text-amber-500',  border: 'border-amber-500/30',  bg: 'bg-card' },
+  info:    { icon: InformationCircleIcon,   text: 'text-gray-500',   border: 'border-gray-500/30',   bg: 'bg-card' },
 };
 
 const AUTO_DISMISS_MS = 5000;
@@ -70,10 +75,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <div
               key={item.id}
               role="status"
-              className="flex gap-2.5 items-start py-3 px-3.5 rounded-lg border pointer-events-auto bg-card"
-              style={{ borderColor: cfg.border, borderLeftWidth: 3, borderLeftColor: cfg.color }}
+              className={['flex gap-2.5 items-start py-3 px-3.5 rounded-xl border pointer-events-auto', cfg.border, cfg.bg].join(' ')}
             >
-              <span className="mt-0.5" style={{ color: cfg.color }}>
+              <span className={['mt-0.5 shrink-0', cfg.text].join(' ')}>
                 <Ico icon={cfg.icon} />
               </span>
               <p className="flex-1 m-0 text-[13px] leading-[1.4] text-primary">{item.message}</p>

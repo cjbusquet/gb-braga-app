@@ -23,6 +23,7 @@ import {
   GlobeAltIcon,
   CurrencyEuroIcon,
   PlayCircleIcon,
+  ExclamationTriangleIcon,
   type HeroIcon,
 } from './icons';
 
@@ -50,6 +51,7 @@ export const MODULE_CATALOGUE: ModuleDef[] = [
   { id: 'integracoes',   label: 'Integrações',      icon: LinkIcon,                desc: 'TOConline, Stripe, WhatsApp Business',     category: 'staff' },
   { id: 'matricula',     label: 'Matrícula Online', icon: GlobeAltIcon,            desc: 'Fluxo de matrícula via link público',      category: 'staff' },
   { id: 'numerario',     label: 'Numerário',        icon: CurrencyEuroIcon,        desc: 'Pedidos e aprovação de caixa',             category: 'staff' },
+  { id: 'alertas',       label: 'Alertas',          icon: ExclamationTriangleIcon, desc: 'Frequência abaixo da meta e alunos perto de graduar', category: 'staff' },
   // ── Aluno ──────────────────────────────────────────────────────────────────
   { id: 'meu-checkin',   label: 'Check-in',         icon: CheckIcon,               desc: 'Auto check-in do aluno nas aulas',        category: 'aluno' },
   { id: 'minhas-aulas',  label: 'Minhas Aulas',     icon: CalendarDaysIcon,        desc: 'Histórico de presenças do aluno',         category: 'aluno' },
@@ -57,11 +59,13 @@ export const MODULE_CATALOGUE: ModuleDef[] = [
   { id: 'meu-financeiro',label: 'Financeiro',       icon: BanknotesIcon,           desc: 'Pagamentos e mensalidades do aluno',       category: 'aluno' },
   { id: 'conteudo',      label: 'Conteúdo',         icon: PlayCircleIcon,          desc: 'Vídeos e material de treino',              category: 'aluno' },
   { id: 'mensagens',     label: 'Mensagens',        icon: EnvelopeIcon,            desc: 'Mensagens recebidas da academia',          category: 'aluno' },
+  { id: 'ranking',       label: 'Rank de Frequência', icon: TrophyIcon,            desc: 'Ranking de frequência, visível a toda a academia', category: 'aluno' },
 ];
 
 // Core modules that can never be disabled
 export const CORE_MODULE_IDS = new Set([
   'dashboard', 'alunos', 'portal', 'config', 'perfil',
+  'meu-financeiro',
 ]);
 
 // ─── Context ──────────────────────────────────────────────────────────────────

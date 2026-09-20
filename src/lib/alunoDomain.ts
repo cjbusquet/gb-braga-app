@@ -1,9 +1,9 @@
 import type { Aluno, Belt } from '../types';
 
 /**
- * Progressão completa de faixas, da branca à preta, na ordem em que são
- * conquistadas. Exclui a vermelha (faixa honorária, atribuída fora do
- * fluxo normal de graduação).
+ * Progressão completa de faixas, da branca à preta (e coral, 7º/8º grau de
+ * faixa preta — graus normais, não honorários). Exclui a vermelha (faixa
+ * honorária, atribuída fora do fluxo normal de graduação).
  */
 export const FAIXAS_PROGRESSAO: Belt[] = [
   'branca',
@@ -12,6 +12,7 @@ export const FAIXAS_PROGRESSAO: Belt[] = [
   'laranja-branca', 'laranja', 'laranja-preta',
   'verde-branca', 'verde', 'verde-preta',
   'azul', 'roxa', 'marrom', 'preta',
+  'vermelha-preta', 'vermelha-branca',
 ];
 
 /** Faixas kids/juvenil — branca + toda a progressão infantil bicolor, até verde/preta. */
@@ -24,7 +25,7 @@ const FAIXAS_KIDS: Belt[] = [
 ];
 
 /** Faixas adulto — progressão regulamentar (sem faixas infantis intermédias). */
-const FAIXAS_ADULTO: Belt[] = ['branca', 'azul', 'roxa', 'marrom', 'preta', 'vermelha'];
+const FAIXAS_ADULTO: Belt[] = ['branca', 'azul', 'roxa', 'marrom', 'preta', 'vermelha-preta', 'vermelha-branca', 'vermelha'];
 
 /** Idade (em anos completos) a partir da qual se aplica a progressão de faixas de adulto. */
 export const IDADE_LIMITE_KIDS = 16;
@@ -49,6 +50,29 @@ export function getBeltSystemForAge(dataNascimento: string | undefined | null): 
   const idade = calcularIdade(dataNascimento);
   if (idade === null || idade >= IDADE_LIMITE_KIDS) return FAIXAS_ADULTO;
   return FAIXAS_KIDS;
+}
+
+/**
+ * Próxima faixa/grau na progressão normal de graduação. Faixas honorárias
+ * fora de `progressao` (ex.: 'vermelha' — ver `FAIXAS_PROGRESSAO`) ou já no
+ * topo dela devolvem a mesma faixa/grau: usa `podeGraduar()` para saber se
+ * há de facto um próximo passo antes de mostrar isto como sugestão.
+ */
+export function proxFaixaGrau(
+  faixa: string,
+  grau: number,
+  progressao: readonly string[] = FAIXAS_PROGRESSAO,
+): { faixa: string; grau: number } {
+  if (grau < 4) return { faixa, grau: grau + 1 };
+  const idx = progressao.indexOf(faixa);
+  if (idx >= 0 && idx < progressao.length - 1) return { faixa: progressao[idx + 1], grau: 0 };
+  return { faixa, grau };
+}
+
+/** Há um próximo passo de graduação real (não está já no topo/fora da progressão regular)? */
+export function podeGraduar(faixa: string, grau: number, progressao: readonly string[] = FAIXAS_PROGRESSAO): boolean {
+  const prox = proxFaixaGrau(faixa, grau, progressao);
+  return prox.faixa !== faixa || prox.grau !== grau;
 }
 
 /** Aluno cuja matrícula ainda aguarda confirmação (pedido de pagamento em numerário por aprovar). */

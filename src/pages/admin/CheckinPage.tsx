@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { usePresencas, useAlunos, useTurmas, db } from '../../lib/useData';
-import { Ico, type HeroIcon, ArrowDownTrayIcon, MapPinIcon, CheckIcon, PlusIcon, XMarkIcon, CircleIcon } from '../../lib/icons';
+import { Ico, type HeroIcon, ArrowDownTrayIcon, MapPinIcon, CheckIcon, PlusIcon, XMarkIcon } from '../../lib/icons';
 import PageHeader from '../../components/common/PageHeader';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -100,7 +100,7 @@ export default function CheckinPage() {
 
       <Tabs
         tabs={[
-          { id: 'live', label: 'Live', icon: <Ico icon={CircleIcon} className="w-2 h-2 text-gb-green" /> },
+          { id: 'live', label: 'Live' },
           { id: 'gps', label: 'GPS Fence' },
           { id: 'manual', label: 'Manual' },
         ]}
@@ -111,15 +111,12 @@ export default function CheckinPage() {
       {/* LIVE */}
       {tab === 'live' && (
         <div>
-          <div className="flex gap-2 items-center mb-3.5">
-            <div className="w-2 h-2 bg-gb-green rounded-full animate-[pulse_1.5s_infinite]" />
-            <span className="text-xs text-muted">Hoje: {todayCheckins.length} check-ins</span>
-          </div>
+          <div className="mb-3.5 text-xs text-muted">Hoje: {todayCheckins.length} check-ins</div>
           {checkIns.slice(0,20).map((p: any) => (
             <div key={p.id} className="flex justify-between items-center py-2.5 px-3.5 mb-1.5 rounded-sm border border-border bg-card">
               <div>
                 <div className="text-[13px] font-semibold text-primary">{p.alunoNome}</div>
-                <div className="text-[11px] text-muted">{p.turmaNome||'—'} · {p.metodo}</div>
+                <div className="text-[11px] text-muted">{p.turmaNome||'-'} · {p.metodo}</div>
               </div>
               <div className="text-xs text-right text-muted">
                 {p.hora}<br/><span className="text-[10px]">{p.data}</span>
@@ -181,21 +178,26 @@ export default function CheckinPage() {
                 filter the roster below — it tags the resulting check-in record
                 with the chosen turma instead (doCheckin's turmaId/turmaNome). */}
             <Select variant="sm" value={turmaFilter} onChange={e => setTurmaFilter(e.target.value)}>
-              <option value="">Sem turma associada</option>
+              <option value="" disabled>Escolhe uma turma…</option>
               {turmas.map((t: any) => <option key={t.id} value={t.id}>{t.nome}</option>)}
             </Select>
           </div>
+          {!turmaFilter && (
+            <div className="flex gap-2 items-center py-2.5 px-3.5 mb-3.5 text-[12.5px] rounded-sm border border-amber-600/30 bg-amber-600/[0.08] text-amber-600">
+              <Ico icon={MapPinIcon} sm /> Escolhe uma turma para poderes marcar presenças.
+            </div>
+          )}
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-[repeat(auto-fill,minmax(240px,1fr))]">
             {alunos.filter((a: any) => a.status === 'ativo').map((a: any) => {
               const jaFez = checkIns.some(p => p.alunoId === a.id && p.data === new Date().toISOString().split('T')[0]);
               const turmaSel = turmas.find((t: any) => t.id === turmaFilter);
               return (
-                <button key={a.id} onClick={() => !jaFez && doCheckin(a.id, a.nome, turmaSel?.id, turmaSel?.nome)}
-                  disabled={jaFez}
+                <button key={a.id} onClick={() => !jaFez && turmaSel && doCheckin(a.id, a.nome, turmaSel.id, turmaSel.nome)}
+                  disabled={jaFez || !turmaSel}
                   className={[
                     'flex justify-between items-center py-3 px-3.5 min-h-11 text-left rounded-sm border transition-colors duration-200',
                     'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-                    jaFez ? 'cursor-default border-gb-green/30 bg-gb-green/[0.08]' : 'cursor-pointer border-border bg-card hover:bg-elevated active:bg-elevated',
+                    jaFez ? 'cursor-default border-gb-green/30 bg-gb-green/[0.08]' : !turmaSel ? 'cursor-not-allowed opacity-60 border-border bg-card' : 'cursor-pointer border-border bg-card hover:bg-elevated active:bg-elevated',
                   ].join(' ')}>
                   <span className="text-[13px] text-primary">{a.nome}</span>
                   {jaFez ? <Ico icon={CheckIcon} className="w-4 h-4 text-gb-green shrink-0" /> : <Ico icon={PlusIcon} className="w-[18px] h-[18px] shrink-0 text-muted" />}

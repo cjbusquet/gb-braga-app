@@ -12,6 +12,8 @@ import {
   DumbbellIcon,
   TrophyIcon,
   StarIcon,
+  ChildIcon,
+  CrownIcon,
   PhoneIcon,
   CommentIcon,
   LockClosedIcon,
@@ -23,7 +25,7 @@ import {
 type Step = 'intro' | 'categoria' | 'plano' | 'dados' | 'sucesso';
 
 const BENEFITS = [
-  { icon: MartialArtsIcon, text: 'Metodologia Gracie Barra — certificada em todo o mundo' },
+  { icon: MartialArtsIcon, text: 'Metodologia Gracie Barra, certificada em todo o mundo' },
   { icon: AcademicCapIcon, text: 'Professores certificados com faixa preta' },
   { icon: CalendarDaysIcon, text: 'Seg–Sex: 07h–22h · Sáb: 09h30–12h30' },
   { icon: UsersIcon, text: 'Programa Kids disponível' },
@@ -33,9 +35,9 @@ const BENEFITS = [
 
 const CATEGORIAS = [
   { id: 'adulto',   icon: MartialArtsIcon, label: 'Adulto',          desc: 'A partir de 14 anos',                  color: '#C8102E' },
-  { id: 'kids',     icon: StarIcon, label: 'Kids',             desc: 'Crianças até 13 anos',                 color: '#D97706' },
+  { id: 'kids',     icon: ChildIcon, label: 'Kids',             desc: 'Crianças até 13 anos',                 color: '#D97706' },
   { id: 'familia',  icon: UsersIcon, label: 'Família',          desc: '2, 3 ou 4 membros da família',         color: '#16A34A' },
-  { id: 'fundador', icon: TrophyIcon, label: 'Sócio Fundador',  desc: 'Preço especial para membros fundadores',color: '#6B7280' },
+  { id: 'fundador', icon: CrownIcon, label: 'Sócio Fundador',  desc: 'Preço especial para membros fundadores',color: '#6B7280' },
 ];
 
 const TESTIMONIALS = [
@@ -280,7 +282,7 @@ export default function MatriculaPublica() {
                 'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
                 planoId ? 'text-white cursor-pointer bg-gb-red hover:bg-gb-red-dark active:scale-[0.98]' : 'cursor-not-allowed text-muted bg-border',
               ].join(' ')}>
-              CONTINUAR{planoSel ? ` — €${planoSel.valor}/mês` : ''}
+              CONTINUAR{planoSel ? ` · €${planoSel.valor}/mês` : ''}
             </button>
           </div>
         </div>
@@ -345,7 +347,7 @@ export default function MatriculaPublica() {
             A nossa equipa contactar-te-á em menos de 24h para confirmar a inscrição.
           </p>
           <div className="p-5 px-5 mb-6 text-left rounded-xl border border-border bg-white">
-            {[['Nome',nome],['Email',email],['Telefone',tel],['Plano',`${planoSel?.nome} — €${planoSel?.valor}/mês`]].map(([k,v]) => (
+            {[['Nome',nome],['Email',email],['Telefone',tel],['Plano',`${planoSel?.nome} · €${planoSel?.valor}/mês`]].map(([k,v]) => (
               <div key={k} className="flex justify-between py-1.5 border-b border-border-subtle">
                 <span className="text-[13px] text-muted">{k}</span>
                 <span className="text-[13px] font-semibold text-primary">{v}</span>

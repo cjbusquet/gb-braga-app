@@ -7,8 +7,7 @@ import { supabase, isConfigured, isLocalSupabase } from '../lib/supabaseClient';
 import type { UserRole } from '../types';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
-import { Ico, KeyIcon, ClipboardDocumentIcon, PencilIcon, CreditCardIcon, CheckCircleIcon, IdentificationIcon, AcademicCapIcon, ArrowLeftIcon, ArrowPathIcon, ChatBubbleLeftRightIcon, EnvelopeIcon } from '../lib/icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Ico, KeyIcon, ClipboardDocumentIcon, AcademicCapIcon, ArrowLeftIcon, ArrowPathIcon, EnvelopeIcon } from '../lib/icons';
 
 // Seeded accounts on the local Supabase stack (`npx supabase start`), one per
 // role — password reset to DEV_PASSWORD below for all of them. Only ever
@@ -19,6 +18,7 @@ const DEMO_ROLES: { role: UserRole; email: string; label?: string }[] = [
   { role: 'admin',       email: 'admin@ginasio.test' },
   { role: 'atendimento', email: 'atendimento@ginasio.test' },
   { role: 'professor',   email: 'professor@ginasio.test' },
+  { role: 'professor',   email: 'professor2@ginasio.test', label: 'Professor (2)' },
   { role: 'aluno',       email: 'aluno1@ginasio.test' },
   { role: 'aluno',       email: 'aluno2@ginasio.test', label: 'Aluno (2)' },
 ];
@@ -87,8 +87,15 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
       </div>
 
       {/* ── Right panel ── */}
-      <div className="flex overflow-y-auto flex-col flex-1 justify-center items-center py-8 px-6 bg-base">
-        <div className="w-full max-w-[400px]">
+      {/* `justify-center` on a scrollable flex column is the classic
+          overflow-centering bug: when content (esp. the 7-button dev/demo
+          grid) is taller than the viewport — routine on a phone — the
+          browser centers past the top edge, so scrollTop 0 opens already
+          scrolled past the logo instead of at the natural top. `m-auto` on
+          the child centers only when there's spare room and falls back to
+          normal top-aligned, scrollable flow once content overflows. */}
+      <div className="flex overflow-y-auto flex-col flex-1 items-center py-8 px-6 bg-base">
+        <div className="m-auto w-full max-w-[400px]">
 
           {/* Mobile logo */}
           <div className="flex justify-center mb-7 md:hidden">
@@ -244,46 +251,21 @@ export default function LoginPage({ onRegister }: LoginPageProps) {
           {/* ══ REGISTER ══ */}
           {tab === 'register' && (
             <div className="text-center">
-              {/* Belt stripe decoration */}
-              <div className="flex overflow-hidden mb-7 h-1 rounded-full">
-                {BELT_STRIPE.map(c => (
-                  <div key={c} className="flex-1" style={{ background: c }} />
-                ))}
-              </div>
-
               <div className="mb-3 text-gb-red"><Ico icon={AcademicCapIcon} style={{ width: 52, height: 52 }} /></div>
               <h1 className="mb-2 font-display text-2xl font-black tracking-[1px] text-primary uppercase">
                 Junta-te à GB Braga
               </h1>
               <p className="mx-auto mb-7 max-w-[320px] text-sm leading-[1.7] text-secondary">
                 Faz a tua matrícula online em poucos minutos.<br/>
-                Preenches a ficha, assinas o contrato e escolhes o plano — tudo num só passo.
+                Preenches a ficha, assinas o contrato e escolhes o plano.
               </p>
-
-              {/* Steps preview */}
-              <div className="flex flex-wrap gap-1.5 justify-center mb-7">
-                {([
-                  [IdentificationIcon,'Ficha'],
-                  [PencilIcon,'Contrato'],
-                  [CreditCardIcon,'Pagamento'],
-                  [CheckCircleIcon,'Ativo'],
-                ] as const).map(([Icon,label]) => (
-                  <div key={label} className="flex flex-col gap-1 items-center">
-                    <div className="flex justify-center items-center w-10 h-10 rounded-full border-[1.5px] border-gb-red/20 bg-gb-red/8">
-                      <FontAwesomeIcon icon={Icon} className="w-5 h-5 text-gb-red/70" />
-                    </div>
-                    <span className="text-[10.5px] font-semibold text-muted">{label}</span>
-                  </div>
-                ))}
-              </div>
 
               <Button variant="primary" size="lg" fullWidth className="mb-3 min-h-13" onClick={onRegister}>
                 <Ico icon={AcademicCapIcon} />Começar Matrícula
               </Button>
 
               <p className="text-xs leading-[1.6] text-muted">
-                Primeira aula gratuita · Sem compromisso inicial<br/>
-                <a href="https://wa.me/351927773854" className="inline-flex gap-1.5 items-center font-bold text-[#25D366] transition-colors duration-200 hover:underline outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 rounded-sm"><Ico icon={ChatBubbleLeftRightIcon} sm />Falar com a receção</a>
+                <a href="https://wa.me/351927773854" className="inline-flex gap-1.5 items-center font-bold text-gb-red transition-colors duration-200 hover:underline outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2 rounded-sm">Falar com a receção</a>
               </p>
             </div>
           )}

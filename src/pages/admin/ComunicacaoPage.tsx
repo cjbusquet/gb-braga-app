@@ -517,7 +517,7 @@ export default function ComunicacaoPage() {
                       <div className="overflow-hidden whitespace-nowrap text-ellipsis">{m.corpo}</div>
                     </td>
                     <td className="py-2.5 px-3.5 font-mono text-[11px] whitespace-nowrap text-muted">
-                      {data ? new Date(data).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}
+                      {data ? new Date(data).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}
                     </td>
                     <td className="py-2.5 px-3.5">
                       <Badge color={m.status === 'enviado' ? 'success' : m.status === 'erro' ? 'danger' : 'neutral'}>

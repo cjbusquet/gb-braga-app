@@ -15,7 +15,7 @@ export default function PortalPageHeader({
         Aluno
       </div>
       <div className="flex gap-2.5 items-center">
-        <h1 className="m-0 text-xl text-primary">
+        <h1 className="m-0 font-display text-xl font-extrabold uppercase text-primary">
           {title}
         </h1>
         {trailing}

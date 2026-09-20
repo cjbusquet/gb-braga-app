@@ -8,7 +8,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ── ENUMS ────────────────────────────────────────────────────
-CREATE TYPE user_role       AS ENUM ('superadmin','admin','atendimento','professor','aluno');
+CREATE TYPE user_role       AS ENUM ('superadmin','admin','atendimento','professor','aluno','encarregado');
 -- Inclui a progressão infantil bicolor (cinza/amarela/laranja/verde
 -- com variantes -branca/-preta) e a vermelha honorária de adulto —
 -- ambas usadas pelo frontend (src/types/index.ts Belt, alunoDomain.ts
@@ -16,7 +16,7 @@ CREATE TYPE user_role       AS ENUM ('superadmin','admin','atendimento','profess
 -- graduação para uma faixa infantil intermédia falhar com "invalid
 -- input value for enum belt_type".
 CREATE TYPE belt_type       AS ENUM (
-  'branca','azul','roxa','marrom','preta','vermelha',
+  'branca','azul','roxa','marrom','preta','vermelha-preta','vermelha-branca','vermelha',
   'cinza-branca','cinza','cinza-preta',
   'amarela-branca','amarela','amarela-preta',
   'laranja-branca','laranja','laranja-preta',
@@ -103,26 +103,49 @@ CREATE TABLE IF NOT EXISTS planos (
   descricao            TEXT,
   categoria            TEXT NOT NULL CHECK (categoria IN ('adulto','kids','familia','fundador')),
   ativo                BOOLEAN NOT NULL DEFAULT TRUE,
+  membros              INT NOT NULL DEFAULT 1,   -- praticantes cobertos (2/3/4 = família)
   stripe_product_id    TEXT,
   stripe_price_id_live TEXT,
   stripe_price_id_test TEXT,
   created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-INSERT INTO planos (id, nome, valor, descricao, categoria) VALUES
-  ('pl-adulto-plus',    'Jiu-Jitsu Adulto Plus',         62,  'Aulas ilimitadas · IVA 23% incl.',    'adulto'),
-  ('pl-adulto-fundador','Jiu-Jitsu Adulto Fundador',      53,  'Preço sócio fundador adulto',         'fundador'),
-  ('pl-estudante',      'Jiu-Jitsu Estudante (Univ.)',    53,  'Com cartão universitário válido',     'adulto'),
-  ('pl-kids-plus',      'Jiu-Jitsu Kids Plus',            53,  'Programa Kids — até 13 anos',         'kids'),
-  ('pl-kids-fundador',  'Jiu-Jitsu Kids Fundador',        45,  'Preço sócio fundador kids',           'fundador'),
-  ('pl-familia-2',      'Família 2 membros',             115,  '2 membros da mesma família',          'familia'),
-  ('pl-familia-3',      'Família 3 membros',             165,  '3 membros da mesma família',          'familia'),
-  ('pl-familia-3-kids', 'Família 3 (Kids incluído)',     150,  'Família com kids incluído',           'familia'),
-  ('pl-familia-4',      'Família 4 membros',             200,  '4 membros da mesma família',          'familia'),
-  ('pl-familia-2-fund', 'Família 2 Fundador',            109,  'Preço fundador família 2',            'fundador'),
-  ('pl-familia-3-fund', 'Família 3 Fundador',            157,  'Preço fundador família 3',            'fundador'),
-  ('pl-familia-4-fund', 'Família 4 Fundador',            190,  'Preço fundador família 4',            'fundador')
+INSERT INTO planos (id, nome, valor, descricao, categoria, membros) VALUES
+  ('pl-adulto-plus',    'Jiu-Jitsu Adulto Plus',         62,  'Aulas ilimitadas · IVA 23% incl.',    'adulto',   1),
+  ('pl-adulto-fundador','Jiu-Jitsu Adulto Fundador',      53,  'Preço sócio fundador adulto',         'fundador', 1),
+  ('pl-estudante',      'Jiu-Jitsu Estudante (Univ.)',    53,  'Com cartão universitário válido',     'adulto',   1),
+  ('pl-kids-plus',      'Jiu-Jitsu Kids Plus',            53,  'Programa Kids — até 13 anos',         'kids',     1),
+  ('pl-kids-fundador',  'Jiu-Jitsu Kids Fundador',        45,  'Preço sócio fundador kids',           'fundador', 1),
+  ('pl-familia-2',      'Família 2 membros',             115,  '2 membros da mesma família',          'familia',  2),
+  ('pl-familia-3',      'Família 3 membros',             165,  '3 membros da mesma família',          'familia',  3),
+  ('pl-familia-3-kids', 'Família 3 (Kids incluído)',     150,  'Família com kids incluído',           'familia',  3),
+  ('pl-familia-4',      'Família 4 membros',             200,  '4 membros da mesma família',          'familia',  4),
+  ('pl-familia-2-fund', 'Família 2 Fundador',            109,  'Preço fundador família 2',            'fundador', 2),
+  ('pl-familia-3-fund', 'Família 3 Fundador',            157,  'Preço fundador família 3',            'fundador', 3),
+  ('pl-familia-4-fund', 'Família 4 Fundador',            190,  'Preço fundador família 4',            'fundador', 4)
 ON CONFLICT (id) DO NOTHING;
+
+-- ── GRUPOS FAMILIARES ────────────────────────────────────────
+-- Um plano família = uma subscrição Stripe no titular (responsável de
+-- pagamentos) que cobre N praticantes. Cada praticante tem conta própria
+-- ligada por alunos.grupo_familiar_id; o webhook propaga o estado da
+-- subscrição a todos. O titular pode treinar (tem linha alunos) ou só
+-- pagar (role 'encarregado', sem linha alunos).
+CREATE TABLE IF NOT EXISTS grupos_familiares (
+  id                     UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  plano_id               TEXT REFERENCES planos(id) ON DELETE SET NULL,
+  plano_nome             TEXT,
+  titular_nome           TEXT NOT NULL,
+  titular_email          TEXT NOT NULL,
+  titular_nif            TEXT,
+  titular_treina         BOOLEAN NOT NULL DEFAULT TRUE,
+  stripe_customer_id     TEXT UNIQUE,
+  stripe_subscription_id TEXT UNIQUE,
+  status                 aluno_status NOT NULL DEFAULT 'inativo',
+  created_at             TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_grupos_familiares_titular  ON grupos_familiares(lower(titular_email));
+CREATE INDEX idx_grupos_familiares_customer ON grupos_familiares(stripe_customer_id);
 
 -- ── ALUNOS ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS alunos (
@@ -154,6 +177,8 @@ CREATE TABLE IF NOT EXISTS alunos (
   metodo_pagamento       payment_method NOT NULL DEFAULT 'stripe',
   numerario_aprovado     BOOLEAN NOT NULL DEFAULT FALSE,
   numerario_aprovado_por UUID REFERENCES profiles(id),
+  aula_particular        BOOLEAN NOT NULL DEFAULT FALSE,
+  grupo_familiar_id      UUID REFERENCES grupos_familiares(id) ON DELETE SET NULL,
   created_at             TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at             TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -163,6 +188,7 @@ CREATE INDEX idx_alunos_status     ON alunos(status);
 CREATE INDEX idx_alunos_plano      ON alunos(plano_id);
 CREATE INDEX idx_alunos_profile    ON alunos(profile_id);
 CREATE INDEX idx_alunos_aprovado_por ON alunos(numerario_aprovado_por);
+CREATE INDEX idx_alunos_grupo_familiar ON alunos(grupo_familiar_id);
 
 -- ── TURMAS ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS turmas (
@@ -176,26 +202,34 @@ CREATE TABLE IF NOT EXISTS turmas (
   capacidade     SMALLINT NOT NULL DEFAULT 20,
   nivel          turma_nivel NOT NULL DEFAULT 'all',
   tipo           turma_tipo NOT NULL DEFAULT 'gi',
+  -- Cor do bloco no horário semanal/badges (ex.: "#1E3A5F") — como a
+  -- ficha física da academia, onde cada categoria de aula tem a sua
+  -- cor. NULL cai no vermelho da marca por omissão (ver `cor` no
+  -- frontend, TurmasPage.tsx).
+  cor            TEXT,
   ativa          BOOLEAN NOT NULL DEFAULT TRUE,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_turmas_professor ON turmas(professor_id);
 
-INSERT INTO turmas (nome, professor_nome, horario, dias_semana, sala, capacidade, tipo, nivel) VALUES
-  ('Jiu-Jitsu Adultos — Manhã',   'Prof. João Santos', '07:00-08:30', ARRAY['Segunda','Terça','Quarta','Quinta','Sexta'], 'Sala Principal', 20, 'gi', 'all'),
-  ('Jiu-Jitsu Adultos — Noite 1', 'Prof. João Santos', '18:30-20:00', ARRAY['Segunda','Quarta','Sexta'], 'Sala Principal', 25, 'gi', 'iniciante'),
-  ('Jiu-Jitsu Adultos — Noite 2', 'Prof. João Santos', '20:00-21:30', ARRAY['Segunda','Quarta','Sexta'], 'Sala Principal', 25, 'gi', 'intermediario'),
-  ('Jiu-Jitsu Avançado',          'Prof. João Santos', '19:00-20:30', ARRAY['Terça','Quinta'], 'Sala Principal', 15, 'gi', 'avancado'),
-  ('No-Gi / Wrestling',           'Prof. João Santos', '20:30-22:00', ARRAY['Terça','Quinta'], 'Sala Principal', 20, 'nogi', 'all'),
-  ('Kids — Tarde',                'Prof. João Santos', '17:00-18:00', ARRAY['Segunda','Quarta','Sexta'], 'Sala Pequena', 15, 'kids', 'kids'),
-  ('Open Mat',                    'Prof. João Santos', '09:30-12:30', ARRAY['Sábado'], 'Sala Principal', 30, 'gi', 'all')
+INSERT INTO turmas (nome, professor_nome, horario, dias_semana, sala, capacidade, tipo, nivel, cor) VALUES
+  ('Jiu-Jitsu Adultos — Manhã',   'Prof. João Santos', '07:00-08:30', ARRAY['Segunda','Terça','Quarta','Quinta','Sexta'], 'Sala Principal', 20, 'gi', 'all', '#1E3A5F'),
+  ('Jiu-Jitsu Adultos — Noite 1', 'Prof. João Santos', '18:30-20:00', ARRAY['Segunda','Quarta','Sexta'], 'Sala Principal', 25, 'gi', 'iniciante', '#1E3A5F'),
+  ('Jiu-Jitsu Adultos — Noite 2', 'Prof. João Santos', '20:00-21:30', ARRAY['Segunda','Quarta','Sexta'], 'Sala Principal', 25, 'gi', 'intermediario', '#1E3A5F'),
+  ('Jiu-Jitsu Avançado',          'Prof. João Santos', '19:00-20:30', ARRAY['Terça','Quinta'], 'Sala Principal', 15, 'gi', 'avancado', '#1E3A5F'),
+  ('No-Gi / Wrestling',           'Prof. João Santos', '20:30-22:00', ARRAY['Terça','Quinta'], 'Sala Principal', 20, 'nogi', 'all', '#DC2626'),
+  ('Kids — Tarde',                'Prof. João Santos', '17:00-18:00', ARRAY['Segunda','Quarta','Sexta'], 'Sala Pequena', 15, 'kids', 'kids', '#F97316'),
+  ('Open Mat',                    'Prof. João Santos', '09:30-12:30', ARRAY['Sábado'], 'Sala Principal', 30, 'gi', 'all', '#64748B')
 ON CONFLICT DO NOTHING;
 
 -- ── PAGAMENTOS ───────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS pagamentos (
   id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  aluno_id           UUID NOT NULL REFERENCES alunos(id) ON DELETE CASCADE,
+  -- aluno_id OU grupo_familiar_id (linha de mensalidade de um plano família,
+  -- atribuída ao grupo em vez de um aluno) — ver CHECK pagamento_tem_alvo.
+  aluno_id           UUID REFERENCES alunos(id) ON DELETE CASCADE,
+  grupo_familiar_id  UUID REFERENCES grupos_familiares(id) ON DELETE SET NULL,
   aluno_nome         TEXT NOT NULL,
   plano_id           TEXT REFERENCES planos(id),
   plano_nome         TEXT,
@@ -208,10 +242,12 @@ CREATE TABLE IF NOT EXISTS pagamentos (
   stripe_invoice_id  TEXT,
   toc_numero         TEXT,
   descricao          TEXT,
-  created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT pagamento_tem_alvo CHECK (aluno_id IS NOT NULL OR grupo_familiar_id IS NOT NULL)
 );
 
 CREATE INDEX idx_pagamentos_aluno   ON pagamentos(aluno_id);
+CREATE INDEX idx_pagamentos_grupo   ON pagamentos(grupo_familiar_id);
 CREATE INDEX idx_pagamentos_status  ON pagamentos(status);
 CREATE INDEX idx_pagamentos_vencimento ON pagamentos(vencimento);
 CREATE INDEX idx_pagamentos_plano   ON pagamentos(plano_id);
@@ -338,6 +374,64 @@ CREATE TABLE IF NOT EXISTS graduacoes (
 CREATE INDEX idx_graduacoes_aluno     ON graduacoes(aluno_id);
 CREATE INDEX idx_graduacoes_professor ON graduacoes(professor_id);
 
+-- ── NOTAS DO PROFESSOR (privadas, nunca visíveis ao aluno) ────
+-- Não pode ser uma coluna em `alunos`: RLS é por linha, não por
+-- coluna, e "Aluno vê dados" devolve a linha inteira ao próprio
+-- aluno. Tabela dedicada, tal como mensagens_chat/notificacoes.
+CREATE TABLE IF NOT EXISTS notas_aluno (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  aluno_id     UUID NOT NULL REFERENCES alunos(id) ON DELETE CASCADE,
+  professor_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  nota         TEXT NOT NULL CHECK (length(trim(nota)) > 0),
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_notas_aluno_aluno ON notas_aluno(aluno_id, created_at DESC);
+
+-- ── LEMBRETES ("lembra-me disto daqui a N aulas") ─────────────
+CREATE TABLE IF NOT EXISTS lembretes_aluno (
+  id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  aluno_id         UUID NOT NULL REFERENCES alunos(id) ON DELETE CASCADE,
+  professor_id     UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  texto            TEXT NOT NULL CHECK (length(trim(texto)) > 0),
+  aulas_alvo       SMALLINT NOT NULL CHECK (aulas_alvo > 0),
+  aulas_decorridas SMALLINT NOT NULL DEFAULT 0,
+  concluido        BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_lembretes_aluno_ativos ON lembretes_aluno(aluno_id) WHERE NOT concluido;
+
+-- ── AULAS PARTICULARES (marcação real, patch 40) ──────────────
+CREATE TABLE IF NOT EXISTS aulas_particulares (
+  id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  professor_id   UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  professor_nome TEXT NOT NULL,
+  ajudante_id    UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  ajudante_nome  TEXT,
+  ajudante_tipo  TEXT CHECK (ajudante_tipo IN ('professor','aluno')),
+  data           DATE NOT NULL,
+  hora_inicio    TIME NOT NULL,
+  hora_fim       TIME,
+  sala           TEXT,
+  observacoes    TEXT,
+  status         TEXT NOT NULL DEFAULT 'agendada' CHECK (status IN ('agendada','concluida','cancelada')),
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_aulas_particulares_professor ON aulas_particulares(professor_id, data);
+CREATE INDEX idx_aulas_particulares_ajudante  ON aulas_particulares(ajudante_id, data) WHERE ajudante_id IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS aulas_particulares_alunos (
+  id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  aula_particular_id  UUID NOT NULL REFERENCES aulas_particulares(id) ON DELETE CASCADE,
+  aluno_id            UUID NOT NULL REFERENCES alunos(id) ON DELETE CASCADE,
+  aluno_nome          TEXT NOT NULL,
+  UNIQUE (aula_particular_id, aluno_id)
+);
+
+CREATE INDEX idx_aulas_particulares_alunos_aluno ON aulas_particulares_alunos(aluno_id);
+
 -- ── MENSAGENS ────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS mensagens (
   id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -412,6 +506,16 @@ CREATE TABLE IF NOT EXISTS configuracoes (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_by UUID REFERENCES profiles(id) ON DELETE SET NULL
 );
+
+-- Limiares editáveis via ConfigPage (useConfiguracaoSection) em vez de
+-- valores fixos no código — ver v_alunos_proximos_graduacao e
+-- src/lib/idade.ts.
+INSERT INTO configuracoes (secao, dados) VALUES
+  ('graduacao', '{"mesesParaGrau": 4, "mesesParaFaixa": 18, "frequenciaMinima": 70}'::jsonb),
+  -- Categorias por idade mínima (IBJJF), avaliadas em ordem crescente —
+  -- quem não atinge "juvenil" fica em "crianca".
+  ('categorias_idade', '{"juvenil": 16, "adulto": 18, "master1": 30, "master2": 36, "master3": 41, "master4": 46, "master5": 51, "master6": 56, "master7": 61}'::jsonb)
+ON CONFLICT (secao) DO NOTHING;
 
 -- ── RESPONSÁVEIS (encarregados de educação de alunos menores) ─
 -- Referenciadas por useResponsaveis/criarResponsavel/
@@ -538,6 +642,7 @@ ALTER TABLE aluno_responsaveis ENABLE ROW LEVEL SECURITY;
 ALTER TABLE professor_extras  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pedidos_numerario ENABLE ROW LEVEL SECURITY;
 ALTER TABLE toc_documentos    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE grupos_familiares ENABLE ROW LEVEL SECURITY;
 ALTER TABLE access_logs       ENABLE ROW LEVEL SECURITY;
 
 -- Schema não exposto pelo PostgREST (api.schemas só lista public e
@@ -563,6 +668,16 @@ CREATE OR REPLACE FUNCTION private.my_aluno_id() RETURNS UUID AS $$
   WHERE email = (SELECT email FROM profiles WHERE id = auth.uid())
     AND status = 'ativo';
 $$ LANGUAGE SQL SECURITY DEFINER STABLE SET search_path = public;
+
+-- Helper público: o email já tem conta? (usado por FichaInscricao antes do
+-- signUp, para não obrigar a refazer a ficha se o email estiver em uso).
+-- Enumeração já era possível pela mensagem de erro do signUp.
+CREATE OR REPLACE FUNCTION public.email_existe(e text) RETURNS boolean
+LANGUAGE SQL SECURITY DEFINER SET search_path = '' AS $$
+  SELECT EXISTS (SELECT 1 FROM auth.users WHERE lower(email) = lower(trim(e)));
+$$;
+REVOKE ALL ON FUNCTION public.email_existe(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.email_existe(text) TO anon, authenticated;
 
 -- PLANOS policies
 -- Um único policy por ação (nunca FOR ALL a par de outro policy na
@@ -623,6 +738,17 @@ CREATE POLICY "Admin apaga alunos" ON alunos FOR DELETE USING ((SELECT private.a
 -- non-staff updates down to those columns; everything else reverts to OLD.
 CREATE OR REPLACE FUNCTION restringir_update_aluno() RETURNS TRIGGER AS $$
 BEGIN
+  -- Recontagens internas (atualizar_frequencia_aluno(), disparada a cada
+  -- INSERT em `presencas`) correm com o role de quem despoletou esse
+  -- INSERT (aluno em self-check-in, ou professor a marcar presença
+  -- manual) — nenhum dos dois é staff, por isso sem este bypass o UPDATE
+  -- interno a `frequencia` era sempre revertido para OLD antes de gravar
+  -- (patch 41: confirmado em testes, a coluna nunca refletia presenças
+  -- novas fora de uma ação direta de admin/superadmin/atendimento).
+  IF current_setting('app.bypass_restricao_aluno', true) = 'on' THEN
+    RETURN NEW;
+  END IF;
+
   -- email is unconditional, even for staff: it must always match
   -- profiles.email (several RLS policies compare the two directly), and
   -- profiles.email is itself just a mirror of the real login credential
@@ -636,16 +762,18 @@ BEGIN
     -- DEFINER and bypasses RLS for its internal UPDATE, but this trigger
     -- is unconditional on the table, so it still needs an explicit
     -- carve-out or a professor-driven graduation would silently revert
-    -- to OLD) and nif/data_nascimento (the fields AlunosPage.tsx's
+    -- to OLD), nif/data_nascimento (the fields AlunosPage.tsx's
     -- EditAlunoModal sends alongside nome/telefone, which are never
-    -- blocked for anyone). Without this, "editing a student" from a
-    -- professor screen would silently drop those two fields even once
-    -- the RLS policy itself allows the UPDATE through.
+    -- blocked for anyone), and aula_particular (professor is the one
+    -- tagging their own private-lesson students). Without this,
+    -- "editing a student" from a professor screen would silently drop
+    -- those fields even once the RLS policy itself allows the UPDATE.
     IF private.auth_role() != 'professor' THEN
       NEW.faixa           := OLD.faixa;
       NEW.grau            := OLD.grau;
       NEW.nif             := OLD.nif;
       NEW.data_nascimento := OLD.data_nascimento;
+      NEW.aula_particular := OLD.aula_particular;
     END IF;
     NEW.morada                 := OLD.morada;
     NEW.cod_postal             := OLD.cod_postal;
@@ -714,8 +842,28 @@ CREATE POLICY "Admin apaga turmas"   ON turmas FOR DELETE USING ((SELECT private
 ALTER TABLE aulas ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Ver aulas" ON aulas FOR SELECT USING ((SELECT auth.uid()) IS NOT NULL);
 
+-- GRUPOS FAMILIARES policies
+-- Leitura: o titular (por email), qualquer membro do grupo, ou staff.
+-- Escrita: só admin pela API — a edge function e o webhook usam service_role.
+CREATE POLICY "Ver grupo familiar" ON grupos_familiares FOR SELECT USING (
+  lower(titular_email) = lower((SELECT email FROM profiles WHERE id = (SELECT auth.uid())))
+  OR id IN (SELECT grupo_familiar_id FROM alunos WHERE email = (SELECT email FROM profiles WHERE id = (SELECT auth.uid())))
+  OR (SELECT private.auth_role()) IN ('admin','superadmin','atendimento','professor')
+);
+CREATE POLICY "Admin gere grupo familiar" ON grupos_familiares FOR ALL
+  USING ((SELECT private.auth_role()) IN ('admin','superadmin'))
+  WITH CHECK ((SELECT private.auth_role()) IN ('admin','superadmin'));
+
 -- PAGAMENTOS policies
-CREATE POLICY "Aluno vê pagamentos" ON pagamentos FOR SELECT USING (aluno_id = (SELECT private.my_aluno_id()) OR (SELECT private.auth_role()) IN ('admin','superadmin'));
+CREATE POLICY "Aluno vê pagamentos" ON pagamentos FOR SELECT USING (
+  aluno_id = (SELECT private.my_aluno_id())
+  OR grupo_familiar_id IN (
+    SELECT id FROM grupos_familiares
+    WHERE lower(titular_email) = lower((SELECT email FROM profiles WHERE id = (SELECT auth.uid())))
+       OR id IN (SELECT grupo_familiar_id FROM alunos WHERE email = (SELECT email FROM profiles WHERE id = (SELECT auth.uid())))
+  )
+  OR (SELECT private.auth_role()) IN ('admin','superadmin')
+);
 CREATE POLICY "Aluno insere pagamento" ON pagamentos FOR INSERT WITH CHECK (
   aluno_id IN (SELECT id FROM alunos WHERE email = (SELECT email FROM profiles WHERE id = (SELECT auth.uid())))
   OR (SELECT private.auth_role()) IN ('admin','superadmin')
@@ -768,6 +916,83 @@ CREATE POLICY "Admin apaga contratos"   ON contratos FOR DELETE USING ((SELECT p
 -- só para superadmin/admin/professor — atendimento não gere graduações).
 CREATE POLICY "Ver graduações" ON graduacoes FOR SELECT USING (aluno_id = (SELECT private.my_aluno_id()) OR (SELECT private.auth_role()) IN ('admin','superadmin','professor'));
 CREATE POLICY "Registar graduação" ON graduacoes FOR INSERT WITH CHECK ((SELECT private.auth_role()) IN ('admin','superadmin','professor'));
+
+-- notas_aluno / lembretes_aluno: nunca incluem o role 'aluno' — é
+-- exatamente essa ausência que torna as notas privadas ao professor.
+-- Notas/lembretes são ferramenta de trabalho do professor — mesmo
+-- admin/superadmin/atendimento (que veem quase tudo o resto no perfil
+-- do aluno) não têm acesso; só o calendário de presenças (`presencas`)
+-- é partilhado com todo o staff (patch 43).
+ALTER TABLE notas_aluno ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Só o professor vê notas" ON notas_aluno FOR SELECT USING ((SELECT private.auth_role()) = 'professor');
+CREATE POLICY "Só o professor escreve notas" ON notas_aluno FOR INSERT WITH CHECK (
+  professor_id = (SELECT auth.uid()) AND (SELECT private.auth_role()) = 'professor'
+);
+CREATE POLICY "Só o autor edita nota" ON notas_aluno FOR UPDATE
+  USING (professor_id = (SELECT auth.uid()) AND (SELECT private.auth_role()) = 'professor')
+  WITH CHECK (professor_id = (SELECT auth.uid()) AND (SELECT private.auth_role()) = 'professor');
+CREATE POLICY "Só o autor apaga nota" ON notas_aluno FOR DELETE
+  USING (professor_id = (SELECT auth.uid()) AND (SELECT private.auth_role()) = 'professor');
+
+ALTER TABLE lembretes_aluno ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Só o professor vê lembretes" ON lembretes_aluno FOR SELECT USING ((SELECT private.auth_role()) = 'professor');
+CREATE POLICY "Só o professor cria lembrete" ON lembretes_aluno FOR INSERT WITH CHECK (
+  professor_id = (SELECT auth.uid()) AND (SELECT private.auth_role()) = 'professor'
+);
+CREATE POLICY "Só o autor edita lembrete" ON lembretes_aluno FOR UPDATE
+  USING (professor_id = (SELECT auth.uid()) AND (SELECT private.auth_role()) = 'professor')
+  WITH CHECK (professor_id = (SELECT auth.uid()) AND (SELECT private.auth_role()) = 'professor');
+CREATE POLICY "Só o autor apaga lembrete" ON lembretes_aluno FOR DELETE
+  USING (professor_id = (SELECT auth.uid()) AND (SELECT private.auth_role()) = 'professor');
+
+ALTER TABLE aulas_particulares        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE aulas_particulares_alunos ENABLE ROW LEVEL SECURITY;
+
+-- Helpers SECURITY DEFINER — mesmo padrão de private.my_aluno_id() /
+-- private.auth_role() acima. Sem isto, `aulas_particulares` a consultar
+-- `aulas_particulares_alunos` e vice-versa causa "infinite recursion
+-- detected in policy" (42P17). A query interna de uma função SECURITY
+-- DEFINER corre com os privilégios do dono, sem reavaliar a RLS da
+-- tabela-alvo — quebra o ciclo.
+CREATE OR REPLACE FUNCTION private.eh_participante_particular(p_aula_id UUID) RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM aulas_particulares_alunos
+    WHERE aula_particular_id = p_aula_id AND aluno_id = private.my_aluno_id()
+  );
+$$ LANGUAGE SQL SECURITY DEFINER STABLE SET search_path = public;
+
+CREATE OR REPLACE FUNCTION private.pode_gerir_particular(p_aula_id UUID) RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM aulas_particulares
+    WHERE id = p_aula_id AND (professor_id = auth.uid() OR ajudante_id = auth.uid())
+  ) OR private.auth_role() IN ('admin','superadmin','atendimento');
+$$ LANGUAGE SQL SECURITY DEFINER STABLE SET search_path = public;
+
+CREATE POLICY "Ver aula particular" ON aulas_particulares FOR SELECT USING (
+  professor_id = (SELECT auth.uid())
+  OR ajudante_id = (SELECT auth.uid())
+  OR (SELECT private.auth_role()) IN ('admin','superadmin','atendimento')
+  OR private.eh_participante_particular(id)
+);
+CREATE POLICY "Marcar aula particular" ON aulas_particulares FOR INSERT WITH CHECK (
+  professor_id = (SELECT auth.uid())
+  AND (SELECT private.auth_role()) IN ('professor','admin','superadmin')
+);
+CREATE POLICY "Autor ou admin edita particular" ON aulas_particulares FOR UPDATE
+  USING (professor_id = (SELECT auth.uid()) OR (SELECT private.auth_role()) IN ('admin','superadmin'))
+  WITH CHECK (professor_id = (SELECT auth.uid()) OR (SELECT private.auth_role()) IN ('admin','superadmin'));
+CREATE POLICY "Autor ou admin apaga particular" ON aulas_particulares FOR DELETE
+  USING (professor_id = (SELECT auth.uid()) OR (SELECT private.auth_role()) IN ('admin','superadmin'));
+
+CREATE POLICY "Ver participantes" ON aulas_particulares_alunos FOR SELECT USING (
+  private.pode_gerir_particular(aula_particular_id)
+  OR aluno_id = private.my_aluno_id()
+);
+CREATE POLICY "Gerir participantes" ON aulas_particulares_alunos FOR ALL USING (
+  private.pode_gerir_particular(aula_particular_id)
+) WITH CHECK (
+  private.pode_gerir_particular(aula_particular_id)
+);
 
 -- Graduar um aluno é 2 escritas que têm de acontecer juntas ou nenhuma:
 -- registar o histórico (graduacoes) e atualizar a faixa/grau correntes
@@ -918,6 +1143,135 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 REVOKE EXECUTE ON FUNCTION concluir_aula(UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION concluir_aula(UUID) TO authenticated;
+
+-- ── listar_professores_ativos ────────────────────────────────
+-- SECURITY DEFINER: a policy "Perfil próprio" impede um professor de
+-- ler o perfil de outro, por isso o seletor de substituto
+-- (definir_professor_aula) não teria dados. Só id/nome/faixa.
+CREATE OR REPLACE FUNCTION listar_professores_ativos()
+RETURNS TABLE(id UUID, nome TEXT, faixa belt_type, grau SMALLINT) AS $$
+  SELECT p.id, p.nome, COALESCE(pe.faixa, 'preta'), COALESCE(pe.grau, 0)
+  FROM profiles p
+  LEFT JOIN professor_extras pe ON pe.id = p.id
+  WHERE p.role = 'professor'
+  ORDER BY p.nome;
+$$ LANGUAGE sql SECURITY DEFINER SET search_path = public STABLE;
+
+REVOKE EXECUTE ON FUNCTION listar_professores_ativos() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION listar_professores_ativos() TO authenticated;
+
+-- ── definir_professor_aula ───────────────────────────────────
+-- Substituições self-service (hoje e futuro). Materializa a aula
+-- (turma_id, data) se não existe e define o professor — NULL = aula
+-- sem professor. Só mexe no professor: status/hora_inicio/presenças
+-- ficam intactos. Substitui iniciar_aula como caminho de atribuição.
+--
+--   titular retira-se          → p_professor_id = NULL
+--   titular escolhe substituto  → p_professor_id = <outro professor>
+--   professor assume vaga       → p_professor_id = auth.uid(), só se a
+--                                 aula estiver sem professor (ou já for
+--                                 dele / for ele o titular da turma)
+-- Tirar um professor NOMEADO de uma aula fica reservado a admin.
+CREATE OR REPLACE FUNCTION definir_professor_aula(
+  p_turma_id UUID,
+  p_data DATE,
+  p_professor_id UUID
+)
+RETURNS UUID AS $$
+DECLARE
+  v_role  TEXT := private.auth_role();
+  v_uid   UUID := auth.uid();
+  v_turma turmas%ROWTYPE;
+  v_aula  aulas%ROWTYPE;
+  v_aula_existe BOOLEAN;
+  v_atual UUID;          -- professor efetivo atual da ocorrência
+  v_nome  TEXT;
+  v_alvo_role TEXT;
+  v_aula_id UUID;
+BEGIN
+  IF v_role NOT IN ('professor','admin','superadmin') THEN
+    RAISE EXCEPTION 'Sem permissão para definir o professor de uma aula' USING ERRCODE = '42501';
+  END IF;
+
+  IF p_data < CURRENT_DATE THEN
+    RAISE EXCEPTION 'Não é possível alterar o professor de uma aula passada' USING ERRCODE = '22007';
+  END IF;
+
+  SELECT * INTO v_turma FROM turmas WHERE id = p_turma_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Turma não encontrada' USING ERRCODE = 'P0002';
+  END IF;
+
+  -- Professor efetivo atual: se a linha de `aulas` já existe, é o dela
+  -- (NULL = aula explicitamente sem professor, pode ser assumida por
+  -- qualquer um). Se ainda não existe, herda o titular da turma.
+  SELECT * INTO v_aula FROM aulas WHERE turma_id = p_turma_id AND data = p_data;
+  v_aula_existe := FOUND;
+  v_atual := CASE WHEN v_aula_existe THEN v_aula.professor_id ELSE v_turma.professor_id END;
+
+  IF p_professor_id IS NOT NULL THEN
+    SELECT role, nome INTO v_alvo_role, v_nome FROM profiles WHERE id = p_professor_id;
+    IF v_alvo_role IS DISTINCT FROM 'professor' THEN
+      RAISE EXCEPTION 'O substituto tem de ser um professor' USING ERRCODE = '22023';
+    END IF;
+  END IF;
+
+  IF v_role = 'professor' THEN
+    IF p_professor_id = v_uid THEN
+      IF NOT (v_atual IS NULL OR v_atual = v_uid OR v_uid = v_turma.professor_id) THEN
+        RAISE EXCEPTION 'Esta aula já tem um professor atribuído' USING ERRCODE = '42501';
+      END IF;
+    ELSIF p_professor_id IS NULL THEN
+      IF NOT (v_uid = v_atual OR v_uid = v_turma.professor_id) THEN
+        RAISE EXCEPTION 'Só o professor da aula ou o titular da turma pode libertá-la' USING ERRCODE = '42501';
+      END IF;
+    ELSE
+      IF NOT (v_uid = v_turma.professor_id OR v_uid = v_atual) THEN
+        RAISE EXCEPTION 'Só o titular da turma ou o professor da aula pode escolher um substituto' USING ERRCODE = '42501';
+      END IF;
+    END IF;
+  END IF;
+
+  INSERT INTO aulas (turma_id, turma_nome, professor_id, professor_nome, data, horario, sala)
+  VALUES (v_turma.id, v_turma.nome, p_professor_id, v_nome, p_data, v_turma.horario, v_turma.sala)
+  ON CONFLICT (turma_id, data) DO UPDATE SET
+    professor_id   = EXCLUDED.professor_id,
+    professor_nome = EXCLUDED.professor_nome
+  RETURNING id INTO v_aula_id;
+
+  RETURN v_aula_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+REVOKE EXECUTE ON FUNCTION definir_professor_aula(UUID, DATE, UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION definir_professor_aula(UUID, DATE, UUID) TO authenticated;
+
+-- Quando o admin troca turmas.professor_id, as aulas FUTURAS ainda
+-- agendadas que herdaram o titular antigo (ou nenhum) passam a
+-- apontar o novo. Aulas com substituto já escolhido, em curso ou
+-- passadas ficam intactas.
+CREATE OR REPLACE FUNCTION sincronizar_titular_aulas_futuras() RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.professor_id IS DISTINCT FROM OLD.professor_id THEN
+    UPDATE aulas SET
+      professor_id   = NEW.professor_id,
+      professor_nome = NEW.professor_nome
+    WHERE turma_id = NEW.id
+      AND data >= CURRENT_DATE
+      AND status = 'agendada'
+      AND professor_id IS NOT DISTINCT FROM OLD.professor_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+REVOKE EXECUTE ON FUNCTION sincronizar_titular_aulas_futuras() FROM PUBLIC;
+
+DROP TRIGGER IF EXISTS trg_sync_titular_aulas ON turmas;
+CREATE TRIGGER trg_sync_titular_aulas
+  AFTER UPDATE OF professor_id ON turmas
+  FOR EACH ROW
+  EXECUTE FUNCTION sincronizar_titular_aulas_futuras();
 
 -- TOConline policies
 -- "Admin vê faturas" e "Aluno vê as suas faturas" eram 2 policies de
@@ -1153,25 +1507,44 @@ WHERE p.role = 'professor';
 -- ── FUNCTION: calcular frequência ────────────────────────────
 CREATE OR REPLACE FUNCTION calcular_frequencia(p_aluno_id UUID, p_meses INT DEFAULT 3)
 RETURNS INT AS $$
-DECLARE total_aulas INT; aulas_aluno INT;
+DECLARE total_aulas INT; aulas_aluno INT; desde TIMESTAMPTZ;
 BEGIN
-  -- Total unique class days offered (any student checked in)
+  -- Janela começa na matrícula, não em "há p_meses" fixo — um aluno
+  -- matriculado há 2 semanas não deve ser comparado contra 3 meses
+  -- inteiros de atividade da academia (frequência artificialmente baixa
+  -- só por ainda não ter tido tempo de acumular presenças). Para alunos
+  -- já estabelecidos (matriculados há mais de p_meses), o comportamento
+  -- não muda — mantém-se a janela de recência que apanha desengajamento.
+  SELECT GREATEST(a.data_matricula::TIMESTAMPTZ, NOW() - (p_meses || ' months')::INTERVAL)
+    INTO desde
+  FROM alunos a WHERE a.id = p_aluno_id;
+  IF desde IS NULL THEN RETURN 0; END IF;
+
+  -- Total unique class days offered (any student checked in) — só dias
+  -- de turma (aula de grupo) contam aqui: uma aula particular não é uma
+  -- oportunidade de treino aberta a todo o cohort, não pode inflacionar
+  -- "quantos dias a academia treinou" para os OUTROS alunos (patch 41).
   SELECT COUNT(DISTINCT data) INTO total_aulas FROM presencas
-  WHERE created_at >= NOW() - (p_meses || ' months')::INTERVAL AND tipo = 'checkin';
-  -- Student's unique days present (multiple check-ins same day count as 1)
+  WHERE created_at >= desde AND tipo = 'checkin' AND turma_id IS NOT NULL;
+  -- Student's unique days present (multiple check-ins same day count as
+  -- 1) — inclui particulares: conta a favor do próprio aluno.
   SELECT COUNT(DISTINCT data) INTO aulas_aluno FROM presencas
-  WHERE aluno_id = p_aluno_id AND tipo = 'checkin'
-  AND created_at >= NOW() - (p_meses || ' months')::INTERVAL;
+  WHERE aluno_id = p_aluno_id AND tipo = 'checkin' AND created_at >= desde;
   IF total_aulas = 0 THEN RETURN 0; END IF;
   RETURN LEAST(100, ROUND((aulas_aluno::NUMERIC / total_aulas) * 100));
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- Auto-update alunos.frequencia after every check-in
+-- Auto-update alunos.frequencia after every check-in. Bypass local à
+-- transação em volta do UPDATE (ver restringir_update_aluno acima) —
+-- sem isto, o próprio role de quem fez o check-in bloqueava esta
+-- recontagem interna (patch 41).
 CREATE OR REPLACE FUNCTION atualizar_frequencia_aluno()
 RETURNS TRIGGER AS $$
 BEGIN
+  PERFORM set_config('app.bypass_restricao_aluno', 'on', true);
   UPDATE alunos SET frequencia = calcular_frequencia(NEW.aluno_id) WHERE id = NEW.aluno_id;
+  PERFORM set_config('app.bypass_restricao_aluno', 'off', true);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
@@ -1181,6 +1554,253 @@ CREATE TRIGGER trg_atualizar_frequencia
   AFTER INSERT ON presencas
   FOR EACH ROW
   EXECUTE FUNCTION atualizar_frequencia_aluno();
+
+-- ── LEMBRETES: avançar contagem a cada check-in ───────────────
+-- Mesmo padrão de notificar_nova_mensagem_chat: sem policy de INSERT
+-- para o professor em notificacoes de outro perfil, por isso o
+-- fan-out tem de ser SECURITY DEFINER.
+CREATE OR REPLACE FUNCTION avancar_lembretes_aluno() RETURNS TRIGGER AS $$
+DECLARE
+  v_lembrete lembretes_aluno%ROWTYPE;
+  v_aluno_nome TEXT;
+BEGIN
+  FOR v_lembrete IN
+    UPDATE lembretes_aluno
+    SET aulas_decorridas = aulas_decorridas + 1
+    WHERE aluno_id = NEW.aluno_id AND NOT concluido
+    RETURNING *
+  LOOP
+    IF v_lembrete.aulas_decorridas >= v_lembrete.aulas_alvo THEN
+      UPDATE lembretes_aluno SET concluido = TRUE WHERE id = v_lembrete.id;
+      SELECT nome INTO v_aluno_nome FROM alunos WHERE id = v_lembrete.aluno_id;
+      INSERT INTO notificacoes (profile_id, titulo, corpo, tipo, link)
+      VALUES (v_lembrete.professor_id, 'Lembrete — ' || COALESCE(v_aluno_nome, 'aluno'), v_lembrete.texto, 'aviso', 'alunos');
+    END IF;
+  END LOOP;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+DROP TRIGGER IF EXISTS trg_avancar_lembretes ON presencas;
+CREATE TRIGGER trg_avancar_lembretes
+  AFTER INSERT ON presencas
+  FOR EACH ROW
+  WHEN (NEW.tipo = 'checkin')
+  EXECUTE FUNCTION avancar_lembretes_aluno();
+
+-- ── criar_aula_particular (patch 40) ───────────────────────────
+-- Escrita atómica em duas tabelas (aulas_particulares +
+-- aulas_particulares_alunos) — regra do CLAUDE.md: mutações
+-- multi-tabela não ficam a cargo do frontend.
+CREATE OR REPLACE FUNCTION criar_aula_particular(
+  p_data        DATE,
+  p_hora_inicio TIME,
+  p_hora_fim    TIME,
+  p_sala        TEXT,
+  p_observacoes TEXT,
+  p_ajudante_id UUID,
+  p_aluno_ids   UUID[]
+) RETURNS UUID AS $$
+DECLARE
+  v_role          TEXT := private.auth_role();
+  v_uid           UUID := auth.uid();
+  v_prof_nome     TEXT;
+  v_ajudante_nome TEXT;
+  v_ajudante_role TEXT;
+  v_id            UUID;
+  v_aluno_id      UUID;
+  v_aluno_nome    TEXT;
+BEGIN
+  IF v_role NOT IN ('professor','admin','superadmin') THEN
+    RAISE EXCEPTION 'Sem permissão para marcar uma aula particular' USING ERRCODE = '42501';
+  END IF;
+  IF p_aluno_ids IS NULL OR array_length(p_aluno_ids, 1) IS NULL THEN
+    RAISE EXCEPTION 'Escolhe pelo menos um aluno' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT nome INTO v_prof_nome FROM profiles WHERE id = v_uid;
+
+  IF p_ajudante_id IS NOT NULL THEN
+    SELECT nome, role INTO v_ajudante_nome, v_ajudante_role FROM profiles WHERE id = p_ajudante_id;
+    IF v_ajudante_role NOT IN ('professor','aluno') THEN
+      RAISE EXCEPTION 'O ajudante tem de ser um professor ou um aluno' USING ERRCODE = '22023';
+    END IF;
+  END IF;
+
+  INSERT INTO aulas_particulares (
+    professor_id, professor_nome, ajudante_id, ajudante_nome, ajudante_tipo,
+    data, hora_inicio, hora_fim, sala, observacoes
+  ) VALUES (
+    v_uid, v_prof_nome, p_ajudante_id, v_ajudante_nome, v_ajudante_role,
+    p_data, p_hora_inicio, p_hora_fim, p_sala, p_observacoes
+  ) RETURNING id INTO v_id;
+
+  FOREACH v_aluno_id IN ARRAY p_aluno_ids LOOP
+    SELECT nome INTO v_aluno_nome FROM alunos WHERE id = v_aluno_id;
+    IF v_aluno_nome IS NULL THEN
+      RAISE EXCEPTION 'Aluno não encontrado' USING ERRCODE = 'P0002';
+    END IF;
+    INSERT INTO aulas_particulares_alunos (aula_particular_id, aluno_id, aluno_nome)
+    VALUES (v_id, v_aluno_id, v_aluno_nome);
+  END LOOP;
+
+  RETURN v_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+REVOKE EXECUTE ON FUNCTION criar_aula_particular(DATE, TIME, TIME, TEXT, TEXT, UUID, UUID[]) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION criar_aula_particular(DATE, TIME, TIME, TEXT, TEXT, UUID, UUID[]) TO authenticated;
+
+-- Notifica o ajudante (professor ou aluno) quando associado a uma aula
+-- particular — sem policy de INSERT em `notificacoes` para o frontend
+-- inserir "para outro perfil" (fan-out é sempre por trigger), por isso
+-- SECURITY DEFINER, mesmo padrão de avancar_lembretes_aluno acima.
+CREATE OR REPLACE FUNCTION notificar_ajudante_aula_particular() RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.ajudante_id IS NOT NULL AND (TG_OP = 'INSERT' OR NEW.ajudante_id IS DISTINCT FROM OLD.ajudante_id) THEN
+    INSERT INTO notificacoes (profile_id, titulo, corpo, tipo, link)
+    VALUES (
+      NEW.ajudante_id,
+      'Convite para ajudar numa aula particular',
+      NEW.professor_nome || ' convidou-te para ajudar numa aula particular em ' || to_char(NEW.data, 'DD/MM') || ' às ' || to_char(NEW.hora_inicio, 'HH24:MI'),
+      'info',
+      CASE WHEN NEW.ajudante_tipo = 'aluno' THEN 'minhas-aulas' ELSE 'particulares' END
+    );
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+DROP TRIGGER IF EXISTS trg_notificar_ajudante_particular ON aulas_particulares;
+CREATE TRIGGER trg_notificar_ajudante_particular
+  AFTER INSERT OR UPDATE OF ajudante_id ON aulas_particulares
+  FOR EACH ROW
+  EXECUTE FUNCTION notificar_ajudante_aula_particular();
+
+REVOKE EXECUTE ON FUNCTION notificar_ajudante_aula_particular() FROM PUBLIC;
+
+-- Gera presenças a partir de uma aula particular concluída — participantes
+-- e, se o ajudante for um aluno, também o ajudante (patch 41). Reutiliza
+-- toda a maquinaria já existente (calcular_frequencia, ranking_treinos,
+-- CalendarioPresencas) em vez de as reescrever para também olhar para
+-- `aulas_particulares` — turma_id/aula_id ficam NULL, turma_nome fica
+-- "Aula Particular" para aparecer identificável no histórico do aluno.
+CREATE OR REPLACE FUNCTION registar_presenca_aula_particular() RETURNS TRIGGER AS $$
+DECLARE
+  v_participante RECORD;
+  v_ajudante_aluno_id UUID;
+BEGIN
+  IF NEW.status = 'concluida' AND (TG_OP = 'INSERT' OR OLD.status IS DISTINCT FROM 'concluida') THEN
+    FOR v_participante IN
+      SELECT aluno_id, aluno_nome FROM aulas_particulares_alunos WHERE aula_particular_id = NEW.id
+    LOOP
+      INSERT INTO presencas (aluno_id, aluno_nome, turma_nome, data, hora, tipo, metodo)
+      VALUES (v_participante.aluno_id, v_participante.aluno_nome, 'Aula Particular', NEW.data, NEW.hora_inicio, 'checkin', 'particular');
+    END LOOP;
+
+    IF NEW.ajudante_tipo = 'aluno' THEN
+      SELECT id INTO v_ajudante_aluno_id FROM alunos WHERE profile_id = NEW.ajudante_id;
+      IF v_ajudante_aluno_id IS NOT NULL THEN
+        INSERT INTO presencas (aluno_id, aluno_nome, turma_nome, data, hora, tipo, metodo)
+        VALUES (v_ajudante_aluno_id, NEW.ajudante_nome, 'Aula Particular (ajudante)', NEW.data, NEW.hora_inicio, 'checkin', 'particular');
+      END IF;
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+DROP TRIGGER IF EXISTS trg_presenca_aula_particular ON aulas_particulares;
+CREATE TRIGGER trg_presenca_aula_particular
+  AFTER INSERT OR UPDATE OF status ON aulas_particulares
+  FOR EACH ROW
+  EXECUTE FUNCTION registar_presenca_aula_particular();
+
+REVOKE EXECUTE ON FUNCTION registar_presenca_aula_particular() FROM PUBLIC;
+
+-- ── FUNCTION: frequência por dia da semana ────────────────────
+-- Sem SECURITY DEFINER: corre com o RLS de quem chama, tal como
+-- qualquer SELECT do frontend a "presencas".
+CREATE OR REPLACE FUNCTION frequencia_dias_semana(p_aluno_id UUID, p_meses INT DEFAULT 6)
+RETURNS TABLE(dia_semana INT, total BIGINT) AS $$
+  SELECT EXTRACT(DOW FROM data)::INT AS dia_semana, COUNT(DISTINCT data) AS total
+  FROM presencas
+  WHERE aluno_id = p_aluno_id
+    AND tipo = 'checkin'
+    AND data >= (CURRENT_DATE - (p_meses || ' months')::INTERVAL)
+  GROUP BY 1
+  ORDER BY 1;
+$$ LANGUAGE sql STABLE;
+
+-- ── VIEW: alunos abaixo da meta semanal (2 dias/semana) ────────
+CREATE OR REPLACE VIEW v_alunos_abaixo_meta WITH (security_invoker = true) AS
+SELECT
+  a.id, a.nome, a.faixa, a.frequencia,
+  COUNT(DISTINCT p.data) FILTER (WHERE p.data >= CURRENT_DATE - 7) AS dias_ultimos_7
+FROM alunos a
+LEFT JOIN presencas p ON p.aluno_id = a.id AND p.tipo = 'checkin'
+WHERE a.status = 'ativo'
+GROUP BY a.id, a.nome, a.faixa, a.frequencia
+HAVING COUNT(DISTINCT p.data) FILTER (WHERE p.data >= CURRENT_DATE - 7) < 2;
+
+-- ── VIEW: alunos próximos de graduação ─────────────────────────
+-- Limiares em configuracoes.dados (secao 'graduacao'), com fallback
+-- embutido caso a secao não exista.
+CREATE OR REPLACE VIEW v_alunos_proximos_graduacao WITH (security_invoker = true) AS
+WITH ultima AS (
+  SELECT DISTINCT ON (aluno_id) aluno_id, data AS ultima_graduacao
+  FROM graduacoes
+  ORDER BY aluno_id, data DESC
+),
+base AS (
+  SELECT
+    a.id, a.nome, a.faixa, a.grau, a.frequencia,
+    COALESCE(u.ultima_graduacao, a.data_matricula) AS desde,
+    DATE_PART('year',  AGE(NOW(), COALESCE(u.ultima_graduacao, a.data_matricula))) * 12
+      + DATE_PART('month', AGE(NOW(), COALESCE(u.ultima_graduacao, a.data_matricula))) AS meses_no_nivel
+  FROM alunos a
+  LEFT JOIN ultima u ON u.aluno_id = a.id
+  WHERE a.status = 'ativo'
+),
+cfg AS (
+  SELECT
+    COALESCE((SELECT (dados->>'mesesParaGrau')::NUMERIC   FROM configuracoes WHERE secao = 'graduacao'), 4)  AS meses_grau,
+    COALESCE((SELECT (dados->>'mesesParaFaixa')::NUMERIC  FROM configuracoes WHERE secao = 'graduacao'), 18) AS meses_faixa,
+    COALESCE((SELECT (dados->>'frequenciaMinima')::NUMERIC FROM configuracoes WHERE secao = 'graduacao'), 70) AS freq_minima
+)
+SELECT b.id, b.nome, b.faixa, b.grau, b.frequencia, b.desde, b.meses_no_nivel,
+       (b.grau = 4) AS proximo_e_faixa
+FROM base b, cfg
+WHERE b.frequencia >= cfg.freq_minima
+  AND (
+    (b.grau < 4 AND b.meses_no_nivel >= cfg.meses_grau  - 1)
+    OR
+    (b.grau = 4 AND b.meses_no_nivel >= cfg.meses_faixa - 1)
+  );
+
+-- ── FUNCTION: ranking por nº de treinos (público, in-app) ──────
+-- SECURITY DEFINER porque a policy "Aluno vê dados" bloqueia um aluno
+-- de ler a linha de outro aluno — mesmo padrão de calcular_frequencia.
+-- Antes ordenava por alunos.frequencia (% de dias distintos — conta um
+-- treino por dia mesmo com 2+ check-ins nesse dia, de propósito, para a
+-- métrica pessoal). Um ranking/leaderboard é outra coisa: aqui cada
+-- check-in conta a sério, para quem treina 2x num dia ficar à frente de
+-- quem só foi 1x. Mesma janela (matrícula, ou p_meses se for mais curta)
+-- de calcular_frequencia, para não comparar toda a vida de quem está há
+-- anos com as últimas semanas de quem entrou agora.
+CREATE OR REPLACE FUNCTION ranking_treinos(p_meses INT DEFAULT 3)
+RETURNS TABLE(nome TEXT, faixa belt_type, treinos BIGINT) AS $$
+  SELECT a.nome, a.faixa, COUNT(p.id) AS treinos
+  FROM alunos a
+  JOIN presencas p
+    ON p.aluno_id = a.id
+    AND p.tipo = 'checkin'
+    AND p.created_at >= GREATEST(a.data_matricula::TIMESTAMPTZ, NOW() - (p_meses || ' months')::INTERVAL)
+  WHERE a.status = 'ativo'
+  GROUP BY a.id, a.nome, a.faixa
+  ORDER BY treinos DESC, a.nome ASC
+  LIMIT 50;
+$$ LANGUAGE sql SECURITY DEFINER SET search_path = public STABLE;
 
 -- ── FUNCTION EXECUTE PRIVILEGES ───────────────────────────────
 -- Postgres grants EXECUTE on every new function to PUBLIC by
@@ -1209,6 +1829,17 @@ REVOKE EXECUTE ON FUNCTION sincronizar_ban_aluno()         FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION set_updated_at()                FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION calcular_frequencia(UUID, INT)  FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION atualizar_frequencia_aluno()    FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION avancar_lembretes_aluno()       FROM PUBLIC;
+
+-- frequencia_dias_semana runs with the caller's own RLS (no
+-- SECURITY DEFINER), so a wide grant is harmless — but locked down to
+-- authenticated anyway for consistency with every other function here.
+-- ranking_treinos() is SECURITY DEFINER and must stay authenticated-
+-- only (not anon): the ranking is in-app, not a public/unauthenticated page.
+REVOKE EXECUTE ON FUNCTION frequencia_dias_semana(UUID, INT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION frequencia_dias_semana(UUID, INT) TO authenticated;
+REVOKE EXECUTE ON FUNCTION ranking_treinos(INT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION ranking_treinos(INT) TO authenticated;
 
 -- auth_role() and my_aluno_id() are the odd ones out: they're called
 -- from INSIDE every RLS policy in this file, evaluated under the
@@ -1255,6 +1886,6 @@ CREATE POLICY "Utilizador substitui o próprio avatar" ON storage.objects FOR UP
   USING (bucket_id = 'avatars' AND (SELECT auth.uid())::text = (storage.foldername(name))[1]);
 
 -- ============================================================
--- Schema completo: 21 tabelas, RLS em todas, 3 views, 5 funções
+-- Schema completo: 23 tabelas, RLS em todas, 5 views, 10 funções
 -- Pronto para produção GB Braga
 -- ============================================================

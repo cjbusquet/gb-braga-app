@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useMemo } from 'react';
-import { useTurmas, db } from '../../lib/useData';
+import { useState } from 'react';
+import { useTurmas, useProfessores, db } from '../../lib/useData';
 import { useAlunosDaTurmaQuery } from '../../hooks/useAulas';
 import { useAuth } from '../../lib/auth';
 import { GB } from '../../lib/gbBrand';
-import { useMobile } from '../../lib/useMobile';
 import { Ico, type HeroIcon, ArrowLeftIcon, PlusIcon, CheckIcon, ClockIcon, MapPinIcon, CalendarIcon, Bars3Icon, UserIcon, TrashIcon, ArrowPathIcon, PencilIcon } from '../../lib/icons';
 import Modal from '../../components/common/Modal';
 import Select from '../../components/common/Select';
@@ -12,32 +11,16 @@ import Button from '../../components/common/Button';
 import PageHeader from '../../components/common/PageHeader';
 import Card from '../../components/common/Card';
 import BeltBadge from '../../components/common/BeltBadge';
+import { DIAS_LABEL, TurmasCalendarView, TurmasLegend } from '../../components/features/TurmasHorario';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const DIAS_LABEL: Record<string, string> = {
-  segunda: 'SEG', terça: 'TER', quarta: 'QUA',
-  quinta:  'QUI', sexta: 'SEX', sábado: 'SÁB', domingo: 'DOM',
-};
-const DIAS_ORDER = ['segunda','terça','quarta','quinta','sexta','sábado'];
-
-/** Datas (DD/MM) de segunda a sábado da semana corrente, para mostrar junto aos rótulos SEG/TER/... */
-function datasDaSemanaAtual(): Record<string, string> {
-  const hoje = new Date();
-  const offsetParaSegunda = hoje.getDay() === 0 ? -6 : 1 - hoje.getDay();
-  const segunda = new Date(hoje);
-  segunda.setDate(hoje.getDate() + offsetParaSegunda);
-
-  const out: Record<string, string> = {};
-  DIAS_ORDER.forEach((dia, i) => {
-    const d = new Date(segunda);
-    d.setDate(segunda.getDate() + i);
-    out[dia] = d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
-  });
-  return out;
-}
 const TIPOS = ['gi','nogi','wrestling','kids'];
 const NIVEIS = ['all','iniciante','intermediario','avancado','kids'];
 const DIAS_FULL = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
+// Paleta inspirada na ficha física de horários da academia — cada
+// categoria de aula tem a sua cor no quadro semanal, em vez de tudo à
+// cor de marca por omissão.
+const CORES_TURMA = ['#1E3A5F', '#DC2626', '#DB2777', '#F97316', '#16A34A', '#7C3AED', '#64748B'];
 
 const FIELD_CLASS = 'box-border w-full py-2.5 px-3 min-h-11 sm:min-h-0 font-ui text-[13px] rounded-sm border outline-none transition-all duration-200 border-border bg-elevated text-primary focus:border-gb-red focus-visible:ring-2 focus-visible:ring-gb-red/25';
 const LABEL_CLASS = 'block mb-1 text-[10.5px] font-semibold tracking-[0.8px] uppercase text-muted';
@@ -45,14 +28,16 @@ const LABEL_CLASS = 'block mb-1 text-[10.5px] font-semibold tracking-[0.8px] upp
 // ─── Turma Modal (criar / editar) ──────────────────────────────────────────────
 function TurmaModal({ turma, onClose, onSave }: { turma?: any; onClose: ()=>void; onSave: ()=>void }) {
   const isEdit = !!turma;
+  const { data: professores = [] } = useProfessores();
   const [nome,       setNome]       = useState(turma?.nome || '');
-  const [professor,  setProfessor]  = useState(turma?.professorNome || '');
+  const [professorId, setProfessorId] = useState<string>(turma?.professorId || '');
   const [horario,    setHorario]    = useState(turma?.horario || '');
   const [dias,       setDias]       = useState<string[]>(turma?.diaSemana || []);
   const [sala,       setSala]       = useState(turma?.sala || '');
   const [capacidade, setCapacidade] = useState(turma?.capacidade || 20);
   const [tipo,       setTipo]       = useState(turma?.tipo || 'gi');
   const [nivel,      setNivel]      = useState(turma?.nivel || 'all');
+  const [cor,        setCor]        = useState(turma?.cor || CORES_TURMA[0]);
   const [saving,     setSaving]     = useState(false);
   const [saved,      setSaved]      = useState(false);
 
@@ -63,7 +48,8 @@ function TurmaModal({ turma, onClose, onSave }: { turma?: any; onClose: ()=>void
     if (!nome || !horario) return;
     setSaving(true);
     try {
-      const dados = { nome, professorNome: professor, horario, diasSemana: dias, sala, capacidade, nivel, tipo };
+      const professorNome = professores.find((p: any) => p.id === professorId)?.nome || '';
+      const dados = { nome, professorId, professorNome, horario, diasSemana: dias, sala, capacidade, nivel, tipo, cor };
       if (isEdit) await db.atualizarTurma(turma.id, dados);
       else        await db.criarTurma(dados);
       setSaved(true);
@@ -83,12 +69,34 @@ function TurmaModal({ turma, onClose, onSave }: { turma?: any; onClose: ()=>void
               <label className={LABEL_CLASS}>Nome da Turma *</label>
               <input value={nome} onChange={e=>setNome(e.target.value)} placeholder="ex: GB 1 - Adultos" className={FIELD_CLASS}/>
             </div>
-            <div><label className={LABEL_CLASS}>Professor</label><input value={professor} onChange={e=>setProfessor(e.target.value)} placeholder="Nome do professor" className={FIELD_CLASS}/></div>
+            <div>
+              <Select label="Professor titular" value={professorId} onChange={e=>setProfessorId(e.target.value)}>
+                <option value="">Sem professor</option>
+                {professores.map((p: any) => <option key={p.id} value={p.id}>{p.nome}</option>)}
+              </Select>
+            </div>
             <div><label className={LABEL_CLASS}>Horário *</label><input value={horario} onChange={e=>setHorario(e.target.value)} placeholder="18:30" className={FIELD_CLASS}/></div>
             <div><label className={LABEL_CLASS}>Sala</label><input value={sala} onChange={e=>setSala(e.target.value)} placeholder="Tatame 1" className={FIELD_CLASS}/></div>
             <div><label className={LABEL_CLASS}>Capacidade</label><input type="number" value={capacidade} onChange={e=>setCapacidade(parseInt(e.target.value)||20)} className={FIELD_CLASS}/></div>
             <div><Select label="Tipo" value={tipo} onChange={e=>setTipo(e.target.value)}>{TIPOS.map(t=><option key={t} value={t}>{t.toUpperCase()}</option>)}</Select></div>
             <div><Select label="Nível" value={nivel} onChange={e=>setNivel(e.target.value)}>{NIVEIS.map(n=><option key={n} value={n}>{n}</option>)}</Select></div>
+          </div>
+          <div className="mb-4">
+            <label className={LABEL_CLASS}>Cor no Horário</label>
+            <div className="flex flex-wrap gap-2">
+              {CORES_TURMA.map(c => (
+                <button key={c} type="button" onClick={() => setCor(c)} aria-label={`Cor ${c}`}
+                  className={[
+                    'w-8 h-8 rounded-full border-2 cursor-pointer transition-transform duration-150',
+                    'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
+                    cor === c ? 'scale-110 border-primary' : 'border-transparent hover:scale-105',
+                  ].join(' ')}
+                  style={{ background: c }}
+                >
+                  {cor === c && <Ico icon={CheckIcon} sm className="text-white" />}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="mb-4">
             <label className={LABEL_CLASS}>Dias da Semana</label>
@@ -181,7 +189,7 @@ function TurmaDetail({ turma, onBack, podeGerir, onDeleted, onEdit }: { turma: a
             </div>
             <div className="mt-1.5 text-xs text-muted">
               {Array.isArray(turma.diaSemana)
-                ? turma.diaSemana.map((d: string) => DIAS_LABEL[d] || d).join(' · ')
+                ? turma.diaSemana.map((d: string) => DIAS_LABEL[d.toLowerCase()] || d).join(' · ')
                 : turma.diaSemana}
             </div>
           </div>
@@ -211,184 +219,6 @@ function TurmaDetail({ turma, onBack, podeGerir, onDeleted, onEdit }: { turma: a
   );
 }
 
-// ─── Calendar View ────────────────────────────────────────────────────────────
-function CalendarView({ turmas, onSelect, filtroTipo }: {
-  turmas: any[];
-  onSelect: (t: any) => void;
-  filtroTipo: string;
-}) {
-  const { isMobile } = useMobile();
-  const [diaAtivo, setDiaAtivo] = useState(DIAS_ORDER[0]);
-  const datasSemana = useMemo(() => datasDaSemanaAtual(), []);
-
-  const filtered = filtroTipo === 'all' ? turmas : turmas.filter((t: any) => t.tipo === filtroTipo);
-
-  // Build schedule map: { dia: { horario: turma[] } }
-  const schedule = useMemo(() => {
-    const map: Record<string, Record<string, any[]>> = {};
-    for (const dia of DIAS_ORDER) map[dia] = {};
-    for (const t of filtered) {
-      const dias = Array.isArray(t.diaSemana) ? t.diaSemana : [];
-      for (const dia of dias) {
-        const key = dia.toLowerCase();
-        if (!map[key]) map[key] = {};
-        if (!map[key][t.horario]) map[key][t.horario] = [];
-        map[key][t.horario].push(t);
-      }
-    }
-    return map;
-  }, [filtered]);
-
-  // Sorted unique time slots
-  const times = useMemo(() => {
-    const all = new Set<string>();
-    for (const t of filtered) all.add(t.horario);
-    return [...all].sort();
-  }, [filtered]);
-
-  // ── Turma block ──────────────────────────────────────────────────────────────
-  const TurmaBlock = ({ t }: { t: any }) => {
-    const cor = t.cor || GB.red;
-    return (
-      <button
-        onClick={() => onSelect(t)}
-        className="p-1.5 mb-1 w-full min-w-0 text-left rounded cursor-pointer transition-opacity duration-200 hover:opacity-80 active:opacity-80 outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-1"
-        style={{ background: `${cor}18`, border: `1.5px solid ${cor}` }}
-      >
-        <div
-          className={['overflow-hidden font-extrabold leading-tight whitespace-nowrap text-ellipsis', isMobile ? 'text-[10.5px]' : 'text-[11px]'].join(' ')}
-          style={{ color: cor }}
-        >
-          {t.nome}
-        </div>
-        {t.professorNome && (
-          <div className="overflow-hidden mt-0.5 text-[9.5px] font-semibold whitespace-nowrap text-ellipsis text-secondary">{t.professorNome}</div>
-        )}
-        {t.sala && (
-          <div className="overflow-hidden mt-0.5 text-[9.5px] whitespace-nowrap text-ellipsis text-muted">{t.sala}</div>
-        )}
-      </button>
-    );
-  };
-
-  // ── MOBILE: day tabs + vertical list ────────────────────────────────────────
-  if (isMobile) {
-    const diasComAulas = DIAS_ORDER.filter(d => Object.keys(schedule[d] || {}).length > 0);
-    return (
-      <div>
-        {/* Day tabs */}
-        <div className="flex overflow-x-auto gap-0 mb-3.5 border-b border-border [scrollbar-width:none]">
-          {diasComAulas.map(d => (
-            <button key={d} onClick={() => setDiaAtivo(d)}
-              className={[
-                'flex-none py-2 px-3.5 min-h-11 bg-none border-none border-b-2 text-[12.5px] cursor-pointer transition-colors duration-200',
-                'outline-none focus-visible:ring-2 focus-visible:ring-gb-red focus-visible:ring-offset-2',
-                diaAtivo === d ? 'font-bold border-gb-red text-gb-red' : 'font-normal border-transparent text-muted hover:text-primary active:text-primary',
-              ].join(' ')}>
-              {DIAS_LABEL[d]} <span className="text-[10.5px] font-normal opacity-70">{datasSemana[d]}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Time slots for selected day */}
-        <div>
-          {times.map(hora => {
-            const aulas = schedule[diaAtivo]?.[hora] ?? [];
-            if (aulas.length === 0) return null;
-            return (
-              <div key={hora} className="flex gap-3 items-start mb-2">
-                <div className="pt-1.5 min-w-9 text-xs font-bold text-muted">{hora}</div>
-                <div className="flex-1">
-                  {aulas.map((t: any) => <TurmaBlock key={t.id} t={t} />)}
-                </div>
-              </div>
-            );
-          })}
-          {times.every(h => !schedule[diaAtivo]?.[h]?.length) && (
-            <div className="py-8 text-[13px] text-center text-muted">
-              Sem aulas neste dia
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // ── DESKTOP: full week grid ──────────────────────────────────────────────────
-  const dias = DIAS_ORDER.filter(d => Object.keys(schedule[d] || {}).length > 0);
-  const COL_W = 148;
-  const TIME_W = 52;
-
-  return (
-    <div className="overflow-x-auto rounded-lg border border-border">
-      <div style={{ minWidth: TIME_W + dias.length * COL_W }}>
-
-        {/* Header row */}
-        <div className="flex border-b border-border bg-elevated">
-          <div style={{ width: TIME_W }} className="shrink-0 py-2.5 px-2 border-r border-border" />
-          {dias.map(d => (
-            <div key={d} style={{ width: COL_W }} className="shrink-0 py-2.5 px-2 text-center border-r border-border">
-              <div className="text-xs font-extrabold tracking-[0.5px] text-primary">{DIAS_LABEL[d]}</div>
-              <div className="mt-0.5 text-[10px] font-normal text-muted">{datasSemana[d]}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Time rows */}
-        {times.map((hora, idx) => (
-          <div key={hora} className={['flex border-b border-border-subtle', idx % 2 === 0 ? 'bg-card' : 'bg-base'].join(' ')}>
-            {/* Time label */}
-            <div style={{ width: TIME_W }} className="shrink-0 py-2.5 px-2 text-xs font-bold leading-tight text-center border-r border-border text-muted">
-              {hora}
-            </div>
-
-            {/* Day cells */}
-            {dias.map(d => {
-              const aulas = schedule[d]?.[hora] ?? [];
-              return (
-                <div
-                  key={d}
-                  style={{ width: COL_W, minHeight: aulas.length ? 'auto' : 36 }}
-                  className="p-1.5 shrink-0 border-r border-border-subtle"
-                >
-                  {aulas.map((t: any) => <TurmaBlock key={t.id} t={t} />)}
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── Legend ───────────────────────────────────────────────────────────────────
-function Legend({ turmas }: { turmas: any[] }) {
-  const unique = useMemo(() => {
-    const seen = new Map<string, any>();
-    for (const t of turmas) {
-      // Group by name prefix (GB 1, GB 2, GB F, GB K, etc.)
-      const prefix = t.nome.replace(/\s*[([-].*/, '').trim();
-      if (!seen.has(prefix)) seen.set(prefix, t);
-    }
-    return [...seen.entries()];
-  }, [turmas]);
-
-  return (
-    <div className="flex flex-wrap gap-2 mb-4">
-      {unique.map(([label, t]) => (
-        <div
-          key={label}
-          className="flex gap-1.5 items-center py-1 px-2.5 rounded-full border bg-elevated"
-          style={{ borderColor: `${(t as any).cor || 'var(--border)'}44` }}
-        >
-          <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: (t as any).cor || '#888' }}/>
-          <span className="text-[11.5px] font-semibold text-secondary">{label}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 // ─── Turma Card (vista de lista) ───────────────────────────────────────────────
 function TurmaListCard({ turma, onSelect }: { turma: any; onSelect: () => void }) {
@@ -409,12 +239,19 @@ function TurmaListCard({ turma, onSelect }: { turma: any; onSelect: () => void }
           {turma.tipo?.toUpperCase()}
         </span>
       </div>
-      <div className="inline-flex gap-1.5 items-center mb-1 text-[11.5px] text-muted">
-        <Ico icon={ClockIcon} sm />{turma.horario} &nbsp;·&nbsp;
-        {Array.isArray(turma.diaSemana)
-          ? turma.diaSemana.map((d: string) => DIAS_LABEL[d] || d).join(' ')
-          : turma.diaSemana}
+      <div className="inline-flex gap-1.5 items-center mb-1.5 text-[11.5px] text-muted">
+        <Ico icon={ClockIcon} sm />{turma.horario}
       </div>
+      {Array.isArray(turma.diaSemana) && turma.diaSemana.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-1.5">
+          {turma.diaSemana.map((d: string) => (
+            <span key={d} className="py-0.5 px-1.5 text-[10px] font-bold tracking-wide rounded"
+              style={{ background: `${cor}18`, color: cor }}>
+              {DIAS_LABEL[d.toLowerCase()] || d}
+            </span>
+          ))}
+        </div>
+      )}
       {turma.professorNome && <div className="inline-flex gap-1.5 items-center mb-1 text-xs text-muted"><Ico icon={UserIcon} sm />{turma.professorNome}</div>}
       {turma.sala && <div className="inline-flex gap-1.5 items-center mb-2 text-xs text-muted"><Ico icon={MapPinIcon} sm />{turma.sala}</div>}
       <div className="flex justify-between mb-1.5 text-xs text-muted">
@@ -511,11 +348,11 @@ export default function TurmasPage() {
       </div>
 
       {/* Legend */}
-      <Legend turmas={filtered} />
+      <TurmasLegend turmas={filtered} />
 
       {/* Calendar view */}
       {view === 'calendar' && (
-        <CalendarView turmas={filtered} onSelect={setSelected} filtroTipo={filtroTipo} />
+        <TurmasCalendarView turmas={filtered} onSelect={setSelected} filtroTipo={filtroTipo} />
       )}
 
       {/* List view */}

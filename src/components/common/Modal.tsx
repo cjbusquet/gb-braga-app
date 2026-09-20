@@ -40,7 +40,7 @@ export default function Modal({ onClose, title, eyebrow, children, maxWidth = 52
     >
       <div
         className={[
-          'overflow-x-hidden w-full max-h-[90vh] overflow-y-auto rounded-lg border border-border bg-card p-5 sm:p-7',
+          'overflow-x-hidden w-full max-h-[90vh] overflow-y-auto rounded-xl border border-border bg-card p-5 sm:p-7',
           closing ? 'animate-[modalPanelOut_0.16s_ease_forwards]' : 'animate-[modalPanelIn_0.22s_cubic-bezier(0.16,1,0.3,1)]',
         ].join(' ')}
         style={{ maxWidth }}

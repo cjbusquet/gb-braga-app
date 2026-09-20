@@ -32,6 +32,7 @@ export const roleThemes: Record<UserRole, RoleTheme> = {
   atendimento:{ accent: '#7C4A35', accentDim: '#5A3426', accentGlow: 'rgba(124,74,53,0.1)',  label: 'Atendimento',   dot: '#7C4A35' },
   professor:  { accent: '#111114', accentDim: '#333',    accentGlow: 'rgba(17,17,20,0.07)',  label: 'Professor',     dot: '#111114' },
   aluno:      { accent: '#5A5A65', accentDim: '#888',    accentGlow: 'rgba(90,90,101,0.08)', label: 'Aluno',         dot: '#CCCCCC' },
+  encarregado:{ accent: '#2F6B4F', accentDim: '#234F3B', accentGlow: 'rgba(47,107,79,0.09)', label: 'Encarregado',   dot: '#2F6B4F' },
 };
 
 export const beltConfig: Record<string, { bg: string; text: string; label: string }> = {
@@ -41,6 +42,9 @@ export const beltConfig: Record<string, { bg: string; text: string; label: strin
   roxa:    { bg: '#7C3AED',                                                    text: '#fff',    label: 'Roxa' },
   marrom:  { bg: '#7C4A35',                                                    text: '#fff',    label: 'Marrom' },
   preta:   { bg: '#111111',                                                    text: '#fff',    label: 'Preta' },
+  // ── Coral (7º e 8º grau de faixa preta) ──────────────────────────────────
+  'vermelha-preta':  { bg: 'linear-gradient(to right,#C8102E 55%,#111111 55%)', text: '#fff',    label: 'Vermelha/Preta' },
+  'vermelha-branca': { bg: 'linear-gradient(to right,#C8102E 55%,#E5E7EB 55%)', text: '#fff',    label: 'Vermelha/Branca' },
   vermelha:{ bg: '#C8102E',                                                    text: '#fff',    label: 'Vermelha' },
   // ── Infantil — cinza ──────────────────────────────────────────────────────
   'cinza-branca':   { bg: 'linear-gradient(to right,#888888 55%,#E5E7EB 55%)', text: '#333',    label: 'Cinza/Branca' },
