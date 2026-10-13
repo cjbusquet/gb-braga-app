@@ -226,7 +226,10 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-enable_confirmations = true
+# Deve passar a true (aqui e no dashboard) para fechar o "account squatting",
+# MAS só depois de o FluxoMatricula individual gravar a ficha no servidor:
+# hoje, sem sessão após o signUp, a ficha/contrato não chegam a ser gravados.
+enable_confirmations = false
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
