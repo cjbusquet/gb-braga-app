@@ -28,6 +28,58 @@ interface InvoiceResult {
 }
 
 const hojeDate = (): string => new Date().toISOString().slice(0, 10);
+
+type PagamentoRow = { id: string } & Record<string, unknown>;
+
+/**
+ * Regista um pagamento Stripe como 'pago' de forma idempotente.
+ * Depende do índice único parcial em pagamentos.stripe_invoice_id
+ * (patch 45): com eventos reenviados em paralelo, só UM pedido consegue
+ * inserir ou passar a linha para 'pago' — os restantes recebem null e
+ * não voltam a emitir fatura no TOConline/AT.
+ * Também cobre o caso "falhou primeiro, foi pago depois": a linha
+ * 'vencido' criada por invoice.payment_failed passa a 'pago'.
+ */
+async function registarPagamentoPago(
+  dados: Record<string, unknown> & { stripe_invoice_id: string },
+): Promise<PagamentoRow | null> {
+  const { data: novo, error } = await supabase
+    .from('pagamentos')
+    .insert(dados)
+    .select()
+    .single();
+  if (novo) return novo as PagamentoRow;
+  if (error && error.code !== '23505') {
+    console.error('Erro ao registar pagamento:', error.message);
+    return null;
+  }
+  // Já existe uma linha para esta invoice — só a "reclama" quem a mudar
+  // de não-paga para paga (UPDATE condicional é atómico).
+  const { data: atualizado } = await supabase
+    .from('pagamentos')
+    .update({
+      status: 'pago',
+      data_pagamento: dados.data_pagamento,
+      stripe_payment_id: dados.stripe_payment_id ?? null,
+      valor: dados.valor,
+    })
+    .eq('stripe_invoice_id', dados.stripe_invoice_id)
+    .neq('status', 'pago')
+    .select()
+    .maybeSingle();
+  return (atualizado as PagamentoRow | null) ?? null;
+}
+
+/** Insere a linha 'vencido' de uma invoice falhada; true só na 1.ª vez. */
+async function registarPagamentoFalhado(
+  dados: Record<string, unknown> & { stripe_invoice_id: string },
+): Promise<boolean> {
+  const { error } = await supabase.from('pagamentos').insert(dados);
+  if (!error) return true;
+  if (error.code !== '23505') console.error('Erro ao registar falha:', error.message);
+  return false;
+}
+
 const unixToDate = (secs: number | null | undefined): string | null =>
   typeof secs === 'number' ? new Date(secs * 1000).toISOString().slice(0, 10) : null;
 
@@ -310,16 +362,7 @@ async function handler(req: Request): Promise<Response> {
       const inv = event.data.object as Stripe.Invoice;
       if (!inv.customer) break;
 
-      // Idempotency — Stripe redelivers events
-      const { data: existente } = await supabase
-        .from('pagamentos')
-        .select('id')
-        .eq('stripe_invoice_id', inv.id)
-        .maybeSingle();
-      if (existente) {
-        console.log(`invoice.paid ${inv.id} já registado, ignorado`);
-        break;
-      }
+      // Idempotência: ver registarPagamentoPago (índice único, patch 45).
 
       const valor = inv.amount_paid / 100;
       const piId = typeof inv.payment_intent === 'string' ? inv.payment_intent : null;
@@ -337,34 +380,32 @@ async function handler(req: Request): Promise<Response> {
       // ── Plano família ──
       const grupo = await grupoPorCustomer(inv.customer as string);
       if (grupo) {
-        const { data: pg } = await supabase
-          .from('pagamentos')
-          .insert({
-            grupo_familiar_id: grupo.id,
-            aluno_id: null,
-            aluno_nome: grupo.titular_nome,
-            plano_id: grupo.plano_id,
-            plano_nome: grupo.plano_nome,
-            valor,
-            vencimento: venc,
-            data_pagamento: new Date().toISOString(),
-            status: 'pago',
-            metodo: 'stripe',
-            stripe_payment_id: piId,
-            stripe_invoice_id: inv.id,
-          })
-          .select()
-          .single();
+        const pg = await registarPagamentoPago({
+          grupo_familiar_id: grupo.id,
+          aluno_id: null,
+          aluno_nome: grupo.titular_nome,
+          plano_id: grupo.plano_id,
+          plano_nome: grupo.plano_nome,
+          valor,
+          vencimento: venc,
+          data_pagamento: new Date().toISOString(),
+          status: 'pago',
+          metodo: 'stripe',
+          stripe_payment_id: piId,
+          stripe_invoice_id: inv.id,
+        });
         await aplicarEstadoGrupo(grupo.id, 'ativo', subId);
-        if (pg) {
-          await emitirFatura(
-            pg.id,
-            { nome: grupo.titular_nome, email: grupo.titular_email, nif: grupo.titular_nif ?? undefined },
-            grupo.plano_nome || '',
-            valor,
-            piId ?? undefined,
-          );
+        if (!pg) {
+          console.log(`invoice.paid ${inv.id} já registado, ignorado`);
+          break;
         }
+        await emitirFatura(
+          pg.id,
+          { nome: grupo.titular_nome, email: grupo.titular_email, nif: grupo.titular_nif ?? undefined },
+          grupo.plano_nome || '',
+          valor,
+          piId ?? undefined,
+        );
         console.log(`Mensalidade família paga: ${grupo.titular_nome} · €${valor}`);
         break;
       }
@@ -380,9 +421,7 @@ async function handler(req: Request): Promise<Response> {
         break;
       }
 
-      const { data: pagamento } = await supabase
-        .from('pagamentos')
-        .insert({
+      const pagamento = await registarPagamentoPago({
           aluno_id: aluno.id,
           aluno_nome: aluno.nome,
           plano_id: aluno.plano_id,
@@ -394,9 +433,7 @@ async function handler(req: Request): Promise<Response> {
           metodo: 'stripe',
           stripe_payment_id: piId,
           stripe_invoice_id: inv.id,
-        })
-        .select()
-        .single();
+        });
 
       await supabase
         .from('alunos')
@@ -621,13 +658,7 @@ async function handler(req: Request): Promise<Response> {
       // ── Plano família ──
       const grupoF = await grupoPorCustomer(inv.customer as string);
       if (grupoF) {
-        const { data: jaReg } = await supabase
-          .from('pagamentos')
-          .select('id')
-          .eq('stripe_invoice_id', inv.id)
-          .maybeSingle();
-        if (!jaReg) {
-          await supabase.from('pagamentos').insert({
+        const registado = await registarPagamentoFalhado({
             grupo_familiar_id: grupoF.id,
             aluno_id: null,
             aluno_nome: grupoF.titular_nome,
@@ -639,6 +670,7 @@ async function handler(req: Request): Promise<Response> {
             metodo: 'stripe',
             stripe_invoice_id: inv.id,
           });
+        if (registado) {
           await supabase.from('mensagens').insert({
             para_id: 'admin',
             para_nome: 'Admin GB Braga',
@@ -664,14 +696,7 @@ async function handler(req: Request): Promise<Response> {
       if (!aluno) break;
 
       // One 'vencido' row per invoice — record it the first time it fails.
-      const { data: existente } = await supabase
-        .from('pagamentos')
-        .select('id')
-        .eq('stripe_invoice_id', inv.id)
-        .maybeSingle();
-
-      if (!existente) {
-        await supabase.from('pagamentos').insert({
+      const registadoAluno = await registarPagamentoFalhado({
           aluno_id: aluno.id,
           aluno_nome: aluno.nome,
           valor: (inv.amount_due ?? 0) / 100,
@@ -681,6 +706,7 @@ async function handler(req: Request): Promise<Response> {
           stripe_invoice_id: inv.id,
         });
 
+      if (registadoAluno) {
         const tel = aluno.whatsapp || aluno.telefone;
         if (tel) {
           await notificarWhatsApp(

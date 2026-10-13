@@ -6,7 +6,8 @@ import { calcularIdade } from '../../lib/alunoDomain';
 import { useAuth } from '../../lib/auth';
 import { useUpdateProfile } from '../../hooks/useProfile';
 import { criarCheckoutSession, criarMatriculaFamilia } from '../../services/api/edgeFunctions';
-import { supabase, isConfigured } from '../../lib/supabaseClient';
+import { isConfigured } from '../../lib/supabaseClient';
+import { emailJaRegistado, registarConta, MIN_SENHA } from '../../services/api/conta';
 import { GBLogoFull } from '../../components/GBLogo';
 import Button from '../../components/common/Button';
 import type { Plano } from '../../types';
@@ -137,17 +138,6 @@ const FICHA_BLANK: FichaData = {
   planoId:'', senha:'', confirmarSenha:'',
 };
 
-/** Existe uma conta com este email? (RPC público, SECURITY DEFINER — patch 34) */
-async function emailJaRegistado(email: string): Promise<boolean> {
-  if (!isConfigured) return false;
-  try {
-    const { data, error } = await supabase.rpc('email_existe', { e: email.trim() });
-    return !error && data === true;
-  } catch {
-    return false; // na dúvida deixa avançar; o signUp apanha o duplicado
-  }
-}
-
 function FichaInscricao({ onNext, onBack, initial, registerMode = false, isStaff = false, planos = [] }: { onNext:(d:FichaData)=>void; onBack?:()=>void; initial?: FichaData | null; registerMode?: boolean; isStaff?: boolean; planos?: import('../../types').Plano[] }) {
   const [catStaff, setCatStaff] = useState('adulto');
   const [d, setD] = useState<FichaData>(initial ?? FICHA_BLANK);
@@ -190,7 +180,7 @@ function FichaInscricao({ onNext, onBack, initial, registerMode = false, isStaff
     }
     if (d.encPagamento==='outro' && !d.nomePag.trim()) e.nomePag='Obrigatório';
     if (registerMode) {
-      if (d.senha.length < 6) e.senha='Mínimo 6 caracteres';
+      if (d.senha.length < MIN_SENHA) e.senha=`Mínimo ${MIN_SENHA} caracteres`;
       if (d.senha !== d.confirmarSenha) e.confirmarSenha='As passwords não coincidem';
     }
     setErr(e);
@@ -385,7 +375,7 @@ function FichaInscricao({ onNext, onBack, initial, registerMode = false, isStaff
             Define a password que vais usar para entrar no portal do aluno.
           </p>
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-            {field('senha','Password','password','Mínimo 6 caracteres')}
+            {field('senha','Password','password',`Mínimo ${MIN_SENHA} caracteres`)}
             {field('confirmarSenha','Confirmar Password','password','Repete a password')}
           </div>
         </>
@@ -486,7 +476,7 @@ function FichaFamilia({ initial, nMembros, planoNome, onNext, onBack }: {
     if (!t.telefone.trim()) e['t-telefone'] = 'Obrigatório';
     if (!t.morada.trim()) e['t-morada'] = 'Obrigatório';
     if (!/^\d{4}-\d{3}$/.test(t.codPostal)) e['t-codPostal'] = 'Formato: 4710-409';
-    if (t.senha.length < 6) e['t-senha'] = 'Mínimo 6 caracteres';
+    if (t.senha.length < MIN_SENHA) e['t-senha'] = `Mínimo ${MIN_SENHA} caracteres`;
     else if (t.senha !== t.confirmarSenha) e['t-confirmarSenha'] = 'As passwords não coincidem';
     if (t.treina) {
       if (!t.dataNasc) e['t-dataNasc'] = 'Obrigatório';
@@ -497,7 +487,7 @@ function FichaFamilia({ initial, nMembros, planoNome, onNext, onBack }: {
       if (!m.dataNasc) e[`m${i}-dataNasc`] = 'Obrigatório';
       else if (!parseDMY(m.dataNasc)) e[`m${i}-dataNasc`] = 'Data inválida (dd/mm/aaaa)';
       if (m.email && !m.email.includes('@')) e[`m${i}-email`] = 'Email inválido';
-      if (m.senha.length < 6) e[`m${i}-senha`] = 'Mínimo 6 caracteres';
+      if (m.senha.length < MIN_SENHA) e[`m${i}-senha`] = `Mínimo ${MIN_SENHA} caracteres`;
       else if (m.senha !== m.confirmarSenha) e[`m${i}-confirmarSenha`] = 'As passwords não coincidem';
     });
     if (temMenor || f.encEE.ativo) {
@@ -569,7 +559,7 @@ function FichaFamilia({ initial, nMembros, planoNome, onNext, onBack }: {
       <div className={[SEC_CLASS, 'mt-2'].join(' ')}><span className="inline-flex gap-1.5 items-center"><Ico icon={UnlockIcon} sm />Criar Acesso à Plataforma</span></div>
       <p className="mb-3 text-[12px] text-muted">Vais usar esta password para entrar no teu portal.</p>
       <div className="grid grid-cols-1 gap-3.5 mb-1 sm:grid-cols-2">
-        {campo('Password', f.titular.senha, setT('senha') as (v:string)=>void, 't-senha', { ph: 'Mínimo 6 caracteres', type: 'password' })}
+        {campo('Password', f.titular.senha, setT('senha') as (v:string)=>void, 't-senha', { ph: `Mínimo ${MIN_SENHA} caracteres`, type: 'password' })}
         {campo('Confirmar Password', f.titular.confirmarSenha, setT('confirmarSenha') as (v:string)=>void, 't-confirmarSenha', { ph: 'Repete a password', type: 'password' })}
       </div>
 
@@ -611,7 +601,7 @@ function FichaFamilia({ initial, nMembros, planoNome, onNext, onBack }: {
               {inp(m.email, setM(i, 'email'), `m${i}-email`, 'vazio → usa o email do responsável')}
               {err[`m${i}-email`] && <div className="mt-1 text-[11px] font-semibold text-gb-red">{err[`m${i}-email`]}</div>}
             </div>
-            {campo('Password', m.senha, setM(i, 'senha'), `m${i}-senha`, { ph: 'Mínimo 6 caracteres', type: 'password' })}
+            {campo('Password', m.senha, setM(i, 'senha'), `m${i}-senha`, { ph: `Mínimo ${MIN_SENHA} caracteres`, type: 'password' })}
             {campo('Confirmar Password', m.confirmarSenha, setM(i, 'confirmarSenha'), `m${i}-confirmarSenha`, { ph: 'Repete a password', type: 'password' })}
           </div>
         </div>
@@ -962,20 +952,14 @@ function Pendente({ ficha, contrato, plano, registerMode, onVoltar }: {
       /* 1 ── Create auth account (registerMode only) */
       if (registerMode) {
         if (!isConfigured) { setAcctStatus('ok'); return; }
-        const { data, error } = await supabase.auth.signUp({
-          email: ficha.email,
-          password: ficha.senha,
-          options: { data: { nome: ficha.nomeAluno } },
-        });
-        if (error) {
-          setAcctErr(error.message.includes('already registered')
-            ? 'Este email já está registado. Vai ao Login e usa "Entrar".'
-            : error.message);
+        const conta = await registarConta(ficha.email, ficha.senha, ficha.nomeAluno);
+        if (conta.erro) {
+          setAcctErr(conta.erro);
           setAcctStatus('error');
           return;
         }
-        authUserId = data.user?.id ?? null;
-        needsConfirm = !data.session;
+        authUserId = conta.userId;
+        needsConfirm = conta.precisaConfirmar;
       }
 
       /* 2 ── Insert into alunos (status: inativo — awaiting admin approval) */
@@ -1139,27 +1123,22 @@ function Completo({ ficha, contrato, plano, isStaff, registerMode, onConcludo, o
       /* 1 ── Create Supabase auth account (registerMode only) */
       if (registerMode) {
         if (!isConfigured) { setAcctStatus('ok'); return; }
-        const { data, error } = await supabase.auth.signUp({
-          email: ficha.email,
-          password: ficha.senha,
-          options: { data: { nome: ficha.nomeAluno } },
-        });
-        if (error) {
-          setAcctErr(error.message.includes('already registered')
-            ? 'Este email já está registado. Vai ao Login e usa "Entrar".'
-            : error.message);
+        const conta = await registarConta(ficha.email, ficha.senha, ficha.nomeAluno);
+        if (conta.erro) {
+          setAcctErr(conta.erro);
           setAcctStatus('error');
           return;
         }
-        authUserId = data.user?.id ?? null;
-        needsConfirm = !data.session;
+        authUserId = conta.userId;
+        needsConfirm = conta.precisaConfirmar;
       }
 
       /* 2 ── Insert into alunos table (status 'ativo' — um aluno 'inativo' é
          imediatamente deslogado por auth.tsx/sincronizar_ban_aluno, o que
-         mataria a sessão antes do checkout de subscrição arrancar). A
-         subscrição em si é confirmada pelo webhook; se o checkout for
-         abandonado, fica 'ativo' sem subscrição para o admin tratar. */
+         mataria a sessão antes do checkout de subscrição arrancar). Até o
+         webhook gravar a subscrição, a BD não deixa fazer check-in
+         (patch 45, my_aluno_id_com_acesso) — 'ativo' aqui só permite ver
+         o Meu Financeiro e concluir o pagamento. */
       let alunoId: string | null = null;
       try {
         const alunoData = await db.criarAluno({

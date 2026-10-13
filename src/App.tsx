@@ -107,7 +107,7 @@ function SetPasswordScreen() {
   const [done, setDone]   = useState(false);
 
   const handle = async () => {
-    if (pw.length < 6)       return setErr('Mínimo 6 caracteres.');
+    if (pw.length < 8)       return setErr('Mínimo 8 caracteres.');
     if (pw !== pw2)           return setErr('As passwords não coincidem.');
     setSaving(true); setErr('');
     const { ok, message } = await completePasswordSetup(pw);
@@ -148,7 +148,7 @@ function SetPasswordScreen() {
         </p>
         <div className="mb-3.5">
           <label className={LABEL_CLASS}>Nova Password *</label>
-          <input type="password" value={pw} onChange={e => setPw(e.target.value)} placeholder="Mínimo 6 caracteres" className={FIELD_CLASS} />
+          <input type="password" value={pw} onChange={e => setPw(e.target.value)} placeholder="Mínimo 8 caracteres" className={FIELD_CLASS} />
         </div>
         <div className="mb-5">
           <label className={LABEL_CLASS}>Confirmar Password *</label>

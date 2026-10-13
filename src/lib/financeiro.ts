@@ -21,7 +21,15 @@ export interface SituacaoFinanceira {
   dias?: number;
 }
 
-const iso = (d: Date): string => d.toISOString().slice(0, 10);
+// "Hoje" é o dia civil em Portugal continental, não em UTC: com toISOString()
+// entre as 00:00 e a 01:00 de Lisboa (hora de verão) o dia ainda era o anterior.
+const DATA_LISBOA = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Lisbon',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+const iso = (d: Date): string => DATA_LISBOA.format(d); // en-CA → AAAA-MM-DD
 const porVencimento = (a: Pagamento, b: Pagamento): number =>
   a.vencimento.localeCompare(b.vencimento);
 

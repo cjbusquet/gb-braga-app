@@ -74,8 +74,9 @@ Como funciona sem contas:
   linhas), sem conta Vercel.
 - **TOConline / WhatsApp** — deixas os tokens vazios; degradam sozinhos.
 
-As chaves de teste em `.env.example` já são `sk_test_` / `pk_test_` reais —
-podes usá-las. **Nunca commitar chaves `sk_live_`.**
+O `.env.example` contém **apenas placeholders**. As chaves reais (incluindo as de
+teste) vão só para o `.env` local, que é git-ignored. **Nunca commitar chaves
+reais neste repositório — ele é público.**
 
 ---
 
