@@ -247,7 +247,7 @@ async function notificarWhatsApp(telefone: string, mensagem: string) {
   }
 }
 
-export default async function handler(req: Request) {
+async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST')
     return new Response('Method not allowed', { status: 405 });
 
@@ -721,3 +721,8 @@ export default async function handler(req: Request) {
     headers: { 'Content-Type': 'application/json' },
   });
 }
+
+// Vercel (runtime Node.js) só entrega um Request Web a funções exportadas
+// neste formato; uma função exportada diretamente recebe (req, res) do Node,
+// onde req.text() não existe — o que fazia todas as chamadas falharem.
+export default { fetch: handler };
