@@ -6,11 +6,12 @@ let ok = 0, falhas = 0;
 const check = (nome, cond, info = '') => { if (cond) { ok++; console.log('  ✓', nome); } else { falhas++; console.log('  ✗', nome, info); } };
 const q = async (sql, p) => (await c.query(sql, p)).rows;
 const tenta = async (sql, p) => { try { await c.query('SAVEPOINT s'); const r = await c.query(sql, p); await c.query('RELEASE s'); return { rows: r.rows, n: r.rowCount }; } catch (e) { await c.query('ROLLBACK TO s'); return { erro: e.message, code: e.code }; } };
+let cabecalhos = { 'x-forwarded-for': '9.9.9.9' };
 async function como(quem) {
   await c.query('RESET ROLE');
   const sub = quem?.id ?? '', papel = quem === 'anon' ? 'anon' : quem === 'service' ? 'service_role' : quem ? 'authenticated' : '';
   await c.query(`SELECT set_config('request.jwt.claim.sub',$1,false), set_config('request.jwt.claims',$2,false), set_config('request.jwt.claim.role',$3,false), set_config('request.headers',$4,false)`,
-    [typeof quem === 'object' && quem ? quem.id : '', typeof quem === 'object' && quem ? JSON.stringify({ sub: quem.id, email: quem.email, role: 'authenticated' }) : '', papel, JSON.stringify({ 'x-forwarded-for': '9.9.9.9' })]);
+    [typeof quem === 'object' && quem ? quem.id : '', typeof quem === 'object' && quem ? JSON.stringify({ sub: quem.id, email: quem.email, role: 'authenticated' }) : '', papel, JSON.stringify(cabecalhos)]);
   if (papel) await c.query(`SET ROLE ${papel}`);
 }
 await c.query('BEGIN');
@@ -152,6 +153,61 @@ await q(`UPDATE aulas_particulares SET status='agendada' WHERE id=$1`, [ap]);
 await q(`UPDATE aulas_particulares SET status='concluida' WHERE id=$1`, [ap]);
 const np = (await q(`SELECT count(*)::int n FROM presencas WHERE aluno_id=$1 AND metodo='particular'`, [alunoId]))[0].n;
 check('concluída→agendada→concluída gera 1 presença', np === 1, 'n=' + np);
+
+console.log('— 2.ª revisão');
+const gid2 = (await q(`INSERT INTO grupos_familiares(titular_nome,titular_email,titular_nif,status) VALUES ('Outra','outra@x.pt','999999990','ativo') RETURNING id`))[0].id;
+const uIntr = await user('intruso@x.pt', { nome: 'Intruso Teste' }); const intr = { id: uIntr, email: 'intruso@x.pt' };
+await como(intr);
+t = await tenta(`INSERT INTO alunos(nome,email,data_nascimento,grau,frequencia,data_matricula,aula_particular) VALUES ('Intruso Teste','intruso@x.pt','1990-01-01',4,99,'2000-01-01',true) RETURNING id`);
+await como(null);
+r = (await q(`SELECT * FROM alunos WHERE email='intruso@x.pt'`))[0];
+check('auto-registo: grau/frequência/antiguidade não escolhidos pelo próprio', r && r.grau === 0 && r.frequencia === 0 && r.aula_particular === false && String(r.data_matricula.toISOString?.() ?? r.data_matricula).slice(0, 4) !== '2000', JSON.stringify(t));
+const idIntr = r.id;
+await como(intr);
+await tenta(`UPDATE alunos SET grupo_familiar_id=$1 WHERE id=$2`, [gid2, idIntr]);
+await como(null);
+check('aluno não se junta a um grupo familiar ativo', (await q(`SELECT grupo_familiar_id FROM alunos WHERE id=$1`, [idIntr]))[0].grupo_familiar_id === null);
+t = await checkin(intr, idIntr, 'Intruso');
+check('…e continua sem check-in', !!t.erro, JSON.stringify(t));
+await como(intr); g = await tenta(`SELECT titular_nif FROM grupos_familiares WHERE id=$1`, [gid2]); await como(null);
+check('…e não vê o NIF dessa família', g.n === 0, JSON.stringify(g));
+await como(prof);
+await tenta(`UPDATE alunos SET grupo_familiar_id=$1 WHERE id=$2`, [gid2, idIntr]);
+t = await tenta(`INSERT INTO alunos(nome,email,data_nascimento,stripe_subscription_id) VALUES ('Novo','novo@x.pt','1990-01-01','sub_falso')`);
+await como(null);
+check('professor não muda grupo familiar', (await q(`SELECT grupo_familiar_id FROM alunos WHERE id=$1`, [idIntr]))[0].grupo_familiar_id === null);
+check('professor cria aluno mas sem subscrição falsa', !t.erro && (await q(`SELECT stripe_subscription_id s FROM alunos WHERE email='novo@x.pt'`))[0].s === null, JSON.stringify(t));
+await como(atend);
+t = await tenta(`UPDATE alunos SET grupo_familiar_id=$1 WHERE id=$2`, [gid2, idIntr]);
+await como(null);
+check('atendimento muda grupo familiar', (await q(`SELECT grupo_familiar_id FROM alunos WHERE id=$1`, [idIntr]))[0].grupo_familiar_id === gid2, JSON.stringify(t));
+
+await como(intr);
+t = await tenta(`INSERT INTO pagamentos(aluno_id,aluno_nome,valor,vencimento,status) VALUES ($1,'I',62,'2026-10-01','pago')`, [idIntr]);
+check('aluno não insere pagamento já "pago"', !!t.erro, JSON.stringify(t));
+t = await tenta(`INSERT INTO pagamentos(aluno_id,aluno_nome,valor,vencimento,status,stripe_invoice_id) VALUES ($1,'I',62,'2026-10-01','pendente','in_plantado')`, [idIntr]);
+check('aluno não planta stripe_invoice_id', !!t.erro, JSON.stringify(t));
+t = await tenta(`INSERT INTO pagamentos(aluno_id,aluno_nome,valor,vencimento,status) VALUES ($1,'I',62,'2026-10-01','pendente')`, [idIntr]);
+check('aluno cria pagamento pendente (fluxo de matrícula)', !t.erro, JSON.stringify(t));
+
+await como(intr);
+let bloqueado = false;
+for (let i = 0; i < 21; i++) { const x = await tenta(`SELECT email_existe('a@x.pt')`); if (x.erro) { bloqueado = x.code === '54000'; break; } }
+check('email_existe também limitado para autenticados', bloqueado);
+bloqueado = false;
+for (let i = 0; i < 21; i++) {
+  cabecalhos = { 'x-forwarded-for': `${i}.1.1.1, 7.7.7.7` }; await como('anon');
+  const x = await tenta(`SELECT email_existe('a@x.pt')`); if (x.erro) { bloqueado = x.code === '54000'; break; }
+}
+check('falsificar a 1.ª entrada do X-Forwarded-For não contorna o limite', bloqueado);
+bloqueado = false;
+for (let i = 0; i < 21; i++) {
+  cabecalhos = { 'x-forwarded-for': `${i}.2.2.2`, 'cf-connecting-ip': '8.8.4.4' }; await como('anon');
+  const x = await tenta(`SELECT email_existe('a@x.pt')`); if (x.erro) { bloqueado = x.code === '54000'; break; }
+}
+check('cf-connecting-ip tem prioridade', bloqueado);
+cabecalhos = { 'x-forwarded-for': '9.9.9.9' };
+await como(null);
 
 await c.query('ROLLBACK');
 console.log(`\n${ok} passaram, ${falhas} falharam`);

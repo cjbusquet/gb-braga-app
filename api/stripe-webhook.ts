@@ -49,8 +49,13 @@ async function registarPagamentoPago(
     .select()
     .single();
   if (novo) return novo as PagamentoRow;
-  if (error && error.code !== '23505') {
-    console.error('Erro ao registar pagamento:', error.message);
+  // Só é "invoice já registada" se o conflito for no índice da invoice —
+  // um 23505 noutra coluna única (ex.: stripe_payment_id) é erro a sério.
+  const conflitoInvoice =
+    error?.code === '23505' &&
+    `${error.message} ${error.details ?? ''}`.includes('ux_pagamentos_stripe_invoice');
+  if (!conflitoInvoice) {
+    console.error('Erro ao registar pagamento:', error?.message);
     return null;
   }
   // Já existe uma linha para esta invoice — só a "reclama" quem a mudar
@@ -105,6 +110,33 @@ async function aplicarEstadoGrupo(
     .update({ status, ...(subId ? { stripe_subscription_id: subId } : {}) })
     .eq('id', grupoId);
   await supabase.from('alunos').update({ status }).eq('grupo_familiar_id', grupoId);
+  if (status === 'ativo') await confirmarAliasDoGrupo(grupoId);
+}
+
+/**
+ * Membros sem email próprio ficam com o alias +N do responsável e são
+ * criados POR CONFIRMAR (criar-matricula-familia). Só depois de a família
+ * pagar é que essas contas ficam utilizáveis — assim ninguém cria contas
+ * prontas a usar na caixa de email de outra pessoa.
+ */
+async function confirmarAliasDoGrupo(grupoId: string): Promise<void> {
+  const { data: grupo } = await supabase
+    .from('grupos_familiares')
+    .select('titular_email')
+    .eq('id', grupoId)
+    .maybeSingle();
+  if (!grupo?.titular_email) return;
+  const [tLocal, tDominio] = String(grupo.titular_email).toLowerCase().split('@');
+  const { data: membros } = await supabase
+    .from('alunos')
+    .select('profile_id, email')
+    .eq('grupo_familiar_id', grupoId);
+  for (const m of membros ?? []) {
+    const [local, dominio] = String(m.email).toLowerCase().split('@');
+    if (!m.profile_id || dominio !== tDominio || !local.startsWith(`${tLocal}+`)) continue;
+    const { error } = await supabase.auth.admin.updateUserById(m.profile_id, { email_confirm: true });
+    if (error) console.error(`Confirmar alias ${m.email}:`, error.message);
+  }
 }
 
 /**

@@ -15,7 +15,9 @@
 //     ativo no Supabase, só entra quem é dono do email (sem email_confirm
 //     forçado, ninguém cria contas confirmadas no email de terceiros);
 //   • membros com email próprio idem; membros sem email ficam com o alias
-//     +N do responsável (a caixa é dele) e são confirmados pela service role;
+//     +N do responsável, criados POR CONFIRMAR — só o webhook os confirma
+//     depois de a família pagar (ninguém entra numa conta +N de terceiros);
+//   • emails guardados em minúsculas (como o Supabase Auth os guarda);
 //   • se algo falhar a meio, tudo o que foi criado é apagado (sem órfãos);
 //   • erros internos não são devolvidos ao browser.
 
@@ -76,6 +78,8 @@ serve(async (req) => {
   try {
     const b = (await req.json()) as Body;
     const { planoId, contrato, titular, membros = [], encarregado } = b;
+    if (titular?.email) titular.email = titular.email.trim().toLowerCase();
+    for (const m of membros) if (m.email) m.email = m.email.trim().toLowerCase();
 
     if (!planoId || !titular?.email || !titular?.nome) {
       return json({ error: 'planoId, titular.nome e titular.email são obrigatórios' }, 400);
@@ -111,7 +115,13 @@ serve(async (req) => {
     );
 
     // ── 0. Limite de pedidos por IP ─────────────────────────────────────────
-    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'desconhecido';
+    // IP real: cabeçalhos do proxy primeiro; do X-Forwarded-For a ÚLTIMA
+    // entrada (a 1.ª é escrita pelo cliente e pode ser falsificada).
+    const ip =
+      req.headers.get('cf-connecting-ip')?.trim() ||
+      req.headers.get('x-real-ip')?.trim() ||
+      (req.headers.get('x-forwarded-for') || '').split(',').pop()?.trim() ||
+      'desconhecido';
     const { data: dentroDoLimite, error: limErr } = await admin.rpc('registar_tentativa', {
       p_chave: `matricula-familia:${ip}`,
       p_max: LIMITE_POR_HORA,
@@ -162,7 +172,7 @@ serve(async (req) => {
 
     // ── 3. Grupo familiar ───────────────────────────────────────────────────
     // Tudo o que for criado daqui em diante é registado para rollback.
-    const criados: { uids: string[]; grupoId: string | null } = { uids: [], grupoId: null };
+    const criados: Criados = { uids: [], grupoId: null, stripeCustomerId: null };
     try {
       const { data: grupo, error: grpErr } = await admin
         .from('grupos_familiares')
@@ -212,11 +222,12 @@ serve(async (req) => {
       const criarConta = async (email: string, nome: string, role: 'aluno' | 'encarregado', senha: string) => {
         let uid: string;
         if (eAliasDoTitular(email)) {
-          // Caixa do responsável — confirmar aqui evita N emails de confirmação.
+          // Alias +N do responsável: criado por confirmar. O webhook confirma-o
+          // quando a família paga (api/stripe-webhook.ts confirmarAliasDoGrupo).
           const { data, error } = await admin.auth.admin.createUser({
             email,
             password: senha,
-            email_confirm: true,
+            email_confirm: false,
             user_metadata: { nome },
             app_metadata: { role },
           });
@@ -334,10 +345,12 @@ serve(async (req) => {
         name: titular.nome,
         metadata: { grupo_id: grupoId },
       });
-      await admin
+      criados.stripeCustomerId = customer.id;
+      const { error: custErr } = await admin
         .from('grupos_familiares')
         .update({ stripe_customer_id: customer.id })
         .eq('id', grupoId);
+      if (custErr) throw new Error(`stripe_customer_id: ${custErr.message}`);
 
       const session = await stripe.checkout.sessions.create({
         customer: customer.id,
@@ -362,8 +375,21 @@ serve(async (req) => {
 
 // Apaga tudo o que a matrícula criou (alunos/contratos do grupo, contas e o
 // grupo). Best-effort: cada passo continua mesmo que o anterior falhe.
+interface Criados {
+  uids: string[];
+  grupoId: string | null;
+  stripeCustomerId: string | null;
+}
+
 // deno-lint-ignore no-explicit-any
-async function reverter(admin: any, criados: { uids: string[]; grupoId: string | null }): Promise<void> {
+async function reverter(admin: any, criados: Criados): Promise<void> {
+  if (criados.stripeCustomerId) {
+    try {
+      await stripe.customers.del(criados.stripeCustomerId);
+    } catch (e) {
+      console.error('rollback stripe customer:', e);
+    }
+  }
   if (criados.grupoId) {
     const { data: alunos } = await admin.from('alunos').select('id').eq('grupo_familiar_id', criados.grupoId);
     const ids = (alunos ?? []).map((a: { id: string }) => a.id);

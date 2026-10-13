@@ -1925,6 +1925,9 @@ CREATE POLICY "Utilizador substitui o próprio avatar" ON storage.objects FOR UP
 --     função registar_tentativa() para limitar a matrícula família.
 --  9. Aula particular concluída → agendada → concluída já não duplica
 --     presenças.
+-- 10. (2.ª revisão) alunos.grupo_familiar_id só muda por admin/atendimento;
+--     aluno só insere pagamentos 'pendente' sem ids Stripe; limite do
+--     email_existe também para utilizadores autenticados e com o IP real.
 -- ============================================================
 
 -- ── 0. Pré-verificação: duplicados que impediriam o índice único ──────
@@ -2023,14 +2026,16 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- ── 3. alunos: auto-registo não se pode marcar como pago ───────────────
 CREATE OR REPLACE FUNCTION private.proteger_insert_aluno() RETURNS TRIGGER AS $$
+DECLARE
+  v_role TEXT := COALESCE(private.auth_role(), '');
 BEGIN
-  IF auth.uid() IS NULL
-     OR COALESCE(private.auth_role(), '') IN ('admin', 'superadmin', 'atendimento', 'professor') THEN
+  IF auth.uid() IS NULL OR v_role IN ('admin', 'superadmin', 'atendimento') THEN
     RETURN NEW;
   END IF;
 
+  -- Professor (Nova Matrícula) e auto-registo: nunca nascem "pagos".
   -- status fica como o fluxo o pediu ('ativo' Stripe / 'inativo' numerário):
-  -- o acesso ao check-in já depende dos campos de pagamento abaixo.
+  -- o acesso ao check-in depende só dos campos de pagamento abaixo.
   NEW.metodo_pagamento       := CASE WHEN NEW.metodo_pagamento = 'numerario'
                                      THEN 'numerario'::payment_method
                                      ELSE 'stripe'::payment_method END;
@@ -2039,7 +2044,16 @@ BEGIN
   NEW.stripe_customer_id     := NULL;
   NEW.stripe_subscription_id := NULL;
   NEW.grupo_familiar_id      := NULL;
-  NEW.profile_id             := auth.uid();
+
+  IF v_role <> 'professor' THEN
+    -- Auto-registo: a faixa declarada mantém-se (aluno vindo de outra
+    -- academia), mas grau/frequência/antiguidade não são escolhidos pelo próprio.
+    NEW.profile_id      := auth.uid();
+    NEW.grau            := 0;
+    NEW.frequencia      := 0;
+    NEW.data_matricula  := CURRENT_DATE;
+    NEW.aula_particular := FALSE;
+  END IF;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
@@ -2149,13 +2163,17 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 REVOKE EXECUTE ON FUNCTION private.dentro_do_limite(TEXT, INT, INTERVAL) FROM PUBLIC, anon, authenticated;
 
--- IP do pedido, tal como chega ao PostgREST.
+-- IP do pedido. Preferir os cabeçalhos que o próprio Supabase/Cloudflare
+-- define (o cliente não os controla); do X-Forwarded-For usar a ÚLTIMA
+-- entrada (acrescentada pelo proxy), nunca a primeira (escrita pelo cliente).
 CREATE OR REPLACE FUNCTION private.ip_pedido() RETURNS TEXT AS $$
+  WITH h AS (SELECT NULLIF(current_setting('request.headers', true), '')::json AS j)
   SELECT COALESCE(
-    split_part(
-      (NULLIF(current_setting('request.headers', true), '')::json ->> 'x-forwarded-for'),
-      ',', 1),
-    'desconhecido');
+    NULLIF(trim(j ->> 'cf-connecting-ip'), ''),
+    NULLIF(trim(j ->> 'x-real-ip'), ''),
+    NULLIF(trim(regexp_replace(j ->> 'x-forwarded-for', '^.*,', '')), ''),
+    'desconhecido')
+  FROM h;
 $$ LANGUAGE SQL STABLE SET search_path = public;
 
 REVOKE EXECUTE ON FUNCTION private.ip_pedido() FROM PUBLIC, anon, authenticated;
@@ -2163,9 +2181,12 @@ REVOKE EXECUTE ON FUNCTION private.ip_pedido() FROM PUBLIC, anon, authenticated;
 CREATE OR REPLACE FUNCTION public.email_existe(e text) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 BEGIN
-  -- Chamadas da service role (edge function) não contam para o limite.
-  IF auth.uid() IS NULL AND COALESCE(auth.role(), '') <> 'service_role' THEN
-    IF NOT private.dentro_do_limite('email_existe:' || private.ip_pedido(), 20, INTERVAL '1 hour') THEN
+  -- Só a service role (edge function) fica fora do limite; utilizadores
+  -- autenticados contam por conta, anónimos por IP.
+  IF COALESCE(auth.role(), '') <> 'service_role' THEN
+    IF NOT private.dentro_do_limite(
+         'email_existe:' || COALESCE(auth.uid()::TEXT, private.ip_pedido()),
+         20, INTERVAL '1 hour') THEN
       RAISE EXCEPTION 'Demasiados pedidos. Tenta mais tarde.' USING ERRCODE = '54000';
     END IF;
   END IF;
@@ -2221,3 +2242,84 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 REVOKE EXECUTE ON FUNCTION registar_presenca_aula_particular() FROM PUBLIC, anon, authenticated;
+
+-- ── 10. Brechas encontradas na 2.ª revisão ─────────────────────────────
+-- 10a. Aluno/professor não mudam grupo_familiar_id (ganhava check-in e
+--      via o NIF/pagamentos de uma família ativa).
+CREATE OR REPLACE FUNCTION restringir_update_aluno() RETURNS TRIGGER AS $$
+BEGIN
+  -- Recontagens internas (atualizar_frequencia_aluno(), disparada a cada
+  -- INSERT em `presencas`) correm com o role de quem despoletou esse
+  -- INSERT (aluno em self-check-in, ou professor a marcar presença
+  -- manual) — nenhum dos dois é staff, por isso sem este bypass o UPDATE
+  -- interno a `frequencia` era sempre revertido para OLD antes de gravar
+  -- (patch 41: confirmado em testes, a coluna nunca refletia presenças
+  -- novas fora de uma ação direta de admin/superadmin/atendimento).
+  IF current_setting('app.bypass_restricao_aluno', true) = 'on' THEN
+    RETURN NEW;
+  END IF;
+
+  -- email is unconditional, even for staff: it must always match
+  -- profiles.email (several RLS policies compare the two directly), and
+  -- profiles.email is itself just a mirror of the real login credential
+  -- in auth.users. Changing it here would silently desync both without
+  -- ever touching the actual login email — changing a user's login
+  -- email is a Supabase Auth operation, not a row edit on alunos.
+  NEW.email := OLD.email;
+
+  IF private.auth_role() NOT IN ('admin','superadmin','atendimento') THEN
+    -- Professor keeps: faixa/grau (registrar_graduacao() is SECURITY
+    -- DEFINER and bypasses RLS for its internal UPDATE, but this trigger
+    -- is unconditional on the table, so it still needs an explicit
+    -- carve-out or a professor-driven graduation would silently revert
+    -- to OLD), nif/data_nascimento (the fields AlunosPage.tsx's
+    -- EditAlunoModal sends alongside nome/telefone, which are never
+    -- blocked for anyone), and aula_particular (professor is the one
+    -- tagging their own private-lesson students). Without this,
+    -- "editing a student" from a professor screen would silently drop
+    -- those fields even once the RLS policy itself allows the UPDATE.
+    IF private.auth_role() != 'professor' THEN
+      NEW.faixa           := OLD.faixa;
+      NEW.grau            := OLD.grau;
+      NEW.nif             := OLD.nif;
+      NEW.data_nascimento := OLD.data_nascimento;
+      NEW.aula_particular := OLD.aula_particular;
+    END IF;
+    NEW.morada                 := OLD.morada;
+    NEW.cod_postal             := OLD.cod_postal;
+    NEW.plano_id               := OLD.plano_id;
+    NEW.plano_nome             := OLD.plano_nome;
+    NEW.status                 := OLD.status;
+    NEW.frequencia             := OLD.frequencia;
+    NEW.responsavel            := OLD.responsavel;
+    NEW.responsavel_nif        := OLD.responsavel_nif;
+    NEW.responsavel_email      := OLD.responsavel_email;
+    NEW.responsavel_tel        := OLD.responsavel_tel;
+    NEW.enc_pagamento          := OLD.enc_pagamento;
+    NEW.stripe_customer_id     := OLD.stripe_customer_id;
+    NEW.stripe_subscription_id := OLD.stripe_subscription_id;
+    NEW.metodo_pagamento       := OLD.metodo_pagamento;
+    NEW.numerario_aprovado     := OLD.numerario_aprovado;
+    NEW.numerario_aprovado_por := OLD.numerario_aprovado_por;
+    NEW.data_matricula         := OLD.data_matricula;
+    NEW.profile_id             := OLD.profile_id;
+    -- patch 45: o grupo familiar decide o acesso ao check-in e dá acesso
+    -- ao NIF/pagamentos do titular — só admin/atendimento o mudam.
+    NEW.grupo_familiar_id      := OLD.grupo_familiar_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+-- 10b. Aluno só cria pagamentos por pagar e sem ids Stripe (os pagos
+--      chegam pelo webhook ou por staff).
+DROP POLICY IF EXISTS "Aluno insere pagamento" ON pagamentos;
+CREATE POLICY "Aluno insere pagamento" ON pagamentos FOR INSERT WITH CHECK (
+  (
+    aluno_id IN (SELECT id FROM alunos WHERE email = (SELECT email FROM profiles WHERE id = (SELECT auth.uid())))
+    AND status = 'pendente'
+    AND stripe_invoice_id IS NULL
+    AND stripe_payment_id IS NULL
+  )
+  OR (SELECT private.auth_role()) IN ('admin','superadmin')
+);
