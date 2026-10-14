@@ -66,12 +66,16 @@ jobs:
             echo "PGCONN=$SUPABASE_DB_URL" >> "$GITHUB_ENV"
             exit 0
           fi
-          export PGPASSWORD="$SUPABASE_DB_PASSWORD" PGSSLMODE=require PGCONNECT_TIMEOUT=10
+          # remove espaços/quebras de linha acidentais no início e no fim (comuns ao colar)
+          SENHA="$(printf '%s' "$SUPABASE_DB_PASSWORD" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          if [ "$SENHA" != "$SUPABASE_DB_PASSWORD" ]; then echo "::warning::A palavra-passe tinha espaços no início/fim; foram ignorados."; fi
+          export PGPASSWORD="$SENHA" PGSSLMODE=require PGCONNECT_TIMEOUT=10
           for prefixo in aws-0 aws-1; do
             host="$prefixo-$PROJECT_REGION.pooler.supabase.com"
             if /usr/lib/postgresql/17/bin/psql "host=$host port=5432 dbname=postgres user=postgres.$PROJECT_REF" -Atc "select 1" > /dev/null 2>erro.txt; then
               echo "Servidor encontrado: $host"
               echo "PGCONN=host=$host port=5432 dbname=postgres user=postgres.$PROJECT_REF sslmode=require" >> "$GITHUB_ENV"
+              echo "PGPASSWORD=$SENHA" >> "$GITHUB_ENV"
               rm -f erro.txt
               exit 0
             fi
@@ -83,7 +87,6 @@ jobs:
       - name: Exportar a base de dados
         run: |
           umask 077
-          export PGPASSWORD="$SUPABASE_DB_PASSWORD"
           /usr/lib/postgresql/17/bin/pg_dump "$PGCONN" \
             --format=custom --no-owner --no-privileges \
             --schema=public --schema=private --schema=auth --schema=storage \
