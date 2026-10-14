@@ -5,8 +5,10 @@
 # (BACKUP_PASSPHRASE) consegue abri-lo. Ver docs/COPIAS_DE_SEGURANCA.md.
 #
 # Segredos necessários (GitHub → Settings → Secrets and variables → Actions):
-#   SUPABASE_DB_URL     — connection string "Session pooler" do Supabase (com a palavra-passe da BD)
-#   BACKUP_PASSPHRASE   — frase-passe longa, guardada também num gestor de palavras-passe
+#   SUPABASE_DB_PASSWORD — palavra-passe da base de dados (Supabase → Project Settings → Database)
+#   BACKUP_PASSPHRASE    — frase-passe longa, guardada também num gestor de palavras-passe
+# Opcional: SUPABASE_DB_URL — endereço completo "Session pooler"; se existir, é usado em vez da
+# deteção automática do servidor.
 
 name: Cópia de segurança da base de dados
 
@@ -27,13 +29,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
+      PROJECT_REF: yrfdxocwhztokadzxtto        # identificador público do projeto (não é segredo)
+      PROJECT_REGION: eu-west-1
       SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
     steps:
       - name: Confirmar que os segredos existem
         run: |
-          if [ -z "$SUPABASE_DB_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
-            echo "::error::Faltam os segredos SUPABASE_DB_URL e/ou BACKUP_PASSPHRASE."
+          if [ -z "$SUPABASE_DB_URL" ] && [ -z "$SUPABASE_DB_PASSWORD" ]; then
+            echo "::error::Falta o segredo SUPABASE_DB_PASSWORD."
+            exit 1
+          fi
+          if [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::Falta o segredo BACKUP_PASSPHRASE."
             exit 1
           fi
           if [ "${#BACKUP_PASSPHRASE}" -lt 20 ]; then
@@ -50,10 +59,32 @@ jobs:
           sudo apt-get install -y -qq postgresql-client-17 > /dev/null
           /usr/lib/postgresql/17/bin/pg_dump --version
 
+      - name: Encontrar o servidor de ligação (pooler)
+        run: |
+          if [ -n "$SUPABASE_DB_URL" ]; then
+            echo "A usar o endereço fornecido em SUPABASE_DB_URL."
+            echo "PGCONN=$SUPABASE_DB_URL" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          export PGPASSWORD="$SUPABASE_DB_PASSWORD" PGSSLMODE=require PGCONNECT_TIMEOUT=10
+          for prefixo in aws-0 aws-1; do
+            host="$prefixo-$PROJECT_REGION.pooler.supabase.com"
+            if /usr/lib/postgresql/17/bin/psql "host=$host port=5432 dbname=postgres user=postgres.$PROJECT_REF" -Atc "select 1" > /dev/null 2>erro.txt; then
+              echo "Servidor encontrado: $host"
+              echo "PGCONN=host=$host port=5432 dbname=postgres user=postgres.$PROJECT_REF sslmode=require" >> "$GITHUB_ENV"
+              rm -f erro.txt
+              exit 0
+            fi
+            echo "$host: $(head -c 200 erro.txt | sed 's/password=[^ ]*//')"
+          done
+          echo "::error::Não foi possível ligar à base de dados. Confirme a palavra-passe em SUPABASE_DB_PASSWORD."
+          exit 1
+
       - name: Exportar a base de dados
         run: |
           umask 077
-          /usr/lib/postgresql/17/bin/pg_dump "$SUPABASE_DB_URL" \
+          export PGPASSWORD="$SUPABASE_DB_PASSWORD"
+          /usr/lib/postgresql/17/bin/pg_dump "$PGCONN" \
             --format=custom --no-owner --no-privileges \
             --schema=public --schema=private --schema=auth --schema=storage \
             --file=backup.dump

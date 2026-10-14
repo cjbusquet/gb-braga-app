@@ -16,18 +16,19 @@
 1. Crie uma frase-passe longa e aleatória (mínimo 20 caracteres, ideal 32+), por exemplo num gestor de palavras-passe.
 2. Guarde-a **no gestor de palavras-passe**. Sem ela, as cópias não podem ser abertas — nem por si, nem por ninguém.
 
-### 2. Endereço de ligação à base de dados
-1. Supabase → projeto **GB BRAGA** → botão **Connect** (topo da página).
-2. Escolha **Session pooler** e copie o endereço (começa por `postgresql://postgres.`…).
-3. Substitua `[YOUR-PASSWORD]` pela palavra-passe da base de dados.
-   - Se não a souber: **Project Settings → Database → Reset database password**. Isto **não** afeta a app (a app usa chaves de API, não esta palavra-passe).
+### 2. Palavra-passe da base de dados
+Se não a souber: Supabase → projeto **GB BRAGA** → **Project Settings → Database → Reset database password** (link direto: https://supabase.com/dashboard/project/yrfdxocwhztokadzxtto/database/settings). Isto **não** afeta a app — a app usa chaves de API, não esta palavra-passe. Guarde-a no gestor de palavras-passe.
+
+O servidor de ligação (pooler) é descoberto automaticamente pela tarefa — não é preciso copiar nenhum endereço.
 
 ### 3. Guardar os dois segredos no GitHub
 GitHub → repositório → **Settings → Secrets and variables → Actions → New repository secret**:
 | Nome | Valor |
 |---|---|
-| `SUPABASE_DB_URL` | o endereço do passo 2 |
+| `SUPABASE_DB_PASSWORD` | a palavra-passe da base de dados (passo 2) |
 | `BACKUP_PASSPHRASE` | a frase-passe do passo 1 |
+
+(Opcional, avançado: `SUPABASE_DB_URL` com o endereço completo "Session pooler" substitui a deteção automática.)
 
 Nunca coloque estes valores em ficheiros, no chat ou em mensagens.
 
@@ -43,7 +44,7 @@ GitHub → **Actions** → **Cópia de segurança da base de dados** → **Run w
    gpg --decrypt --output backup.dump gbbraga-backup-AAAA-MM-DDTHHMMZ.dump.gpg
    ```
    (pede a frase-passe)
-3. Num projeto Supabase novo, obter o endereço *Session pooler* (como no passo 2) e:
+3. Num projeto Supabase novo, obter o endereço *Session pooler* (botão **Connect** → Method: Session pooler) e:
    ```bash
    # contas de utilizador (logins)
    pg_restore --dbname "$NOVO_DB_URL" --data-only --table=users -n auth backup.dump
