@@ -68,6 +68,7 @@ jobs:
           fi
           # remove espaços/quebras de linha acidentais no início e no fim (comuns ao colar)
           SENHA="$(printf '%s' "$SUPABASE_DB_PASSWORD" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          [ -n "$SENHA" ] && echo "::add-mask::$SENHA"
           if [ "$SENHA" != "$SUPABASE_DB_PASSWORD" ]; then echo "::warning::A palavra-passe tinha espaços no início/fim; foram ignorados."; fi
           export PGPASSWORD="$SENHA" PGSSLMODE=require PGCONNECT_TIMEOUT=10
           for prefixo in aws-0 aws-1; do
