@@ -11,4 +11,14 @@ node supabase/tests/aplicar.mjs teste supabase/tests/supabase_stub.sql supabase/
 node supabase/tests/seguranca_45.test.mjs teste
 ```
 
+Cenário igual à PRODUÇÃO (esquema antigo + políticas que só existem lá):
+
+```bash
+node supabase/tests/aplicar.mjs prod supabase/tests/supabase_stub.sql <esquema antigo>.sql \
+  supabase/migrations/20261014120000_sincronizar_producao_com_repositorio.sql \
+  supabase/tests/legado_producao.sql \
+  supabase/migrations/20261015090000_seguranca_revisao.sql
+node supabase/tests/seguranca_45.test.mjs prod
+```
+
 Tudo corre dentro de uma transação com ROLLBACK — não deixa dados.

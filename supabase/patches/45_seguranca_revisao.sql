@@ -32,6 +32,11 @@
 -- 10. (2.ª revisão) alunos.grupo_familiar_id só muda por admin/atendimento;
 --     aluno só insere pagamentos 'pendente' sem ids Stripe; limite do
 --     email_existe também para utilizadores autenticados e com o IP real.
+-- 11. Produção (verificado a 15/10/2026): remove políticas antigas que
+--     existem na BD mas não no repositório e que contornariam as regras
+--     acima — sobretudo "Aluno regista presença própria", que deixava
+--     fazer check-in sem verificar o pagamento. As políticas são
+--     permissivas (OR): basta UMA antiga para reabrir a porta.
 -- ============================================================
 
 -- ── 0. Pré-verificação: duplicados que impediriam o índice único ──────
@@ -427,3 +432,14 @@ CREATE POLICY "Aluno insere pagamento" ON pagamentos FOR INSERT WITH CHECK (
   )
   OR (SELECT private.auth_role()) IN ('admin','superadmin')
 );
+
+-- ── 11. Políticas antigas só existentes em produção ────────────────────
+-- Equivalentes atuais: "Registar presença" (com verificação de pagamento)
+-- e "Atualizar aluno" (exige status 'ativo'). Em instalações novas estas
+-- políticas não existem e os DROP não fazem nada.
+DROP POLICY IF EXISTS "Aluno regista presença própria" ON presencas;
+DROP POLICY IF EXISTS "Aluno atualiza próprio registo" ON alunos;
+-- Duplicados de "Atualizar perfil" / "Inserir perfil" — inofensivos com o
+-- trigger trg_proteger_profile, mas removidos para haver UMA regra por ação.
+DROP POLICY IF EXISTS "Aluno atualiza próprio perfil" ON profiles;
+DROP POLICY IF EXISTS "Utilizador cria próprio perfil" ON profiles;
