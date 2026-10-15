@@ -331,6 +331,28 @@ async function notificarWhatsApp(telefone: string, mensagem: string) {
   }
 }
 
+// Pagamentos em MODO DE TESTE da Stripe (livemode=false) não podem gerar
+// documentos fiscais reais (FR no TOConline + comunicação à AT) nem mensagens
+// reais a alunos. Só eventos livemode=true emitem fatura / enviam WhatsApp.
+async function emitirFaturaSeReal(
+  livemode: boolean,
+  ...args: Parameters<typeof emitirFatura>
+): Promise<InvoiceResult> {
+  if (!livemode) {
+    console.log(`Modo de teste: fatura NÃO emitida (pagamento ${args[0]})`);
+    return { sucesso: false, error: 'modo de teste' };
+  }
+  return emitirFatura(...args);
+}
+
+async function notificarWhatsAppSeReal(livemode: boolean, telefone: string, mensagem: string): Promise<void> {
+  if (!livemode) {
+    console.log('Modo de teste: WhatsApp NÃO enviado');
+    return;
+  }
+  await notificarWhatsApp(telefone, mensagem);
+}
+
 async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST')
     return new Response('Method not allowed', { status: 405 });
@@ -431,7 +453,8 @@ async function handler(req: Request): Promise<Response> {
           console.log(`invoice.paid ${inv.id} já registado, ignorado`);
           break;
         }
-        await emitirFatura(
+        await emitirFaturaSeReal(
+            event.livemode,
           pg.id,
           { nome: grupo.titular_nome, email: grupo.titular_email, nif: grupo.titular_nif ?? undefined },
           grupo.plano_nome || '',
@@ -477,10 +500,12 @@ async function handler(req: Request): Promise<Response> {
         .eq('id', aluno.id);
 
       if (pagamento) {
-        await emitirFatura(pagamento.id, aluno, aluno.plano_nome || '', valor, piId ?? undefined);
+        await emitirFaturaSeReal(
+            event.livemode,pagamento.id, aluno, aluno.plano_nome || '', valor, piId ?? undefined);
         const tel = aluno.whatsapp || aluno.telefone;
         if (tel) {
-          await notificarWhatsApp(
+          await notificarWhatsAppSeReal(
+            event.livemode,
             tel,
             `Pagamento recebido! €${valor.toFixed(2)} referente a ${aluno.plano_nome}. Obrigado! OSS! 🥋 — Gracie Barra Braga`,
           );
@@ -522,7 +547,8 @@ async function handler(req: Request): Promise<Response> {
         .single();
 
       if (pagamento) {
-        await emitirFatura(
+        await emitirFaturaSeReal(
+            event.livemode,
           pagamento.id,
           aluno,
           aluno.plano_nome || '',
@@ -532,7 +558,8 @@ async function handler(req: Request): Promise<Response> {
 
         const tel = aluno.whatsapp || aluno.telefone;
         if (tel) {
-          await notificarWhatsApp(
+          await notificarWhatsAppSeReal(
+            event.livemode,
             tel,
             `Pagamento recebido! €${(pi.amount / 100).toFixed(2)} referente a ${aluno.plano_nome}. Obrigado! OSS! 🥋 — Gracie Barra Braga`,
           );
@@ -564,7 +591,8 @@ async function handler(req: Request): Promise<Response> {
 
       const tel = aluno.whatsapp || aluno.telefone;
       if (tel) {
-        await notificarWhatsApp(
+        await notificarWhatsAppSeReal(
+            event.livemode,
           tel,
           `Não conseguimos processar o teu pagamento. Por favor atualiza o método de pagamento ou contacta-nos. gbbraga.com · +351 927 773 854`,
         );
@@ -741,7 +769,8 @@ async function handler(req: Request): Promise<Response> {
       if (registadoAluno) {
         const tel = aluno.whatsapp || aluno.telefone;
         if (tel) {
-          await notificarWhatsApp(
+          await notificarWhatsAppSeReal(
+            event.livemode,
             tel,
             `Não conseguimos processar a tua mensalidade. Atualiza o cartão em ${
               inv.hosted_invoice_url || 'gbbraga.com'
