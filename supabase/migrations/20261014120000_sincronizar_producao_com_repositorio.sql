@@ -4,6 +4,10 @@
 --
 --  SÓ ACRESCENTA. Não apaga tabelas, colunas, políticas nem dados.
 --  Idempotente: pode ser executada mais de uma vez sem erro.
+--  ⚠ (15/10) NÃO voltar a correr depois de 20261015090000_seguranca_revisao:
+--    recria email_existe, ranking_treinos e registar_presenca_aula_particular
+--    na versão antiga e reabre falhas de segurança. Se for preciso, voltar a
+--    correr a de segurança a seguir (é idempotente).
 --
 --  Objetos acrescentados (definições copiadas de supabase/schema.sql):
 --    • enums: belt_type (+vermelha-preta, +vermelha-branca), user_role (+encarregado)

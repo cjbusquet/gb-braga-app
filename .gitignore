@@ -46,3 +46,7 @@ pnpm-debug.log*
 
 # graphify tool output (local knowledge-graph build artifacts)
 graphify-out/
+
+# editores
+.zed/
+.idea/

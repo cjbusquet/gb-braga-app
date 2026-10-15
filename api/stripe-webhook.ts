@@ -28,6 +28,63 @@ interface InvoiceResult {
 }
 
 const hojeDate = (): string => new Date().toISOString().slice(0, 10);
+
+type PagamentoRow = { id: string } & Record<string, unknown>;
+
+/**
+ * Regista um pagamento Stripe como 'pago' de forma idempotente.
+ * Depende do índice único parcial em pagamentos.stripe_invoice_id
+ * (patch 45): com eventos reenviados em paralelo, só UM pedido consegue
+ * inserir ou passar a linha para 'pago' — os restantes recebem null e
+ * não voltam a emitir fatura no TOConline/AT.
+ * Também cobre o caso "falhou primeiro, foi pago depois": a linha
+ * 'vencido' criada por invoice.payment_failed passa a 'pago'.
+ */
+async function registarPagamentoPago(
+  dados: Record<string, unknown> & { stripe_invoice_id: string },
+): Promise<PagamentoRow | null> {
+  const { data: novo, error } = await supabase
+    .from('pagamentos')
+    .insert(dados)
+    .select()
+    .single();
+  if (novo) return novo as PagamentoRow;
+  // Só é "invoice já registada" se o conflito for no índice da invoice —
+  // um 23505 noutra coluna única (ex.: stripe_payment_id) é erro a sério.
+  const conflitoInvoice =
+    error?.code === '23505' &&
+    `${error.message} ${error.details ?? ''}`.includes('ux_pagamentos_stripe_invoice');
+  if (!conflitoInvoice) {
+    console.error('Erro ao registar pagamento:', error?.message);
+    return null;
+  }
+  // Já existe uma linha para esta invoice — só a "reclama" quem a mudar
+  // de não-paga para paga (UPDATE condicional é atómico).
+  const { data: atualizado } = await supabase
+    .from('pagamentos')
+    .update({
+      status: 'pago',
+      data_pagamento: dados.data_pagamento,
+      stripe_payment_id: dados.stripe_payment_id ?? null,
+      valor: dados.valor,
+    })
+    .eq('stripe_invoice_id', dados.stripe_invoice_id)
+    .neq('status', 'pago')
+    .select()
+    .maybeSingle();
+  return (atualizado as PagamentoRow | null) ?? null;
+}
+
+/** Insere a linha 'vencido' de uma invoice falhada; true só na 1.ª vez. */
+async function registarPagamentoFalhado(
+  dados: Record<string, unknown> & { stripe_invoice_id: string },
+): Promise<boolean> {
+  const { error } = await supabase.from('pagamentos').insert(dados);
+  if (!error) return true;
+  if (error.code !== '23505') console.error('Erro ao registar falha:', error.message);
+  return false;
+}
+
 const unixToDate = (secs: number | null | undefined): string | null =>
   typeof secs === 'number' ? new Date(secs * 1000).toISOString().slice(0, 10) : null;
 
@@ -53,6 +110,33 @@ async function aplicarEstadoGrupo(
     .update({ status, ...(subId ? { stripe_subscription_id: subId } : {}) })
     .eq('id', grupoId);
   await supabase.from('alunos').update({ status }).eq('grupo_familiar_id', grupoId);
+  if (status === 'ativo') await confirmarAliasDoGrupo(grupoId);
+}
+
+/**
+ * Membros sem email próprio ficam com o alias +N do responsável e são
+ * criados POR CONFIRMAR (criar-matricula-familia). Só depois de a família
+ * pagar é que essas contas ficam utilizáveis — assim ninguém cria contas
+ * prontas a usar na caixa de email de outra pessoa.
+ */
+async function confirmarAliasDoGrupo(grupoId: string): Promise<void> {
+  const { data: grupo } = await supabase
+    .from('grupos_familiares')
+    .select('titular_email')
+    .eq('id', grupoId)
+    .maybeSingle();
+  if (!grupo?.titular_email) return;
+  const [tLocal, tDominio] = String(grupo.titular_email).toLowerCase().split('@');
+  const { data: membros } = await supabase
+    .from('alunos')
+    .select('profile_id, email')
+    .eq('grupo_familiar_id', grupoId);
+  for (const m of membros ?? []) {
+    const [local, dominio] = String(m.email).toLowerCase().split('@');
+    if (!m.profile_id || dominio !== tDominio || !local.startsWith(`${tLocal}+`)) continue;
+    const { error } = await supabase.auth.admin.updateUserById(m.profile_id, { email_confirm: true });
+    if (error) console.error(`Confirmar alias ${m.email}:`, error.message);
+  }
 }
 
 /**
@@ -247,6 +331,28 @@ async function notificarWhatsApp(telefone: string, mensagem: string) {
   }
 }
 
+// Pagamentos em MODO DE TESTE da Stripe (livemode=false) não podem gerar
+// documentos fiscais reais (FR no TOConline + comunicação à AT) nem mensagens
+// reais a alunos. Só eventos livemode=true emitem fatura / enviam WhatsApp.
+async function emitirFaturaSeReal(
+  livemode: boolean,
+  ...args: Parameters<typeof emitirFatura>
+): Promise<InvoiceResult> {
+  if (!livemode) {
+    console.log(`Modo de teste: fatura NÃO emitida (pagamento ${args[0]})`);
+    return { sucesso: false, error: 'modo de teste' };
+  }
+  return emitirFatura(...args);
+}
+
+async function notificarWhatsAppSeReal(livemode: boolean, telefone: string, mensagem: string): Promise<void> {
+  if (!livemode) {
+    console.log('Modo de teste: WhatsApp NÃO enviado');
+    return;
+  }
+  await notificarWhatsApp(telefone, mensagem);
+}
+
 async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST')
     return new Response('Method not allowed', { status: 405 });
@@ -310,16 +416,7 @@ async function handler(req: Request): Promise<Response> {
       const inv = event.data.object as Stripe.Invoice;
       if (!inv.customer) break;
 
-      // Idempotency — Stripe redelivers events
-      const { data: existente } = await supabase
-        .from('pagamentos')
-        .select('id')
-        .eq('stripe_invoice_id', inv.id)
-        .maybeSingle();
-      if (existente) {
-        console.log(`invoice.paid ${inv.id} já registado, ignorado`);
-        break;
-      }
+      // Idempotência: ver registarPagamentoPago (índice único, patch 45).
 
       const valor = inv.amount_paid / 100;
       const piId = typeof inv.payment_intent === 'string' ? inv.payment_intent : null;
@@ -337,34 +434,33 @@ async function handler(req: Request): Promise<Response> {
       // ── Plano família ──
       const grupo = await grupoPorCustomer(inv.customer as string);
       if (grupo) {
-        const { data: pg } = await supabase
-          .from('pagamentos')
-          .insert({
-            grupo_familiar_id: grupo.id,
-            aluno_id: null,
-            aluno_nome: grupo.titular_nome,
-            plano_id: grupo.plano_id,
-            plano_nome: grupo.plano_nome,
-            valor,
-            vencimento: venc,
-            data_pagamento: new Date().toISOString(),
-            status: 'pago',
-            metodo: 'stripe',
-            stripe_payment_id: piId,
-            stripe_invoice_id: inv.id,
-          })
-          .select()
-          .single();
+        const pg = await registarPagamentoPago({
+          grupo_familiar_id: grupo.id,
+          aluno_id: null,
+          aluno_nome: grupo.titular_nome,
+          plano_id: grupo.plano_id,
+          plano_nome: grupo.plano_nome,
+          valor,
+          vencimento: venc,
+          data_pagamento: new Date().toISOString(),
+          status: 'pago',
+          metodo: 'stripe',
+          stripe_payment_id: piId,
+          stripe_invoice_id: inv.id,
+        });
         await aplicarEstadoGrupo(grupo.id, 'ativo', subId);
-        if (pg) {
-          await emitirFatura(
-            pg.id,
-            { nome: grupo.titular_nome, email: grupo.titular_email, nif: grupo.titular_nif ?? undefined },
-            grupo.plano_nome || '',
-            valor,
-            piId ?? undefined,
-          );
+        if (!pg) {
+          console.log(`invoice.paid ${inv.id} já registado, ignorado`);
+          break;
         }
+        await emitirFaturaSeReal(
+            event.livemode,
+          pg.id,
+          { nome: grupo.titular_nome, email: grupo.titular_email, nif: grupo.titular_nif ?? undefined },
+          grupo.plano_nome || '',
+          valor,
+          piId ?? undefined,
+        );
         console.log(`Mensalidade família paga: ${grupo.titular_nome} · €${valor}`);
         break;
       }
@@ -380,9 +476,7 @@ async function handler(req: Request): Promise<Response> {
         break;
       }
 
-      const { data: pagamento } = await supabase
-        .from('pagamentos')
-        .insert({
+      const pagamento = await registarPagamentoPago({
           aluno_id: aluno.id,
           aluno_nome: aluno.nome,
           plano_id: aluno.plano_id,
@@ -394,9 +488,7 @@ async function handler(req: Request): Promise<Response> {
           metodo: 'stripe',
           stripe_payment_id: piId,
           stripe_invoice_id: inv.id,
-        })
-        .select()
-        .single();
+        });
 
       await supabase
         .from('alunos')
@@ -408,10 +500,12 @@ async function handler(req: Request): Promise<Response> {
         .eq('id', aluno.id);
 
       if (pagamento) {
-        await emitirFatura(pagamento.id, aluno, aluno.plano_nome || '', valor, piId ?? undefined);
+        await emitirFaturaSeReal(
+            event.livemode,pagamento.id, aluno, aluno.plano_nome || '', valor, piId ?? undefined);
         const tel = aluno.whatsapp || aluno.telefone;
         if (tel) {
-          await notificarWhatsApp(
+          await notificarWhatsAppSeReal(
+            event.livemode,
             tel,
             `Pagamento recebido! €${valor.toFixed(2)} referente a ${aluno.plano_nome}. Obrigado! OSS! 🥋 — Gracie Barra Braga`,
           );
@@ -453,7 +547,8 @@ async function handler(req: Request): Promise<Response> {
         .single();
 
       if (pagamento) {
-        await emitirFatura(
+        await emitirFaturaSeReal(
+            event.livemode,
           pagamento.id,
           aluno,
           aluno.plano_nome || '',
@@ -463,7 +558,8 @@ async function handler(req: Request): Promise<Response> {
 
         const tel = aluno.whatsapp || aluno.telefone;
         if (tel) {
-          await notificarWhatsApp(
+          await notificarWhatsAppSeReal(
+            event.livemode,
             tel,
             `Pagamento recebido! €${(pi.amount / 100).toFixed(2)} referente a ${aluno.plano_nome}. Obrigado! OSS! 🥋 — Gracie Barra Braga`,
           );
@@ -495,7 +591,8 @@ async function handler(req: Request): Promise<Response> {
 
       const tel = aluno.whatsapp || aluno.telefone;
       if (tel) {
-        await notificarWhatsApp(
+        await notificarWhatsAppSeReal(
+            event.livemode,
           tel,
           `Não conseguimos processar o teu pagamento. Por favor atualiza o método de pagamento ou contacta-nos. gbbraga.com · +351 927 773 854`,
         );
@@ -621,13 +718,7 @@ async function handler(req: Request): Promise<Response> {
       // ── Plano família ──
       const grupoF = await grupoPorCustomer(inv.customer as string);
       if (grupoF) {
-        const { data: jaReg } = await supabase
-          .from('pagamentos')
-          .select('id')
-          .eq('stripe_invoice_id', inv.id)
-          .maybeSingle();
-        if (!jaReg) {
-          await supabase.from('pagamentos').insert({
+        const registado = await registarPagamentoFalhado({
             grupo_familiar_id: grupoF.id,
             aluno_id: null,
             aluno_nome: grupoF.titular_nome,
@@ -639,6 +730,7 @@ async function handler(req: Request): Promise<Response> {
             metodo: 'stripe',
             stripe_invoice_id: inv.id,
           });
+        if (registado) {
           await supabase.from('mensagens').insert({
             para_id: 'admin',
             para_nome: 'Admin GB Braga',
@@ -664,14 +756,7 @@ async function handler(req: Request): Promise<Response> {
       if (!aluno) break;
 
       // One 'vencido' row per invoice — record it the first time it fails.
-      const { data: existente } = await supabase
-        .from('pagamentos')
-        .select('id')
-        .eq('stripe_invoice_id', inv.id)
-        .maybeSingle();
-
-      if (!existente) {
-        await supabase.from('pagamentos').insert({
+      const registadoAluno = await registarPagamentoFalhado({
           aluno_id: aluno.id,
           aluno_nome: aluno.nome,
           valor: (inv.amount_due ?? 0) / 100,
@@ -681,9 +766,11 @@ async function handler(req: Request): Promise<Response> {
           stripe_invoice_id: inv.id,
         });
 
+      if (registadoAluno) {
         const tel = aluno.whatsapp || aluno.telefone;
         if (tel) {
-          await notificarWhatsApp(
+          await notificarWhatsAppSeReal(
+            event.livemode,
             tel,
             `Não conseguimos processar a tua mensalidade. Atualiza o cartão em ${
               inv.hosted_invoice_url || 'gbbraga.com'

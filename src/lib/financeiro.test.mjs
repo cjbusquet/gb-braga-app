@@ -45,4 +45,15 @@ assert.deepEqual(rotuloPagamento(pg({ v: '2026-10-05', status: 'pendente' }), ho
 
 assert.equal(fmtData('2026-08-05'), '5 ago 2026');
 
+// fuso horário: 23:30 UTC de 4/set é já 00:30 de 5/set em Lisboa (WEST) —
+// o pagamento que vence a 5/set vence "hoje", não amanhã.
+s = classificarFinanceiro([pg({ v: '2026-09-05', status: 'pendente' })], new Date('2026-09-04T23:30:00Z'));
+assert.equal(s.estado, 'a_vencer');
+assert.equal(s.dias, 0);
+
+// inverno (WET = UTC+0): 23:30 UTC de 15/jan continua a ser 15/jan
+s = classificarFinanceiro([pg({ v: '2026-01-16', status: 'pendente' })], new Date('2026-01-15T23:30:00Z'));
+assert.equal(s.estado, 'em_dia');
+assert.equal(s.dias, 1);
+
 console.log('financeiro.ts — todos os casos passam ✓');

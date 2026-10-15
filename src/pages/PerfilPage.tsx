@@ -326,7 +326,7 @@ function PasswordSection() {
   const [err, setErr] = useState('');
 
   const save = async () => {
-    if (pw1.length < 6) return setErr('Mínimo 6 caracteres.');
+    if (pw1.length < 8) return setErr('Mínimo 8 caracteres.');
     if (pw1 !== pw2) return setErr('As passwords não coincidem.');
     setErr('');
     setSaving(true);
@@ -355,7 +355,7 @@ function PasswordSection() {
             value={pw1}
             onChange={(e) => setPw1(e.target.value)}
             className={INP_CLASS}
-            placeholder="Mínimo 6 caracteres"
+            placeholder="Mínimo 8 caracteres"
           />
         </div>
         <div>
